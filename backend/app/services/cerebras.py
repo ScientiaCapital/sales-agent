@@ -7,6 +7,10 @@ from typing import Dict, Tuple
 from openai import OpenAI
 import json
 
+from app.core.logging import setup_logging
+
+logger = setup_logging(__name__)
+
 
 class CerebrasService:
     """
@@ -127,15 +131,29 @@ Provide your response in this exact JSON format:
             end_time = time.time()
             latency_ms = int((end_time - start_time) * 1000)
 
+            logger.warning(f"JSON parse error during lead qualification: {e}")
             # Use content as reasoning, assign medium score
-            return 50.0, response.choices[0].message.content[:500], latency_ms
+            return 50.0, f"Unable to parse response: {str(e)}", latency_ms
 
-        except Exception as e:
+        except (ValueError, KeyError) as e:
+            # Handle data validation errors
             end_time = time.time()
             latency_ms = int((end_time - start_time) * 1000)
 
-            # Error handling - return low score with error message
-            return 0.0, f"Qualification failed: {str(e)}", latency_ms
+            logger.warning(f"Data validation error during lead qualification: {e}")
+            return 50.0, f"Invalid response format: {str(e)}", latency_ms
+
+        except Exception as e:
+            # Critical API failure - propagate as HTTP error
+            end_time = time.time()
+            latency_ms = int((end_time - start_time) * 1000)
+
+            logger.error(f"Cerebras API error during lead qualification: {e}", exc_info=True)
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=503,
+                detail="Lead qualification service unavailable"
+            )
 
     def calculate_cost(
         self,

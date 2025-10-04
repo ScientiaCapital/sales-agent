@@ -9,6 +9,9 @@ from datetime import datetime
 from app.models import Lead, CerebrasAPICall, get_db
 from app.schemas import LeadQualificationRequest, LeadQualificationResponse, LeadListResponse
 from app.services import CerebrasService
+from app.core.logging import setup_logging
+
+logger = setup_logging(__name__)
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -34,6 +37,7 @@ async def qualify_lead(
     """
 
     # Call Cerebras service for qualification
+    logger.info(f"Qualifying lead: company={request.company_name}, industry={request.industry}")
     score, reasoning, latency_ms = cerebras_service.qualify_lead(
         company_name=request.company_name,
         company_website=request.company_website,
@@ -43,6 +47,7 @@ async def qualify_lead(
         contact_title=request.contact_title,
         notes=request.notes
     )
+    logger.info(f"Lead qualified: company={request.company_name}, score={score}, latency={latency_ms}ms")
 
     # Create Lead record
     lead = Lead(
