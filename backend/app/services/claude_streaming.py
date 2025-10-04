@@ -5,7 +5,7 @@ Provides streaming completions with AsyncAnthropic for progressive token deliver
 """
 import os
 import time
-from typing import AsyncIterator, Dict, Tuple
+from typing import AsyncIterator, Dict, Tuple, Any
 from anthropic import AsyncAnthropic, APIConnectionError, RateLimitError, APIStatusError
 
 from app.core.logging import setup_logging
