@@ -167,6 +167,306 @@ task-master set-status --id=<id> --status=done
 # Track multi-phase features
 ```
 
+### Context7 (Library Documentation)
+```bash
+# Use for up-to-date library documentation
+# Always review before implementing features
+# Ensures use of latest API patterns
+```
+
+## Advanced MCP Workflow Integration
+
+### Mandatory Workflow: Sequential Thinking → Serena → Context7
+
+**CRITICAL**: Before starting any task or todo implementation, ALWAYS follow this workflow in order:
+
+#### Phase 1: Sequential Thinking (Problem Decomposition)
+```
+1. Use Sequential Thinking MCP to break down the problem
+2. Identify key technical challenges and dependencies
+3. Create a step-by-step implementation plan
+4. Document assumptions and edge cases
+```
+
+**Example Sequential Thinking Process:**
+- Thought 1-3: Analyze the requirement and break it into components
+- Thought 4-6: Identify technical challenges and dependencies
+- Thought 7-9: Create implementation strategy
+- Thought 10: Finalize approach and next steps
+
+#### Phase 2: Serena (Codebase Navigation)
+```
+1. Use Serena to explore relevant code patterns
+2. Find existing implementations to follow
+3. Identify integration points in the codebase
+4. Understand current architecture constraints
+```
+
+**Serena Best Practices:**
+- Start with `get_symbols_overview` for file structure
+- Use `find_symbol` for specific components
+- Use `find_referencing_symbols` to understand dependencies
+- Read only what's necessary - don't over-fetch code
+
+#### Phase 3: Context7 (Library Documentation)
+```
+1. Launch a subagent to review Context7 documentation
+2. Verify latest API usage patterns for required libraries
+3. Check for breaking changes or deprecated methods
+4. Confirm implementation approach with current best practices
+```
+
+**Context7 Usage Pattern:**
+```
+Before implementing ANY feature using external libraries:
+1. Identify required libraries (e.g., FastAPI, SQLAlchemy, React)
+2. Use Task tool with general-purpose agent to query Context7
+3. Review returned documentation for latest patterns
+4. Apply learned patterns to implementation
+```
+
+### Workflow Example: Adding New API Endpoint
+
+```markdown
+## Task: Add POST /api/leads/enrich endpoint
+
+### Step 1: Sequential Thinking
+- Analyze: Need to enrich lead data with external API
+- Break down: API route → Service layer → Database update
+- Dependencies: External API service, Lead model, validation
+
+### Step 2: Serena Exploration
+- Find existing endpoint pattern: /api/leads/qualify
+- Review service pattern: cerebras.py
+- Check Lead model: models/lead.py
+- Understand validation: schemas/lead.py
+
+### Step 3: Context7 Documentation (via Subagent)
+Query: "FastAPI endpoint with external API call and database update"
+- Review latest FastAPI dependency injection patterns
+- Check SQLAlchemy async session best practices
+- Verify Pydantic schema validation approaches
+
+### Step 4: Implementation
+Now implement following the discovered patterns and latest docs
+```
+
+### MCP Tool Priority Order
+
+When using multiple MCPs together:
+
+1. **Sequential Thinking** - ALWAYS start here for planning
+2. **Serena** - Navigate codebase to find patterns
+3. **Context7 (via subagent)** - Verify library usage before coding
+4. **Desktop Commander** - Execute file operations
+5. **Task Master / Shrimp** - Track progress and verify completion
+
+### Subagent Usage for Context7
+
+**MANDATORY**: Always use a subagent to query Context7 before implementation:
+
+```
+Example subagent invocation:
+- Use Task tool with general-purpose agent
+- Prompt: "Use Context7 to find latest documentation for [library] 
+  focusing on [specific feature]. Return key patterns and examples."
+- Review subagent findings before proceeding
+```
+
+## Subagent Orchestration & Team Management
+
+### Available Subagent Teams
+
+#### Core Orchestration Agents (Built-in)
+```
+1. task-orchestrator - Analyzes dependencies and coordinates parallel execution
+2. task-executor - Implements individual tasks with full MCP access
+3. task-checker - Verifies implementation quality and completeness
+```
+
+#### Custom User Agents (~/.claude/agents)
+```
+1. ai-systems-architect - Multi-agent AI systems, LLM routing, RAG pipelines
+2. api-design-expert - REST/GraphQL/gRPC API design and documentation
+3. data-pipeline-engineer - ETL/ELT, Apache Airflow, Kafka streams
+4. developer-experience-engineer - CLI tools, dev productivity, onboarding
+5. fullstack-mvp-engineer - Rapid TypeScript/React/Next.js prototypes
+6. infrastructure-devops-engineer - IaC, Kubernetes, CI/CD pipelines
+7. react-performance-optimizer - Core Web Vitals, bundle optimization
+8. realtime-systems-optimizer - WebSocket, ultra-low latency (<10ms)
+9. security-compliance-engineer - Auth, encryption, GDPR/PCI compliance
+10. testing-automation-architect - Test pyramids, coverage, CI/CD gates
+```
+
+### Mandatory Subagent Workflow
+
+**ALL subagents MUST follow this workflow:**
+
+```
+1. Sequential Thinking - Break down the problem
+2. Serena MCP - Navigate codebase patterns
+3. Context7 - Verify library documentation (via subagent)
+4. Desktop Commander - Execute file operations
+5. Taskmaster-AI / Shrimp - Track progress
+```
+
+### Orchestration Pattern: Parallel Execution
+
+**For complex features with independent subtasks:**
+
+```markdown
+Step 1: Use task-orchestrator to analyze task dependencies
+Step 2: Launch multiple task-executor agents in parallel (one per subtask)
+Step 3: Each executor follows: Sequential Thinking → Serena → Context7 → Implementation
+Step 4: Use task-checker to verify all implementations
+Step 5: Git commit and push if verification passes
+```
+
+**Example Multi-Agent Orchestration:**
+
+```
+Main Agent (You):
+├── Launch task-orchestrator
+│   └── Returns: Tasks 1.1, 1.2, 1.3 can run in parallel
+│
+├── Launch 3 task-executor agents in parallel:
+│   ├── Agent 1: Implements Task 1.1 (Backend API)
+│   │   └── Uses: Sequential Thinking → Serena → Context7 → Desktop Commander
+│   ├── Agent 2: Implements Task 1.2 (Frontend Component)
+│   │   └── Uses: Sequential Thinking → Serena → Context7 → Desktop Commander
+│   └── Agent 3: Implements Task 1.3 (Database Migration)
+│       └── Uses: Sequential Thinking → Serena → Context7 → Desktop Commander
+│
+└── Launch task-checker
+    ├── Verifies all implementations
+    ├── Runs tests if applicable
+    └── Reports: ✅ All tasks complete and verified
+```
+
+### Specialized Agent Selection Guide
+
+**Match tasks to the right specialized agent:**
+
+| Task Type | Agent to Use |
+|-----------|-------------|
+| AI/LLM integration, multi-agent systems | ai-systems-architect |
+| REST/GraphQL API design | api-design-expert |
+| Data pipelines, ETL, streaming | data-pipeline-engineer |
+| CLI tools, dev tooling, DX improvements | developer-experience-engineer |
+| Full-stack MVP, rapid prototypes | fullstack-mvp-engineer |
+| Infrastructure, Kubernetes, IaC | infrastructure-devops-engineer |
+| React optimization, Core Web Vitals | react-performance-optimizer |
+| WebSocket, real-time, low latency | realtime-systems-optimizer |
+| Security, auth, compliance | security-compliance-engineer |
+| Testing strategy, test automation | testing-automation-architect |
+
+### Agent MCP Configuration
+
+**Each subagent inherits full MCP access:**
+- ✅ Desktop Commander (file operations)
+- ✅ Sequential Thinking (problem decomposition)
+- ✅ Taskmaster-AI (task tracking)
+- ✅ Shrimp Task Manager (detailed planning)
+- ✅ Serena (codebase navigation)
+- ✅ Context7 (library documentation)
+- ✅ Memory (knowledge persistence)
+
+### Verification & Git Workflow
+
+**MANDATORY final steps for every implementation:**
+
+```bash
+# Step 1: Launch task-checker subagent
+task-checker verifies:
+  ✓ All requirements implemented
+  ✓ Code follows project patterns
+  ✓ Tests pass (if applicable)
+  ✓ No errors or warnings
+
+# Step 2: If verification passes, sync to GitHub
+git add .
+git commit -m "feat: [description]
+
+🤖 Generated with Claude Code
+Co-Authored-By: Claude <noreply@anthropic.com>"
+git push
+
+# Step 3: Report completion to user
+```
+
+### Example: Complete Feature Implementation
+
+```markdown
+## Task: Implement Lead Enrichment API
+
+### Phase 1: Orchestration
+Main Agent: Launch task-orchestrator
+- Analyzes: POST /api/leads/enrich endpoint
+- Identifies subtasks: API route, service layer, database schema, tests
+- Determines: Tasks 1-3 can run in parallel, Task 4 depends on 1-3
+
+### Phase 2: Parallel Execution
+Main Agent: Launch 3 task-executor agents simultaneously
+
+Agent 1 (Backend API):
+1. Sequential Thinking: Plan FastAPI endpoint structure
+2. Serena: Find /api/leads/qualify pattern
+3. Context7: Query latest FastAPI async patterns
+4. Desktop Commander: Create /api/leads/enrich route
+5. Taskmaster: Mark subtask 1 complete
+
+Agent 2 (Service Layer):
+1. Sequential Thinking: Plan enrichment service
+2. Serena: Review cerebras.py pattern
+3. Context7: Check external API integration best practices
+4. Desktop Commander: Create enrichment_service.py
+5. Taskmaster: Mark subtask 2 complete
+
+Agent 3 (Database):
+1. Sequential Thinking: Plan schema changes
+2. Serena: Review existing Lead model
+3. Context7: Check SQLAlchemy migration patterns
+4. Desktop Commander: Create Alembic migration
+5. Taskmaster: Mark subtask 3 complete
+
+### Phase 3: Dependent Task
+Agent 4 (Testing) - Waits for Agents 1-3:
+1. Sequential Thinking: Plan test strategy
+2. Serena: Review test patterns in tests/
+3. Context7: Get pytest best practices
+4. Desktop Commander: Create test_lead_enrichment.py
+5. Taskmaster: Mark subtask 4 complete
+
+### Phase 4: Verification & Sync
+Main Agent: Launch task-checker
+- Verifies all 4 implementations
+- Runs: python test_api.py
+- Checks: All tests pass ✅
+
+Main Agent: Git sync
+git add .
+git commit -m "feat(leads): Add lead enrichment API endpoint..."
+git push
+```
+
+### Agent Communication Protocol
+
+**Main Agent responsibilities:**
+1. Analyze user requirements
+2. Launch appropriate specialized/orchestration agents
+3. Monitor parallel execution
+4. Consolidate results
+5. Run final verification via task-checker
+6. Execute git workflow
+7. Report to user
+
+**Subagent responsibilities:**
+1. Follow Sequential Thinking → Serena → Context7 workflow
+2. Use Desktop Commander for all file operations
+3. Track progress in Taskmaster/Shrimp
+4. Report completion status to Main Agent
+5. Return detailed implementation summary
+
 ## Coding Standards
 
 ### Python (FastAPI Backend)

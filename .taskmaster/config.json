@@ -13,9 +13,9 @@
       "temperature": 0.1
     },
     "fallback": {
-      "provider": "openai",
-      "modelId": "gpt-4o-mini",
-      "maxTokens": 120000,
+      "provider": "openrouter",
+      "modelId": "deepseek/deepseek-chat",
+      "maxTokens": 64000,
       "temperature": 0.2
     }
   },
