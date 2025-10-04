@@ -22,6 +22,13 @@ from .social_media import (
     ContactSocialProfile,
     OrganizationChart
 )
+from .voice_models import (
+    VoiceSessionLog,
+    CartesiaAPICall,
+    VoiceTurn,
+    VoiceConfiguration,
+    VoiceSessionStatus
+)
 
 __all__ = [
     "Base",
@@ -41,5 +48,10 @@ __all__ = [
     "CustomerQuota",
     "SocialMediaActivity",
     "ContactSocialProfile",
-    "OrganizationChart"
+    "OrganizationChart",
+    "VoiceSessionLog",
+    "CartesiaAPICall",
+    "VoiceTurn",
+    "VoiceConfiguration",
+    "VoiceSessionStatus"
 ]
