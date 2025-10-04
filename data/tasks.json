@@ -1,604 +1,476 @@
 {
   "tasks": [
     {
-      "id": "e1963378-87c3-4720-9fef-0cc378276dd8",
-      "name": "Add Pydantic validators for required API keys in Settings",
-      "description": "Implement Pydantic field validators in Settings class to enforce required API keys at application startup. Fail fast with clear error message if CEREBRAS_API_KEY or DATABASE_URL are missing or empty.",
-      "notes": "Use Pydantic v2 @field_validator decorator (not v1 @validator). This ensures application never starts with invalid configuration.",
+      "id": "ba4bf981-b5f3-4883-93b5-ea4e24386738",
+      "name": "Phase 2A: Implement Iterative Refinement Engine",
+      "description": "Create 4-step iterative refinement loop (reflect → elaborate → critique → refine) to improve agent output quality by 40% with acceptable 4x cost increase. Integrates with BaseAgent pattern and WebSocket streaming.",
+      "notes": "CRITICAL: Total latency must stay <2500ms. Use Cerebras llama3.1-8b for steps 1,2,4 (633ms each). Use Qwen-3-32B for critique step 3 (500ms). Track all 4 API calls in iterative_refinement_logs for cost monitoring.",
       "status": "pending",
       "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
       "relatedFiles": [
         {
-          "path": "backend/app/core/config.py",
+          "path": "backend/app/services/base_agent.py",
           "type": "TO_MODIFY",
-          "description": "Settings class definition, add validators for required keys",
-          "lineStart": 7,
-          "lineEnd": 48
-        }
-      ],
-      "implementationGuide": "1. Import validator from pydantic\n2. Add @field_validator for CEREBRAS_API_KEY:\n   - Check if value is empty string or None\n   - Raise ValueError with message: 'CEREBRAS_API_KEY must be set in environment'\n3. Add @field_validator for DATABASE_URL with same pattern\n4. Test: Run app without keys, verify startup fails with clear error\n\nPseudocode:\nfrom pydantic import field_validator\n\nclass Settings(BaseSettings):\n    CEREBRAS_API_KEY: str = \"\"\n    \n    @field_validator('CEREBRAS_API_KEY')\n    @classmethod\n    def validate_cerebras_key(cls, v: str) -> str:\n        if not v or v.strip() == \"\":\n            raise ValueError('CEREBRAS_API_KEY must be set')\n        return v",
-      "verificationCriteria": "1. Start app without CEREBRAS_API_KEY → Should fail with ValueError\n2. Start app with empty CEREBRAS_API_KEY=\"\" → Should fail\n3. Start app with valid keys → Should start successfully\n4. Error message should clearly state which key is missing",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "90d754e9-dd41-4789-9f7c-c034ed5dc04e",
-      "name": "Configure environment-specific CORS and database settings",
-      "description": "Make CORS origins and database echo configurable per environment. Production should have strict CORS and no SQL query logging, development can be permissive.",
-      "notes": "Prevents accidental exposure in production. Database echo logging can expose sensitive data in logs.",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "e1963378-87c3-4720-9fef-0cc378276dd8"
-        }
-      ],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/core/config.py",
-          "type": "TO_MODIFY",
-          "description": "Add environment-specific CORS configuration",
-          "lineStart": 17,
-          "lineEnd": 21
+          "description": "Add iterate_refine() method",
+          "lineStart": 50,
+          "lineEnd": 289
         },
         {
-          "path": "backend/app/models/database.py",
-          "type": "TO_MODIFY",
-          "description": "Make echo conditional on environment",
-          "lineStart": 14,
-          "lineEnd": 20
-        },
-        {
-          "path": "backend/app/main.py",
-          "type": "TO_MODIFY",
-          "description": "Use environment-aware CORS settings",
-          "lineStart": 19,
-          "lineEnd": 25
-        }
-      ],
-      "implementationGuide": "1. In Settings class, make CORS_ORIGINS environment-dependent:\n   - Add CORS_ORIGINS_PROD: List[str] field\n   - Update CORS_ORIGINS to switch based on ENVIRONMENT\n2. Make database echo conditional:\n   - In database.py, use settings.ENVIRONMENT != 'production'\n3. Update docker-compose to set ENVIRONMENT variable\n\nPseudocode:\nclass Settings(BaseSettings):\n    ENVIRONMENT: str = \"development\"\n    CORS_ORIGINS: List[str] = Field(default_factory=lambda: [])\n    \n    @field_validator('CORS_ORIGINS', mode='after')\n    @classmethod\n    def set_cors_by_env(cls, v, info):\n        env = info.data.get('ENVIRONMENT')\n        if env == 'production':\n            return ['https://app.salesagent.com']\n        return ['http://localhost:3000', 'http://localhost:5173']",
-      "verificationCriteria": "1. Set ENVIRONMENT=production → CORS should only allow production domains\n2. Set ENVIRONMENT=development → CORS should allow localhost\n3. Production mode → No SQL queries logged\n4. Development mode → SQL queries logged to console",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "5aba137e-11a6-4bb6-9bb0-a2a9fe799d97",
-      "name": "Implement startup lifecycle hooks for dependency validation",
-      "description": "Add FastAPI @app.on_event('startup') hooks to validate database connectivity, Cerebras API access, and Redis before accepting traffic. Fail fast if critical dependencies unavailable.",
-      "notes": "Database and Cerebras are CRITICAL (fail startup if down). Redis is optional (log warning only). Prevents serving traffic with broken dependencies.",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "e1963378-87c3-4720-9fef-0cc378276dd8"
-        }
-      ],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/core/startup.py",
+          "path": "backend/app/services/iterative_refinement.py",
           "type": "CREATE",
-          "description": "New file for startup validation functions"
+          "description": "New iterative refinement service"
         },
         {
-          "path": "backend/app/main.py",
+          "path": "backend/app/models/agent_models.py",
           "type": "TO_MODIFY",
-          "description": "Add startup event handlers",
-          "lineStart": 1,
-          "lineEnd": 10
+          "description": "Add IterativeRefinementLog model"
         },
-        {
-          "path": "backend/app/services/cerebras.py",
-          "type": "TO_MODIFY",
-          "description": "Add health_check method to CerebrasService",
-          "lineStart": 15,
-          "lineEnd": 30
-        }
-      ],
-      "implementationGuide": "1. Create backend/app/core/startup.py with validation functions:\n   - async def check_database_connection()\n   - async def check_cerebras_api()\n   - async def check_redis_connection()\n2. In main.py, add @app.on_event('startup'):\n   - Call all validation functions\n   - Log success/failure for each\n   - Raise exception if critical dependency fails\n\nPseudocode:\n@app.on_event('startup')\nasync def validate_dependencies():\n    try:\n        await check_database_connection()\n        logger.info('Database connection: OK')\n    except Exception as e:\n        logger.error(f'Database check failed: {e}')\n        raise\n    \n    try:\n        cerebras_service.health_check()\n        logger.info('Cerebras API: OK')\n    except Exception as e:\n        logger.warning(f'Cerebras unavailable: {e}')",
-      "verificationCriteria": "1. Start app with DB down → Should fail startup with clear error\n2. Start app with invalid Cerebras key → Should fail startup\n3. Start app with Redis down → Should start with warning log\n4. All dependencies healthy → Startup succeeds with success logs",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "68926216-3600-47e5-8a61-0751cbf7be65",
-      "name": "Implement API versioning with /api/v1 prefix",
-      "description": "Add /api/v1 prefix to all API routes using the already-defined API_V1_PREFIX constant. Maintain backward compatibility by keeping /api routes active with deprecation warnings.",
-      "notes": "API_V1_PREFIX already defined as '/api/v1' in config.py but unused. This activates it while maintaining backward compatibility.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/main.py",
-          "type": "TO_MODIFY",
-          "description": "Update router includes with version prefix",
-          "lineStart": 27,
-          "lineEnd": 29
-        },
-        {
-          "path": "backend/app/core/config.py",
-          "type": "REFERENCE",
-          "description": "API_V1_PREFIX constant already defined",
-          "lineStart": 14,
-          "lineEnd": 14
-        }
-      ],
-      "implementationGuide": "1. In main.py, update router includes to use /api/v1:\n   - app.include_router(health.router, prefix=settings.API_V1_PREFIX)\n   - app.include_router(leads.router, prefix=settings.API_V1_PREFIX)\n2. Also keep /api routes for backward compat:\n   - app.include_router(health.router, prefix='/api', deprecated=True)\n   - app.include_router(leads.router, prefix='/api', deprecated=True)\n3. Update OpenAPI docs to show v1 as primary\n4. Add deprecation notice in API response headers for /api routes\n\nPseudocode:\napp.include_router(\n    health.router,\n    prefix=settings.API_V1_PREFIX,\n    tags=['health-v1']\n)\napp.include_router(\n    health.router,\n    prefix='/api',\n    tags=['health-deprecated'],\n    deprecated=True\n)",
-      "verificationCriteria": "1. GET /api/v1/health → Returns 200 (primary endpoint)\n2. GET /api/health → Returns 200 with deprecation header\n3. OpenAPI docs at /api/docs → Shows v1 endpoints as primary\n4. All tests updated to use /api/v1 endpoints",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "152480d1-80df-46fa-b27c-7f24e2aa5645",
-      "name": "Remove redundant db.flush() and optimize database operations",
-      "description": "Remove unnecessary db.flush() call in lead qualification endpoint (line 59) as it's redundant before db.commit(). Optimize session usage pattern.",
-      "notes": "db.flush() forces SQL execution but doesn't commit. Since we commit immediately after, flush is redundant. Single commit is more efficient.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/api/leads.py",
-          "type": "TO_MODIFY",
-          "description": "Remove redundant flush, optimize commit pattern",
-          "lineStart": 56,
-          "lineEnd": 98
-        }
-      ],
-      "implementationGuide": "1. In leads.py qualify_lead function:\n   - Remove 'db.flush()' line after db.add(lead)\n   - Keep 'db.add(lead)' then directly call 'db.commit()'\n   - db.refresh(lead) still needed after commit to get ID\n2. Verify the pattern:\n   db.add(lead)\n   db.add(api_call)\n   db.commit()  # Single commit for both\n   db.refresh(lead)\n\nPseudocode:\ndb.add(lead)\n# REMOVE: db.flush() - not needed before commit\ndb.add(api_call)\ndb.commit()  # Commits both lead and api_call atomically\ndb.refresh(lead)",
-      "verificationCriteria": "1. POST /api/v1/leads/qualify → Still creates lead and api_call successfully\n2. Verify lead.id is populated after commit\n3. Database transaction is atomic (both records or neither)\n4. Performance: Measure latency before/after (should be same or faster)",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "fbf0c613-0595-4b39-b39c-22b7e4941ec1",
-      "name": "Add database indexes and constraints for Lead model",
-      "description": "Create Alembic migration to add composite index on (qualification_score DESC, created_at DESC) for common query pattern 'recent high-scoring leads'. Add CHECK constraint for score range 0-100.",
-      "notes": "CONCURRENTLY prevents table locks during index creation. NOT VALID then VALIDATE prevents full table scan during deployment.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
         {
           "path": "backend/alembic/versions/",
           "type": "CREATE",
-          "description": "New migration file for indexes and constraints"
-        },
-        {
-          "path": "backend/app/models/lead.py",
-          "type": "REFERENCE",
-          "description": "Lead model to understand existing schema",
-          "lineStart": 1,
-          "lineEnd": 46
+          "description": "Migration for refinement_logs table"
         }
       ],
-      "implementationGuide": "1. Create Alembic migration:\n   alembic revision -m 'add_lead_indexes_and_constraints'\n2. In upgrade():\n   - Create composite index CONCURRENTLY (no table lock)\n   - Add CHECK constraint with NOT VALID first\n   - Then VALIDATE constraint separately\n3. In downgrade():\n   - Drop constraint\n   - Drop index\n\nMigration pseudocode:\ndef upgrade():\n    op.execute(\n        'CREATE INDEX CONCURRENTLY idx_leads_score_created '\n        'ON leads(qualification_score DESC, created_at DESC)'\n    )\n    op.execute(\n        'ALTER TABLE leads ADD CONSTRAINT check_score_range '\n        'CHECK (qualification_score BETWEEN 0 AND 100) NOT VALID'\n    )\n    op.execute(\n        'ALTER TABLE leads VALIDATE CONSTRAINT check_score_range'\n    )",
-      "verificationCriteria": "1. Run migration → Index created without locking table\n2. Query 'SELECT * FROM leads ORDER BY qualification_score DESC, created_at DESC LIMIT 20' → Uses new index (check EXPLAIN)\n3. INSERT lead with score=150 → Fails with CHECK constraint error\n4. Downgrade migration → Index and constraint removed cleanly",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+      "implementationGuide": "1. Create backend/app/services/iterative_refinement.py with IterativeRefinementService class\n2. Implement 4 methods: _reflect() extracts key attributes (200ms, llama3.1-8b), _elaborate() initial generation (633ms), _critique() using Qwen-3-32B (500ms), _refine() final output (633ms)\n3. Add iterate_refine() async method to BaseAgent class: accepts input_data, returns refined result with metadata\n4. Create Alembic migration: iterative_refinement_logs table (id, agent_execution_id FK, iteration_number, model_used, input_prompt, output_text, latency_ms, cost_usd, created_at)\n5. Alter agent_executions table: ADD COLUMN refinement_iterations INTEGER DEFAULT 1\n6. WebSocket streaming: Emit 'iteration_update' events for each step with step_name, content, latency_ms\n7. Integration: QualificationAgent calls iterate_refine() for leads with score >70\n8. Cost tracking: Log each of 4 Cerebras API calls with cumulative cost calculation",
+      "verificationCriteria": "1. All 4 refinement steps complete in <2500ms total\n2. Each step logged in iterative_refinement_logs table\n3. QualificationAgent produces 40% higher quality scores for leads >70\n4. WebSocket clients receive 4 iteration_update events\n5. Cost tracking shows 4x increase ($0.000024 vs $0.000006)\n6. Tests in test_iterative_refinement.py achieve 95% coverage\n7. Backward compatible: Agents without refinement still work",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
     },
     {
-      "id": "aa39d1ed-4437-483e-b136-b86b421964cd",
-      "name": "Create custom exception classes for error handling",
-      "description": "Implement custom exception hierarchy: CerebrasAPIError, InvalidResponseError, DatabaseConnectionError. Replace generic Exception catches with specific error types for better debugging and error handling.",
-      "notes": "Custom exceptions enable precise error handling and better logging. Include context in error details for debugging.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/core/exceptions.py",
-          "type": "CREATE",
-          "description": "New file for custom exception classes"
-        },
-        {
-          "path": "backend/app/services/cerebras.py",
-          "type": "TO_MODIFY",
-          "description": "Replace generic exceptions with custom types",
-          "lineStart": 110,
-          "lineEnd": 130
-        }
-      ],
-      "implementationGuide": "1. Create backend/app/core/exceptions.py:\n   - Base class: ServiceError(Exception)\n   - CerebrasAPIError(ServiceError) - API call failures\n   - InvalidResponseError(ServiceError) - JSON parse errors\n   - DatabaseConnectionError(ServiceError) - DB failures\n2. Update cerebras.py to raise specific exceptions:\n   - Replace 'except Exception' with specific types\n   - Raise CerebrasAPIError on API failures\n   - Raise InvalidResponseError on JSON decode errors\n3. Update error messages to include context\n\nPseudocode:\nclass ServiceError(Exception):\n    def __init__(self, message: str, details: dict = None):\n        self.message = message\n        self.details = details or {}\n        super().__init__(self.message)\n\nclass CerebrasAPIError(ServiceError):\n    pass\n\n# In cerebras.py:\nexcept json.JSONDecodeError as e:\n    raise InvalidResponseError(\n        'Failed to parse Cerebras response',\n        {'raw_response': content, 'error': str(e)}\n    )",
-      "verificationCriteria": "1. Cerebras API returns invalid JSON → Raises InvalidResponseError with context\n2. Cerebras API network error → Raises CerebrasAPIError with details\n3. Exception details include request context for debugging\n4. Error messages are actionable (not generic 'An error occurred')",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "2be38b57-3eef-4c01-b344-f48591bac2b7",
-      "name": "Add retry logic with exponential backoff for Cerebras API",
-      "description": "Implement retry mechanism for Cerebras API calls with exponential backoff. Retry on network errors and rate limits (429), but not on invalid requests (400). Maximum 3 retries with delays: 1s, 2s, 4s.",
-      "notes": "Retries on transient failures only. Invalid requests shouldn't retry. Log retry attempts for monitoring rate limit issues.",
+      "id": "92cc5fb6-8dd7-4938-8b27-5615738681ac",
+      "name": "Phase 2A: Frontend Iterative Refinement Visualization",
+      "description": "Create React components and WebSocket hooks to display real-time iterative refinement progress with 4-step visual flow and performance metrics.",
+      "notes": "Use existing WebSocket infrastructure. Ensure smooth animations when transitioning between steps. Display costs in USD with 6 decimal precision.",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "aa39d1ed-4437-483e-b136-b86b421964cd"
+          "taskId": "ba4bf981-b5f3-4883-93b5-ea4e24386738"
         }
       ],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
       "relatedFiles": [
         {
-          "path": "backend/app/services/cerebras.py",
-          "type": "TO_MODIFY",
-          "description": "Add retry decorator to qualify_lead method",
-          "lineStart": 30,
-          "lineEnd": 130
-        },
-        {
-          "path": "backend/requirements.txt",
-          "type": "TO_MODIFY",
-          "description": "Add tenacity dependency"
-        }
-      ],
-      "implementationGuide": "1. Install tenacity library: pip install tenacity\n2. In cerebras.py, add retry decorator to qualify_lead:\n   - Use @retry decorator from tenacity\n   - Retry on CerebrasAPIError (but not InvalidResponseError)\n   - Stop after 3 attempts\n   - Exponential backoff: wait_exponential(multiplier=1, min=1, max=10)\n3. Log retry attempts for monitoring\n\nPseudocode:\nfrom tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type\n\n@retry(\n    stop=stop_after_attempt(3),\n    wait=wait_exponential(multiplier=1, min=1, max=10),\n    retry=retry_if_exception_type(CerebrasAPIError),\n    before_sleep=lambda retry_state: logger.warning(f'Retry {retry_state.attempt_number}/3')\n)\ndef qualify_lead(self, ...):\n    # Existing implementation\n    # Raises CerebrasAPIError on network failures (will retry)\n    # Raises InvalidResponseError on bad data (won't retry)",
-      "verificationCriteria": "1. Cerebras API returns 429 (rate limit) → Retries 3 times with backoff\n2. Network timeout → Retries 3 times then fails\n3. Invalid request 400 → Fails immediately (no retry)\n4. Retry logs show attempt number and delay",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "14460752-ffe7-40dc-8a06-f4e065e8c519",
-      "name": "Improve token calculation with proper tokenizer",
-      "description": "Replace rough token estimation (len(str())//4) with actual tokenizer from transformers library. Use Llama 3.1 tokenizer to match Cerebras model for accurate cost calculation.",
-      "notes": "Accurate tokenization critical for cost tracking. Llama 3.1 tokenizer matches Cerebras model. Cache tokenizer to avoid reload overhead.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.170Z",
-      "updatedAt": "2025-10-04T18:39:15.170Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/services/cerebras.py",
-          "type": "TO_MODIFY",
-          "description": "Add tokenizer initialization and count_tokens method",
-          "lineStart": 14,
-          "lineEnd": 30
-        },
-        {
-          "path": "backend/app/api/leads.py",
-          "type": "TO_MODIFY",
-          "description": "Replace rough estimation with actual tokenization",
-          "lineStart": 71,
-          "lineEnd": 74
-        },
-        {
-          "path": "backend/requirements.txt",
-          "type": "TO_MODIFY",
-          "description": "Add transformers dependency"
-        }
-      ],
-      "implementationGuide": "1. Install transformers: pip install transformers\n2. In cerebras.py __init__, load tokenizer:\n   - self.tokenizer = AutoTokenizer.from_pretrained('meta-llama/Meta-Llama-3.1-8B')\n   - Cache tokenizer instance (load once)\n3. Replace token estimation in leads.py:\n   - Remove: prompt_est = len(str(request.dict())) // 4\n   - Add: prompt_tokens = len(cerebras_service.encode(prompt_text))\n4. Add encode method to CerebrasService:\n   def encode(self, text: str) -> List[int]:\n       return self.tokenizer.encode(text)\n\nPseudocode:\nclass CerebrasService:\n    def __init__(self):\n        # ... existing init\n        from transformers import AutoTokenizer\n        self.tokenizer = AutoTokenizer.from_pretrained(\n            'meta-llama/Meta-Llama-3.1-8B',\n            cache_dir='/tmp/tokenizer_cache'\n        )\n    \n    def count_tokens(self, text: str) -> int:\n        return len(self.tokenizer.encode(text))",
-      "verificationCriteria": "1. Tokenizer loads successfully on service init\n2. Token counts are accurate (compare with Cerebras reported usage)\n3. Cost calculations reflect actual token usage\n4. Performance: Tokenization adds <50ms to request",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "8c5e6610-fcd1-49cc-b61c-6684298fc5ba",
-      "name": "Implement rate limiting middleware with slowapi",
-      "description": "Add rate limiting to protect /api/v1/leads/qualify endpoint from abuse. Use slowapi library with Redis backend. Limit: 10 requests per minute per IP address.",
-      "notes": "Redis backend enables distributed rate limiting across multiple app instances. Per-IP limiting prevents abuse from single sources.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "backend/app/middleware/rate_limit.py",
+          "path": "frontend/src/hooks/useIterativeRefinement.ts",
           "type": "CREATE",
-          "description": "New middleware for rate limiting configuration"
+          "description": "WebSocket hook for refinement streaming"
         },
         {
-          "path": "backend/app/main.py",
-          "type": "TO_MODIFY",
-          "description": "Add limiter to app state and configure",
-          "lineStart": 1,
-          "lineEnd": 15
-        },
-        {
-          "path": "backend/app/api/leads.py",
-          "type": "TO_MODIFY",
-          "description": "Add rate limit decorator to qualify endpoint",
-          "lineStart": 17,
-          "lineEnd": 20
-        },
-        {
-          "path": "backend/requirements.txt",
-          "type": "TO_MODIFY",
-          "description": "Add slowapi dependency"
-        }
-      ],
-      "implementationGuide": "1. Install slowapi: pip install slowapi\n2. Create backend/app/middleware/rate_limit.py:\n   - Initialize Limiter with Redis backend\n   - Configure default limits\n3. In main.py:\n   - Add limiter to app state\n   - Add @limiter.limit decorator to qualify endpoint\n4. Configure limits:\n   - Default: 60 requests/minute per IP\n   - /api/v1/leads/qualify: 10 requests/minute per IP\n\nPseudocode:\nfrom slowapi import Limiter\nfrom slowapi.util import get_remote_address\n\nlimiter = Limiter(\n    key_func=get_remote_address,\n    storage_uri=settings.REDIS_URL,\n    default_limits=['60/minute']\n)\n\napp.state.limiter = limiter\n\n@router.post('/qualify')\n@limiter.limit('10/minute')\nasync def qualify_lead(...):\n    # existing implementation",
-      "verificationCriteria": "1. Send 11 requests in 1 minute to /qualify → 11th returns 429 Too Many Requests\n2. Wait 1 minute → Rate limit resets, requests succeed\n3. Multiple IPs → Each has independent limit\n4. Redis unavailable → Graceful degradation (allow requests with warning log)",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "7172a979-6d48-457e-8eeb-80d0deb08875",
-      "name": "Create pytest conftest.py with shared test fixtures",
-      "description": "Create backend/tests/conftest.py with reusable fixtures for database sessions, Cerebras API mocking, and test client. Enable consistent test setup across all test files.",
-      "notes": "Fixtures promote DRY in tests. Session rollback ensures test isolation. Mock Cerebras to avoid real API calls in tests.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "backend/tests/conftest.py",
+          "path": "frontend/src/components/IterativeRefinement.tsx",
           "type": "CREATE",
-          "description": "New pytest configuration with shared fixtures"
-        },
-        {
-          "path": "backend/pytest.ini",
-          "type": "REFERENCE",
-          "description": "Existing pytest configuration",
-          "lineStart": 1,
-          "lineEnd": 13
-        }
-      ],
-      "implementationGuide": "1. Create backend/tests/conftest.py with fixtures:\n   - @pytest.fixture db_session: Test DB session with rollback\n   - @pytest.fixture mock_cerebras_success: Mocked successful API response\n   - @pytest.fixture mock_cerebras_failure: Mocked failure scenarios\n   - @pytest.fixture test_client: FastAPI TestClient with overrides\n2. Configure test database URL\n3. Setup automatic transaction rollback for isolation\n\nPseudocode:\nimport pytest\nfrom fastapi.testclient import TestClient\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\n\n@pytest.fixture(scope='function')\ndef db_session():\n    engine = create_engine('postgresql://test:test@localhost/test_db')\n    Session = sessionmaker(bind=engine)\n    session = Session()\n    yield session\n    session.rollback()\n    session.close()\n\n@pytest.fixture\ndef mock_cerebras_success(mocker):\n    return mocker.patch(\n        'app.services.cerebras.CerebrasService.qualify_lead',\n        return_value=(85.0, 'Strong fit', 245)\n    )",
-      "verificationCriteria": "1. Import fixtures in any test file → Available without redefinition\n2. db_session fixture → Provides working test database\n3. Test DB changes rolled back after each test (isolation verified)\n4. mock_cerebras_success → Returns predictable test data",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "3c8e7447-bdb9-4f15-897d-b830635e1b5c",
-      "name": "Add async tests for lead qualification endpoint",
-      "description": "Create comprehensive async tests for POST /api/v1/leads/qualify endpoint covering success cases, Cerebras API mocking, database persistence, and error scenarios.",
-      "notes": "Use AsyncClient for async endpoint testing. Mock at service layer (CerebrasService) not HTTP layer for better unit testing.",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "7172a979-6d48-457e-8eeb-80d0deb08875"
-        }
-      ],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "backend/tests/test_leads.py",
-          "type": "CREATE",
-          "description": "New test file for lead endpoints"
-        },
-        {
-          "path": "backend/tests/conftest.py",
-          "type": "DEPENDENCY",
-          "description": "Uses fixtures from conftest"
-        },
-        {
-          "path": "backend/app/api/leads.py",
-          "type": "REFERENCE",
-          "description": "Endpoint being tested",
-          "lineStart": 17,
-          "lineEnd": 98
-        }
-      ],
-      "implementationGuide": "1. Create backend/tests/test_leads.py with async tests:\n   - test_qualify_lead_success: Mocked Cerebras, verify DB insert\n   - test_qualify_lead_cerebras_failure: API error handling\n   - test_qualify_lead_invalid_json: Cerebras returns non-JSON\n   - test_qualify_lead_score_validation: Score out of range\n2. Use pytest-asyncio for async test support\n3. Mock CerebrasService.qualify_lead method\n4. Verify database records created correctly\n\nPseudocode:\nimport pytest\nfrom httpx import AsyncClient\n\n@pytest.mark.asyncio\nasync def test_qualify_lead_success(mock_cerebras_success, db_session):\n    async with AsyncClient(app=app, base_url='http://test') as client:\n        response = await client.post(\n            '/api/v1/leads/qualify',\n            json={'company_name': 'Test Corp', 'industry': 'SaaS'}\n        )\n        assert response.status_code == 201\n        data = response.json()\n        assert data['qualification_score'] == 85.0\n        # Verify DB insert\n        lead = db_session.query(Lead).filter_by(company_name='Test Corp').first()\n        assert lead is not None",
-      "verificationCriteria": "1. All tests pass with pytest -v tests/test_leads.py\n2. Coverage report shows >95% for leads.py\n3. No real Cerebras API calls made during tests\n4. Tests run in <2 seconds (fast with mocking)",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "93735178-5f31-4109-9b01-4e19909b4a16",
-      "name": "Add edge case tests for error scenarios",
-      "description": "Create comprehensive edge case tests: Cerebras API timeout, database connection failure, invalid score ranges, malformed requests, concurrent request handling.",
-      "notes": "Edge cases expose production failure modes. Test both happy path and failure scenarios. Verify error responses are user-friendly.",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "3c8e7447-bdb9-4f15-897d-b830635e1b5c"
-        },
-        {
-          "taskId": "fbf0c613-0595-4b39-b39c-22b7e4941ec1"
-        }
-      ],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "backend/tests/test_leads.py",
-          "type": "TO_MODIFY",
-          "description": "Add edge case test functions"
-        },
-        {
-          "path": "backend/tests/test_edge_cases.py",
-          "type": "CREATE",
-          "description": "New file dedicated to edge case testing"
-        }
-      ],
-      "implementationGuide": "1. In test_leads.py, add edge case tests:\n   - test_cerebras_timeout: Mock timeout exception\n   - test_cerebras_rate_limit: Mock 429 response, verify retry\n   - test_invalid_score_storage: Score 150 rejected by CHECK constraint\n   - test_db_connection_failure: Mock DB error\n   - test_malformed_request: Missing required fields\n   - test_concurrent_requests: 10 simultaneous requests\n2. Use pytest.raises for exception testing\n3. Mock at appropriate layers (service, database)\n\nPseudocode:\n@pytest.mark.asyncio\nasync def test_cerebras_timeout(mocker):\n    mocker.patch(\n        'app.services.cerebras.CerebrasService.qualify_lead',\n        side_effect=TimeoutError('API timeout')\n    )\n    async with AsyncClient(app=app) as client:\n        response = await client.post('/api/v1/leads/qualify', json={...})\n        assert response.status_code == 500\n        assert 'timeout' in response.json()['detail'].lower()\n\n@pytest.mark.asyncio  \nasync def test_invalid_score_storage(db_session):\n    lead = Lead(qualification_score=150)  # Invalid\n    db_session.add(lead)\n    with pytest.raises(IntegrityError):  # CHECK constraint\n        db_session.commit()",
-      "verificationCriteria": "1. All edge case tests pass\n2. Timeout test verifies retry logic works\n3. Invalid score test confirms CHECK constraint enforcement\n4. Concurrent test verifies no race conditions\n5. Coverage includes error handling paths",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "9a8d018f-63cf-4b7c-8450-8ae715fabd9d",
-      "name": "Update health check tests to remove outdated comments",
-      "description": "Fix misleading test comments in test_health.py. Tests claim 'Database and Redis not configured yet' but they ARE configured in docker-compose.yml. Update tests to actually verify service health.",
-      "notes": "Original test comments were written before Docker setup. Now services ARE configured. Tests should verify actual health, not just return static strings.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "backend/tests/test_health.py",
-          "type": "TO_MODIFY",
-          "description": "Fix incorrect comments and improve health checks",
-          "lineStart": 27,
-          "lineEnd": 44
-        },
-        {
-          "path": "backend/app/api/health.py",
-          "type": "REFERENCE",
-          "description": "Health endpoint implementation to understand behavior"
-        },
-        {
-          "path": "docker-compose.yml",
-          "type": "REFERENCE",
-          "description": "Verify services are actually configured",
-          "lineStart": 1,
-          "lineEnd": 65
-        }
-      ],
-      "implementationGuide": "1. In test_health.py, remove lines 38-42 (incorrect comments)\n2. Update test_detailed_health_check to verify actual status:\n   - With services running: database='operational', redis='operational'\n   - With services down: database='unavailable', redis='unavailable'\n3. Add setup to actually test service connectivity\n4. Mock service checks for unit tests, add integration tests for real checks\n\nPseudocode:\ndef test_detailed_health_with_services(docker_services):\n    # Docker services fixture ensures DB and Redis running\n    response = client.get('/api/health/detailed')\n    data = response.json()\n    assert data['services']['database'] == 'operational'  # Not 'not_configured'\n    assert data['services']['redis'] == 'operational'\n    assert data['services']['cerebras'] in ['operational', 'not_configured']\n\ndef test_detailed_health_without_services(mocker):\n    mocker.patch('app.api.health.check_database', return_value=False)\n    response = client.get('/api/health/detailed')\n    data = response.json()\n    assert data['services']['database'] == 'unavailable'",
-      "verificationCriteria": "1. Test with services up → Shows 'operational'\n2. Test with services down → Shows 'unavailable'\n3. No misleading 'not_configured' assertions\n4. Comments accurately reflect what's being tested",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "e8da4541-c523-45af-bbeb-1ba91d2dbc82",
-      "name": "Implement React ErrorBoundary component",
-      "description": "Create ErrorBoundary component to catch React errors and display user-friendly fallback UI. Prevents white screen of death on component errors.",
-      "notes": "React 19 still requires class component for ErrorBoundary (no hook equivalent). Wrap at App level to catch all component errors.",
-      "status": "pending",
-      "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
-        {
-          "path": "frontend/src/components/ErrorBoundary.tsx",
-          "type": "CREATE",
-          "description": "New ErrorBoundary class component"
-        },
-        {
-          "path": "frontend/src/main.tsx",
-          "type": "TO_MODIFY",
-          "description": "Wrap App with ErrorBoundary"
+          "description": "4-step refinement UI component"
         },
         {
           "path": "frontend/src/App.tsx",
-          "type": "REFERENCE",
-          "description": "App component being wrapped",
-          "lineStart": 1,
-          "lineEnd": 13
+          "type": "TO_MODIFY",
+          "description": "Add /leads/:id/refinement route"
         }
       ],
-      "implementationGuide": "1. Create frontend/src/components/ErrorBoundary.tsx:\n   - Class component with componentDidCatch lifecycle\n   - State: hasError (boolean), error (Error | null)\n   - Render fallback UI when hasError=true\n   - Log errors to console (or external service)\n2. Wrap App component in ErrorBoundary:\n   - In main.tsx, wrap <App /> with <ErrorBoundary>\n3. Create user-friendly error UI with retry button\n\nPseudocode:\nclass ErrorBoundary extends React.Component<Props, State> {\n  constructor(props) {\n    super(props);\n    this.state = { hasError: false, error: null };\n  }\n\n  static getDerivedStateFromError(error: Error) {\n    return { hasError: true, error };\n  }\n\n  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {\n    console.error('React Error:', error, errorInfo);\n    // TODO: Send to error tracking service\n  }\n\n  render() {\n    if (this.state.hasError) {\n      return (\n        <div className='error-container'>\n          <h1>Something went wrong</h1>\n          <button onClick={() => window.location.reload()}>Retry</button>\n        </div>\n      );\n    }\n    return this.props.children;\n  }\n}",
-      "verificationCriteria": "1. Throw error in component → ErrorBoundary catches and shows fallback\n2. Click retry → Page reloads and works\n3. Error logged to console with component stack\n4. UI shows user-friendly message (not technical stack trace)",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+      "implementationGuide": "1. Create frontend/src/hooks/useIterativeRefinement.ts:\n   - WebSocket connection to ws://localhost:8001/ws/stream/{streamId}\n   - Listen for 'iteration_update' events\n   - State management: iterations[], currentIteration, progress percentage\n   - Return { iterations, currentIteration, progress: (current/4)*100 }\n\n2. Create frontend/src/components/IterativeRefinement.tsx:\n   - Display 4-step flow: Reflect → Elaborate → Critique → Refine\n   - Progress bar showing completion percentage\n   - Each step card shows: step name, content preview, latency, status (pending/active/complete)\n   - Highlight current step in blue, completed in green\n   - Show total cost and latency at bottom\n\n3. Add route /leads/:id/refinement to display refinement history\n4. Integrate with existing lead detail page - show refinement toggle\n5. Tailwind CSS styling with smooth animations for step transitions",
+      "verificationCriteria": "1. WebSocket receives all 4 iteration_update events\n2. Progress bar accurately reflects completion (0% → 25% → 50% → 75% → 100%)\n3. Each step displays content preview (max 200 chars)\n4. Total latency and cost displayed correctly\n5. Smooth animations between steps (300ms transition)\n6. Mobile responsive design",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
     },
     {
-      "id": "7a2124c5-9619-4b96-a857-1c704f2f9bbc",
-      "name": "Create API client with error handling and loading states",
-      "description": "Build centralized API client for frontend with built-in error handling, loading states, and retry logic. Use React 19 'use' hook for suspense integration.",
-      "notes": "React 19 'use' hook simplifies async data fetching with Suspense. Centralized client ensures consistent error handling across app.",
+      "id": "adeee671-4c9e-44b9-90c2-f0616c72c1dd",
+      "name": "Phase 2B: Build Multi-Agent Research Pipeline",
+      "description": "Create 5-agent assembly line for web research: QueryGenerator → WebSearcher → Summarizer → Synthesizer → Formatter. Integrates Exa API for web search and applies iterative refinement to article summaries.",
+      "notes": "CRITICAL: Add exa-py to requirements.txt. Set EXA_API_KEY in .env. Total pipeline latency target: <10 seconds. Use asyncio.gather() for parallel article summarization. Store all execution details in research_pipeline_executions table.",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "e8da4541-c523-45af-bbeb-1ba91d2dbc82"
+          "taskId": "ba4bf981-b5f3-4883-93b5-ea4e24386738"
         }
       ],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
       "relatedFiles": [
         {
-          "path": "frontend/src/lib/api-client.ts",
+          "path": "backend/app/services/research/query_generator.py",
           "type": "CREATE",
-          "description": "Centralized API client with error handling"
+          "description": "Query generation agent"
         },
         {
-          "path": "frontend/src/hooks/useLeads.ts",
+          "path": "backend/app/services/research/web_searcher.py",
           "type": "CREATE",
-          "description": "React hook for lead data fetching"
+          "description": "Exa API web search integration"
         },
         {
-          "path": "frontend/src/components/LeadList.tsx",
+          "path": "backend/app/services/research/summarizer.py",
           "type": "CREATE",
-          "description": "Example component using new API client"
+          "description": "Article summarization with refinement"
+        },
+        {
+          "path": "backend/app/services/research/synthesizer.py",
+          "type": "CREATE",
+          "description": "Multi-article synthesis"
+        },
+        {
+          "path": "backend/app/services/research/formatter.py",
+          "type": "CREATE",
+          "description": "Output formatting"
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add exa-py>=1.0.0"
+        },
+        {
+          "path": ".env",
+          "type": "REFERENCE",
+          "description": "Add EXA_API_KEY environment variable"
         }
       ],
-      "implementationGuide": "1. Create frontend/src/lib/api-client.ts:\n   - Base fetch wrapper with error handling\n   - Automatic retry on network errors\n   - TypeScript interfaces for API responses\n2. Create frontend/src/hooks/useLeads.ts:\n   - Use React 19 'use' hook for data fetching\n   - Return loading, error, data states\n3. Add error toast notifications\n\nPseudocode:\n// api-client.ts\nclass APIClient {\n  private baseURL = 'http://localhost:8001/api/v1';\n\n  async post<T>(endpoint: string, data: any): Promise<T> {\n    const response = await fetch(`${this.baseURL}${endpoint}`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(data)\n    });\n    \n    if (!response.ok) {\n      throw new APIError(response.status, await response.json());\n    }\n    \n    return response.json();\n  }\n}\n\n// useLeads.ts (React 19 pattern)\nimport { use } from 'react';\n\nexport function useLeads() {\n  const promise = apiClient.get<Lead[]>('/leads');\n  const leads = use(promise);  // React 19 suspense\n  return leads;\n}",
-      "verificationCriteria": "1. API call success → Data rendered correctly\n2. Network error → Retry automatically, show error toast\n3. 500 error → Show user-friendly error message\n4. Loading state → Show skeleton/spinner during fetch",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+      "implementationGuide": "1. Create backend/app/services/research/ directory\n\n2. query_generator.py:\n   - Analyze lead_data to extract research needs\n   - Generate focused search query using Cerebras (200ms)\n   - Return: {\"query\": str, \"focus_areas\": [str]}\n\n3. web_searcher.py:\n   - Integrate Exa API (pip install exa-py)\n   - Execute search with generated query\n   - Return: [{\"url\": str, \"title\": str, \"content\": str}] (max 10 articles)\n\n4. summarizer.py:\n   - For each article, apply iterative refinement:\n     * Reflect: Extract key points\n     * Elaborate: v1 summary\n     * Critique: Quality check\n     * Refine: Final summary\n   - Parallel processing for multiple articles\n   - Return: [{\"article_id\": str, \"summary\": str, \"key_points\": [str]}]\n\n5. synthesizer.py:\n   - Combine all article summaries into coherent report\n   - Use Cerebras for synthesis (633ms)\n   - Return: {\"synthesis\": str, \"sources\": [str]}\n\n6. formatter.py:\n   - Format final output for enrichment_results table\n   - Add citations, structure sections\n   - Return: {\"formatted_report\": str, \"metadata\": dict}\n\n7. Create ResearchAgent(BaseAgent) that orchestrates all 5 steps\n8. Alembic migration: research_pipeline_executions table\n9. API endpoint: POST /api/research/execute",
+      "verificationCriteria": "1. Complete pipeline executes in <10 seconds\n2. QueryGenerator produces focused search query from lead data\n3. WebSearcher returns 5-10 relevant articles via Exa API\n4. Summarizer applies iterative refinement to each article\n5. Synthesizer combines summaries into coherent report\n6. Formatter structures output with citations\n7. All steps logged in research_pipeline_executions table\n8. Tests achieve 92% coverage",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
     },
     {
-      "id": "a195b7c7-a6bf-4394-8519-897459e0bc68",
-      "name": "Optimize Vite build configuration for production",
-      "description": "Configure Vite for optimal production builds: code splitting, tree shaking, chunk size limits, compression, and bundle analysis.",
-      "notes": "Vite 7 has excellent defaults, but manual chunking improves caching. Remove console.logs in production. Analyze bundle to find bloat.",
+      "id": "09810281-dd8b-439d-9f4d-eb8f98ea43a3",
+      "name": "Phase 2B: Implement Agent Transfer System",
+      "description": "Create function-based agent transfer system enabling intelligent handoffs between specialized agents (QualificationAgent → EnrichmentAgent → BDRAgent) with context preservation and history tracking.",
+      "notes": "CRITICAL: Transfers must preserve all context in JSONB field. Use function_tool pattern from LiveKit tutorial. Maximum 5 transfers per workflow to prevent loops. Track transfer count in workflow_state.",
       "status": "pending",
       "dependencies": [],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
       "relatedFiles": [
         {
-          "path": "frontend/vite.config.ts",
-          "type": "TO_MODIFY",
-          "description": "Add production build optimizations"
+          "path": "backend/app/services/agent_transfer.py",
+          "type": "CREATE",
+          "description": "Agent transfer orchestration"
         },
         {
-          "path": "frontend/package.json",
+          "path": "backend/app/services/base_agent.py",
           "type": "TO_MODIFY",
-          "description": "Add rollup-plugin-visualizer dependency",
-          "lineStart": 17,
-          "lineEnd": 40
+          "description": "Add get_transfer_tools() and transfer_to() methods"
+        },
+        {
+          "path": "backend/app/models/agent_models.py",
+          "type": "TO_MODIFY",
+          "description": "Add AgentTransferHistory model"
+        },
+        {
+          "path": "backend/alembic/versions/",
+          "type": "CREATE",
+          "description": "Migration for agent_transfer_history"
         }
       ],
-      "implementationGuide": "1. Update frontend/vite.config.ts:\n   - Configure rollupOptions for manual chunk splitting\n   - Set chunk size warnings (500KB limit)\n   - Enable minification and tree shaking\n   - Add bundle analyzer plugin\n2. Create optimal chunk strategy:\n   - Vendor chunk: React, React-DOM\n   - Common chunk: Shared utilities\n   - Route chunks: Per-page code splitting\n3. Add compression (gzip/brotli)\n\nPseudocode:\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { visualizer } from 'rollup-plugin-visualizer';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    visualizer({ open: true, gzipSize: true })\n  ],\n  build: {\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          'react-vendor': ['react', 'react-dom'],\n          'ui-components': ['./src/components']\n        }\n      }\n    },\n    chunkSizeWarningLimit: 500,\n    minify: 'terser',\n    terserOptions: {\n      compress: { drop_console: true }\n    }\n  }\n});",
-      "verificationCriteria": "1. npm run build → Bundle size <300KB (gzipped)\n2. Vendor chunk separate from app code (better caching)\n3. No console.logs in production bundle\n4. Bundle visualizer shows no duplicate dependencies",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+      "implementationGuide": "1. Create backend/app/services/agent_transfer.py:\n\n   TransferTool class:\n   - @dataclass with target_agent: str, context: Dict, reason: str\n   - validate() method ensures target exists\n   \n   AgentTransferManager:\n   - transfer_to(from_agent, to_agent, context) async method\n   - Logs transfer in agent_transfer_history table\n   - Updates workflow_state.current_agent_type\n   - Returns new agent instance with injected context\n\n2. Extend BaseAgent class:\n   - Add abstract method get_transfer_tools() → List[TransferTool]\n   - Add async transfer_to(target: str) method\n   - Transfers preserve: lead_id, previous_scores, conversation_history\n\n3. Implement in concrete agents:\n   QualificationAgent.get_transfer_tools():\n     - If score >70: Can transfer to EnrichmentAgent or BDRAgent\n     - If score <40: Can transfer to MarketingAgent\n   \n   EnrichmentAgent.get_transfer_tools():\n     - After enrichment: Can transfer to BDRAgent or GrowthAgent\n\n4. Alembic migration:\n   - agent_transfer_history table (id, workflow_id FK, from_agent, to_agent, transfer_reason, context_passed JSONB, created_at)\n   - ALTER workflow_state ADD transfer_count INT DEFAULT 0, ADD current_agent_type VARCHAR(50)\n\n5. WebSocket events: Emit 'agent_transfer' with from/to agents",
+      "verificationCriteria": "1. Transfers logged in agent_transfer_history with context preservation\n2. workflow_state.transfer_count increments on each transfer\n3. New agent receives context from previous agent\n4. Maximum 5 transfers enforced per workflow\n5. WebSocket emits 'agent_transfer' events\n6. QualificationAgent can transfer to Enrichment/BDR based on score\n7. Tests cover transfer chains (qual → enrich → bdr)\n8. No circular transfer loops possible",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
     },
     {
-      "id": "752c049c-f75d-45b0-bfe9-cfcd2e76842c",
-      "name": "Update README.md with accurate API documentation",
-      "description": "Revise README.md to reflect current implementation: API versioning (/api/v1), actual endpoints, correct Docker setup, updated environment variables, and accurate getting started guide.",
-      "notes": "README is first touchpoint for developers. Must be accurate and current. Include migration guide for /api → /api/v1.",
+      "id": "3b0df390-4c2b-4269-8acf-e039a4d8a1e7",
+      "name": "Phase 2B: Multi-Provider Cerebras Routing",
+      "description": "Create unified provider abstraction supporting 4 Cerebras access methods: Direct API, OpenRouter, LangChain, and Cartesia SDK. Implements intelligent fallback cascade and provider selection based on latency/cost constraints.",
+      "notes": "CRITICAL: Add to requirements.txt: langchain-cerebras>=0.1.0, langchain-core>=0.1.0. Add to .env: OPENROUTER_API_KEY (already exists). Fallback only if primary fails (circuit breaker open). Log all provider selections for monitoring.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/services/providers/cerebras_direct.py",
+          "type": "CREATE",
+          "description": "Direct Cerebras API client"
+        },
+        {
+          "path": "backend/app/services/providers/cerebras_openrouter.py",
+          "type": "CREATE",
+          "description": "OpenRouter proxy client"
+        },
+        {
+          "path": "backend/app/services/providers/cerebras_langchain.py",
+          "type": "CREATE",
+          "description": "LangChain wrapper"
+        },
+        {
+          "path": "backend/app/services/providers/provider_selector.py",
+          "type": "CREATE",
+          "description": "Unified provider manager"
+        },
+        {
+          "path": "backend/app/services/model_router.py",
+          "type": "TO_MODIFY",
+          "description": "Integrate CerebrasProviderManager"
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add langchain-cerebras, langchain-core"
+        }
+      ],
+      "implementationGuide": "1. Create backend/app/services/providers/ directory:\n\n   cerebras_direct.py:\n   - Uses existing OpenAI SDK with base_url=api.cerebras.ai/v1\n   - Fastest option (633ms baseline)\n   \n   cerebras_openrouter.py:\n   - POST https://openrouter.ai/api/v1/chat/completions\n   - Headers: Authorization Bearer {OPENROUTER_API_KEY}\n   - Body: {\"model\": \"meta-llama/llama-3.3-70b-instruct\", \"provider\": {\"only\": [\"Cerebras\"]}}\n   - Add ~50ms proxy overhead\n   \n   cerebras_langchain.py:\n   - from langchain_cerebras import ChatCerebras\n   - llm = ChatCerebras(model=\"llama-3.3-70b\")\n   - Async: await llm.ainvoke(messages)\n   - Add langchain-cerebras>=0.1.0 to requirements.txt\n   \n   provider_selector.py:\n   - CerebrasProviderManager class\n   - select_provider(constraints: Dict) → str\n   - Fallback cascade: Direct → OpenRouter → LangChain\n   - Logs selection in cerebras_provider_routing table\n\n2. Alembic migration:\n   - cerebras_provider_routing (id, agent_execution_id FK, provider VARCHAR(20), model, reason_for_choice, fallback_occurred BOOLEAN, created_at)\n   - ALTER agent_executions ADD provider_used VARCHAR(20) DEFAULT 'direct'\n\n3. Integration with ModelRouter:\n   - Inject CerebrasProviderManager\n   - Route Cerebras calls through provider selector\n   - Track provider performance metrics",
+      "verificationCriteria": "1. All 3 providers (Direct, OpenRouter, LangChain) functional\n2. Fallback cascade works: Direct fails → OpenRouter → LangChain\n3. Provider selection logged in cerebras_provider_routing table\n4. Direct API maintains <700ms latency\n5. OpenRouter adds ~50ms overhead (750ms total)\n6. LangChain async working correctly\n7. Circuit breaker triggers provider fallback\n8. Tests cover all 3 provider paths",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
+    },
+    {
+      "id": "2bdaf98d-ed83-4876-abcf-b47dcc2e5711",
+      "name": "Phase 3: Cartesia Voice Integration",
+      "description": "Integrate Cartesia SDK to create real-time voice agents using Cerebras inference. Implements TalkingNode with ReasoningNode pattern, message conversion, and WebSocket streaming for <2s response latency.",
+      "notes": "CRITICAL: Cartesia handles STT/TTS automatically. Cerebras provides inference only. Target: <2000ms per voice turn (including STT+LLM+TTS). Use Cerebras llama3.1-8b for 633ms LLM latency. Store full conversation in JSONB for analysis.",
       "status": "pending",
       "dependencies": [
         {
-          "taskId": "68926216-3600-47e5-8a61-0751cbf7be65"
+          "taskId": "3b0df390-4c2b-4269-8acf-e039a4d8a1e7"
         }
       ],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
       "relatedFiles": [
+        {
+          "path": "backend/app/services/voice/cartesia_node.py",
+          "type": "CREATE",
+          "description": "TalkingNode with Cerebras backend"
+        },
+        {
+          "path": "backend/app/services/voice/voice_handler.py",
+          "type": "CREATE",
+          "description": "Voice session orchestration"
+        },
+        {
+          "path": "backend/app/api/voice.py",
+          "type": "CREATE",
+          "description": "Voice API endpoints"
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add cartesia-line>=1.0.0"
+        },
+        {
+          "path": ".env",
+          "type": "REFERENCE",
+          "description": "Add CARTESIA_API_KEY"
+        },
+        {
+          "path": "docker-compose.yml",
+          "type": "TO_MODIFY",
+          "description": "Add cartesia-agent service"
+        }
+      ],
+      "implementationGuide": "1. Add dependencies to requirements.txt:\n   - cartesia-line>=1.0.0\n   - Add CARTESIA_API_KEY to .env\n\n2. Create backend/app/services/voice/cartesia_node.py:\n   \n   TalkingNode(ReasoningNode):\n   - __init__(system_prompt: str, client: AsyncCerebras)\n   - tools = [end_call_schema] (Cerebras-compatible)\n   - async process_context(context: ConversationContext) → AsyncGenerator\n   - Calls: cs_client.chat.completions.create(messages, tools, stream=False)\n   - Yields: AgentResponse or ToolResult or EndCall\n   \n   convert_messages_to_cs(messages, sys_prompt) → List[Dict]:\n   - Maps AgentResponse → {\"role\": \"assistant\", \"content\": ...}\n   - Maps UserTranscriptionReceived → {\"role\": \"user\", \"content\": ...}\n   - Maps ToolResult → {\"role\": \"system\", \"content\": f\"Tool {name} called\"}\n   \n   end_call_schema:\n   - Cerebras function schema with strict: True\n   - Parameters: goodbye_message (string, required)\n\n3. Create backend/app/services/voice/voice_handler.py:\n   - async handle_new_call(system: VoiceAgentSystem, call_request: CallRequest)\n   - Creates TalkingNode with Cerebras client\n   - Sets up Bridge for event routing\n   - Handles UserStoppedSpeaking with interruption logic\n   - await system.start() and wait_for_shutdown()\n\n4. Alembic migration:\n   - voice_session_logs table (id, lead_id FK, session_id, platform VARCHAR(20), turn_count, total_duration_seconds, stt_provider, tts_provider, avg_latency_ms, total_cost_usd, conversation_transcript JSONB, created_at)\n\n5. API endpoints:\n   - POST /api/voice/create-session → {\"session_id\": str, \"connection_url\": str}\n   - POST /api/voice/end-session/{session_id}\n   - WebSocket /ws/voice/{session_id}\n\n6. Docker integration:\n   - Add cartesia-agent service to docker-compose.yml\n   - Port 8080 for voice WebSocket",
+      "verificationCriteria": "1. Voice sessions complete <2000ms per turn (STT+LLM+TTS)\n2. TalkingNode properly converts Cartesia events to Cerebras messages\n3. end_call_schema triggers graceful conversation end\n4. Interruptions handled correctly (UserStartedSpeaking → interrupt)\n5. All turns logged in voice_session_logs with conversation_transcript\n6. WebSocket connection stable throughout call\n7. Costs tracked: Cerebras ($0.000006/turn) + Cartesia (separate)\n8. Tests verify full conversation flow",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
+    },
+    {
+      "id": "3e255368-68a1-4835-8bee-0d256c84fb43",
+      "name": "Phase 3: Document Processing for Resume/Job Matching",
+      "description": "Implement PDF processing pipeline to analyze resumes and job postings, extract structured data using Cerebras, and calculate match scores for interview agent use cases.",
+      "notes": "CRITICAL: Handle various PDF formats gracefully (text-based and scanned). Use Cerebras structured outputs for reliable JSON extraction. Store raw text + structured JSONB for flexibility. Resume parsing must extract: work history (company, role, duration), education (degree, institution, year), skills (categorized).",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/services/document/pdf_processor.py",
+          "type": "CREATE",
+          "description": "PDF text extraction"
+        },
+        {
+          "path": "backend/app/services/document/resume_analyzer.py",
+          "type": "CREATE",
+          "description": "Resume structured extraction"
+        },
+        {
+          "path": "backend/app/services/document/job_matcher.py",
+          "type": "CREATE",
+          "description": "Resume-job matching algorithm"
+        },
+        {
+          "path": "backend/app/api/documents.py",
+          "type": "CREATE",
+          "description": "Document API endpoints"
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add PyPDF2, pdfplumber"
+        }
+      ],
+      "implementationGuide": "1. Add dependencies to requirements.txt:\n   - PyPDF2>=3.0.0\n   - pdfplumber>=0.10.0\n\n2. Create backend/app/services/document/pdf_processor.py:\n   - extract_pdf_text(file_path: str) → str\n   - Uses PyPDF2 for basic extraction\n   - Falls back to pdfplumber for complex layouts\n\n3. Create backend/app/services/document/resume_analyzer.py:\n   - analyze_resume(pdf_text: str) → Dict:\n     * Use Cerebras to extract: education, experience, skills, contact\n     * Structured output with JSON schema\n     * Returns: {\"sections\": {\"education\": [...], \"experience\": [...], \"skills\": [...]}, \"years_experience\": int}\n\n4. Create backend/app/services/document/job_matcher.py:\n   - match_resume_to_job(resume_data: Dict, job_posting: str) → float:\n     * Use Cerebras to analyze fit (633ms)\n     * Returns match_score 0.0-1.0\n     * Explanation of match/gaps\n\n5. Alembic migration:\n   - document_analysis table (id, lead_id FK, document_type VARCHAR(50), extracted_text TEXT, structured_data JSONB, match_score FLOAT, created_at)\n\n6. API endpoint:\n   - POST /api/documents/analyze\n   - Body: file (multipart/form-data), lead_id, doc_type\n   - Returns: {\"match_score\": float, \"structured_data\": dict, \"analysis\": str}\n\n7. Integration with ConversationAgent:\n   - Voice agent can query document_analysis table\n   - Use resume insights for interview questions",
+      "verificationCriteria": "1. PDF extraction handles text-based and complex layouts\n2. Resume analyzer extracts education, experience, skills accurately\n3. Structured data follows consistent JSON schema\n4. Job matching produces 0.0-1.0 score with explanation\n5. Match scores align with human evaluation (>80% agreement)\n6. All documents stored in document_analysis table\n7. ConversationAgent can access resume insights\n8. API handles file uploads securely (size limits, validation)",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
+    },
+    {
+      "id": "550fe471-5f1c-4f53-bfef-d59dd40d3274",
+      "name": "Phase 4: Frontend Components for New Patterns",
+      "description": "Create React components and routes for agent transfers, research pipeline, voice interface, and document analysis with WebSocket streaming and real-time updates.",
+      "notes": "Use existing WebSocket infrastructure. Ensure all components are mobile responsive. Add loading states for async operations. Use Tailwind CSS v4 with modern design patterns.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "09810281-dd8b-439d-9f4d-eb8f98ea43a3"
+        },
+        {
+          "taskId": "adeee671-4c9e-44b9-90c2-f0616c72c1dd"
+        },
+        {
+          "taskId": "2bdaf98d-ed83-4876-abcf-b47dcc2e5711"
+        },
+        {
+          "taskId": "3e255368-68a1-4835-8bee-0d256c84fb43"
+        }
+      ],
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
+      "relatedFiles": [
+        {
+          "path": "frontend/src/components/AgentTransferFlow.tsx",
+          "type": "CREATE",
+          "description": "Transfer flow visualization"
+        },
+        {
+          "path": "frontend/src/components/ResearchPipeline.tsx",
+          "type": "CREATE",
+          "description": "5-stage pipeline UI"
+        },
+        {
+          "path": "frontend/src/components/VoiceAgent.tsx",
+          "type": "CREATE",
+          "description": "Voice interface component"
+        },
+        {
+          "path": "frontend/src/components/DocumentAnalyzer.tsx",
+          "type": "CREATE",
+          "description": "Document upload and analysis"
+        },
+        {
+          "path": "frontend/src/hooks/useAgentTransfer.ts",
+          "type": "CREATE",
+          "description": "WebSocket transfer events"
+        },
+        {
+          "path": "frontend/src/hooks/useVoiceSession.ts",
+          "type": "CREATE",
+          "description": "WebSocket voice streaming"
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "type": "TO_MODIFY",
+          "description": "Add 5 new routes"
+        }
+      ],
+      "implementationGuide": "1. Create frontend/src/components/AgentTransferFlow.tsx:\n   - Displays transfer history as flow diagram\n   - Shows: from_agent → transfer_reason → to_agent\n   - Highlights current active agent\n   - Uses Tailwind CSS for visual flow\n\n2. Create frontend/src/components/ResearchPipeline.tsx:\n   - 5-stage pipeline visualization\n   - Each stage: QueryGen → WebSearch → Summarize → Synthesize → Format\n   - Progress indicators, article count, current stage highlight\n   - Displays final synthesis with citations\n\n3. Create frontend/src/components/VoiceAgent.tsx:\n   - Platform selector (Cartesia/LiveKit toggle)\n   - Call button with connection status\n   - Real-time transcript display\n   - Waveform visualizer (audio levels)\n   - End call button\n\n4. Create frontend/src/components/DocumentAnalyzer.tsx:\n   - File upload dropzone (accepts .pdf)\n   - Analysis progress indicator\n   - Match score display (0-100% circular progress)\n   - Structured data viewer (education, experience, skills)\n   - Key insights/gaps highlighting\n\n5. Create hooks:\n   - useAgentTransfer.ts (WebSocket for transfer events)\n   - useVoiceSession.ts (WebSocket for voice streaming)\n\n6. Add routes:\n   - /leads/:id/transfers (agent flow)\n   - /leads/:id/research (pipeline viz)\n   - /leads/:id/voice (voice interface)\n   - /leads/:id/documents (doc analysis)\n   - /workflow/:id (workflow overview)",
+      "verificationCriteria": "1. AgentTransferFlow displays transfer history correctly\n2. ResearchPipeline shows all 5 stages with progress\n3. VoiceAgent connects to WebSocket and streams audio\n4. DocumentAnalyzer uploads PDFs and displays analysis\n5. All components mobile responsive\n6. WebSocket connections handle disconnects gracefully\n7. Loading states during async operations\n8. Error handling with user-friendly messages",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
+    },
+    {
+      "id": "1a60051e-c223-4293-9f13-2849dab6ab9e",
+      "name": "Phase 5: Testing Infrastructure for New Patterns",
+      "description": "Create comprehensive test suites for iterative refinement, agent transfers, research pipeline, voice integration, and document processing. Achieve 90%+ coverage across all new features.",
+      "notes": "CRITICAL: All tests must use mocked AI API calls (no real API keys). Use pytest-asyncio for async tests. Mock Exa API, Cartesia SDK, Cerebras API. Set up CI/CD to run all test suites on PR. Fail build if coverage drops below targets.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "ba4bf981-b5f3-4883-93b5-ea4e24386738"
+        },
+        {
+          "taskId": "09810281-dd8b-439d-9f4d-eb8f98ea43a3"
+        },
+        {
+          "taskId": "adeee671-4c9e-44b9-90c2-f0616c72c1dd"
+        },
+        {
+          "taskId": "2bdaf98d-ed83-4876-abcf-b47dcc2e5711"
+        },
+        {
+          "taskId": "3e255368-68a1-4835-8bee-0d256c84fb43"
+        }
+      ],
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
+      "relatedFiles": [
+        {
+          "path": "backend/tests/test_iterative_refinement.py",
+          "type": "CREATE",
+          "description": "Refinement test suite (95% coverage)"
+        },
+        {
+          "path": "backend/tests/test_agent_transfers.py",
+          "type": "CREATE",
+          "description": "Transfer test suite (90% coverage)"
+        },
+        {
+          "path": "backend/tests/test_research_pipeline.py",
+          "type": "CREATE",
+          "description": "Research test suite (92% coverage)"
+        },
+        {
+          "path": "backend/tests/test_voice_agents.py",
+          "type": "CREATE",
+          "description": "Voice test suite (85% coverage)"
+        },
+        {
+          "path": "backend/tests/test_document_processing.py",
+          "type": "CREATE",
+          "description": "Document test suite"
+        },
+        {
+          "path": "backend/tests/test_provider_routing.py",
+          "type": "CREATE",
+          "description": "Provider routing tests (90% coverage)"
+        },
+        {
+          "path": ".github/workflows/test.yml",
+          "type": "TO_MODIFY",
+          "description": "Add new test suites to CI/CD"
+        }
+      ],
+      "implementationGuide": "1. Create backend/tests/test_iterative_refinement.py:\n   - test_reflect_step() - Verify key attribute extraction\n   - test_elaborate_step() - Check initial generation\n   - test_critique_step() - Validate quality assessment\n   - test_refine_step() - Ensure final output improved\n   - test_full_refinement_loop() - E2E 4-step flow\n   - test_latency_under_2500ms() - Performance benchmark\n   - test_cost_tracking() - Verify 4x cost calculation\n   - Coverage target: 95%\n\n2. Create backend/tests/test_agent_transfers.py:\n   - test_transfer_from_qualification_to_enrichment()\n   - test_transfer_history_logging()\n   - test_context_preservation_across_transfer()\n   - test_maximum_5_transfers_enforced()\n   - test_circular_transfer_prevention()\n   - Coverage target: 90%\n\n3. Create backend/tests/test_research_pipeline.py:\n   - test_query_generation_from_lead_data()\n   - test_exa_web_search_integration()\n   - test_article_summarization_with_refinement()\n   - test_synthesis_of_multiple_articles()\n   - test_final_formatting_with_citations()\n   - test_pipeline_latency_under_10s()\n   - Coverage target: 92%\n\n4. Create backend/tests/test_voice_agents.py:\n   - test_cartesia_talking_node_initialization()\n   - test_message_conversion_to_cerebras_format()\n   - test_end_call_tool_execution()\n   - test_voice_session_logging()\n   - test_conversation_transcript_storage()\n   - test_voice_latency_under_2000ms()\n   - Coverage target: 85%\n\n5. Create backend/tests/test_document_processing.py:\n   - test_pdf_text_extraction()\n   - test_resume_structured_extraction()\n   - test_job_matching_score_calculation()\n   - test_document_analysis_storage()\n\n6. Create backend/tests/test_provider_routing.py:\n   - test_direct_cerebras_api()\n   - test_openrouter_cerebras_proxy()\n   - test_langchain_cerebras_wrapper()\n   - test_provider_fallback_cascade()\n   - test_provider_selection_logging()\n\n7. Performance benchmarks:\n   - test_refinement_latency_sla() - <2500ms\n   - test_voice_response_sla() - <2000ms\n   - test_research_pipeline_sla() - <10s",
+      "verificationCriteria": "1. All test suites pass with required coverage\n2. Iterative refinement: 95% coverage achieved\n3. Agent transfers: 90% coverage achieved\n4. Research pipeline: 92% coverage achieved\n5. Voice agents: 85% coverage achieved\n6. Provider routing: 90% coverage achieved\n7. Performance benchmarks validate SLA compliance\n8. CI/CD fails if coverage drops below thresholds\n9. All tests use mocked APIs (no real API calls)",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
+    },
+    {
+      "id": "efdd132b-f6cd-4acf-99e4-7f9fccf09fb1",
+      "name": "Phase 5: Deployment and Monitoring Setup",
+      "description": "Configure CI/CD pipelines, monitoring dashboards, and production deployment for all new Cerebras patterns. Implement canary rollout strategy and real-time alerting.",
+      "notes": "CRITICAL: Canary rollout required for production. Monitor error rates closely during rollout. Have rollback plan ready. Update all documentation before launch. Set up monitoring dashboards BEFORE deployment.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "1a60051e-c223-4293-9f13-2849dab6ab9e"
+        }
+      ],
+      "createdAt": "2025-10-04T22:00:52.887Z",
+      "updatedAt": "2025-10-04T22:00:52.887Z",
+      "relatedFiles": [
+        {
+          "path": ".github/workflows/test.yml",
+          "type": "TO_MODIFY",
+          "description": "Add new test suites"
+        },
+        {
+          "path": ".github/workflows/deploy.yml",
+          "type": "TO_MODIFY",
+          "description": "Add deployment steps"
+        },
+        {
+          "path": "backend/app/core/logging.py",
+          "type": "TO_MODIFY",
+          "description": "Add Datadog/Sentry metrics"
+        },
         {
           "path": "README.md",
           "type": "TO_MODIFY",
-          "description": "Update all documentation sections for accuracy"
+          "description": "Document all new patterns"
         },
-        {
-          "path": "backend/app/api/leads.py",
-          "type": "REFERENCE",
-          "description": "Reference for current API implementation"
-        }
-      ],
-      "implementationGuide": "1. Update README.md sections:\n   - API Endpoints: Change to /api/v1 prefix\n   - Environment Variables: Add new required vars (from updated Settings)\n   - Getting Started: Verify commands still work\n   - Testing: Update test commands if changed\n2. Remove any outdated 'TODO' or 'Coming Soon' sections\n3. Add architecture diagram if missing\n4. Update performance metrics if changed\n\nChanges:\n- Endpoints: /api/health → /api/v1/health\n- Add: Rate limiting documentation\n- Add: Error response format examples\n- Update: Test coverage percentage\n- Add: Troubleshooting section for common issues",
-      "verificationCriteria": "1. All curl examples work as documented\n2. Environment variable list complete and accurate\n3. Getting started steps verified on clean system\n4. No references to unimplemented features",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
-    },
-    {
-      "id": "49d78427-e6f7-4c75-a8cd-b549c64b72fa",
-      "name": "Update CLAUDE.md with architectural changes",
-      "description": "Update CLAUDE.md to document new patterns: custom exceptions, rate limiting, API versioning, startup validation, retry logic. Ensure AI assistants have accurate context.",
-      "notes": "CLAUDE.md guides AI assistants. Keep it updated so they follow current patterns. Include anti-patterns to avoid.",
-      "status": "pending",
-      "dependencies": [
-        {
-          "taskId": "68926216-3600-47e5-8a61-0751cbf7be65"
-        },
-        {
-          "taskId": "8c5e6610-fcd1-49cc-b61c-6684298fc5ba"
-        },
-        {
-          "taskId": "aa39d1ed-4437-483e-b136-b86b421964cd"
-        }
-      ],
-      "createdAt": "2025-10-04T18:39:15.171Z",
-      "updatedAt": "2025-10-04T18:39:15.171Z",
-      "relatedFiles": [
         {
           "path": "CLAUDE.md",
           "type": "TO_MODIFY",
-          "description": "Add new architectural patterns and best practices"
+          "description": "Update development guidelines"
         },
         {
-          "path": "backend/app/core/exceptions.py",
-          "type": "REFERENCE",
-          "description": "Reference for exception documentation"
-        },
-        {
-          "path": "backend/app/middleware/rate_limit.py",
-          "type": "REFERENCE",
-          "description": "Reference for rate limiting docs"
+          "path": "CEREBRAS_PATTERNS.md",
+          "type": "CREATE",
+          "description": "Cerebras integration tutorial"
         }
       ],
-      "implementationGuide": "1. Update CLAUDE.md sections:\n   - Add: Custom exception hierarchy documentation\n   - Add: Rate limiting configuration and limits\n   - Add: API versioning strategy (/api/v1)\n   - Add: Startup validation checklist\n   - Update: Error handling patterns\n2. Add code examples for new patterns:\n   - How to use custom exceptions\n   - How to add rate limits to endpoints\n   - How to handle retries\n3. Update coding standards if new patterns introduced\n\nNew sections:\n## Error Handling\n- Use custom exceptions from app.core.exceptions\n- CerebrasAPIError for AI service failures\n- Always include context in error details\n\n## Rate Limiting  \n- Default: 60 req/min per IP\n- Cerebras endpoints: 10 req/min per IP\n- Use @limiter.limit() decorator\n\n## API Versioning\n- All new endpoints use /api/v1 prefix\n- Legacy /api routes deprecated but maintained",
-      "verificationCriteria": "1. All new patterns documented with examples\n2. Anti-patterns clearly marked (what NOT to do)\n3. Code examples are copy-pasteable and work\n4. Migration guide from old patterns to new",
-      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+      "implementationGuide": "1. Update .github/workflows/test.yml:\n   - Add 7 new test suite commands\n   - Fail on coverage drop below thresholds\n   - Run performance benchmarks in CI\n\n2. Update .github/workflows/deploy.yml:\n   - Add docker-compose up -d cartesia-agent\n   - Run Alembic migrations: alembic upgrade head\n   - Canary deployment: 10% → 50% → 100% traffic\n   - Rollback on error threshold (>5% error rate)\n\n3. Datadog Custom Metrics:\n   - datadog.increment('refinement.iterations', tags=['step:reflect/elaborate/critique/refine'])\n   - datadog.histogram('refinement.latency_ms')\n   - datadog.increment('agent.transfer', tags=['from:qual', 'to:enrich'])\n   - datadog.histogram('research_pipeline.duration_ms')\n   - datadog.histogram('voice.latency_ms')\n   - datadog.increment('provider.selection', tags=['provider:direct/openrouter/langchain'])\n\n4. Sentry Error Tracking:\n   - sentry.capture_message('Agent transfer', level='info', extra={...})\n   - sentry.capture_exception(refinement_error)\n\n5. Alerting Rules:\n   - Alert if refinement latency >3000ms (20% above SLA)\n   - Alert if voice latency >2400ms (20% above SLA)\n   - Alert if research pipeline >12s (20% above SLA)\n   - Alert if cost exceeds $600/month (20% above target)\n   - Alert if error rate >5% for any pattern\n\n6. Documentation Updates:\n   - Update README.md with all new patterns\n   - Update CLAUDE.md with implementation details\n   - Create CEREBRAS_PATTERNS.md tutorial\n\n7. Database Backup Strategy:\n   - Backup production DB before migrations\n   - Test migrations on staging first\n   - Alembic rollback scripts for each migration",
+      "verificationCriteria": "1. CI/CD runs all 7 test suites successfully\n2. Canary deployment progresses: 10% → 50% → 100%\n3. Datadog dashboards show all custom metrics\n4. Sentry captures errors from all new patterns\n5. Alerting rules trigger on SLA violations\n6. README.md reflects all new capabilities\n7. CEREBRAS_PATTERNS.md tutorial complete\n8. Database backups working before migrations\n9. Rollback procedures tested and documented",
+      "analysisResult": "CEREBRAS MULTI-AGENT PATTERNS INTEGRATION\n\n**PROJECT GOAL**: Integrate 4 advanced Cerebras patterns into sales-agent platform to create production-ready multi-agent system with iterative refinement, research pipeline, agent transfers, and voice capabilities.\n\n**TECHNICAL FOUNDATION**:\n- Current: FastAPI + BaseAgent pattern + ModelRouter + WebSocket streaming\n- Cerebras: 633ms latency (39% under 1000ms target), $0.000006 per call\n- Architecture: 4 AI providers (Cerebras, Claude, DeepSeek, Ollama) with circuit breakers\n\n**KEY PATTERNS TO INTEGRATE**:\n1. Iterative Refinement: 4-step loop (reflect → elaborate → critique → refine) for quality\n2. Research Pipeline: 5-agent assembly (QueryGen → WebSearch → Summarize → Synthesize → Format)\n3. Agent Transfers: Function-based handoffs using @transfer_tool decorator\n4. Voice Integration: Cartesia SDK + optional LiveKit for real-time conversations\n5. Document Processing: PDF analysis for resume/job matching\n6. Multi-Provider: Direct/OpenRouter/LangChain Cerebras access\n\n**PERFORMANCE TARGETS**:\n- Iterative refinement: <2500ms total latency\n- Voice response: <2000ms per turn\n- Research pipeline: <10s end-to-end\n- Monthly cost: <$500 for 10K leads\n\n**INTEGRATION STRATEGY**:\n- Extend BaseAgent with new methods (iterate_refine, transfer_to, get_transfer_tools)\n- Enhance ModelRouter with provider abstraction (CerebrasProviderManager)\n- Add 6 new database tables via Alembic migrations\n- Create 35+ new files across backend/frontend\n- Maintain backward compatibility with existing endpoints"
     }
   ]
 }

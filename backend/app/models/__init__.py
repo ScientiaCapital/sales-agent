@@ -11,6 +11,17 @@ from .agent_models import (
     MarketingCampaign,
     BookedMeeting
 )
+from .customer_models import (
+    Customer,
+    KnowledgeDocument,
+    CustomerAgent,
+    CustomerQuota
+)
+from .social_media import (
+    SocialMediaActivity,
+    ContactSocialProfile,
+    OrganizationChart
+)
 
 __all__ = [
     "Base",
@@ -23,5 +34,12 @@ __all__ = [
     "AgentWorkflow",
     "EnrichedLead",
     "MarketingCampaign",
-    "BookedMeeting"
+    "BookedMeeting",
+    "Customer",
+    "KnowledgeDocument",
+    "CustomerAgent",
+    "CustomerQuota",
+    "SocialMediaActivity",
+    "ContactSocialProfile",
+    "OrganizationChart"
 ]

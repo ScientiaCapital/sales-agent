@@ -5,9 +5,31 @@ from .lead import (
     LeadQualificationResponse,
     LeadListResponse
 )
+from .customer import (
+    CustomerRegistrationRequest,
+    CustomerRegistrationResponse,
+    AgentDeploymentRequest,
+    AgentDeploymentResponse,
+    AgentStatusResponse,
+    DocumentUploadResponse,
+    DocumentSearchRequest,
+    DocumentSearchResult,
+    DocumentListResponse,
+    CustomerQuotaResponse
+)
 
 __all__ = [
     "LeadQualificationRequest",
     "LeadQualificationResponse",
-    "LeadListResponse"
+    "LeadListResponse",
+    "CustomerRegistrationRequest",
+    "CustomerRegistrationResponse",
+    "AgentDeploymentRequest",
+    "AgentDeploymentResponse",
+    "AgentStatusResponse",
+    "DocumentUploadResponse",
+    "DocumentSearchRequest",
+    "DocumentSearchResult",
+    "DocumentListResponse",
+    "CustomerQuotaResponse"
 ]

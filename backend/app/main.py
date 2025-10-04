@@ -7,6 +7,10 @@ from fastapi.responses import JSONResponse
 
 from app.api import health
 from app.api import leads
+from app.api import documents
+from app.api import contacts
+from app.api import knowledge
+from app.api import customers
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -70,6 +74,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(leads.router)
+app.include_router(documents.router)
+app.include_router(contacts.router)
+app.include_router(knowledge.router)  # Task 24: Knowledge base endpoints
+app.include_router(customers.router)  # Task 25: Customer platform endpoints
 
 
 @app.get("/")

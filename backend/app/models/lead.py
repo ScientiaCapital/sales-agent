@@ -3,6 +3,7 @@ Lead model for storing and managing sales leads
 """
 from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from .database import Base
 
 
@@ -40,6 +41,11 @@ class Lead(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     qualified_at = Column(DateTime(timezone=True))  # When AI qualification occurred
+
+    # Relationships to social media tables
+    social_activity = relationship("SocialMediaActivity", back_populates="lead", cascade="all, delete-orphan")
+    contact_profiles = relationship("ContactSocialProfile", back_populates="lead", cascade="all, delete-orphan")
+    org_charts = relationship("OrganizationChart", back_populates="lead", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Lead(id={self.id}, company='{self.company_name}', score={self.qualification_score})>"

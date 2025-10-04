@@ -319,11 +319,73 @@
         "dependencies": [],
         "status": "pending",
         "subtasks": []
+      },
+      {
+        "id": 23,
+        "title": "Create CSV Lead Import System",
+        "description": "Develop a system to import and store 1,000+ leads with company data (name, industry, size, website) into PostgreSQL for batch qualification and analysis.",
+        "details": "1. **CSV Parsing**: Use Python's `csv` module or `pandas` for efficient parsing of large CSV files (>1,000 rows). Validate required fields (name, industry, size, website) and handle missing or malformed data gracefully.\n2. **Database Integration**: Implement bulk insertion using PostgreSQL's `COPY` command or `psycopg2.extras.execute_batch` for performance optimization. Ensure data is sanitized to prevent SQL injection.\n3. **Error Handling**: Leverage custom exceptions (`LeadValidationError`, `DatabaseConnectionError`) from Task 22 for domain-specific error reporting. Log errors with structured logging (Task 15).\n4. **Batch Processing**: Implement chunking logic (e.g., 100 leads per batch) to avoid memory issues. Use async/await or threading for parallel processing if needed.\n5. **Validation**: Add pre-import validation (e.g., website URL format, industry categorization) and post-import verification (e.g., row counts, duplicates).\n6. **API Endpoint**: Create a REST endpoint (`POST /api/leads/import`) accepting multipart/form-data for file upload. Use FastAPI's `UploadFile` for streaming file handling.\n7. **Performance**: Optimize for throughput (~1,000 leads/sec) and monitor with logging (Task 15). Consider using Redis for temporary storage during processing.\n\n**Technologies**: FastAPI, PostgreSQL, pandas, psycopg2, Redis (optional).",
+        "testStrategy": "1. **Unit Tests**: Mock CSV parsing and database operations to verify validation and insertion logic.\n2. **Integration Tests**: Test the `/api/leads/import` endpoint with:\n   - Valid CSV files (1,000+ rows).\n   - Invalid files (missing fields, malformed data).\n   - Edge cases (empty files, large files >10MB).\n3. **Performance Tests**: Measure import time for 1,000 leads and validate against SLA (<5 seconds).\n4. **Error Handling**: Verify custom exceptions and logging for failed imports.\n5. **Database Verification**: Query PostgreSQL to confirm all leads are stored correctly.\n6. **Load Testing**: Simulate concurrent imports (10+ requests) to ensure system stability.",
+        "status": "pending",
+        "dependencies": [
+          13,
+          15,
+          22
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 24,
+        "title": "Build Customer-Facing Knowledge Management Interface",
+        "description": "Develop a user interface for companies to upload ICP docs, target market info, and sales playbooks, with backend integration for document analysis and structured storage in PostgreSQL.",
+        "details": "1. **Frontend Development**: Use React and TypeScript to create a responsive and intuitive interface for document uploads. Include drag-and-drop functionality, file validation, and progress tracking. 2. **Backend Integration**: Implement FastAPI endpoints to handle file uploads, process documents using the Document Analysis System (Task 7), and store structured data in PostgreSQL. 3. **Document Processing**: Leverage the Cerebras gist memory pattern (Task 7) for summarization and key item extraction. 4. **Database Storage**: Design PostgreSQL tables to store structured knowledge (e.g., ICP docs, market info, playbooks) with proper indexing for efficient retrieval. 5. **Security**: Ensure secure file handling and storage, including sanitization and access controls. 6. **User Feedback**: Provide real-time feedback on upload status and processing results.",
+        "testStrategy": "1. **Frontend Testing**: Use Cypress for end-to-end testing of the upload interface, including file validation and error handling. 2. **Backend Testing**: Mock document processing to test FastAPI endpoints for upload and storage. 3. **Integration Testing**: Verify seamless interaction between the frontend, backend, and Document Analysis System. 4. **Performance Testing**: Measure upload and processing times for large documents. 5. **Security Testing**: Validate file sanitization and access controls.",
+        "status": "pending",
+        "dependencies": [
+          7,
+          8,
+          15
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 25,
+        "title": "Implement Multi-Tenant Agent Team Deployment System",
+        "description": "Develop a system where each customer gets dedicated agents (QualificationAgent, EnrichmentAgent, ResearchAgent, BDRAgent) configured with their ICP knowledge base to process CSV leads in parallel and return scored prospects with personalized outreach recommendations.",
+        "details": "1. **Multi-Tenant Architecture**: Design a scalable multi-tenant system where each customer has isolated agent instances.\n2. **Agent Configuration**: Implement dynamic agent configuration using customer-specific ICP knowledge bases.\n3. **Parallel Processing**: Use asynchronous task queues (e.g., Celery with Redis/RabbitMQ) to process CSV leads in parallel.\n4. **Iterative Refinement**: Implement iterative refinement logic for lead quality improvement.\n5. **Scoring and Recommendations**: Integrate with Task 2 (Lead Qualification Engine Core) for scoring and generate personalized outreach recommendations.\n6. **Error Handling**: Add robust error handling and retry mechanisms for agent failures.\n7. **Monitoring**: Implement logging and monitoring for agent performance and lead processing status.\n8. **Security**: Ensure data isolation between tenants and compliance with Task 9 (Security and Compliance).",
+        "testStrategy": "1. **Multi-Tenant Isolation**: Verify that agent instances and data are isolated per customer.\n2. **Agent Configuration**: Test dynamic agent setup with mock ICP knowledge bases.\n3. **Parallel Processing**: Validate parallel lead processing with large CSV files.\n4. **Refinement Logic**: Test iterative refinement by simulating low-quality leads.\n5. **Scoring Integration**: Ensure seamless integration with Task 2 for lead scoring.\n6. **Error Handling**: Simulate agent failures and verify retry mechanisms.\n7. **Performance**: Benchmark processing speed and resource usage.\n8. **Security**: Confirm compliance with GDPR and SOC 2 controls (Task 9).",
+        "status": "pending",
+        "dependencies": [
+          2,
+          9
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 26,
+        "title": "Build ATL Contact Discovery System",
+        "description": "Develop a system to scrape company websites and LinkedIn for decision-maker contacts, analyze org charts using Cerebras, and store enriched contacts in PostgreSQL with relationship graphs.",
+        "details": "1. **Web Scraping**: Use Python libraries like `BeautifulSoup` and `Scrapy` to scrape company websites (About Us, Management Team pages) and LinkedIn (company pages, profiles). Implement rate limiting and CAPTCHA handling to avoid bans.\n2. **LinkedIn API Integration**: Leverage LinkedIn's API (where possible) for structured data extraction. Ensure compliance with LinkedIn's terms of service.\n3. **Org Chart Analysis**: Implement a Cerebras-based algorithm to analyze org charts, identify reporting relationships, and score contact priority based on relevance and influence.\n4. **PostgreSQL Storage**: Store enriched contacts in PostgreSQL with a relationship graph schema (`nodes` for contacts, `edges` for relationships). Use `pg_trgm` extension for fuzzy matching.\n5. **Intelligent Dot-Connecting**: Develop a scoring algorithm to prioritize contacts for outreach based on factors like seniority, relevance, and historical engagement.\n6. **Error Handling**: Implement robust error handling for scraping failures, API rate limits, and database issues.\n7. **Performance Optimization**: Use asynchronous scraping (`asyncio` or `aiohttp`) for faster data collection and bulk inserts (`COPY` command) for PostgreSQL.\n\n**Technologies**: Python, BeautifulSoup, Scrapy, LinkedIn API, Cerebras, PostgreSQL, pg_trgm, asyncio.",
+        "testStrategy": "1. **Scraping Validation**: Test scraping logic with mock websites and LinkedIn pages to verify data extraction accuracy.\n2. **Org Chart Analysis**: Validate Cerebras algorithm with sample org charts to ensure correct relationship identification and scoring.\n3. **Database Integration**: Test PostgreSQL schema and queries with synthetic data to verify relationship graph functionality.\n4. **Performance Testing**: Measure scraping speed and database insertion rates under load (1,000+ contacts).\n5. **Error Handling**: Simulate failures (CAPTCHA, rate limits) to verify graceful degradation and retry logic.\n6. **Compliance Check**: Ensure LinkedIn API usage complies with terms of service.",
+        "status": "pending",
+        "dependencies": [
+          4,
+          7,
+          10,
+          13,
+          15,
+          23
+        ],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-04T19:09:27.313Z",
+      "updated": "2025-10-04T22:03:31.919Z",
       "description": "Tasks for master context"
     }
   }

@@ -48,3 +48,22 @@ pre-commit==4.0.1
 # AI/ML (will be expanded in Task 2)
 openai==1.52.0  # For OpenAI-compatible APIs including Cerebras
 anthropic==0.39.0  # Claude streaming and batch API support
+
+# Firebase SDK
+firebase-admin==6.5.0  # Firebase Admin SDK for server-side operations
+google-cloud-firestore==2.19.0  # Firestore client library
+google-cloud-storage==2.18.2  # Firebase Storage operations
+
+# Document Processing
+pdfplumber==0.11.4  # Best PDF text extraction (Context7 recommended)
+python-docx==1.1.2  # DOCX document parsing
+pypandoc==1.13  # Universal document conversion
+
+# Social Media Scraping
+tweepy==4.14.0  # Twitter API v2 client
+praw==7.7.1  # Reddit API wrapper
+
+# Vector Embeddings
+sentence-transformers==3.3.1  # For generating text embeddings
+numpy==2.0.2  # Required for vector operations
+pgvector==0.3.6  # PostgreSQL vector extension support

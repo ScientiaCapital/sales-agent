@@ -1,7 +1,7 @@
 """
 Lead qualification API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -9,14 +9,16 @@ from datetime import datetime
 from app.models import Lead, CerebrasAPICall, get_db
 from app.schemas import LeadQualificationRequest, LeadQualificationResponse, LeadListResponse
 from app.services import CerebrasService
+from app.services.csv_importer import CSVImportService
 from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
-# Initialize Cerebras service
+# Initialize services
 cerebras_service = CerebrasService()
+csv_importer = CSVImportService()
 
 
 @router.post("/qualify", response_model=LeadQualificationResponse, status_code=201)
@@ -126,3 +128,71 @@ async def get_lead(lead_id: int, db: Session = Depends(get_db)):
     if not lead:
         raise HTTPException(status_code=404, detail=f"Lead with ID {lead_id} not found")
     return lead
+
+
+@router.post("/import/csv")
+async def import_leads_from_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Bulk import leads from CSV file
+
+    **Performance Target**: 1,000 leads in < 5 seconds
+
+    **Required CSV Columns**:
+    - company_name (max 255 chars)
+    - industry
+    - company_website
+
+    **Optional CSV Columns**:
+    - company_size
+    - contact_name
+    - contact_email (must be valid email format)
+    - contact_phone
+    - contact_title
+    - notes
+
+    **CSV Format**:
+    ```csv
+    company_name,industry,company_website,company_size,contact_name,contact_email
+    TechCorp,SaaS,https://techcorp.com,50-200,John Doe,john@techcorp.com
+    DataInc,Analytics,https://datainc.com,200-500,Jane Smith,jane@datainc.com
+    ```
+
+    Returns import statistics including:
+    - Total leads processed
+    - Successfully imported count
+    - Import duration in milliseconds
+    - Import rate (leads per second)
+    """
+    # Validate file type
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(
+            status_code=400,
+            detail="File must be a CSV file (.csv extension)"
+        )
+
+    # Read file content
+    try:
+        content = await file.read()
+        csv_content = content.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="File must be UTF-8 encoded"
+        )
+
+    # Parse CSV and validate
+    leads = csv_importer.parse_csv_file(csv_content)
+
+    # Bulk import leads
+    result = csv_importer.bulk_import_leads(db, leads)
+
+    logger.info(f"CSV import completed: {file.filename} - {result}")
+    
+    return {
+        "message": "Leads imported successfully",
+        "filename": file.filename,
+        **result
+    }
