@@ -209,11 +209,121 @@
         ],
         "status": "pending",
         "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Implement Global Exception Handling",
+        "description": "Add global exception handlers for RequestValidationError, HTTPException, and generic Exception to prevent stack trace leaks and improve error UX.",
+        "details": "Create exception handlers in `backend/app/main.py` using `@app.exception_handler` decorators. Log all exceptions with request context and return sanitized error messages in JSON format.",
+        "testStrategy": "Test by triggering various errors and verifying that structured JSON responses are returned without stack traces. Ensure all errors are logged with correlation IDs.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Replace Generic Exception Catching",
+        "description": "Replace generic exception catching with specific exception types to properly propagate errors and mask bugs.",
+        "details": "Update `backend/app/services/cerebras.py` to catch specific exceptions instead of `except Exception`. Raise `HTTPException(503)` for API failures and handle `json.JSONDecodeError` appropriately.",
+        "testStrategy": "Test by simulating various API failures and verifying that appropriate HTTP exceptions are raised. Ensure no generic exception handlers remain.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Add Structured Logging Infrastructure",
+        "description": "Implement structured logging throughout the codebase to enable debugging of production issues.",
+        "details": "Create `backend/app/core/logging.py` with structured logging. Add loggers to all modules (main.py, leads.py, cerebras.py, database.py) and log API calls, database operations, and errors with context.",
+        "testStrategy": "Verify that all endpoints log requests/responses and that errors are logged with stack traces. Check that performance metrics are captured in logs.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Fix CORS Security Configuration",
+        "description": "Restrict CORS methods and headers to prevent CSRF attack vulnerabilities.",
+        "details": "Update `backend/app/main.py` to restrict `allow_methods` to `[",
+        "testStrategy": "Test by making various CORS requests and verifying that only explicit methods/headers are allowed. Ensure OPTIONS preflight requests work correctly.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Rotate Exposed API Keys",
+        "description": "Revoke and rotate exposed API keys to prevent financial exposure from API abuse.",
+        "details": "Revoke all exposed keys in `.env` and generate new API keys from providers. Audit git history for leaked credentials and create `.env.example` template with placeholders.",
+        "testStrategy": "Verify that old keys are revoked and non-functional. Ensure new keys work in all environments and `.env.example` is created with no real values.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Remove Hardcoded Database Passwords",
+        "description": "Remove hardcoded database passwords from `docker-compose.yml` to enhance security.",
+        "details": "Remove all password defaults from `docker-compose.yml` and use `${VAR:?Error message}` to require explicit .env values. Update pgAdmin password to use environment variable.",
+        "testStrategy": "Test by running `docker-compose` with missing .env values and verifying that it fails gracefully. Ensure no passwords are in `docker-compose.yml`.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 19,
+        "title": "Implement API Versioning",
+        "description": "Update all router includes to use `settings.API_V1_PREFIX` to implement API versioning.",
+        "details": "Update all router includes in `backend/app/main.py` to use `settings.API_V1_PREFIX`. Update frontend to use versioned paths and add version to OpenAPI docs title.",
+        "testStrategy": "Verify that all endpoints are accessible at `/api/v1/` prefix and old `/api/` paths return 404. Ensure API docs show v1 in title.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 20,
+        "title": "Add Database Connection Resilience",
+        "description": "Add `pool_pre_ping` and connection retry logic to improve database connection resilience.",
+        "details": "Update `backend/app/models/database.py` to add `pool_pre_ping=True` to engine config. Replace string replacement with SQLAlchemy URL parsing and make pool_size/max_overflow environment-configurable.",
+        "testStrategy": "Test by simulating database restarts and verifying that the app survives. Ensure engine detects stale connections before use.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 21,
+        "title": "Optimize Database Schema",
+        "description": "Add indexes and CHECK constraints to optimize database schema.",
+        "details": "Update `backend/app/models/lead.py` to add composite index on (qualification_score, created_at) and CHECK constraint for score range (0-100). Add index on contact_email and remove redundant `db.flush()`.",
+        "testStrategy": "Verify that query performance is improved on score filtering and invalid scores are rejected at database level. Ensure Alembic migration is generated and applied.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 22,
+        "title": "Add Custom Exception Classes",
+        "description": "Create custom exception classes to improve error categorization and handling.",
+        "details": "Create `backend/app/core/exceptions.py` and add `CerebrasAPIError`, `LeadValidationError`, `DatabaseConnectionError`. Inherit from appropriate base exceptions and use in services.",
+        "testStrategy": "Verify that all services use custom exceptions and exception handlers map to HTTP status codes. Ensure error messages are domain-specific.",
+        "priority": "medium",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-04T13:10:03.542Z",
+      "updated": "2025-10-04T19:09:27.313Z",
       "description": "Tasks for master context"
     }
   }

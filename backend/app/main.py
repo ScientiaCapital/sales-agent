@@ -1,11 +1,17 @@
 """FastAPI application entry point."""
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError, HTTPException
+from fastapi.responses import JSONResponse
 
 from app.api import health
 from app.api import leads
 from app.core.config import settings
+from app.core.logging import setup_logging
+
+# Configure logging
+logger = setup_logging(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -22,9 +28,44 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Explicit methods only
+    allow_headers=["Content-Type", "Authorization"],  # Required headers only
 )
+
+
+# Exception Handlers
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle request validation errors (422)."""
+    logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors(), "body": exc.body}
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Handle HTTP exceptions with proper logging."""
+    logger.error(f"HTTP {exc.status_code} on {request.url.path}: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Handle all unhandled exceptions to prevent stack trace leaks."""
+    logger.error(
+        f"Unhandled exception on {request.url.path}: {exc}",
+        exc_info=True  # Include stack trace in logs
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"}
+    )
+
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["health"])
