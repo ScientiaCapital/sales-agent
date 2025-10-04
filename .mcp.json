@@ -1,0 +1,64 @@
+{
+	"mcpServers": {
+		"taskmaster-ai": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"--package=task-master-ai",
+				"task-master-ai"
+			],
+			"env": {
+				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+				"DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}",
+				"OLLAMA_API_KEY": "${OLLAMA_API_KEY}",
+				"OPENAI_API_KEY": "${OPENAI_API_KEY}",
+				"GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+				"XAI_API_KEY": "${XAI_API_KEY}",
+				"OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}",
+				"MISTRAL_API_KEY": "${MISTRAL_API_KEY}",
+				"PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+			}
+		},
+		"memory": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-memory"
+			]
+		},
+		"sequential-thinking": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-sequential-thinking"
+			]
+		},
+		"shrimp-task-manager": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@shrimp-task-manager/mcp-server"
+			],
+			"env": {
+				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+				"DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}",
+				"OPENAI_API_KEY": "${OPENAI_API_KEY}"
+			}
+		},
+		"serena": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"mcp-serena"
+			],
+			"env": {
+				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+			}
+		}
+	}
+}
