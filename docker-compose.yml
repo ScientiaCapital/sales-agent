@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sales-agent-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sales_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_in_production}
+      POSTGRES_DB: ${POSTGRES_DB:-sales_agent_db}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sales_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-agent-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: sales-agent-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-agent-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: sales-agent-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@salesagent.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - sales-agent-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  sales-agent-network:
+    driver: bridge

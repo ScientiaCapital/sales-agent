@@ -1,0 +1,27 @@
+{
+  "allowedTools": [
+    "Read",
+    "Write",
+    "Edit",
+    "Glob",
+    "Grep",
+    "Bash(task-master *)",
+    "Bash(tm *)",
+    "Bash(git status*)",
+    "Bash(git diff*)",
+    "Bash(git log*)",
+    "Bash(git add*)",
+    "Bash(git commit*)",
+    "Bash(git push*)",
+    "Bash(npm *)",
+    "Bash(python *)",
+    "Bash(pip *)",
+    "Bash(ollama *)",
+    "mcp__taskmaster-ai__*",
+    "mcp__memory__*",
+    "mcp__sequential-thinking__*",
+    "mcp__shrimp-task-manager__*",
+    "mcp__serena__*"
+  ],
+  "preferredOutputFormat": "markdown"
+}
