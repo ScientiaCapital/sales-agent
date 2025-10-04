@@ -11,6 +11,7 @@ from app.api import documents
 from app.api import contacts
 from app.api import knowledge
 from app.api import customers
+from app.api import refine
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -78,6 +79,7 @@ app.include_router(documents.router)
 app.include_router(contacts.router)
 app.include_router(knowledge.router)  # Task 24: Knowledge base endpoints
 app.include_router(customers.router)  # Task 25: Customer platform endpoints
+app.include_router(refine.router)  # Task 1: Iterative refinement engine
 
 
 @app.get("/")
