@@ -49,10 +49,11 @@ pre-commit==4.0.1
 openai==1.52.0  # For OpenAI-compatible APIs including Cerebras
 anthropic==0.39.0  # Claude streaming and batch API support
 
-# Firebase SDK
-firebase-admin==6.5.0  # Firebase Admin SDK for server-side operations
-google-cloud-firestore==2.19.0  # Firestore client library
-google-cloud-storage==2.18.2  # Firebase Storage operations
+# Cloud Infrastructure - RunPod
+# Note: Using RunPod for compute, not Firebase/GCP
+# Firebase dependencies removed - will use RunPod API instead
+runpod==1.7.6  # RunPod Python SDK for serverless and GPU compute
+boto3==1.35.80  # AWS SDK for S3-compatible RunPod storage
 
 # Document Processing
 pdfplumber==0.11.4  # Best PDF text extraction (Context7 recommended)
@@ -67,3 +68,9 @@ praw==7.7.1  # Reddit API wrapper
 sentence-transformers==3.3.1  # For generating text embeddings
 numpy==2.0.2  # Required for vector operations
 pgvector==0.3.6  # PostgreSQL vector extension support
+
+# Voice Processing (Task 6: Cartesia Integration)
+cartesia==1.1.2  # Cartesia AI SDK for TTS/STT
+pyaudio==0.2.14  # Audio I/O for voice clients
+wave==0.0.2  # WAV file processing
+websockets==13.1  # WebSocket client/server
