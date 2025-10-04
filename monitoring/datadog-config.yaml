@@ -1,0 +1,380 @@
+# Datadog APM and Monitoring Configuration
+# https://docs.datadoghq.com/
+
+# Global Configuration
+api_key: ${DATADOG_API_KEY}
+site: ${DATADOG_SITE:-datadoghq.com}
+hostname: sales-agent-production
+tags:
+  - env:production
+  - service:sales-agent
+  - version:0.1.0
+  - team:engineering
+
+# APM (Application Performance Monitoring)
+apm_config:
+  enabled: true
+  apm_non_local_traffic: true
+  analyzed_spans:
+    sales-agent|fastapi.request: 1.0
+    sales-agent|cerebras.qualify: 1.0
+    sales-agent|database.query: 1.0
+  
+  # Trace sampling
+  max_traces_per_second: 100
+  
+  # Service naming
+  service_name: sales-agent-api
+  
+  # Additional trace tags
+  additional_endpoints:
+    /api/leads/qualify:
+      - tag: endpoint_type:critical
+      - tag: ai_service:cerebras
+    /api/health:
+      - tag: endpoint_type:monitoring
+
+# Logging
+logs_config:
+  enabled: true
+  container_collect_all: true
+  
+  # Processing rules
+  processing_rules:
+    - type: exclude_at_match
+      name: exclude_health_checks
+      pattern: "GET /api/health"
+    
+    - type: multi_line
+      name: stack_traces
+      pattern: "Traceback"
+    
+    - type: mask_sequences
+      name: mask_api_keys
+      pattern: "(api_key|token|password)\\s*[:=]\\s*[^\\s]+"
+      replace_placeholder: "[REDACTED]"
+
+# Process Monitoring
+process_config:
+  enabled: true
+  
+# Docker Monitoring
+docker_labels_as_tags:
+  "*": true
+
+# Custom Metrics
+custom_metrics:
+  # Lead qualification metrics
+  - name: sales_agent.lead.qualification.count
+    type: count
+    tags:
+      - service:sales-agent
+      - endpoint:qualify_lead
+  
+  - name: sales_agent.lead.qualification.latency
+    type: gauge
+    unit: millisecond
+    tags:
+      - service:sales-agent
+      - provider:cerebras
+  
+  - name: sales_agent.lead.qualification.score
+    type: gauge
+    tags:
+      - service:sales-agent
+  
+  - name: sales_agent.lead.qualification.cost
+    type: gauge
+    unit: dollar
+    tags:
+      - service:sales-agent
+      - provider:cerebras
+  
+  # API performance metrics
+  - name: sales_agent.api.request.count
+    type: count
+    tags:
+      - service:sales-agent
+  
+  - name: sales_agent.api.request.latency
+    type: histogram
+    unit: millisecond
+    tags:
+      - service:sales-agent
+  
+  - name: sales_agent.api.error.count
+    type: count
+    tags:
+      - service:sales-agent
+      - error_type
+  
+  # Circuit breaker metrics
+  - name: sales_agent.circuit_breaker.state
+    type: gauge
+    tags:
+      - service:sales-agent
+      - circuit_name
+  
+  - name: sales_agent.circuit_breaker.failures
+    type: count
+    tags:
+      - service:sales-agent
+      - circuit_name
+  
+  # Model router metrics
+  - name: sales_agent.model_router.latency
+    type: histogram
+    unit: millisecond
+    tags:
+      - service:sales-agent
+      - access_method
+  
+  - name: sales_agent.model_router.success_rate
+    type: gauge
+    tags:
+      - service:sales-agent
+      - access_method
+  
+  # Database metrics
+  - name: sales_agent.database.query.latency
+    type: histogram
+    unit: millisecond
+    tags:
+      - service:sales-agent
+      - query_type
+  
+  - name: sales_agent.database.connection.count
+    type: gauge
+    tags:
+      - service:sales-agent
+      - pool_status
+  
+  # Redis metrics
+  - name: sales_agent.redis.operation.latency
+    type: histogram
+    unit: millisecond
+    tags:
+      - service:sales-agent
+      - operation
+
+# Service Level Objectives (SLOs)
+service_level_objectives:
+  - name: API Availability
+    description: "API should be available 99.9% of the time"
+    type: monitor
+    thresholds:
+      target: 99.9
+      warning: 99.5
+    
+  - name: Lead Qualification Latency (P95)
+    description: "95% of lead qualifications complete in under 1000ms"
+    type: metric
+    query: "percentile(sales_agent.lead.qualification.latency, 95)"
+    thresholds:
+      target: 1000
+      warning: 1500
+      critical: 2000
+    
+  - name: API Error Rate
+    description: "API error rate should be below 1%"
+    type: metric
+    query: "rate(sales_agent.api.error.count) / rate(sales_agent.api.request.count)"
+    thresholds:
+      target: 0.01
+      warning: 0.02
+      critical: 0.05
+
+# Monitors and Alerts
+monitors:
+  # Critical: API Down
+  - name: "Sales Agent API Down"
+    type: service check
+    query: '"http.can_connect".over("instance:sales-agent-api").last(2).count_by_status()'
+    message: |
+      {{#is_alert}}
+      🚨 CRITICAL: Sales Agent API is DOWN
+      
+      The API has failed health checks for 2 consecutive minutes.
+      
+      Impact: All lead qualification operations are blocked.
+      Action: Investigate immediately.
+      {{/is_alert}}
+      
+      {{#is_recovery}}
+      ✅ RESOLVED: Sales Agent API is back online
+      {{/is_recovery}}
+    
+    tags:
+      - service:sales-agent
+      - severity:critical
+      - team:engineering
+    
+    notify:
+      - "@pagerduty-sales-agent"
+      - "@slack-engineering-alerts"
+  
+  # High: Slow Lead Qualification
+  - name: "Slow Lead Qualification (P95 > 2s)"
+    type: metric alert
+    query: "percentile(last_5m):sales_agent.lead.qualification.latency{*} by {provider}.95th > 2000"
+    message: |
+      {{#is_alert}}
+      ⚠️ WARNING: Lead qualification latency is HIGH
+      
+      P95 latency: {{value}}ms (threshold: 2000ms)
+      Provider: {{provider.name}}
+      
+      This may indicate:
+      - Cerebras API slowdown
+      - Network latency issues
+      - Database connection problems
+      
+      Action: Check provider status and system resources.
+      {{/is_alert}}
+    
+    tags:
+      - service:sales-agent
+      - severity:high
+      - team:engineering
+    
+    notify:
+      - "@slack-engineering-alerts"
+  
+  # High: Error Rate Spike
+  - name: "API Error Rate Spike (>1%)"
+    type: metric alert
+    query: "sum(last_5m):rate(sales_agent.api.error.count{*}.as_count()) / rate(sales_agent.api.request.count{*}.as_count()) > 0.01"
+    message: |
+      {{#is_alert}}
+      ⚠️ WARNING: API error rate is elevated
+      
+      Error rate: {{value}}% (threshold: 1%)
+      
+      Recent errors may indicate:
+      - API integration failures
+      - Database connection issues
+      - Invalid input validation
+      
+      Action: Check error logs for patterns.
+      {{/is_alert}}
+    
+    tags:
+      - service:sales-agent
+      - severity:high
+    
+    notify:
+      - "@slack-engineering-alerts"
+  
+  # Medium: High Qualification Cost
+  - name: "High Lead Qualification Cost"
+    type: metric alert
+    query: "avg(last_1h):sales_agent.lead.qualification.cost{*} > 0.001"
+    message: |
+      ℹ️ INFO: Average qualification cost is high
+      
+      Average cost: ${{value}} per lead (threshold: $0.001)
+      
+      This may indicate:
+      - Using more expensive models
+      - Longer prompts than necessary
+      - Increased token usage
+      
+      Action: Review cost optimization opportunities.
+    
+    tags:
+      - service:sales-agent
+      - severity:medium
+      - team:finance
+    
+    notify:
+      - "@slack-engineering"
+  
+  # Medium: Circuit Breaker Open
+  - name: "Circuit Breaker Open"
+    type: metric alert
+    query: "max(last_5m):sales_agent.circuit_breaker.state{*} by {circuit_name} > 1"
+    message: |
+      ⚠️ WARNING: Circuit breaker is OPEN
+      
+      Circuit: {{circuit_name.name}}
+      
+      A dependency is experiencing failures.
+      Requests are being blocked to prevent cascade failures.
+      
+      Action: Check dependent service health.
+    
+    tags:
+      - service:sales-agent
+      - severity:medium
+    
+    notify:
+      - "@slack-engineering"
+  
+  # Low: Database Connection Pool Exhausted
+  - name: "Database Connection Pool Low"
+    type: metric alert
+    query: "avg(last_5m):sales_agent.database.connection.count{pool_status:available} < 2"
+    message: |
+      ℹ️ INFO: Database connection pool is running low
+      
+      Available connections: {{value}}
+      
+      Consider:
+      - Increasing pool size
+      - Checking for connection leaks
+      - Monitoring slow queries
+    
+    tags:
+      - service:sales-agent
+      - severity:low
+    
+    notify:
+      - "@slack-engineering"
+
+# Dashboard Definitions
+dashboards:
+  - name: Sales Agent - Overview
+    widgets:
+      - type: timeseries
+        title: "Lead Qualification Latency (P50, P95, P99)"
+        queries:
+          - "percentile(sales_agent.lead.qualification.latency{*}, 50)"
+          - "percentile(sales_agent.lead.qualification.latency{*}, 95)"
+          - "percentile(sales_agent.lead.qualification.latency{*}, 99)"
+      
+      - type: query_value
+        title: "Qualifications/min"
+        query: "sum:sales_agent.lead.qualification.count{*}.as_rate()"
+      
+      - type: timeseries
+        title: "API Error Rate"
+        query: "rate(sales_agent.api.error.count{*}) / rate(sales_agent.api.request.count{*})"
+      
+      - type: heatmap
+        title: "Qualification Score Distribution"
+        query: "sales_agent.lead.qualification.score{*}"
+      
+      - type: toplist
+        title: "Top Error Types"
+        query: "top(sales_agent.api.error.count{*} by {error_type}, 10, 'sum', 'desc')"
+      
+      - type: timeseries
+        title: "Model Router Performance by Access Method"
+        query: "avg:sales_agent.model_router.latency{*} by {access_method}"
+
+# Integration Settings
+integrations:
+  slack:
+    enabled: true
+    webhooks:
+      - channel: "#engineering-alerts"
+        url: ${SLACK_WEBHOOK_URL}
+        mention_users: ["@oncall-engineer"]
+  
+  pagerduty:
+    enabled: true
+    service_key: ${PAGERDUTY_SERVICE_KEY}
+    
+  github:
+    enabled: true
+    repository: "your-org/sales-agent"
