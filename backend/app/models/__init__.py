@@ -4,6 +4,13 @@ Database models for the sales agent application
 from .database import Base, get_db, engine, SessionLocal
 from .lead import Lead
 from .api_call import CerebrasAPICall
+from .agent_models import (
+    AgentExecution,
+    AgentWorkflow,
+    EnrichedLead,
+    MarketingCampaign,
+    BookedMeeting
+)
 
 __all__ = [
     "Base",
@@ -11,5 +18,10 @@ __all__ = [
     "engine",
     "SessionLocal",
     "Lead",
-    "CerebrasAPICall"
+    "CerebrasAPICall",
+    "AgentExecution",
+    "AgentWorkflow",
+    "EnrichedLead",
+    "MarketingCampaign",
+    "BookedMeeting"
 ]
