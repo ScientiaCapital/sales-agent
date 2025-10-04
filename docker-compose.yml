@@ -5,9 +5,9 @@ services:
     image: postgres:16-alpine
     container_name: sales-agent-postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sales_agent}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_in_production}
-      POSTGRES_DB: ${POSTGRES_DB:-sales_agent_db}
+      POSTGRES_USER: ${POSTGRES_USER:?ERROR: POSTGRES_USER must be set in .env file}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD must be set in .env file}
+      POSTGRES_DB: ${POSTGRES_DB:?ERROR: POSTGRES_DB must be set in .env file}
     ports:
       - "5433:5432"
     volumes:
@@ -39,8 +39,8 @@ services:
     image: dpage/pgadmin4:latest
     container_name: sales-agent-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@salesagent.local
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:?ERROR: PGADMIN_EMAIL must be set in .env file}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?ERROR: PGADMIN_PASSWORD must be set in .env file}
       PGADMIN_LISTEN_PORT: 5050
     ports:
       - "5050:5050"

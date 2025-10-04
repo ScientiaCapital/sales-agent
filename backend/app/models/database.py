@@ -15,10 +15,10 @@ if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
 # Create SQLAlchemy engine
 engine = create_engine(
     DATABASE_URL,
-    echo=True,  # Log SQL queries in development
+    echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",  # Environment-controlled SQL logging
     pool_pre_ping=True,  # Verify connections before using
-    pool_size=5,
-    max_overflow=10
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10"))
 )
 
 # Create sessionmaker
