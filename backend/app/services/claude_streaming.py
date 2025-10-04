@@ -63,13 +63,18 @@ class ClaudeStreamingService:
             messages = [{"role": "user", "content": prompt}]
             
             # Stream with context manager for automatic cleanup
-            async with self.client.messages.stream(
-                model=self.default_model,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                messages=messages,
-                system=system_prompt if system_prompt else None
-            ) as stream:
+            stream_params = {
+                "model": self.default_model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": messages
+            }
+
+            # Add system prompt if provided (must be a list of content blocks)
+            if system_prompt:
+                stream_params["system"] = [{"type": "text", "text": system_prompt}]
+
+            async with self.client.messages.stream(**stream_params) as stream:
                 
                 # Stream text tokens only (fastest iteration)
                 async for text in stream.text_stream:

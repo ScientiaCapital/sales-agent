@@ -493,8 +493,16 @@ class ModelRouter:
 
             # Stream chunks and track latency
             async for chunk in stream:
-                chunk["provider"] = config.provider
-                chunk["model"] = config.model
+                # Add provider and model metadata
+                if chunk.get("type") == "complete" and "metadata" in chunk:
+                    # For complete chunks, add to metadata dict
+                    chunk["metadata"]["provider"] = config.provider
+                    chunk["metadata"]["model"] = config.model
+                    chunk["metadata"]["latency_ms"] = int((time.time() - start_time) * 1000)
+                else:
+                    # For token chunks, add at top level
+                    chunk["provider"] = config.provider
+                    chunk["model"] = config.model
                 yield chunk
 
             latency_ms = int((time.time() - start_time) * 1000)
