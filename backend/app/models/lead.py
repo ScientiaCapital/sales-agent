@@ -47,5 +47,8 @@ class Lead(Base):
     contact_profiles = relationship("ContactSocialProfile", back_populates="lead", cascade="all, delete-orphan")
     org_charts = relationship("OrganizationChart", back_populates="lead", cascade="all, delete-orphan")
 
+    # Voice interaction relationship
+    voice_sessions = relationship("VoiceSessionLog", back_populates="lead", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Lead(id={self.id}, company='{self.company_name}', score={self.qualification_score})>"
