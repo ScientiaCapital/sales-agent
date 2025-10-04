@@ -1,0 +1,604 @@
+{
+  "tasks": [
+    {
+      "id": "e1963378-87c3-4720-9fef-0cc378276dd8",
+      "name": "Add Pydantic validators for required API keys in Settings",
+      "description": "Implement Pydantic field validators in Settings class to enforce required API keys at application startup. Fail fast with clear error message if CEREBRAS_API_KEY or DATABASE_URL are missing or empty.",
+      "notes": "Use Pydantic v2 @field_validator decorator (not v1 @validator). This ensures application never starts with invalid configuration.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/core/config.py",
+          "type": "TO_MODIFY",
+          "description": "Settings class definition, add validators for required keys",
+          "lineStart": 7,
+          "lineEnd": 48
+        }
+      ],
+      "implementationGuide": "1. Import validator from pydantic\n2. Add @field_validator for CEREBRAS_API_KEY:\n   - Check if value is empty string or None\n   - Raise ValueError with message: 'CEREBRAS_API_KEY must be set in environment'\n3. Add @field_validator for DATABASE_URL with same pattern\n4. Test: Run app without keys, verify startup fails with clear error\n\nPseudocode:\nfrom pydantic import field_validator\n\nclass Settings(BaseSettings):\n    CEREBRAS_API_KEY: str = \"\"\n    \n    @field_validator('CEREBRAS_API_KEY')\n    @classmethod\n    def validate_cerebras_key(cls, v: str) -> str:\n        if not v or v.strip() == \"\":\n            raise ValueError('CEREBRAS_API_KEY must be set')\n        return v",
+      "verificationCriteria": "1. Start app without CEREBRAS_API_KEY → Should fail with ValueError\n2. Start app with empty CEREBRAS_API_KEY=\"\" → Should fail\n3. Start app with valid keys → Should start successfully\n4. Error message should clearly state which key is missing",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "90d754e9-dd41-4789-9f7c-c034ed5dc04e",
+      "name": "Configure environment-specific CORS and database settings",
+      "description": "Make CORS origins and database echo configurable per environment. Production should have strict CORS and no SQL query logging, development can be permissive.",
+      "notes": "Prevents accidental exposure in production. Database echo logging can expose sensitive data in logs.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "e1963378-87c3-4720-9fef-0cc378276dd8"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/core/config.py",
+          "type": "TO_MODIFY",
+          "description": "Add environment-specific CORS configuration",
+          "lineStart": 17,
+          "lineEnd": 21
+        },
+        {
+          "path": "backend/app/models/database.py",
+          "type": "TO_MODIFY",
+          "description": "Make echo conditional on environment",
+          "lineStart": 14,
+          "lineEnd": 20
+        },
+        {
+          "path": "backend/app/main.py",
+          "type": "TO_MODIFY",
+          "description": "Use environment-aware CORS settings",
+          "lineStart": 19,
+          "lineEnd": 25
+        }
+      ],
+      "implementationGuide": "1. In Settings class, make CORS_ORIGINS environment-dependent:\n   - Add CORS_ORIGINS_PROD: List[str] field\n   - Update CORS_ORIGINS to switch based on ENVIRONMENT\n2. Make database echo conditional:\n   - In database.py, use settings.ENVIRONMENT != 'production'\n3. Update docker-compose to set ENVIRONMENT variable\n\nPseudocode:\nclass Settings(BaseSettings):\n    ENVIRONMENT: str = \"development\"\n    CORS_ORIGINS: List[str] = Field(default_factory=lambda: [])\n    \n    @field_validator('CORS_ORIGINS', mode='after')\n    @classmethod\n    def set_cors_by_env(cls, v, info):\n        env = info.data.get('ENVIRONMENT')\n        if env == 'production':\n            return ['https://app.salesagent.com']\n        return ['http://localhost:3000', 'http://localhost:5173']",
+      "verificationCriteria": "1. Set ENVIRONMENT=production → CORS should only allow production domains\n2. Set ENVIRONMENT=development → CORS should allow localhost\n3. Production mode → No SQL queries logged\n4. Development mode → SQL queries logged to console",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "5aba137e-11a6-4bb6-9bb0-a2a9fe799d97",
+      "name": "Implement startup lifecycle hooks for dependency validation",
+      "description": "Add FastAPI @app.on_event('startup') hooks to validate database connectivity, Cerebras API access, and Redis before accepting traffic. Fail fast if critical dependencies unavailable.",
+      "notes": "Database and Cerebras are CRITICAL (fail startup if down). Redis is optional (log warning only). Prevents serving traffic with broken dependencies.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "e1963378-87c3-4720-9fef-0cc378276dd8"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/core/startup.py",
+          "type": "CREATE",
+          "description": "New file for startup validation functions"
+        },
+        {
+          "path": "backend/app/main.py",
+          "type": "TO_MODIFY",
+          "description": "Add startup event handlers",
+          "lineStart": 1,
+          "lineEnd": 10
+        },
+        {
+          "path": "backend/app/services/cerebras.py",
+          "type": "TO_MODIFY",
+          "description": "Add health_check method to CerebrasService",
+          "lineStart": 15,
+          "lineEnd": 30
+        }
+      ],
+      "implementationGuide": "1. Create backend/app/core/startup.py with validation functions:\n   - async def check_database_connection()\n   - async def check_cerebras_api()\n   - async def check_redis_connection()\n2. In main.py, add @app.on_event('startup'):\n   - Call all validation functions\n   - Log success/failure for each\n   - Raise exception if critical dependency fails\n\nPseudocode:\n@app.on_event('startup')\nasync def validate_dependencies():\n    try:\n        await check_database_connection()\n        logger.info('Database connection: OK')\n    except Exception as e:\n        logger.error(f'Database check failed: {e}')\n        raise\n    \n    try:\n        cerebras_service.health_check()\n        logger.info('Cerebras API: OK')\n    except Exception as e:\n        logger.warning(f'Cerebras unavailable: {e}')",
+      "verificationCriteria": "1. Start app with DB down → Should fail startup with clear error\n2. Start app with invalid Cerebras key → Should fail startup\n3. Start app with Redis down → Should start with warning log\n4. All dependencies healthy → Startup succeeds with success logs",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "68926216-3600-47e5-8a61-0751cbf7be65",
+      "name": "Implement API versioning with /api/v1 prefix",
+      "description": "Add /api/v1 prefix to all API routes using the already-defined API_V1_PREFIX constant. Maintain backward compatibility by keeping /api routes active with deprecation warnings.",
+      "notes": "API_V1_PREFIX already defined as '/api/v1' in config.py but unused. This activates it while maintaining backward compatibility.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/main.py",
+          "type": "TO_MODIFY",
+          "description": "Update router includes with version prefix",
+          "lineStart": 27,
+          "lineEnd": 29
+        },
+        {
+          "path": "backend/app/core/config.py",
+          "type": "REFERENCE",
+          "description": "API_V1_PREFIX constant already defined",
+          "lineStart": 14,
+          "lineEnd": 14
+        }
+      ],
+      "implementationGuide": "1. In main.py, update router includes to use /api/v1:\n   - app.include_router(health.router, prefix=settings.API_V1_PREFIX)\n   - app.include_router(leads.router, prefix=settings.API_V1_PREFIX)\n2. Also keep /api routes for backward compat:\n   - app.include_router(health.router, prefix='/api', deprecated=True)\n   - app.include_router(leads.router, prefix='/api', deprecated=True)\n3. Update OpenAPI docs to show v1 as primary\n4. Add deprecation notice in API response headers for /api routes\n\nPseudocode:\napp.include_router(\n    health.router,\n    prefix=settings.API_V1_PREFIX,\n    tags=['health-v1']\n)\napp.include_router(\n    health.router,\n    prefix='/api',\n    tags=['health-deprecated'],\n    deprecated=True\n)",
+      "verificationCriteria": "1. GET /api/v1/health → Returns 200 (primary endpoint)\n2. GET /api/health → Returns 200 with deprecation header\n3. OpenAPI docs at /api/docs → Shows v1 endpoints as primary\n4. All tests updated to use /api/v1 endpoints",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "152480d1-80df-46fa-b27c-7f24e2aa5645",
+      "name": "Remove redundant db.flush() and optimize database operations",
+      "description": "Remove unnecessary db.flush() call in lead qualification endpoint (line 59) as it's redundant before db.commit(). Optimize session usage pattern.",
+      "notes": "db.flush() forces SQL execution but doesn't commit. Since we commit immediately after, flush is redundant. Single commit is more efficient.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/api/leads.py",
+          "type": "TO_MODIFY",
+          "description": "Remove redundant flush, optimize commit pattern",
+          "lineStart": 56,
+          "lineEnd": 98
+        }
+      ],
+      "implementationGuide": "1. In leads.py qualify_lead function:\n   - Remove 'db.flush()' line after db.add(lead)\n   - Keep 'db.add(lead)' then directly call 'db.commit()'\n   - db.refresh(lead) still needed after commit to get ID\n2. Verify the pattern:\n   db.add(lead)\n   db.add(api_call)\n   db.commit()  # Single commit for both\n   db.refresh(lead)\n\nPseudocode:\ndb.add(lead)\n# REMOVE: db.flush() - not needed before commit\ndb.add(api_call)\ndb.commit()  # Commits both lead and api_call atomically\ndb.refresh(lead)",
+      "verificationCriteria": "1. POST /api/v1/leads/qualify → Still creates lead and api_call successfully\n2. Verify lead.id is populated after commit\n3. Database transaction is atomic (both records or neither)\n4. Performance: Measure latency before/after (should be same or faster)",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "fbf0c613-0595-4b39-b39c-22b7e4941ec1",
+      "name": "Add database indexes and constraints for Lead model",
+      "description": "Create Alembic migration to add composite index on (qualification_score DESC, created_at DESC) for common query pattern 'recent high-scoring leads'. Add CHECK constraint for score range 0-100.",
+      "notes": "CONCURRENTLY prevents table locks during index creation. NOT VALID then VALIDATE prevents full table scan during deployment.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/alembic/versions/",
+          "type": "CREATE",
+          "description": "New migration file for indexes and constraints"
+        },
+        {
+          "path": "backend/app/models/lead.py",
+          "type": "REFERENCE",
+          "description": "Lead model to understand existing schema",
+          "lineStart": 1,
+          "lineEnd": 46
+        }
+      ],
+      "implementationGuide": "1. Create Alembic migration:\n   alembic revision -m 'add_lead_indexes_and_constraints'\n2. In upgrade():\n   - Create composite index CONCURRENTLY (no table lock)\n   - Add CHECK constraint with NOT VALID first\n   - Then VALIDATE constraint separately\n3. In downgrade():\n   - Drop constraint\n   - Drop index\n\nMigration pseudocode:\ndef upgrade():\n    op.execute(\n        'CREATE INDEX CONCURRENTLY idx_leads_score_created '\n        'ON leads(qualification_score DESC, created_at DESC)'\n    )\n    op.execute(\n        'ALTER TABLE leads ADD CONSTRAINT check_score_range '\n        'CHECK (qualification_score BETWEEN 0 AND 100) NOT VALID'\n    )\n    op.execute(\n        'ALTER TABLE leads VALIDATE CONSTRAINT check_score_range'\n    )",
+      "verificationCriteria": "1. Run migration → Index created without locking table\n2. Query 'SELECT * FROM leads ORDER BY qualification_score DESC, created_at DESC LIMIT 20' → Uses new index (check EXPLAIN)\n3. INSERT lead with score=150 → Fails with CHECK constraint error\n4. Downgrade migration → Index and constraint removed cleanly",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "aa39d1ed-4437-483e-b136-b86b421964cd",
+      "name": "Create custom exception classes for error handling",
+      "description": "Implement custom exception hierarchy: CerebrasAPIError, InvalidResponseError, DatabaseConnectionError. Replace generic Exception catches with specific error types for better debugging and error handling.",
+      "notes": "Custom exceptions enable precise error handling and better logging. Include context in error details for debugging.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/core/exceptions.py",
+          "type": "CREATE",
+          "description": "New file for custom exception classes"
+        },
+        {
+          "path": "backend/app/services/cerebras.py",
+          "type": "TO_MODIFY",
+          "description": "Replace generic exceptions with custom types",
+          "lineStart": 110,
+          "lineEnd": 130
+        }
+      ],
+      "implementationGuide": "1. Create backend/app/core/exceptions.py:\n   - Base class: ServiceError(Exception)\n   - CerebrasAPIError(ServiceError) - API call failures\n   - InvalidResponseError(ServiceError) - JSON parse errors\n   - DatabaseConnectionError(ServiceError) - DB failures\n2. Update cerebras.py to raise specific exceptions:\n   - Replace 'except Exception' with specific types\n   - Raise CerebrasAPIError on API failures\n   - Raise InvalidResponseError on JSON decode errors\n3. Update error messages to include context\n\nPseudocode:\nclass ServiceError(Exception):\n    def __init__(self, message: str, details: dict = None):\n        self.message = message\n        self.details = details or {}\n        super().__init__(self.message)\n\nclass CerebrasAPIError(ServiceError):\n    pass\n\n# In cerebras.py:\nexcept json.JSONDecodeError as e:\n    raise InvalidResponseError(\n        'Failed to parse Cerebras response',\n        {'raw_response': content, 'error': str(e)}\n    )",
+      "verificationCriteria": "1. Cerebras API returns invalid JSON → Raises InvalidResponseError with context\n2. Cerebras API network error → Raises CerebrasAPIError with details\n3. Exception details include request context for debugging\n4. Error messages are actionable (not generic 'An error occurred')",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "2be38b57-3eef-4c01-b344-f48591bac2b7",
+      "name": "Add retry logic with exponential backoff for Cerebras API",
+      "description": "Implement retry mechanism for Cerebras API calls with exponential backoff. Retry on network errors and rate limits (429), but not on invalid requests (400). Maximum 3 retries with delays: 1s, 2s, 4s.",
+      "notes": "Retries on transient failures only. Invalid requests shouldn't retry. Log retry attempts for monitoring rate limit issues.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "aa39d1ed-4437-483e-b136-b86b421964cd"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/services/cerebras.py",
+          "type": "TO_MODIFY",
+          "description": "Add retry decorator to qualify_lead method",
+          "lineStart": 30,
+          "lineEnd": 130
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add tenacity dependency"
+        }
+      ],
+      "implementationGuide": "1. Install tenacity library: pip install tenacity\n2. In cerebras.py, add retry decorator to qualify_lead:\n   - Use @retry decorator from tenacity\n   - Retry on CerebrasAPIError (but not InvalidResponseError)\n   - Stop after 3 attempts\n   - Exponential backoff: wait_exponential(multiplier=1, min=1, max=10)\n3. Log retry attempts for monitoring\n\nPseudocode:\nfrom tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type\n\n@retry(\n    stop=stop_after_attempt(3),\n    wait=wait_exponential(multiplier=1, min=1, max=10),\n    retry=retry_if_exception_type(CerebrasAPIError),\n    before_sleep=lambda retry_state: logger.warning(f'Retry {retry_state.attempt_number}/3')\n)\ndef qualify_lead(self, ...):\n    # Existing implementation\n    # Raises CerebrasAPIError on network failures (will retry)\n    # Raises InvalidResponseError on bad data (won't retry)",
+      "verificationCriteria": "1. Cerebras API returns 429 (rate limit) → Retries 3 times with backoff\n2. Network timeout → Retries 3 times then fails\n3. Invalid request 400 → Fails immediately (no retry)\n4. Retry logs show attempt number and delay",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "14460752-ffe7-40dc-8a06-f4e065e8c519",
+      "name": "Improve token calculation with proper tokenizer",
+      "description": "Replace rough token estimation (len(str())//4) with actual tokenizer from transformers library. Use Llama 3.1 tokenizer to match Cerebras model for accurate cost calculation.",
+      "notes": "Accurate tokenization critical for cost tracking. Llama 3.1 tokenizer matches Cerebras model. Cache tokenizer to avoid reload overhead.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.170Z",
+      "updatedAt": "2025-10-04T18:39:15.170Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/services/cerebras.py",
+          "type": "TO_MODIFY",
+          "description": "Add tokenizer initialization and count_tokens method",
+          "lineStart": 14,
+          "lineEnd": 30
+        },
+        {
+          "path": "backend/app/api/leads.py",
+          "type": "TO_MODIFY",
+          "description": "Replace rough estimation with actual tokenization",
+          "lineStart": 71,
+          "lineEnd": 74
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add transformers dependency"
+        }
+      ],
+      "implementationGuide": "1. Install transformers: pip install transformers\n2. In cerebras.py __init__, load tokenizer:\n   - self.tokenizer = AutoTokenizer.from_pretrained('meta-llama/Meta-Llama-3.1-8B')\n   - Cache tokenizer instance (load once)\n3. Replace token estimation in leads.py:\n   - Remove: prompt_est = len(str(request.dict())) // 4\n   - Add: prompt_tokens = len(cerebras_service.encode(prompt_text))\n4. Add encode method to CerebrasService:\n   def encode(self, text: str) -> List[int]:\n       return self.tokenizer.encode(text)\n\nPseudocode:\nclass CerebrasService:\n    def __init__(self):\n        # ... existing init\n        from transformers import AutoTokenizer\n        self.tokenizer = AutoTokenizer.from_pretrained(\n            'meta-llama/Meta-Llama-3.1-8B',\n            cache_dir='/tmp/tokenizer_cache'\n        )\n    \n    def count_tokens(self, text: str) -> int:\n        return len(self.tokenizer.encode(text))",
+      "verificationCriteria": "1. Tokenizer loads successfully on service init\n2. Token counts are accurate (compare with Cerebras reported usage)\n3. Cost calculations reflect actual token usage\n4. Performance: Tokenization adds <50ms to request",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "8c5e6610-fcd1-49cc-b61c-6684298fc5ba",
+      "name": "Implement rate limiting middleware with slowapi",
+      "description": "Add rate limiting to protect /api/v1/leads/qualify endpoint from abuse. Use slowapi library with Redis backend. Limit: 10 requests per minute per IP address.",
+      "notes": "Redis backend enables distributed rate limiting across multiple app instances. Per-IP limiting prevents abuse from single sources.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "backend/app/middleware/rate_limit.py",
+          "type": "CREATE",
+          "description": "New middleware for rate limiting configuration"
+        },
+        {
+          "path": "backend/app/main.py",
+          "type": "TO_MODIFY",
+          "description": "Add limiter to app state and configure",
+          "lineStart": 1,
+          "lineEnd": 15
+        },
+        {
+          "path": "backend/app/api/leads.py",
+          "type": "TO_MODIFY",
+          "description": "Add rate limit decorator to qualify endpoint",
+          "lineStart": 17,
+          "lineEnd": 20
+        },
+        {
+          "path": "backend/requirements.txt",
+          "type": "TO_MODIFY",
+          "description": "Add slowapi dependency"
+        }
+      ],
+      "implementationGuide": "1. Install slowapi: pip install slowapi\n2. Create backend/app/middleware/rate_limit.py:\n   - Initialize Limiter with Redis backend\n   - Configure default limits\n3. In main.py:\n   - Add limiter to app state\n   - Add @limiter.limit decorator to qualify endpoint\n4. Configure limits:\n   - Default: 60 requests/minute per IP\n   - /api/v1/leads/qualify: 10 requests/minute per IP\n\nPseudocode:\nfrom slowapi import Limiter\nfrom slowapi.util import get_remote_address\n\nlimiter = Limiter(\n    key_func=get_remote_address,\n    storage_uri=settings.REDIS_URL,\n    default_limits=['60/minute']\n)\n\napp.state.limiter = limiter\n\n@router.post('/qualify')\n@limiter.limit('10/minute')\nasync def qualify_lead(...):\n    # existing implementation",
+      "verificationCriteria": "1. Send 11 requests in 1 minute to /qualify → 11th returns 429 Too Many Requests\n2. Wait 1 minute → Rate limit resets, requests succeed\n3. Multiple IPs → Each has independent limit\n4. Redis unavailable → Graceful degradation (allow requests with warning log)",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "7172a979-6d48-457e-8eeb-80d0deb08875",
+      "name": "Create pytest conftest.py with shared test fixtures",
+      "description": "Create backend/tests/conftest.py with reusable fixtures for database sessions, Cerebras API mocking, and test client. Enable consistent test setup across all test files.",
+      "notes": "Fixtures promote DRY in tests. Session rollback ensures test isolation. Mock Cerebras to avoid real API calls in tests.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "backend/tests/conftest.py",
+          "type": "CREATE",
+          "description": "New pytest configuration with shared fixtures"
+        },
+        {
+          "path": "backend/pytest.ini",
+          "type": "REFERENCE",
+          "description": "Existing pytest configuration",
+          "lineStart": 1,
+          "lineEnd": 13
+        }
+      ],
+      "implementationGuide": "1. Create backend/tests/conftest.py with fixtures:\n   - @pytest.fixture db_session: Test DB session with rollback\n   - @pytest.fixture mock_cerebras_success: Mocked successful API response\n   - @pytest.fixture mock_cerebras_failure: Mocked failure scenarios\n   - @pytest.fixture test_client: FastAPI TestClient with overrides\n2. Configure test database URL\n3. Setup automatic transaction rollback for isolation\n\nPseudocode:\nimport pytest\nfrom fastapi.testclient import TestClient\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\n\n@pytest.fixture(scope='function')\ndef db_session():\n    engine = create_engine('postgresql://test:test@localhost/test_db')\n    Session = sessionmaker(bind=engine)\n    session = Session()\n    yield session\n    session.rollback()\n    session.close()\n\n@pytest.fixture\ndef mock_cerebras_success(mocker):\n    return mocker.patch(\n        'app.services.cerebras.CerebrasService.qualify_lead',\n        return_value=(85.0, 'Strong fit', 245)\n    )",
+      "verificationCriteria": "1. Import fixtures in any test file → Available without redefinition\n2. db_session fixture → Provides working test database\n3. Test DB changes rolled back after each test (isolation verified)\n4. mock_cerebras_success → Returns predictable test data",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "3c8e7447-bdb9-4f15-897d-b830635e1b5c",
+      "name": "Add async tests for lead qualification endpoint",
+      "description": "Create comprehensive async tests for POST /api/v1/leads/qualify endpoint covering success cases, Cerebras API mocking, database persistence, and error scenarios.",
+      "notes": "Use AsyncClient for async endpoint testing. Mock at service layer (CerebrasService) not HTTP layer for better unit testing.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "7172a979-6d48-457e-8eeb-80d0deb08875"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "backend/tests/test_leads.py",
+          "type": "CREATE",
+          "description": "New test file for lead endpoints"
+        },
+        {
+          "path": "backend/tests/conftest.py",
+          "type": "DEPENDENCY",
+          "description": "Uses fixtures from conftest"
+        },
+        {
+          "path": "backend/app/api/leads.py",
+          "type": "REFERENCE",
+          "description": "Endpoint being tested",
+          "lineStart": 17,
+          "lineEnd": 98
+        }
+      ],
+      "implementationGuide": "1. Create backend/tests/test_leads.py with async tests:\n   - test_qualify_lead_success: Mocked Cerebras, verify DB insert\n   - test_qualify_lead_cerebras_failure: API error handling\n   - test_qualify_lead_invalid_json: Cerebras returns non-JSON\n   - test_qualify_lead_score_validation: Score out of range\n2. Use pytest-asyncio for async test support\n3. Mock CerebrasService.qualify_lead method\n4. Verify database records created correctly\n\nPseudocode:\nimport pytest\nfrom httpx import AsyncClient\n\n@pytest.mark.asyncio\nasync def test_qualify_lead_success(mock_cerebras_success, db_session):\n    async with AsyncClient(app=app, base_url='http://test') as client:\n        response = await client.post(\n            '/api/v1/leads/qualify',\n            json={'company_name': 'Test Corp', 'industry': 'SaaS'}\n        )\n        assert response.status_code == 201\n        data = response.json()\n        assert data['qualification_score'] == 85.0\n        # Verify DB insert\n        lead = db_session.query(Lead).filter_by(company_name='Test Corp').first()\n        assert lead is not None",
+      "verificationCriteria": "1. All tests pass with pytest -v tests/test_leads.py\n2. Coverage report shows >95% for leads.py\n3. No real Cerebras API calls made during tests\n4. Tests run in <2 seconds (fast with mocking)",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "93735178-5f31-4109-9b01-4e19909b4a16",
+      "name": "Add edge case tests for error scenarios",
+      "description": "Create comprehensive edge case tests: Cerebras API timeout, database connection failure, invalid score ranges, malformed requests, concurrent request handling.",
+      "notes": "Edge cases expose production failure modes. Test both happy path and failure scenarios. Verify error responses are user-friendly.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "3c8e7447-bdb9-4f15-897d-b830635e1b5c"
+        },
+        {
+          "taskId": "fbf0c613-0595-4b39-b39c-22b7e4941ec1"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "backend/tests/test_leads.py",
+          "type": "TO_MODIFY",
+          "description": "Add edge case test functions"
+        },
+        {
+          "path": "backend/tests/test_edge_cases.py",
+          "type": "CREATE",
+          "description": "New file dedicated to edge case testing"
+        }
+      ],
+      "implementationGuide": "1. In test_leads.py, add edge case tests:\n   - test_cerebras_timeout: Mock timeout exception\n   - test_cerebras_rate_limit: Mock 429 response, verify retry\n   - test_invalid_score_storage: Score 150 rejected by CHECK constraint\n   - test_db_connection_failure: Mock DB error\n   - test_malformed_request: Missing required fields\n   - test_concurrent_requests: 10 simultaneous requests\n2. Use pytest.raises for exception testing\n3. Mock at appropriate layers (service, database)\n\nPseudocode:\n@pytest.mark.asyncio\nasync def test_cerebras_timeout(mocker):\n    mocker.patch(\n        'app.services.cerebras.CerebrasService.qualify_lead',\n        side_effect=TimeoutError('API timeout')\n    )\n    async with AsyncClient(app=app) as client:\n        response = await client.post('/api/v1/leads/qualify', json={...})\n        assert response.status_code == 500\n        assert 'timeout' in response.json()['detail'].lower()\n\n@pytest.mark.asyncio  \nasync def test_invalid_score_storage(db_session):\n    lead = Lead(qualification_score=150)  # Invalid\n    db_session.add(lead)\n    with pytest.raises(IntegrityError):  # CHECK constraint\n        db_session.commit()",
+      "verificationCriteria": "1. All edge case tests pass\n2. Timeout test verifies retry logic works\n3. Invalid score test confirms CHECK constraint enforcement\n4. Concurrent test verifies no race conditions\n5. Coverage includes error handling paths",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "9a8d018f-63cf-4b7c-8450-8ae715fabd9d",
+      "name": "Update health check tests to remove outdated comments",
+      "description": "Fix misleading test comments in test_health.py. Tests claim 'Database and Redis not configured yet' but they ARE configured in docker-compose.yml. Update tests to actually verify service health.",
+      "notes": "Original test comments were written before Docker setup. Now services ARE configured. Tests should verify actual health, not just return static strings.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "backend/tests/test_health.py",
+          "type": "TO_MODIFY",
+          "description": "Fix incorrect comments and improve health checks",
+          "lineStart": 27,
+          "lineEnd": 44
+        },
+        {
+          "path": "backend/app/api/health.py",
+          "type": "REFERENCE",
+          "description": "Health endpoint implementation to understand behavior"
+        },
+        {
+          "path": "docker-compose.yml",
+          "type": "REFERENCE",
+          "description": "Verify services are actually configured",
+          "lineStart": 1,
+          "lineEnd": 65
+        }
+      ],
+      "implementationGuide": "1. In test_health.py, remove lines 38-42 (incorrect comments)\n2. Update test_detailed_health_check to verify actual status:\n   - With services running: database='operational', redis='operational'\n   - With services down: database='unavailable', redis='unavailable'\n3. Add setup to actually test service connectivity\n4. Mock service checks for unit tests, add integration tests for real checks\n\nPseudocode:\ndef test_detailed_health_with_services(docker_services):\n    # Docker services fixture ensures DB and Redis running\n    response = client.get('/api/health/detailed')\n    data = response.json()\n    assert data['services']['database'] == 'operational'  # Not 'not_configured'\n    assert data['services']['redis'] == 'operational'\n    assert data['services']['cerebras'] in ['operational', 'not_configured']\n\ndef test_detailed_health_without_services(mocker):\n    mocker.patch('app.api.health.check_database', return_value=False)\n    response = client.get('/api/health/detailed')\n    data = response.json()\n    assert data['services']['database'] == 'unavailable'",
+      "verificationCriteria": "1. Test with services up → Shows 'operational'\n2. Test with services down → Shows 'unavailable'\n3. No misleading 'not_configured' assertions\n4. Comments accurately reflect what's being tested",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "e8da4541-c523-45af-bbeb-1ba91d2dbc82",
+      "name": "Implement React ErrorBoundary component",
+      "description": "Create ErrorBoundary component to catch React errors and display user-friendly fallback UI. Prevents white screen of death on component errors.",
+      "notes": "React 19 still requires class component for ErrorBoundary (no hook equivalent). Wrap at App level to catch all component errors.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "frontend/src/components/ErrorBoundary.tsx",
+          "type": "CREATE",
+          "description": "New ErrorBoundary class component"
+        },
+        {
+          "path": "frontend/src/main.tsx",
+          "type": "TO_MODIFY",
+          "description": "Wrap App with ErrorBoundary"
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "type": "REFERENCE",
+          "description": "App component being wrapped",
+          "lineStart": 1,
+          "lineEnd": 13
+        }
+      ],
+      "implementationGuide": "1. Create frontend/src/components/ErrorBoundary.tsx:\n   - Class component with componentDidCatch lifecycle\n   - State: hasError (boolean), error (Error | null)\n   - Render fallback UI when hasError=true\n   - Log errors to console (or external service)\n2. Wrap App component in ErrorBoundary:\n   - In main.tsx, wrap <App /> with <ErrorBoundary>\n3. Create user-friendly error UI with retry button\n\nPseudocode:\nclass ErrorBoundary extends React.Component<Props, State> {\n  constructor(props) {\n    super(props);\n    this.state = { hasError: false, error: null };\n  }\n\n  static getDerivedStateFromError(error: Error) {\n    return { hasError: true, error };\n  }\n\n  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {\n    console.error('React Error:', error, errorInfo);\n    // TODO: Send to error tracking service\n  }\n\n  render() {\n    if (this.state.hasError) {\n      return (\n        <div className='error-container'>\n          <h1>Something went wrong</h1>\n          <button onClick={() => window.location.reload()}>Retry</button>\n        </div>\n      );\n    }\n    return this.props.children;\n  }\n}",
+      "verificationCriteria": "1. Throw error in component → ErrorBoundary catches and shows fallback\n2. Click retry → Page reloads and works\n3. Error logged to console with component stack\n4. UI shows user-friendly message (not technical stack trace)",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "7a2124c5-9619-4b96-a857-1c704f2f9bbc",
+      "name": "Create API client with error handling and loading states",
+      "description": "Build centralized API client for frontend with built-in error handling, loading states, and retry logic. Use React 19 'use' hook for suspense integration.",
+      "notes": "React 19 'use' hook simplifies async data fetching with Suspense. Centralized client ensures consistent error handling across app.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "e8da4541-c523-45af-bbeb-1ba91d2dbc82"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "frontend/src/lib/api-client.ts",
+          "type": "CREATE",
+          "description": "Centralized API client with error handling"
+        },
+        {
+          "path": "frontend/src/hooks/useLeads.ts",
+          "type": "CREATE",
+          "description": "React hook for lead data fetching"
+        },
+        {
+          "path": "frontend/src/components/LeadList.tsx",
+          "type": "CREATE",
+          "description": "Example component using new API client"
+        }
+      ],
+      "implementationGuide": "1. Create frontend/src/lib/api-client.ts:\n   - Base fetch wrapper with error handling\n   - Automatic retry on network errors\n   - TypeScript interfaces for API responses\n2. Create frontend/src/hooks/useLeads.ts:\n   - Use React 19 'use' hook for data fetching\n   - Return loading, error, data states\n3. Add error toast notifications\n\nPseudocode:\n// api-client.ts\nclass APIClient {\n  private baseURL = 'http://localhost:8001/api/v1';\n\n  async post<T>(endpoint: string, data: any): Promise<T> {\n    const response = await fetch(`${this.baseURL}${endpoint}`, {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify(data)\n    });\n    \n    if (!response.ok) {\n      throw new APIError(response.status, await response.json());\n    }\n    \n    return response.json();\n  }\n}\n\n// useLeads.ts (React 19 pattern)\nimport { use } from 'react';\n\nexport function useLeads() {\n  const promise = apiClient.get<Lead[]>('/leads');\n  const leads = use(promise);  // React 19 suspense\n  return leads;\n}",
+      "verificationCriteria": "1. API call success → Data rendered correctly\n2. Network error → Retry automatically, show error toast\n3. 500 error → Show user-friendly error message\n4. Loading state → Show skeleton/spinner during fetch",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "a195b7c7-a6bf-4394-8519-897459e0bc68",
+      "name": "Optimize Vite build configuration for production",
+      "description": "Configure Vite for optimal production builds: code splitting, tree shaking, chunk size limits, compression, and bundle analysis.",
+      "notes": "Vite 7 has excellent defaults, but manual chunking improves caching. Remove console.logs in production. Analyze bundle to find bloat.",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "frontend/vite.config.ts",
+          "type": "TO_MODIFY",
+          "description": "Add production build optimizations"
+        },
+        {
+          "path": "frontend/package.json",
+          "type": "TO_MODIFY",
+          "description": "Add rollup-plugin-visualizer dependency",
+          "lineStart": 17,
+          "lineEnd": 40
+        }
+      ],
+      "implementationGuide": "1. Update frontend/vite.config.ts:\n   - Configure rollupOptions for manual chunk splitting\n   - Set chunk size warnings (500KB limit)\n   - Enable minification and tree shaking\n   - Add bundle analyzer plugin\n2. Create optimal chunk strategy:\n   - Vendor chunk: React, React-DOM\n   - Common chunk: Shared utilities\n   - Route chunks: Per-page code splitting\n3. Add compression (gzip/brotli)\n\nPseudocode:\nimport { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nimport { visualizer } from 'rollup-plugin-visualizer';\n\nexport default defineConfig({\n  plugins: [\n    react(),\n    visualizer({ open: true, gzipSize: true })\n  ],\n  build: {\n    rollupOptions: {\n      output: {\n        manualChunks: {\n          'react-vendor': ['react', 'react-dom'],\n          'ui-components': ['./src/components']\n        }\n      }\n    },\n    chunkSizeWarningLimit: 500,\n    minify: 'terser',\n    terserOptions: {\n      compress: { drop_console: true }\n    }\n  }\n});",
+      "verificationCriteria": "1. npm run build → Bundle size <300KB (gzipped)\n2. Vendor chunk separate from app code (better caching)\n3. No console.logs in production bundle\n4. Bundle visualizer shows no duplicate dependencies",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "752c049c-f75d-45b0-bfe9-cfcd2e76842c",
+      "name": "Update README.md with accurate API documentation",
+      "description": "Revise README.md to reflect current implementation: API versioning (/api/v1), actual endpoints, correct Docker setup, updated environment variables, and accurate getting started guide.",
+      "notes": "README is first touchpoint for developers. Must be accurate and current. Include migration guide for /api → /api/v1.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "68926216-3600-47e5-8a61-0751cbf7be65"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "README.md",
+          "type": "TO_MODIFY",
+          "description": "Update all documentation sections for accuracy"
+        },
+        {
+          "path": "backend/app/api/leads.py",
+          "type": "REFERENCE",
+          "description": "Reference for current API implementation"
+        }
+      ],
+      "implementationGuide": "1. Update README.md sections:\n   - API Endpoints: Change to /api/v1 prefix\n   - Environment Variables: Add new required vars (from updated Settings)\n   - Getting Started: Verify commands still work\n   - Testing: Update test commands if changed\n2. Remove any outdated 'TODO' or 'Coming Soon' sections\n3. Add architecture diagram if missing\n4. Update performance metrics if changed\n\nChanges:\n- Endpoints: /api/health → /api/v1/health\n- Add: Rate limiting documentation\n- Add: Error response format examples\n- Update: Test coverage percentage\n- Add: Troubleshooting section for common issues",
+      "verificationCriteria": "1. All curl examples work as documented\n2. Environment variable list complete and accurate\n3. Getting started steps verified on clean system\n4. No references to unimplemented features",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    },
+    {
+      "id": "49d78427-e6f7-4c75-a8cd-b549c64b72fa",
+      "name": "Update CLAUDE.md with architectural changes",
+      "description": "Update CLAUDE.md to document new patterns: custom exceptions, rate limiting, API versioning, startup validation, retry logic. Ensure AI assistants have accurate context.",
+      "notes": "CLAUDE.md guides AI assistants. Keep it updated so they follow current patterns. Include anti-patterns to avoid.",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "68926216-3600-47e5-8a61-0751cbf7be65"
+        },
+        {
+          "taskId": "8c5e6610-fcd1-49cc-b61c-6684298fc5ba"
+        },
+        {
+          "taskId": "aa39d1ed-4437-483e-b136-b86b421964cd"
+        }
+      ],
+      "createdAt": "2025-10-04T18:39:15.171Z",
+      "updatedAt": "2025-10-04T18:39:15.171Z",
+      "relatedFiles": [
+        {
+          "path": "CLAUDE.md",
+          "type": "TO_MODIFY",
+          "description": "Add new architectural patterns and best practices"
+        },
+        {
+          "path": "backend/app/core/exceptions.py",
+          "type": "REFERENCE",
+          "description": "Reference for exception documentation"
+        },
+        {
+          "path": "backend/app/middleware/rate_limit.py",
+          "type": "REFERENCE",
+          "description": "Reference for rate limiting docs"
+        }
+      ],
+      "implementationGuide": "1. Update CLAUDE.md sections:\n   - Add: Custom exception hierarchy documentation\n   - Add: Rate limiting configuration and limits\n   - Add: API versioning strategy (/api/v1)\n   - Add: Startup validation checklist\n   - Update: Error handling patterns\n2. Add code examples for new patterns:\n   - How to use custom exceptions\n   - How to add rate limits to endpoints\n   - How to handle retries\n3. Update coding standards if new patterns introduced\n\nNew sections:\n## Error Handling\n- Use custom exceptions from app.core.exceptions\n- CerebrasAPIError for AI service failures\n- Always include context in error details\n\n## Rate Limiting  \n- Default: 60 req/min per IP\n- Cerebras endpoints: 10 req/min per IP\n- Use @limiter.limit() decorator\n\n## API Versioning\n- All new endpoints use /api/v1 prefix\n- Legacy /api routes deprecated but maintained",
+      "verificationCriteria": "1. All new patterns documented with examples\n2. Anti-patterns clearly marked (what NOT to do)\n3. Code examples are copy-pasteable and work\n4. Migration guide from old patterns to new",
+      "analysisResult": "Code Review & Refactoring Audit - Sales Agent Platform\\n\\nVerified Architecture: FastAPI 0.115.0 layered (api → services → models), SQLAlchemy + PostgreSQL, Cerebras AI via OpenAI SDK, React 19 + Vite 7 + Tailwind v4\\n\\nKey Quality Gates:\\n- Maintain 96%+ test coverage\\n- Keep <1000ms API response time\\n- No API keys hardcoded (enforce via validation)\\n- Follow existing FastAPI dependency injection patterns\\n- Maintain backward compatibility where possible"
+    }
+  ]
+}
