@@ -38,6 +38,7 @@ from app.services.crm.base import (
 )
 
 from app.services.crm.hubspot import HubSpotProvider
+from app.services.crm.apollo import ApolloProvider
 
 __all__ = [
     # Abstract Base Class
@@ -63,4 +64,5 @@ __all__ = [
 
     # Platform Implementations
     "HubSpotProvider",
+    "ApolloProvider",
 ]
