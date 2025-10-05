@@ -17,6 +17,7 @@ from app.api import research
 from app.api import transfer
 from app.api import voice
 from app.api import reports
+from app.api.crm import hubspot
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.exceptions import (
@@ -172,6 +173,7 @@ app.include_router(research.router, prefix=settings.API_V1_PREFIX)  # Task 3: Mu
 app.include_router(transfer.router, prefix=settings.API_V1_PREFIX)  # Task 4: Agent transfer system
 app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Cartesia voice integration
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
+app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX, tags=["crm"])  # Task 5.2: HubSpot CRM integration
 
 
 @app.get("/")
