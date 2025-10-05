@@ -58,7 +58,7 @@ def main():
         "--loglevel=info",
         "--concurrency=4",
         "--pool=solo",  # Use solo for development, prefork for production
-        "--queues=default,workflows,enrichment",  # Listen to all queues
+        "--queues=default,workflows,enrichment,crm_sync",  # Listen to all queues
         "--hostname=worker@sales-agent",
         "--without-gossip",  # Disable gossip protocol for development
         "--without-mingle",  # Disable mingle for faster startup

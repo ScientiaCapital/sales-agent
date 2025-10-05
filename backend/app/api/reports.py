@@ -24,6 +24,7 @@ from app.schemas.report import (
     ReportStatusResponse
 )
 from app.services.report_generator import ReportGenerator
+from app.tasks.agent_tasks import generate_report_async
 
 logger = logging.getLogger(__name__)
 
@@ -36,28 +37,26 @@ report_generator = ReportGenerator()
 @router.post("/generate", response_model=ReportStatusResponse, status_code=202)
 async def generate_report(
     request: ReportGenerateRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
-    Generate AI-powered report for a lead (async)
+    Generate AI-powered report for a lead (async with Celery)
     
-    This endpoint starts report generation in the background and returns immediately.
+    This endpoint enqueues report generation as a Celery task and returns immediately.
     
     The multi-agent pipeline will:
     1. SearchAgent: Research company information
     2. AnalysisAgent: Generate strategic insights
     3. SynthesisAgent: Create professional report
     
-    Use GET /reports/{id} to check status and retrieve completed report.
+    Use GET /reports/lead/{lead_id} to check status and retrieve completed reports.
     
     Args:
-        request: ReportGenerateRequest with lead_id
-        background_tasks: FastAPI background task manager
+        request: ReportGenerateRequest with lead_id and optional force_refresh
         db: Database session
         
     Returns:
-        ReportStatusResponse with status 'generating'
+        ReportStatusResponse with status 'generating' and task_id
     """
     # Verify lead exists
     lead = db.query(Lead).filter(Lead.id == request.lead_id).first()
@@ -67,19 +66,19 @@ async def generate_report(
             detail=f"Lead with ID {request.lead_id} not found"
         )
     
-    logger.info(f"Starting background report generation for lead {lead.id}: {lead.company_name}")
+    logger.info(f"Enqueuing Celery report generation for lead {lead.id}: {lead.company_name}")
     
-    # Add report generation to background tasks
-    background_tasks.add_task(
-        _generate_report_background,
-        lead,
-        db
+    # Enqueue Celery task for report generation
+    task = generate_report_async.delay(
+        lead_id=lead.id,
+        force_refresh=request.force_refresh if hasattr(request, 'force_refresh') else False
     )
     
     return ReportStatusResponse(
         report_id=None,
         status="generating",
-        message=f"Report generation started for {lead.company_name}. Check back in 10-15 seconds."
+        message=f"Report generation task enqueued for {lead.company_name}. Task ID: {task.id}",
+        task_id=task.id
     )
 
 
