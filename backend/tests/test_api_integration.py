@@ -22,7 +22,7 @@ class TestLeadsAPIIntegration:
         mock_cerebras.return_value = mock_service
 
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={
                 "company_name": "Acme Corp",
                 "company_website": "https://acme.com",
@@ -48,7 +48,7 @@ class TestLeadsAPIIntegration:
         mock_cerebras.return_value = mock_service
 
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_name": "Test Corp"}
         )
 
@@ -59,7 +59,7 @@ class TestLeadsAPIIntegration:
     def test_qualify_lead_missing_required_field(self):
         """Test validation error for missing required fields."""
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_website": "https://test.com"}
         )
 
@@ -75,7 +75,7 @@ class TestLeadsAPIIntegration:
         mock_cerebras.return_value = mock_service
 
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_name": "Test Corp"}
         )
 
@@ -85,7 +85,7 @@ class TestLeadsAPIIntegration:
         """Test listing leads when database is empty."""
         # This will fail until database is properly configured
         # For now, we expect it to handle gracefully
-        response = client.get("/api/leads/")
+        response = client.get("/api/v1/leads/")
         
         # Should either return empty list or proper error
         assert response.status_code in [200, 503]
@@ -93,7 +93,7 @@ class TestLeadsAPIIntegration:
     def test_invalid_json_payload(self):
         """Test handling of invalid JSON."""
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             data="not json",
             headers={"Content-Type": "application/json"}
         )
@@ -116,7 +116,7 @@ class TestHealthAPIIntegration:
 
     def test_health_check_basic(self):
         """Test basic health check."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         
         assert response.status_code == 200
         data = response.json()
@@ -125,7 +125,7 @@ class TestHealthAPIIntegration:
 
     def test_health_check_detailed(self):
         """Test detailed health check with service status."""
-        response = client.get("/api/health/detailed")
+        response = client.get("/api/v1/health/detailed")
         
         assert response.status_code == 200
         data = response.json()
@@ -137,7 +137,7 @@ class TestHealthAPIIntegration:
 
     def test_openapi_docs_available(self):
         """Test OpenAPI documentation is accessible."""
-        response = client.get("/api/docs")
+        response = client.get("/api/v1/docs")
         assert response.status_code == 200
 
     def test_openapi_json_available(self):
@@ -154,12 +154,12 @@ class TestAPIErrorHandling:
 
     def test_404_not_found(self):
         """Test 404 for non-existent endpoints."""
-        response = client.get("/api/nonexistent")
+        response = client.get("/api/v1/nonexistent")
         assert response.status_code == 404
 
     def test_method_not_allowed(self):
         """Test 405 for incorrect HTTP methods."""
-        response = client.put("/api/health")
+        response = client.put("/api/v1/health")
         assert response.status_code == 405
 
     def test_large_payload_handling(self):
@@ -167,7 +167,7 @@ class TestAPIErrorHandling:
         large_notes = "x" * 100000  # 100KB of text
         
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={
                 "company_name": "Test",
                 "notes": large_notes
@@ -180,7 +180,7 @@ class TestAPIErrorHandling:
     def test_special_characters_in_input(self):
         """Test handling of special characters."""
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={
                 "company_name": "Test™ <script>alert('xss')</script> Corp",
                 "notes": "Unicode: 你好 🚀 مرحبا"
@@ -205,7 +205,7 @@ class TestAPIConcurrency:
 
         def qualify_lead(company_name):
             return client.post(
-                "/api/leads/qualify",
+                "/api/v1/leads/qualify",
                 json={"company_name": company_name}
             )
 
@@ -231,7 +231,7 @@ class TestAPIRateLimiting:
         # Send many requests quickly
         responses = []
         for _ in range(100):
-            response = client.get("/api/health")
+            response = client.get("/api/v1/health")
             responses.append(response)
             if response.status_code == 429:
                 break
@@ -246,14 +246,14 @@ class TestAPIAuthentication:
     @pytest.mark.skip(reason="Authentication not yet implemented")
     def test_protected_endpoint_requires_auth(self):
         """Test protected endpoints require authentication."""
-        response = client.get("/api/admin/stats")
+        response = client.get("/api/v1/admin/stats")
         assert response.status_code in [401, 403]
 
     @pytest.mark.skip(reason="Authentication not yet implemented")
     def test_valid_token_grants_access(self):
         """Test valid authentication token grants access."""
         response = client.get(
-            "/api/admin/stats",
+            "/api/v1/admin/stats",
             headers={"Authorization": "Bearer valid_token"}
         )
         assert response.status_code == 200
@@ -280,7 +280,7 @@ class TestAPIContentNegotiation:
     def test_accepts_json_content_type(self):
         """Test API accepts JSON content type."""
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_name": "Test"},
             headers={"Content-Type": "application/json"}
         )
@@ -290,7 +290,7 @@ class TestAPIContentNegotiation:
     def test_rejects_unsupported_content_type(self):
         """Test API rejects unsupported content types."""
         response = client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             data="<xml>test</xml>",
             headers={"Content-Type": "application/xml"}
         )
@@ -299,7 +299,7 @@ class TestAPIContentNegotiation:
 
     def test_returns_json_content_type(self):
         """Test API returns JSON content type."""
-        response = client.get("/api/health")
+        response = client.get("/api/v1/health")
         
         assert response.status_code == 200
         assert "application/json" in response.headers["content-type"]

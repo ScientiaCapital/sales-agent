@@ -16,11 +16,11 @@ import os
 from typing import List, Dict, Any
 from datetime import datetime
 
-# Set up environment for Neon branch testing
-os.environ["DATABASE_URL"] = (
-    "postgresql://neondb_owner:npg_YLcRA7T8ZGQr@"
-    "ep-young-waterfall-ae9y03xz.us-east-2.aws.neon.tech/neondb?sslmode=require"
-)
+# Database configuration - Use environment variable for security
+# Set DATABASE_URL in your test environment or .env file
+# For Neon branch testing, configure: DATABASE_URL=postgresql://...neon.tech/neondb?sslmode=require
+if not os.getenv("DATABASE_URL"):
+    pytest.skip("DATABASE_URL environment variable required for database tests", allow_module_level=True)
 
 from app.services.cerebras_routing import (
     CerebrasRouter,

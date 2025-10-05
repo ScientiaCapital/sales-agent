@@ -39,7 +39,9 @@ class VoiceIntegrationTester:
     async def test_database(self) -> bool:
         """Verify voice tables exist in database."""
         try:
-            db_url = os.getenv("DATABASE_URL", "postgresql+psycopg://sales_agent:dev_password_change_in_production@localhost:5433/sales_agent_db")
+            db_url = os.getenv("DATABASE_URL")
+            if not db_url:
+                raise ValueError("DATABASE_URL environment variable is required")
             engine = create_engine(db_url)
 
             tables_to_check = [
@@ -100,13 +102,13 @@ class VoiceIntegrationTester:
         """Test all voice API endpoints."""
         async with httpx.AsyncClient() as client:
             endpoints = [
-                ("GET", "/api/voice/voices", None),
-                ("POST", "/api/voice/sessions", {
+                ("GET", "/api/v1/voice/voices", None),
+                ("POST", "/api/v1/voice/sessions", {
                     "voice_id": "test_voice",
                     "language": "en",
                     "emotion": "professional"
                 }),
-                ("GET", "/api/voice/metrics", None),
+                ("GET", "/api/v1/voice/metrics", None),
             ]
 
             all_ok = True
@@ -142,7 +144,7 @@ class VoiceIntegrationTester:
             # First create a session via REST API
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.base_url}/api/voice/sessions",
+                    f"{self.base_url}/api/v1/voice/sessions",
                     json={
                         "voice_id": "test_voice",
                         "language": "en"

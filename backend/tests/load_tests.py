@@ -44,10 +44,10 @@ class LeadQualificationUser(HttpUser):
         lead_data = self._generate_lead_data()
         
         with self.client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json=lead_data,
             catch_response=True,
-            name="POST /api/leads/qualify"
+            name="POST /api/v1/leads/qualify"
         ) as response:
             if response.status_code == 201:
                 self.lead_count += 1
@@ -73,9 +73,9 @@ class LeadQualificationUser(HttpUser):
     def health_check(self):
         """Check API health."""
         with self.client.get(
-            "/api/health",
+            "/api/v1/health",
             catch_response=True,
-            name="GET /api/health"
+            name="GET /api/v1/health"
         ) as response:
             if response.status_code == 200:
                 data = response.json()
@@ -90,9 +90,9 @@ class LeadQualificationUser(HttpUser):
     def list_leads(self):
         """List all leads."""
         with self.client.get(
-            "/api/leads/",
+            "/api/v1/leads/",
             catch_response=True,
-            name="GET /api/leads/"
+            name="GET /api/v1/leads/"
         ) as response:
             if response.status_code in [200, 503]:  # 503 if DB not configured
                 response.success()
@@ -103,9 +103,9 @@ class LeadQualificationUser(HttpUser):
     def detailed_health_check(self):
         """Get detailed health status."""
         with self.client.get(
-            "/api/health/detailed",
+            "/api/v1/health/detailed",
             catch_response=True,
-            name="GET /api/health/detailed"
+            name="GET /api/v1/health/detailed"
         ) as response:
             if response.status_code == 200:
                 data = response.json()
@@ -142,7 +142,7 @@ class BurstTrafficUser(HttpUser):
             "industry": "Technology"
         }
         
-        self.client.post("/api/leads/qualify", json=lead_data)
+        self.client.post("/api/v1/leads/qualify", json=lead_data)
 
 
 # Event listeners for custom reporting
@@ -205,7 +205,7 @@ class SpikeLoadUser(HttpUser):
     def spike_request(self):
         """Send requests with minimal delay."""
         self.client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_name": "Spike Test"}
         )
 
@@ -219,7 +219,7 @@ class SustainedLoadUser(HttpUser):
     def sustained_request(self):
         """Send requests at steady pace."""
         self.client.post(
-            "/api/leads/qualify",
+            "/api/v1/leads/qualify",
             json={"company_name": "Sustained Test"}
         )
 

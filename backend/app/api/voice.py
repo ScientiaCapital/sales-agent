@@ -19,6 +19,7 @@ from app.models import get_db, Lead
 from app.services.voice_agent import VoiceAgent, VoiceEmotion, ConversationState
 from app.services.cartesia_service import VoiceSpeed
 from app.core.logging import setup_logging
+from app.core.exceptions import LeadNotFoundError, VoiceSessionNotFoundError
 
 logger = setup_logging(__name__)
 
@@ -104,7 +105,7 @@ async def create_voice_session(
     if lead_id:
         lead = db.query(Lead).filter(Lead.id == lead_id).first()
         if not lead:
-            raise HTTPException(status_code=404, detail=f"Lead {lead_id} not found")
+            raise LeadNotFoundError(f"Lead {lead_id} not found", context={"lead_id": lead_id})
 
     # Map emotion string to enum
     try:
@@ -342,7 +343,7 @@ async def close_voice_session(session_id: str):
     try:
         metrics = await agent.get_session_metrics(session_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise VoiceSessionNotFoundError(f"Session {session_id} not found", context={"session_id": session_id})
 
     # Close session
     await agent.close_session(session_id)
@@ -371,7 +372,7 @@ async def get_session_metrics(session_id: str):
     try:
         metrics = await agent.get_session_metrics(session_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
+        raise VoiceSessionNotFoundError(f"Session {session_id} not found", context={"session_id": session_id})
 
     return metrics
 

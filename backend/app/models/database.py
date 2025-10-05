@@ -10,10 +10,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Get database URL from environment
+# Get database URL from environment - REQUIRED, no default for security
 # Use postgresql+psycopg driver (psycopg3) instead of default psycopg2
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://sales_agent:dev_password_change_in_production@localhost:5433/sales_agent_db")
-if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError(
+        "DATABASE_URL environment variable is required. "
+        "Please set it in your .env file. "
+        "Example: DATABASE_URL=postgresql+psycopg://user:password@host:port/database"
+    )
+
+# Convert postgresql:// to postgresql+psycopg:// for psycopg3 compatibility
+if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 # Create SQLAlchemy engine with connection resilience

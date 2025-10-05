@@ -8,7 +8,7 @@ from openai import OpenAI
 import json
 
 from app.core.logging import setup_logging
-from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError
+from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError, MissingAPIKeyError
 
 logger = setup_logging(__name__)
 
@@ -25,7 +25,10 @@ class CerebrasService:
         self.api_base = os.getenv("CEREBRAS_API_BASE", "https://api.cerebras.ai/v1")
 
         if not self.api_key:
-            raise ValueError("CEREBRAS_API_KEY environment variable not set")
+            raise MissingAPIKeyError(
+                "CEREBRAS_API_KEY environment variable not set",
+                context={"api_key": "CEREBRAS_API_KEY"}
+            )
 
         # Initialize OpenAI client with Cerebras endpoint
         self.client = OpenAI(
