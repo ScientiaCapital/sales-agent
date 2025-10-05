@@ -527,7 +527,7 @@ class ValidationError(SalesAgentException):
 
 class InvalidInputError(ValidationError):
     """Invalid input data provided"""
-    
+
     def __init__(
         self,
         message: str,
@@ -538,6 +538,58 @@ class InvalidInputError(ValidationError):
             context=context
         )
         self.error_code = "INVALID_INPUT"
+
+
+class InvalidFileFormatError(ValidationError):
+    """Invalid file format provided"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            context=context
+        )
+        self.error_code = "INVALID_FILE_FORMAT"
+
+
+class FileSizeExceededError(SalesAgentException):
+    """File size exceeds maximum allowed"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="FILE_SIZE_EXCEEDED",
+            status_code=413,
+            context=context
+        )
+
+
+# ============================================================================
+# DATABASE EXCEPTIONS
+# ============================================================================
+
+
+class DatabaseError(SalesAgentException):
+    """Database operation error"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="DATABASE_ERROR",
+            status_code=500,
+            context=context
+        )
 
 
 # ============================================================================
@@ -610,6 +662,9 @@ ERROR_CODE_MAPPING = {
     "MISSING_API_KEY": MissingAPIKeyError,
     "VALIDATION_ERROR": ValidationError,
     "INVALID_INPUT": InvalidInputError,
+    "INVALID_FILE_FORMAT": InvalidFileFormatError,
+    "FILE_SIZE_EXCEEDED": FileSizeExceededError,
+    "DATABASE_ERROR": DatabaseError,
     "RESOURCE_NOT_FOUND": ResourceNotFoundError,
     "RESOURCE_CONFLICT": ResourceConflictError,
 }
