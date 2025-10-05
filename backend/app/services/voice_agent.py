@@ -24,6 +24,7 @@ import redis.asyncio as redis
 
 from .cartesia_service import CartesiaService, VoiceConfig, VoiceEmotion, VoiceSpeed
 from .cerebras import CerebrasService
+from app.core.exceptions import VoiceSessionNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +260,7 @@ class VoiceAgent:
             Dict chunks with status updates and audio data
         """
         if session_id not in self.sessions:
-            raise ValueError(f"Session {session_id} not found")
+            raise VoiceSessionNotFoundError(f"Session {session_id} not found", context={"session_id": session_id})
 
         session = self.sessions[session_id]
         turn_id = str(uuid4())
@@ -448,7 +449,7 @@ class VoiceAgent:
             emotion: New emotion setting
         """
         if session_id not in self.sessions:
-            raise ValueError(f"Session {session_id} not found")
+            raise VoiceSessionNotFoundError(f"Session {session_id} not found", context={"session_id": session_id})
 
         session = self.sessions[session_id]
         session.voice_config.emotion = emotion
@@ -490,7 +491,7 @@ class VoiceAgent:
             # Try to load from Redis
             session = await self._load_session_from_redis(session_id)
             if not session:
-                raise ValueError(f"Session {session_id} not found")
+                raise VoiceSessionNotFoundError(f"Session {session_id} not found", context={"session_id": session_id})
         else:
             session = self.sessions[session_id]
 

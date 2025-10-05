@@ -136,43 +136,118 @@ class WebhookEvent(BaseModel):
 # EXCEPTIONS
 # ============================================================================
 
+from app.core.exceptions import SalesAgentException
 
-class CRMException(Exception):
+
+class CRMException(SalesAgentException):
     """Base exception for all CRM operations"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "CRM_ERROR",
+        status_code: int = 500,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message, error_code, status_code, context)
 
 
 class CRMAuthenticationError(CRMException):
     """Authentication failed (invalid credentials, expired tokens)"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_AUTHENTICATION_ERROR",
+            status_code=401,
+            context=context
+        )
 
 
 class CRMRateLimitError(CRMException):
     """Rate limit exceeded"""
     
-    def __init__(self, message: str, retry_after: Optional[int] = None):
-        super().__init__(message)
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None,
+        retry_after: Optional[int] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_RATE_LIMIT_ERROR",
+            status_code=429,
+            context=context
+        )
         self.retry_after = retry_after  # Seconds until rate limit resets
 
 
 class CRMNotFoundError(CRMException):
     """Resource not found (contact, organization, etc.)"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_NOT_FOUND",
+            status_code=404,
+            context=context
+        )
 
 
 class CRMValidationError(CRMException):
     """Invalid data provided to CRM"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_VALIDATION_ERROR",
+            status_code=422,
+            context=context
+        )
 
 
 class CRMNetworkError(CRMException):
     """Network connectivity issues"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_NETWORK_ERROR",
+            status_code=502,
+            context=context
+        )
 
 
 class CRMWebhookError(CRMException):
     """Webhook signature verification failed"""
-    pass
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CRM_WEBHOOK_ERROR",
+            status_code=400,
+            context=context
+        )
 
 
 # ============================================================================

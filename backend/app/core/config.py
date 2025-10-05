@@ -20,8 +20,9 @@ class Settings(BaseSettings):
         "http://localhost:5173",  # Vite dev server
     ]
 
-    # Database
-    DATABASE_URL: str = "postgresql://localhost/sales_agent"
+    # Database - MUST be provided via environment variable (.env file)
+    # No default value to prevent accidental connection to wrong database
+    DATABASE_URL: str
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -41,6 +42,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = "../.env"
         case_sensitive = True
+        extra = "ignore"  # Ignore extra environment variables not defined in Settings
 
 
 # Create global settings instance

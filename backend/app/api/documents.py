@@ -8,6 +8,7 @@ from typing import Optional
 from app.models import get_db
 from app.services.document_processor import DocumentProcessor
 from app.core.logging import setup_logging
+from app.core.exceptions import UnsupportedDocumentTypeError, DocumentTooLargeError
 
 logger = setup_logging(__name__)
 
@@ -59,9 +60,9 @@ async def analyze_document(
     file_ext = file.filename.lower().split('.')[-1]
     
     if file_ext not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Unsupported file type: .{file_ext}. Allowed: {', '.join(allowed_extensions)}"
+        raise UnsupportedDocumentTypeError(
+            f"Unsupported file type: .{file_ext}. Allowed: {', '.join(allowed_extensions)}",
+            context={"file_extension": file_ext, "allowed": allowed_extensions}
         )
 
     # Check file size (max 10MB)
@@ -69,9 +70,9 @@ async def analyze_document(
     content = await file.read()
     
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"File too large. Maximum size: 10MB, got: {len(content) / 1024 / 1024:.2f}MB"
+        raise DocumentTooLargeError(
+            f"File too large. Maximum size: 10MB, got: {len(content) / 1024 / 1024:.2f}MB",
+            context={"file_size_mb": len(content) / 1024 / 1024, "max_size_mb": 10}
         )
 
     # Process document

@@ -1,573 +1,615 @@
 """
 Custom Exception Hierarchy for Sales Agent Platform
 
-Provides domain-specific exceptions with structured error codes, logging,
-and user-friendly messages for better debugging and error handling.
+This module defines domain-specific exceptions to replace generic exceptions
+throughout the codebase. All custom exceptions inherit from SalesAgentException
+and include error codes, HTTP status codes, and logging context.
+
+Exception Hierarchy:
+    SalesAgentException (base)
+    ├── LeadException
+    │   ├── LeadValidationError (400)
+    │   ├── LeadNotFoundError (404)
+    │   └── LeadQualificationError (500)
+    ├── CRMException (imported from app.services.crm.base)
+    │   ├── CRMAuthenticationError (401)
+    │   ├── CRMRateLimitError (429)
+    │   ├── CRMNotFoundError (404)
+    │   ├── CRMValidationError (422)
+    │   ├── CRMNetworkError (502)
+    │   └── CRMWebhookError (400)
+    ├── VoiceException
+    │   ├── CartesiaAPIError (502)
+    │   ├── VoiceGenerationError (500)
+    │   └── AudioProcessingError (500)
+    ├── DocumentException
+    │   ├── PDFProcessingError (500)
+    │   ├── DocumentParsingError (422)
+    │   └── DocumentNotFoundError (404)
+    └── ExternalAPIException
+        ├── APIConnectionError (502)
+        ├── APIRateLimitError (429)
+        └── APIAuthenticationError (401)
+
+Usage:
+    >>> raise LeadNotFoundError(f"Lead {lead_id} not found", context={"lead_id": lead_id})
+    >>> raise CartesiaAPIError("Voice generation failed", context={"voice_id": "abc"})
 """
 
+from typing import Dict, Any, Optional
 import logging
-from typing import Optional, Dict, Any
-from datetime import datetime
-import traceback
 
 logger = logging.getLogger(__name__)
 
 
+# ============================================================================
+# BASE EXCEPTION
+# ============================================================================
+
+
 class SalesAgentException(Exception):
     """
-    Base exception for all Sales Agent errors.
-
+    Base exception for all Sales Agent application errors.
+    
     Attributes:
-        error_code: Unique error identifier for logging/debugging
-        message: User-friendly error message
-        details: Technical details for logging (not exposed to users)
-        status_code: HTTP status code (default: 500)
+        message: Human-readable error message
+        error_code: Machine-readable error code (e.g., "LEAD_NOT_FOUND")
+        status_code: HTTP status code for API responses
+        context: Additional context data (lead_id, api_name, etc.)
+    
+    Example:
+        raise SalesAgentException(
+            message="Operation failed",
+            error_code="OPERATION_ERROR",
+            status_code=500,
+            context={"operation": "qualify_lead", "lead_id": 123}
+        )
     """
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "SALES_AGENT_ERROR",
+        status_code: int = 500,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        self.message = message
+        self.error_code = error_code
+        self.status_code = status_code
+        self.context = context or {}
+        super().__init__(message)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert exception to dictionary for JSON serialization"""
+        return {
+            "error": {
+                "code": self.error_code,
+                "message": self.message,
+                "context": self.context
+            }
+        }
+    
+    def __str__(self) -> str:
+        """String representation for logging"""
+        if self.context:
+            return f"{self.error_code}: {self.message} (context: {self.context})"
+        return f"{self.error_code}: {self.message}"
+    
+    def __repr__(self) -> str:
+        """Detailed representation for debugging"""
+        return (
+            f"{self.__class__.__name__}("
+            f"message={self.message!r}, "
+            f"error_code={self.error_code!r}, "
+            f"status_code={self.status_code}, "
+            f"context={self.context!r})"
+        )
+
+
+# ============================================================================
+# LEAD EXCEPTIONS
+# ============================================================================
+
+
+class LeadException(SalesAgentException):
+    """Base exception for lead-related errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "LEAD_ERROR",
+        status_code: int = 500,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message, error_code, status_code, context)
+
+
+class LeadValidationError(LeadException):
+    """Lead data validation failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="LEAD_VALIDATION_ERROR",
+            status_code=400,
+            context=context
+        )
+
+
+class LeadNotFoundError(LeadException):
+    """Lead not found in database"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="LEAD_NOT_FOUND",
+            status_code=404,
+            context=context
+        )
+
+
+class LeadQualificationError(LeadException):
+    """Lead qualification process failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="LEAD_QUALIFICATION_ERROR",
+            status_code=500,
+            context=context
+        )
+
+
+# ============================================================================
+# VOICE EXCEPTIONS
+# ============================================================================
+
+
+class VoiceException(SalesAgentException):
+    """Base exception for voice-related errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "VOICE_ERROR",
+        status_code: int = 500,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message, error_code, status_code, context)
+
+
+class CartesiaAPIError(VoiceException):
+    """Cartesia API call failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="CARTESIA_API_ERROR",
+            status_code=502,
+            context=context
+        )
+
+
+class VoiceGenerationError(VoiceException):
+    """Voice generation process failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="VOICE_GENERATION_ERROR",
+            status_code=500,
+            context=context
+        )
+
+
+class AudioProcessingError(VoiceException):
+    """Audio processing failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="AUDIO_PROCESSING_ERROR",
+            status_code=500,
+            context=context
+        )
+
+
+class VoiceSessionNotFoundError(VoiceException):
+    """Voice session not found"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="VOICE_SESSION_NOT_FOUND",
+            status_code=404,
+            context=context
+        )
+
+
+# ============================================================================
+# DOCUMENT EXCEPTIONS
+# ============================================================================
+
+
+class DocumentException(SalesAgentException):
+    """Base exception for document processing errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "DOCUMENT_ERROR",
+        status_code: int = 500,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message, error_code, status_code, context)
+
+
+class PDFProcessingError(DocumentException):
+    """PDF processing failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="PDF_PROCESSING_ERROR",
+            status_code=500,
+            context=context
+        )
+
+
+class DocumentParsingError(DocumentException):
+    """Document parsing failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="DOCUMENT_PARSING_ERROR",
+            status_code=422,
+            context=context
+        )
+
+
+class DocumentNotFoundError(DocumentException):
+    """Document not found"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="DOCUMENT_NOT_FOUND",
+            status_code=404,
+            context=context
+        )
+
+
+class UnsupportedDocumentTypeError(DocumentException):
+    """Unsupported document type"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="UNSUPPORTED_DOCUMENT_TYPE",
+            status_code=400,
+            context=context
+        )
+
+
+class DocumentTooLargeError(DocumentException):
+    """Document exceeds size limit"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="DOCUMENT_TOO_LARGE",
+            status_code=413,
+            context=context
+        )
+
+
+# ============================================================================
+# EXTERNAL API EXCEPTIONS
+# ============================================================================
+
+
+class ExternalAPIException(SalesAgentException):
+    """Base exception for external API errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "EXTERNAL_API_ERROR",
+        status_code: int = 502,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(message, error_code, status_code, context)
+
+
+class APIConnectionError(ExternalAPIException):
+    """Failed to connect to external API"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="API_CONNECTION_ERROR",
+            status_code=502,
+            context=context
+        )
+
+
+class APIRateLimitError(ExternalAPIException):
+    """External API rate limit exceeded"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None,
+        retry_after: Optional[int] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="API_RATE_LIMIT_ERROR",
+            status_code=429,
+            context=context
+        )
+        self.retry_after = retry_after  # Seconds until rate limit resets
+
+
+class APIAuthenticationError(ExternalAPIException):
+    """External API authentication failed"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="API_AUTHENTICATION_ERROR",
+            status_code=401,
+            context=context
+        )
+
+
+class APITimeoutError(ExternalAPIException):
+    """External API request timed out"""
 
     def __init__(
         self,
         message: str,
-        error_code: str = "INTERNAL_ERROR",
-        details: Optional[Dict[str, Any]] = None,
-        status_code: int = 500
+        context: Optional[Dict[str, Any]] = None
     ):
-        self.message = message
-        self.error_code = error_code
-        self.details = details or {}
-        self.status_code = status_code
-        self.timestamp = datetime.utcnow().isoformat()
-
-        # Log the error with full context
-        logger.error(
-            f"[{error_code}] {message}",
-            extra={
-                "error_code": error_code,
-                "details": details,
-                "status_code": status_code,
-                "timestamp": self.timestamp
-            },
-            exc_info=True
+        super().__init__(
+            message=message,
+            error_code="API_TIMEOUT_ERROR",
+            status_code=504,
+            context=context
         )
 
-        super().__init__(message)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert exception to dictionary for API responses."""
-        return {
-            "error": self.error_code,
-            "message": self.message,
-            "timestamp": self.timestamp
-        }
-
-
-# ============================================================================
-# Lead Qualification Errors
-# ============================================================================
-
-class LeadQualificationError(SalesAgentException):
-    """Errors during lead qualification process."""
+class CerebrasAPIError(ExternalAPIException):
+    """Cerebras Cloud API error"""
 
     def __init__(
         self,
-        message: str = "Lead qualification failed",
-        error_code: str = "LEAD_QUALIFICATION_FAILED",
+        message: str,
         details: Optional[Dict[str, Any]] = None
     ):
         super().__init__(
             message=message,
-            error_code=error_code,
-            details=details,
-            status_code=500
+            error_code="CEREBRAS_API_ERROR",
+            status_code=502,
+            context=details
         )
 
 
-class CerebrasAPIError(LeadQualificationError):
-    """Errors from Cerebras API calls."""
+class CerebrasTimeoutError(ExternalAPIException):
+    """Cerebras API request timeout"""
 
     def __init__(
         self,
-        message: str = "Cerebras API request failed",
-        error_code: str = "CEREBRAS_API_ERROR",
-        details: Optional[Dict[str, Any]] = None
+        message: str,
+        context: Optional[Dict[str, Any]] = None
     ):
         super().__init__(
             message=message,
-            error_code=error_code,
-            details=details
-        )
-
-
-class CerebrasTimeoutError(CerebrasAPIError):
-    """Cerebras API timeout errors."""
-
-    def __init__(
-        self,
-        message: str = "Cerebras API request timed out",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="CEREBRAS_API_TIMEOUT",
-            details=details
-        )
-
-
-class CerebrasRateLimitError(CerebrasAPIError):
-    """Cerebras API rate limit errors."""
-
-    def __init__(
-        self,
-        message: str = "Cerebras API rate limit exceeded",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="CEREBRAS_RATE_LIMIT",
-            details=details
-        )
-        self.status_code = 429  # Too Many Requests
-
-
-# ============================================================================
-# External API Errors
-# ============================================================================
-
-class ExternalAPIError(SalesAgentException):
-    """Errors from external API calls (RunPod, social media, etc.)."""
-
-    def __init__(
-        self,
-        message: str = "External API request failed",
-        error_code: str = "EXTERNAL_API_ERROR",
-        details: Optional[Dict[str, Any]] = None,
-        status_code: int = 502  # Bad Gateway
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=status_code
-        )
-
-
-class RunPodAPIError(ExternalAPIError):
-    """Errors from RunPod API calls."""
-
-    def __init__(
-        self,
-        message: str = "RunPod API request failed",
-        error_code: str = "RUNPOD_API_ERROR",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details
-        )
-
-
-class RunPodTimeoutError(RunPodAPIError):
-    """RunPod API timeout errors."""
-
-    def __init__(
-        self,
-        message: str = "RunPod API request timed out",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="RUNPOD_API_TIMEOUT",
-            details=details
-        )
-
-
-class SocialMediaAPIError(ExternalAPIError):
-    """Errors from social media API calls (Twitter, Reddit, LinkedIn)."""
-
-    def __init__(
-        self,
-        message: str = "Social media API request failed",
-        error_code: str = "SOCIAL_MEDIA_API_ERROR",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details
-        )
-
-
-class TwitterAPIError(SocialMediaAPIError):
-    """Twitter/X API specific errors."""
-
-    def __init__(
-        self,
-        message: str = "Twitter API request failed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="TWITTER_API_ERROR",
-            details=details
-        )
-
-
-class RedditAPIError(SocialMediaAPIError):
-    """Reddit API specific errors."""
-
-    def __init__(
-        self,
-        message: str = "Reddit API request failed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="REDDIT_API_ERROR",
-            details=details
+            error_code="CEREBRAS_TIMEOUT",
+            status_code=504,
+            context=context
         )
 
 
 # ============================================================================
-# Storage Errors
+# CONFIGURATION EXCEPTIONS
 # ============================================================================
 
-class StorageError(SalesAgentException):
-    """Errors related to storage operations (S3, local filesystem)."""
-
-    def __init__(
-        self,
-        message: str = "Storage operation failed",
-        error_code: str = "STORAGE_ERROR",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=500
-        )
-
-
-class S3UploadError(StorageError):
-    """S3 upload operation errors."""
-
-    def __init__(
-        self,
-        message: str = "S3 upload failed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="S3_UPLOAD_FAILED",
-            details=details
-        )
-
-
-class S3DownloadError(StorageError):
-    """S3 download operation errors."""
-
-    def __init__(
-        self,
-        message: str = "S3 download failed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="S3_DOWNLOAD_FAILED",
-            details=details
-        )
-
-
-# ============================================================================
-# Database Errors
-# ============================================================================
-
-class DatabaseError(SalesAgentException):
-    """Errors during database operations."""
-
-    def __init__(
-        self,
-        message: str = "Database operation failed",
-        error_code: str = "DATABASE_ERROR",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=500
-        )
-
-
-class DatabaseConnectionError(DatabaseError):
-    """Database connection failures."""
-
-    def __init__(
-        self,
-        message: str = "Failed to connect to database",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="DATABASE_CONNECTION_ERROR",
-            details=details
-        )
-
-
-class DatabaseQueryError(DatabaseError):
-    """Database query execution failures."""
-
-    def __init__(
-        self,
-        message: str = "Database query failed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="DATABASE_QUERY_ERROR",
-            details=details
-        )
-
-
-# ============================================================================
-# Validation Errors
-# ============================================================================
-
-class ValidationError(SalesAgentException):
-    """Input validation errors."""
-
-    def __init__(
-        self,
-        message: str = "Validation failed",
-        error_code: str = "VALIDATION_ERROR",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=400  # Bad Request
-        )
-
-
-class InvalidFileFormatError(ValidationError):
-    """Invalid file format errors."""
-
-    def __init__(
-        self,
-        message: str = "Invalid file format",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="INVALID_FILE_FORMAT",
-            details=details
-        )
-
-
-class FileSizeExceededError(ValidationError):
-    """File size limit exceeded errors."""
-
-    def __init__(
-        self,
-        message: str = "File size exceeds maximum allowed",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="FILE_SIZE_EXCEEDED",
-            details=details
-        )
-
-
-class MissingRequiredFieldError(ValidationError):
-    """Missing required field errors."""
-
-    def __init__(
-        self,
-        message: str = "Missing required field",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code="MISSING_REQUIRED_FIELD",
-            details=details
-        )
-
-
-# ============================================================================
-# Resource Errors
-# ============================================================================
-
-class ResourceNotFoundError(SalesAgentException):
-    """Resource not found errors."""
-
-    def __init__(
-        self,
-        message: str = "Resource not found",
-        error_code: str = "RESOURCE_NOT_FOUND",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=404  # Not Found
-        )
-
-
-class LeadNotFoundError(ResourceNotFoundError):
-    """Lead not found errors."""
-
-    def __init__(
-        self,
-        lead_id: int,
-        details: Optional[Dict[str, Any]] = None
-    ):
-        if details is None:
-            details = {}
-        details["lead_id"] = lead_id
-
-        super().__init__(
-            message=f"Lead with ID {lead_id} not found",
-            error_code="LEAD_NOT_FOUND",
-            details=details
-        )
-
-
-class DocumentNotFoundError(ResourceNotFoundError):
-    """Document not found errors."""
-
-    def __init__(
-        self,
-        document_id: int,
-        details: Optional[Dict[str, Any]] = None
-    ):
-        if details is None:
-            details = {}
-        details["document_id"] = document_id
-
-        super().__init__(
-            message=f"Document with ID {document_id} not found",
-            error_code="DOCUMENT_NOT_FOUND",
-            details=details
-        )
-
-
-# ============================================================================
-# Authentication/Authorization Errors (Future use)
-# ============================================================================
-
-class AuthenticationError(SalesAgentException):
-    """Authentication errors."""
-
-    def __init__(
-        self,
-        message: str = "Authentication failed",
-        error_code: str = "AUTHENTICATION_FAILED",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=401  # Unauthorized
-        )
-
-
-class AuthorizationError(SalesAgentException):
-    """Authorization/permission errors."""
-
-    def __init__(
-        self,
-        message: str = "Access denied",
-        error_code: str = "ACCESS_DENIED",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=403  # Forbidden
-        )
-
-
-# ============================================================================
-# Service Unavailable Errors
-# ============================================================================
-
-class ServiceUnavailableError(SalesAgentException):
-    """Service temporarily unavailable errors."""
-
-    def __init__(
-        self,
-        message: str = "Service temporarily unavailable",
-        error_code: str = "SERVICE_UNAVAILABLE",
-        details: Optional[Dict[str, Any]] = None
-    ):
-        super().__init__(
-            message=message,
-            error_code=error_code,
-            details=details,
-            status_code=503  # Service Unavailable
-        )
-
-
-class CircuitBreakerOpenError(ServiceUnavailableError):
-    """Circuit breaker is open, preventing requests."""
-
-    def __init__(
-        self,
-        service_name: str,
-        details: Optional[Dict[str, Any]] = None
-    ):
-        if details is None:
-            details = {}
-        details["service_name"] = service_name
-
-        super().__init__(
-            message=f"Service {service_name} is temporarily unavailable (circuit breaker open)",
-            error_code="CIRCUIT_BREAKER_OPEN",
-            details=details
-        )
-
-
-# ============================================================================
-# Configuration Errors
-# ============================================================================
 
 class ConfigurationError(SalesAgentException):
-    """Configuration errors."""
-
+    """Application configuration error"""
+    
     def __init__(
         self,
-        message: str = "Configuration error",
-        error_code: str = "CONFIGURATION_ERROR",
-        details: Optional[Dict[str, Any]] = None
+        message: str,
+        context: Optional[Dict[str, Any]] = None
     ):
         super().__init__(
             message=message,
-            error_code=error_code,
-            details=details,
-            status_code=500
+            error_code="CONFIGURATION_ERROR",
+            status_code=500,
+            context=context
         )
 
 
 class MissingAPIKeyError(ConfigurationError):
-    """Missing API key configuration errors."""
-
+    """Required API key not found in environment"""
+    
     def __init__(
         self,
-        service_name: str,
-        details: Optional[Dict[str, Any]] = None
+        message: str,
+        context: Optional[Dict[str, Any]] = None
     ):
-        if details is None:
-            details = {}
-        details["service_name"] = service_name
-
         super().__init__(
-            message=f"{service_name} API key not configured",
-            error_code="MISSING_API_KEY",
-            details=details
+            message=message,
+            context=context
         )
-        self.status_code = 501  # Not Implemented
+        self.error_code = "MISSING_API_KEY"
+
+
+# ============================================================================
+# VALIDATION EXCEPTIONS
+# ============================================================================
+
+
+class ValidationError(SalesAgentException):
+    """Data validation error"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="VALIDATION_ERROR",
+            status_code=400,
+            context=context
+        )
+
+
+class InvalidInputError(ValidationError):
+    """Invalid input data provided"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            context=context
+        )
+        self.error_code = "INVALID_INPUT"
+
+
+# ============================================================================
+# RESOURCE EXCEPTIONS
+# ============================================================================
+
+
+class ResourceNotFoundError(SalesAgentException):
+    """Generic resource not found error"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="RESOURCE_NOT_FOUND",
+            status_code=404,
+            context=context
+        )
+
+
+class ResourceConflictError(SalesAgentException):
+    """Resource conflict (duplicate, version mismatch)"""
+    
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="RESOURCE_CONFLICT",
+            status_code=409,
+            context=context
+        )
+
+
+# ============================================================================
+# EXCEPTION CATALOG
+# ============================================================================
+
+# Mapping of error codes to exception classes for reverse lookup
+ERROR_CODE_MAPPING = {
+    "SALES_AGENT_ERROR": SalesAgentException,
+    "LEAD_ERROR": LeadException,
+    "LEAD_VALIDATION_ERROR": LeadValidationError,
+    "LEAD_NOT_FOUND": LeadNotFoundError,
+    "LEAD_QUALIFICATION_ERROR": LeadQualificationError,
+    "VOICE_ERROR": VoiceException,
+    "CARTESIA_API_ERROR": CartesiaAPIError,
+    "VOICE_GENERATION_ERROR": VoiceGenerationError,
+    "AUDIO_PROCESSING_ERROR": AudioProcessingError,
+    "VOICE_SESSION_NOT_FOUND": VoiceSessionNotFoundError,
+    "DOCUMENT_ERROR": DocumentException,
+    "PDF_PROCESSING_ERROR": PDFProcessingError,
+    "DOCUMENT_PARSING_ERROR": DocumentParsingError,
+    "DOCUMENT_NOT_FOUND": DocumentNotFoundError,
+    "UNSUPPORTED_DOCUMENT_TYPE": UnsupportedDocumentTypeError,
+    "DOCUMENT_TOO_LARGE": DocumentTooLargeError,
+    "EXTERNAL_API_ERROR": ExternalAPIException,
+    "API_CONNECTION_ERROR": APIConnectionError,
+    "API_RATE_LIMIT_ERROR": APIRateLimitError,
+    "API_AUTHENTICATION_ERROR": APIAuthenticationError,
+    "API_TIMEOUT_ERROR": APITimeoutError,
+    "CEREBRAS_API_ERROR": CerebrasAPIError,
+    "CEREBRAS_TIMEOUT": CerebrasTimeoutError,
+    "CONFIGURATION_ERROR": ConfigurationError,
+    "MISSING_API_KEY": MissingAPIKeyError,
+    "VALIDATION_ERROR": ValidationError,
+    "INVALID_INPUT": InvalidInputError,
+    "RESOURCE_NOT_FOUND": ResourceNotFoundError,
+    "RESOURCE_CONFLICT": ResourceConflictError,
+}

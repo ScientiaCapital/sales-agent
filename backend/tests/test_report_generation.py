@@ -173,7 +173,7 @@ class TestReportAPI:
     """Test report API endpoints"""
     
     def test_generate_report_endpoint(self, client, db_session):
-        """Test POST /api/reports/generate endpoint"""
+        """Test POST /api/v1/reports/generate endpoint"""
         # Create test lead
         lead = Lead(
             company_name="TechCorp Inc",
@@ -185,7 +185,7 @@ class TestReportAPI:
         
         # Request report generation
         response = client.post(
-            "/api/reports/generate",
+            "/api/v1/reports/generate",
             json={"lead_id": lead.id}
         )
         
@@ -196,7 +196,7 @@ class TestReportAPI:
         assert "message" in data
     
     def test_get_report_endpoint(self, client, db_session):
-        """Test GET /api/reports/{id} endpoint"""
+        """Test GET /api/v1/reports/{id} endpoint"""
         # Create test lead and report
         lead = Lead(company_name="TechCorp Inc", industry="SaaS")
         db_session.add(lead)
@@ -217,7 +217,7 @@ class TestReportAPI:
         db_session.refresh(report)
         
         # Get report
-        response = client.get(f"/api/reports/{report.id}")
+        response = client.get(f"/api/v1/reports/{report.id}")
         
         # Verify response
         assert response.status_code == 200
@@ -227,7 +227,7 @@ class TestReportAPI:
         assert data["status"] == "completed"
     
     def test_list_reports_by_lead(self, client, db_session):
-        """Test GET /api/reports/lead/{lead_id} endpoint"""
+        """Test GET /api/v1/reports/lead/{lead_id} endpoint"""
         # Create test lead with multiple reports
         lead = Lead(company_name="TechCorp Inc", industry="SaaS")
         db_session.add(lead)
@@ -247,7 +247,7 @@ class TestReportAPI:
         db_session.commit()
         
         # Get reports for lead
-        response = client.get(f"/api/reports/lead/{lead.id}")
+        response = client.get(f"/api/v1/reports/lead/{lead.id}")
         
         # Verify response
         assert response.status_code == 200
@@ -258,7 +258,7 @@ class TestReportAPI:
     
     def test_report_not_found(self, client):
         """Test 404 for non-existent report"""
-        response = client.get("/api/reports/99999")
+        response = client.get("/api/v1/reports/99999")
         assert response.status_code == 404
 
 

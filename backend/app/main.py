@@ -23,11 +23,8 @@ from app.core.exceptions import (
     SalesAgentException,
     ValidationError,
     ResourceNotFoundError,
-    ExternalAPIError,
-    DatabaseError,
-    ServiceUnavailableError,
-    AuthenticationError,
-    AuthorizationError,
+    ExternalAPIException,
+    ConfigurationError,
 )
 
 # Configure logging
@@ -183,7 +180,7 @@ async def root():
     return {
         "message": "Sales Agent API",
         "version": settings.VERSION,
-        "docs": "/api/docs",
+        "docs": "/api/v1/docs",
     }
 
 
