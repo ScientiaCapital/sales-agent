@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, HTTPException
@@ -31,6 +32,56 @@ from app.core.exceptions import (
 
 # Configure logging
 logger = setup_logging(__name__)
+
+# Initialize Sentry error tracking (optional - only if SENTRY_DSN is set)
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+    from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        environment=os.getenv("ENVIRONMENT", "development"),
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),  # 10% of transactions
+        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),  # 10% profiling
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            CeleryIntegration(),
+            RedisIntegration(),
+            SqlalchemyIntegration(),
+        ],
+        # Don't send data in test environment
+        before_send=lambda event, hint: None if os.getenv("TESTING") == "true" else event,
+    )
+    logger.info(f"Sentry initialized for environment: {os.getenv('ENVIRONMENT', 'development')}")
+else:
+    logger.info("Sentry not configured (SENTRY_DSN not set)")
+
+# Initialize Datadog APM tracing (optional - only if DATADOG_API_KEY is set)
+datadog_enabled = os.getenv("DATADOG_ENABLED", "false").lower() == "true"
+if datadog_enabled:
+    from ddtrace import patch_all, config
+
+    # Configure Datadog service name and environment
+    config.service = os.getenv("DATADOG_SERVICE_NAME", "sales-agent-api")
+    config.env = os.getenv("ENVIRONMENT", "development")
+    config.version = os.getenv("VERSION", "1.0.0")
+
+    # Patch all supported libraries for automatic instrumentation
+    patch_all(
+        fastapi=True,
+        sqlalchemy=True,
+        redis=True,
+        httpx=True,
+        aiohttp=True,
+    )
+
+    logger.info(f"Datadog APM initialized for service: {config.service}, env: {config.env}")
+else:
+    logger.info("Datadog APM not enabled (DATADOG_ENABLED=true not set)")
 
 # Initialize FastAPI app
 app = FastAPI(
