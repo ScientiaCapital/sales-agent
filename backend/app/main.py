@@ -15,6 +15,7 @@ from app.api import refine
 from app.api import research
 from app.api import transfer
 from app.api import voice
+from app.api import reports
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.exceptions import (
@@ -122,6 +123,7 @@ app.include_router(refine.router, prefix=settings.API_V1_PREFIX)  # Task 1: Iter
 app.include_router(research.router, prefix=settings.API_V1_PREFIX)  # Task 3: Multi-agent research pipeline
 app.include_router(transfer.router, prefix=settings.API_V1_PREFIX)  # Task 4: Agent transfer system
 app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Cartesia voice integration
+app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
 
 
 @app.get("/")

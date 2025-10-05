@@ -49,6 +49,9 @@ class Lead(Base):
 
     # Voice interaction relationship
     voice_sessions = relationship("VoiceSessionLog", back_populates="lead", cascade="all, delete-orphan")
+    
+    # Report generation relationship
+    reports = relationship("Report", back_populates="lead", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Lead(id={self.id}, company='{self.company_name}', score={self.qualification_score})>"
