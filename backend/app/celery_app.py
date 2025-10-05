@@ -64,6 +64,9 @@ celery_app.conf.update(
         "app.tasks.agent_tasks.execute_workflow_task": {"queue": "workflows"},
         "app.tasks.agent_tasks.qualify_lead_async": {"queue": "default"},
         "app.tasks.agent_tasks.enrich_lead_async": {"queue": "enrichment"},
+        "app.tasks.agent_tasks.generate_report_async": {"queue": "workflows"},
+        "app.tasks.agent_tasks.batch_generate_reports": {"queue": "workflows"},
+        "app.tasks.agent_tasks.sync_crm_contacts": {"queue": "crm_sync"},
     },
     
     # Rate limiting (prevent API quota exhaustion)

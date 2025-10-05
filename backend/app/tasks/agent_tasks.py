@@ -254,6 +254,182 @@ def enrich_lead_async(
 
 
 # ============================================================================
+# AI REPORT GENERATION TASKS
+# ============================================================================
+
+@celery_app.task(name="generate_report_async", bind=True, max_retries=3)
+def generate_report_async(
+    self,
+    lead_id: int,
+    force_refresh: bool = False
+):
+    """
+    Async task to generate AI-powered company research report
+    
+    This task orchestrates the 3-agent pipeline:
+    1. SearchAgent - Company research (6 parallel searches)
+    2. AnalysisAgent - Strategic insights and opportunities
+    3. SynthesisAgent - Professional report generation
+    
+    Args:
+        lead_id: Database ID of lead to generate report for
+        force_refresh: Skip cache and force new research
+        
+    Returns:
+        Dict with report generation results
+    """
+    try:
+        logger.info(f"Starting async report generation for lead_id={lead_id}")
+        
+        # Import here to avoid circular dependencies
+        from app.services.report_generator import ReportGenerator
+        from app.models import Lead, Report
+        from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+        from sqlalchemy.orm import sessionmaker
+        from app.core.config import settings
+        import asyncio
+        
+        # Create async session
+        engine = create_async_engine(settings.ASYNC_DATABASE_URL, echo=False)
+        async_session_factory = sessionmaker(
+            engine, class_=AsyncSession, expire_on_commit=False
+        )
+        
+        async def _generate():
+            async with async_session_factory() as session:
+                # Get lead
+                lead = await session.get(Lead, lead_id)
+                if not lead:
+                    logger.error(f"Lead {lead_id} not found")
+                    return {"error": f"Lead {lead_id} not found"}
+                
+                # Generate report
+                report_gen = ReportGenerator()
+                report = await report_gen.generate_report(lead, session, force_refresh=force_refresh)
+                
+                return {
+                    "lead_id": lead_id,
+                    "report_id": report.id,
+                    "status": report.status,
+                    "title": report.title,
+                    "confidence_score": report.confidence_score,
+                    "generation_time_ms": report.generation_time_ms,
+                    "error_message": report.error_message
+                }
+        
+        # Run async function in event loop
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_generate())
+            logger.info(f"Report generated for lead {lead_id}: {result}")
+            return result
+        finally:
+            loop.close()
+            
+    except SoftTimeLimitExceeded:
+        logger.warning(f"Soft time limit exceeded for report generation (lead {lead_id})")
+        raise
+        
+    except Exception as exc:
+        logger.error(f"Error generating report for lead {lead_id}: {exc}")
+        countdown = 2 ** self.request.retries  # Exponential backoff
+        raise self.retry(exc=exc, countdown=countdown, max_retries=3)
+
+
+@celery_app.task(name="batch_generate_reports", bind=True)
+def batch_generate_reports_task(self, lead_ids: List[int], force_refresh: bool = False):
+    """
+    Generate reports for multiple leads in parallel
+    
+    Uses Celery group to execute report generation for multiple leads concurrently.
+    
+    Args:
+        lead_ids: List of lead database IDs
+        force_refresh: Skip cache for all reports
+        
+    Returns:
+        Dict with batch generation results
+    """
+    try:
+        logger.info(f"Batch generating reports for {len(lead_ids)} leads")
+        
+        # Create group of report generation tasks
+        job = group([
+            generate_report_async.s(lead_id, force_refresh)
+            for lead_id in lead_ids
+        ])
+        
+        # Execute in parallel
+        results = job.apply_async().get()
+        
+        return {
+            "batch_size": len(lead_ids),
+            "results": results,
+            "force_refresh": force_refresh
+        }
+        
+    except Exception as exc:
+        logger.error(f"Error in batch report generation: {exc}")
+        raise
+
+
+# ============================================================================
+# CRM SYNC TASKS (Placeholder for Task 5)
+# ============================================================================
+
+@celery_app.task(name="sync_crm_contacts", bind=True, max_retries=3)
+def sync_crm_contacts_task(
+    self,
+    crm_platform: str,
+    operation: str = "bidirectional",
+    filters: Dict[str, Any] = None
+):
+    """
+    Sync contacts with CRM platform (HubSpot, Apollo, LinkedIn)
+    
+    Placeholder for Task 5 implementation. Will handle:
+    - HubSpot: OAuth, contacts, deals, bidirectional sync
+    - Apollo: Contact enrichment, discovery API
+    - LinkedIn: Connection requests, messaging automation
+    
+    Args:
+        crm_platform: Platform to sync with (hubspot, apollo, linkedin)
+        operation: Sync direction (push, pull, bidirectional)
+        filters: Optional filters for selective sync
+        
+    Returns:
+        Dict with sync results
+    """
+    try:
+        logger.info(f"Starting CRM sync: platform={crm_platform}, operation={operation}")
+        
+        # Placeholder implementation
+        # Will be replaced with actual CRM connectors in Task 5
+        
+        if crm_platform == "hubspot":
+            logger.info("HubSpot sync not yet implemented (Task 5.2)")
+            return {"status": "not_implemented", "platform": "hubspot"}
+            
+        elif crm_platform == "apollo":
+            logger.info("Apollo sync not yet implemented (Task 5.3)")
+            return {"status": "not_implemented", "platform": "apollo"}
+            
+        elif crm_platform == "linkedin":
+            logger.info("LinkedIn sync not yet implemented (Task 5.4)")
+            return {"status": "not_implemented", "platform": "linkedin"}
+            
+        else:
+            logger.error(f"Unknown CRM platform: {crm_platform}")
+            return {"error": f"Unknown CRM platform: {crm_platform}"}
+            
+    except Exception as exc:
+        logger.error(f"Error in CRM sync ({crm_platform}): {exc}")
+        countdown = 2 ** self.request.retries
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+# ============================================================================
 # WORKFLOW ORCHESTRATION TASKS
 # ============================================================================
 
