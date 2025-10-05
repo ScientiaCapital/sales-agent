@@ -22,7 +22,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/voice", tags=["voice"])
+router = APIRouter(prefix="/voice", tags=["voice"])
 
 # Global voice agent instance
 voice_agent: Optional[VoiceAgent] = None

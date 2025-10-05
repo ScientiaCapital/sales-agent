@@ -9,7 +9,7 @@ import type { Document, ICPCriteria, VectorSearchResult } from '../types';
 
 export const KnowledgeBase = memo(() => {
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [icpCriteria, setICPCriteria] = useState<ICPCriteria[]>([]);
+  const [icpCriteria] = useState<ICPCriteria[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<VectorSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);

@@ -13,8 +13,20 @@ from app.api import knowledge
 from app.api import customers
 from app.api import refine
 from app.api import research
+from app.api import transfer
+from app.api import voice
 from app.core.config import settings
 from app.core.logging import setup_logging
+from app.core.exceptions import (
+    SalesAgentException,
+    ValidationError,
+    ResourceNotFoundError,
+    ExternalAPIError,
+    DatabaseError,
+    ServiceUnavailableError,
+    AuthenticationError,
+    AuthorizationError,
+)
 
 # Configure logging
 logger = setup_logging(__name__)
@@ -24,9 +36,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="AI-powered sales automation platform using Cerebras ultra-fast inference",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json",
+    docs_url=f"{settings.API_V1_PREFIX}/docs",
+    redoc_url=f"{settings.API_V1_PREFIX}/redoc",
+    openapi_url=f"{settings.API_V1_PREFIX}/openapi.json",
 )
 
 # Configure CORS
@@ -39,24 +51,47 @@ app.add_middleware(
 )
 
 
-# Exception Handlers
+# Exception Handlers - Ordered from specific to general
+@app.exception_handler(SalesAgentException)
+async def sales_agent_exception_handler(request: Request, exc: SalesAgentException):
+    """
+    Handle all custom Sales Agent exceptions with structured error responses.
+
+    Returns error_code, message, and timestamp for debugging.
+    Technical details are logged but not exposed to users.
+    """
+    # Error already logged in exception __init__
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=exc.to_dict()
+    )
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    """Handle request validation errors (422)."""
+    """Handle Pydantic request validation errors (422)."""
     logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body}
+        content={
+            "error": "VALIDATION_ERROR",
+            "message": "Request validation failed",
+            "details": exc.errors(),
+            "body": exc.body
+        }
     )
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Handle HTTP exceptions with proper logging."""
+    """Handle generic FastAPI HTTP exceptions."""
     logger.error(f"HTTP {exc.status_code} on {request.url.path}: {exc.detail}")
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail}
+        content={
+            "error": "HTTP_ERROR",
+            "message": exc.detail
+        }
     )
 
 
@@ -69,19 +104,24 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error"}
+        content={
+            "error": "INTERNAL_SERVER_ERROR",
+            "message": "An unexpected error occurred"
+        }
     )
 
 
-# Include routers
-app.include_router(health.router, prefix="/api", tags=["health"])
-app.include_router(leads.router)
-app.include_router(documents.router)
-app.include_router(contacts.router)
-app.include_router(knowledge.router)  # Task 24: Knowledge base endpoints
-app.include_router(customers.router)  # Task 25: Customer platform endpoints
-app.include_router(refine.router)  # Task 1: Iterative refinement engine
-app.include_router(research.router)  # Task 3: Multi-agent research pipeline
+# Include routers with API version prefix
+app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
+app.include_router(leads.router, prefix=settings.API_V1_PREFIX)
+app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
+app.include_router(contacts.router, prefix=settings.API_V1_PREFIX)
+app.include_router(knowledge.router, prefix=settings.API_V1_PREFIX)  # Task 24: Knowledge base endpoints
+app.include_router(customers.router, prefix=settings.API_V1_PREFIX)  # Task 25: Customer platform endpoints
+app.include_router(refine.router, prefix=settings.API_V1_PREFIX)  # Task 1: Iterative refinement engine
+app.include_router(research.router, prefix=settings.API_V1_PREFIX)  # Task 3: Multi-agent research pipeline
+app.include_router(transfer.router, prefix=settings.API_V1_PREFIX)  # Task 4: Agent transfer system
+app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Cartesia voice integration
 
 
 @app.get("/")

@@ -5,7 +5,7 @@
  */
 
 import { useState, memo } from 'react';
-import type { Contact, SocialActivity, RelationshipNode } from '../types';
+import type { Contact, SocialActivity } from '../types';
 
 export const ContactDiscovery = memo(() => {
   const [searchQuery, setSearchQuery] = useState('');

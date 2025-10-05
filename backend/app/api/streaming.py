@@ -18,7 +18,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/stream", tags=["streaming"])
+router = APIRouter(prefix="/stream", tags=["streaming"])
 
 # Global connection manager
 active_streams: Dict[str, Set[WebSocket]] = {}

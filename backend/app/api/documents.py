@@ -11,7 +11,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/documents", tags=["documents"])
+router = APIRouter(prefix="/documents", tags=["documents"])
 
 # Initialize document processor
 document_processor = DocumentProcessor()

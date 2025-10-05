@@ -21,7 +21,7 @@ from app.services.cerebras_routing import CerebrasAccessMethod
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/refine", tags=["refinement"])
+router = APIRouter(prefix="/refine", tags=["refinement"])
 
 
 class RefineRequest(BaseModel):

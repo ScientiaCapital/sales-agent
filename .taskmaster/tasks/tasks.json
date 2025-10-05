@@ -69,7 +69,53 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Cerebras Inference Integration",
+            "description": "Integrate Cerebras inference engine ensuring response times under 100ms",
+            "dependencies": [],
+            "details": "Set up Cerebras API connection, implement request/response handling, optimize for speed",
+            "status": "pending",
+            "testStrategy": "Benchmark inference speed (<100ms)"
+          },
+          {
+            "id": 2,
+            "title": "Develop Lead Scoring Algorithm",
+            "description": "Create algorithm to score leads on 0-100 scale based on multiple factors",
+            "dependencies": [],
+            "details": "Define scoring criteria, implement normalization logic, test score distributions",
+            "status": "pending",
+            "testStrategy": "Validate scoring accuracy against test dataset"
+          },
+          {
+            "id": 3,
+            "title": "Build Multi-Factor Analysis System",
+            "description": "Implement system to analyze and weigh multiple lead qualification factors",
+            "dependencies": [],
+            "details": "Create factor weighting system, implement dynamic adjustment logic",
+            "status": "pending",
+            "testStrategy": "Verify factor weighting impact on final scores"
+          },
+          {
+            "id": 4,
+            "title": "Implement Real-Time Score Updates",
+            "description": "Develop system to update lead scores in real-time based on new data",
+            "dependencies": [],
+            "details": "Create event-driven update triggers, implement incremental scoring",
+            "status": "pending",
+            "testStrategy": "Load test with concurrent requests"
+          },
+          {
+            "id": 5,
+            "title": "Setup Redis Caching Layer",
+            "description": "Implement Redis caching for scoring results and intermediate calculations",
+            "dependencies": [],
+            "details": "Configure Redis instance, implement cache invalidation logic",
+            "status": "pending",
+            "testStrategy": "Verify cache hit rates and performance impact"
+          }
+        ]
       },
       {
         "id": 3,
@@ -82,7 +128,62 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Cerebras Search Agent Pattern",
+            "description": "Develop the core search functionality using Cerebras multi-agent pattern for efficient prospect research.",
+            "dependencies": [],
+            "details": "Integrate Cerebras search agent pattern to enable multi-agent collaboration for comprehensive research.",
+            "status": "pending",
+            "testStrategy": "Verify search completion time (<2 minutes) and result relevance."
+          },
+          {
+            "id": 2,
+            "title": "Build Company Research Pipeline",
+            "description": "Create a pipeline to systematically gather and process company data for research purposes.",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Design and implement a pipeline that fetches, processes, and stores company data from various sources.",
+            "status": "pending",
+            "testStrategy": "Validate pipeline efficiency and data accuracy."
+          },
+          {
+            "id": 3,
+            "title": "Create Report Generation System",
+            "description": "Develop a system to generate detailed research reports (500-1000 words) based on gathered data.",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Implement a report generator that compiles research findings into structured, readable reports.",
+            "status": "pending",
+            "testStrategy": "Test report accuracy, relevance, and word count compliance."
+          },
+          {
+            "id": 4,
+            "title": "Implement Source Tracking and Citations",
+            "description": "Add functionality to track and cite sources used in the research process.",
+            "dependencies": [
+              "3.2"
+            ],
+            "details": "Develop a system to log and reference all sources to ensure transparency and credibility.",
+            "status": "pending",
+            "testStrategy": "Verify source attribution and citation accuracy."
+          },
+          {
+            "id": 5,
+            "title": "Setup 7-Day Cache System and Automatic Update Triggers",
+            "description": "Implement a caching mechanism and automatic updates to ensure data freshness.",
+            "dependencies": [
+              "3.1",
+              "3.2"
+            ],
+            "details": "Configure a 7-day cache system and triggers to automatically update research data as needed.",
+            "status": "pending",
+            "testStrategy": "Test cache functionality and update trigger responsiveness."
+          }
+        ]
       },
       {
         "id": 4,
@@ -96,7 +197,63 @@
           3
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create message generation system",
+            "description": "Develop the core system for generating personalized outreach messages.",
+            "dependencies": [],
+            "details": "Implement the foundational logic for message generation based on input parameters.",
+            "status": "pending",
+            "testStrategy": "Validate message quality and personalization."
+          },
+          {
+            "id": 2,
+            "title": "Implement variant generation (3 per type)",
+            "description": "Create functionality to generate multiple variants for each message type.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Ensure each message type has at least 3 variants to test effectiveness.",
+            "status": "pending",
+            "testStrategy": "Test variant generation for consistency and diversity."
+          },
+          {
+            "id": 3,
+            "title": "Add channel-specific formatting",
+            "description": "Adapt messages to fit the formatting requirements of different communication channels.",
+            "dependencies": [
+              "4.1",
+              "4.2"
+            ],
+            "details": "Ensure messages are optimized for email, social media, and other channels.",
+            "status": "pending",
+            "testStrategy": "Verify brand voice consistency across channels."
+          },
+          {
+            "id": 4,
+            "title": "Integrate with lead scoring and research data",
+            "description": "Connect the message generator with lead scoring and research data for personalization.",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Use lead scoring and research data to tailor messages to individual leads.",
+            "status": "pending",
+            "testStrategy": "Measure editing requirements and personalization accuracy."
+          },
+          {
+            "id": 5,
+            "title": "Implement A/B testing framework",
+            "description": "Set up a system to test different message variants against each other.",
+            "dependencies": [
+              "4.2",
+              "4.3"
+            ],
+            "details": "Enable tracking and comparison of message performance to determine the most effective variants.",
+            "status": "pending",
+            "testStrategy": "Test A/B testing functionality and performance tracking."
+          }
+        ]
       },
       {
         "id": 5,
@@ -109,7 +266,63 @@
           2
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create abstract CRM interface",
+            "description": "Develop a common interface for CRM system integrations",
+            "dependencies": [],
+            "details": "Define methods and data structures required for all CRM integrations",
+            "status": "pending",
+            "testStrategy": "Verify interface methods with mock implementations"
+          },
+          {
+            "id": 2,
+            "title": "Implement Salesforce integration",
+            "description": "Build connector for Salesforce CRM",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement Salesforce API client and map data to common interface",
+            "status": "pending",
+            "testStrategy": "Test CRUD operations and data mapping"
+          },
+          {
+            "id": 3,
+            "title": "Add HubSpot integration",
+            "description": "Build connector for HubSpot CRM",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Implement HubSpot API client and map data to common interface",
+            "status": "pending",
+            "testStrategy": "Test bi-directional sync and field mappings"
+          },
+          {
+            "id": 4,
+            "title": "Build Pipedrive connector",
+            "description": "Develop integration for Pipedrive CRM",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Create Pipedrive API adapter and implement required endpoints",
+            "status": "pending",
+            "testStrategy": "Validate deal and contact synchronization"
+          },
+          {
+            "id": 5,
+            "title": "Implement data sync and error handling",
+            "description": "Create synchronization system with retry logic",
+            "dependencies": [
+              "5.2",
+              "5.3",
+              "5.4"
+            ],
+            "details": "Build background sync service with error recovery and monitoring",
+            "status": "pending",
+            "testStrategy": "Test sync reliability and error recovery scenarios"
+          }
+        ]
       },
       {
         "id": 6,
@@ -122,7 +335,62 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Real-time Audio Processing",
+            "description": "Develop the system component that processes audio streams in real-time during sales calls.",
+            "dependencies": [],
+            "details": "Ensure audio processing latency is under 100ms.",
+            "status": "pending",
+            "testStrategy": "Test latency (<100ms)"
+          },
+          {
+            "id": 2,
+            "title": "Create Transcription Service",
+            "description": "Build a service that converts processed audio into accurate text transcriptions.",
+            "dependencies": [
+              "6.1"
+            ],
+            "details": "Focus on high accuracy transcription suitable for analysis.",
+            "status": "pending",
+            "testStrategy": "Validate transcription accuracy"
+          },
+          {
+            "id": 3,
+            "title": "Build Suggestion Engine",
+            "description": "Develop an engine that provides real-time suggestions based on conversation analysis.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Suggestions should be relevant and actionable.",
+            "status": "pending",
+            "testStrategy": "Verify suggestion relevance"
+          },
+          {
+            "id": 4,
+            "title": "Add Sentiment Analysis",
+            "description": "Integrate sentiment analysis to gauge customer emotions during calls.",
+            "dependencies": [
+              "6.2"
+            ],
+            "details": "Ensure accurate sentiment detection for better suggestions.",
+            "status": "pending",
+            "testStrategy": "Validate sentiment detection accuracy"
+          },
+          {
+            "id": 5,
+            "title": "Implement Battle Card System",
+            "description": "Create a system that provides battle cards based on conversation context.",
+            "dependencies": [
+              "6.3",
+              "6.4"
+            ],
+            "details": "Battle cards should be contextually relevant and timely.",
+            "status": "pending",
+            "testStrategy": "Test relevance and timing of battle cards"
+          }
+        ]
       },
       {
         "id": 7,
@@ -135,7 +403,62 @@
           1
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement gist memory pattern",
+            "description": "Develop and integrate the Cerebras gist memory pattern into the document analysis system.",
+            "dependencies": [],
+            "details": "Implement the gist memory pattern as specified in the Cerebras documentation.",
+            "status": "pending",
+            "testStrategy": "Test processing speed and memory usage."
+          },
+          {
+            "id": 2,
+            "title": "Create document processing pipeline",
+            "description": "Build a pipeline to process documents for analysis.",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Develop a pipeline that handles document ingestion, preprocessing, and formatting.",
+            "status": "pending",
+            "testStrategy": "Validate extraction accuracy and processing speed."
+          },
+          {
+            "id": 3,
+            "title": "Build summarization system",
+            "description": "Implement a system to generate summaries of processed documents.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Create algorithms or models to produce concise summaries from document content.",
+            "status": "pending",
+            "testStrategy": "Test summarization accuracy and coherence."
+          },
+          {
+            "id": 4,
+            "title": "Add key item extraction",
+            "description": "Develop functionality to extract key items (e.g., names, dates) from documents.",
+            "dependencies": [
+              "7.2"
+            ],
+            "details": "Implement NLP techniques to identify and extract important entities and terms.",
+            "status": "pending",
+            "testStrategy": "Validate extraction accuracy and completeness."
+          },
+          {
+            "id": 5,
+            "title": "Implement document search and highlighting",
+            "description": "Enable search functionality and highlight relevant sections in documents.",
+            "dependencies": [
+              "7.2",
+              "7.4"
+            ],
+            "details": "Build a search system that indexes documents and highlights matched content.",
+            "status": "pending",
+            "testStrategy": "Verify search functionality and highlight accuracy."
+          }
+        ]
       },
       {
         "id": 8,
@@ -152,7 +475,64 @@
           7
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create React Dashboard Layout",
+            "description": "Develop the foundational layout for the React dashboard including navigation and main content areas.",
+            "dependencies": [],
+            "details": "1. Design and implement the main dashboard layout using React and TypeScript. 2. Ensure responsive design for various screen sizes. 3. Integrate navigation components.",
+            "status": "pending",
+            "testStrategy": "1. Unit test individual components. 2. Cross-browser testing. 3. Accessibility testing."
+          },
+          {
+            "id": 2,
+            "title": "Implement Lead Management Interface",
+            "description": "Build the interface for managing leads, including viewing and editing lead information.",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "1. Create lead list and detail views. 2. Implement CRUD operations for leads. 3. Integrate with lead qualification engine.",
+            "status": "pending",
+            "testStrategy": "1. Unit test components. 2. E2E testing with Cypress. 3. Validate data consistency."
+          },
+          {
+            "id": 3,
+            "title": "Build Research Viewer",
+            "description": "Develop the interface for viewing research reports generated by the automated research agent.",
+            "dependencies": [
+              "8.1",
+              "8.2"
+            ],
+            "details": "1. Create a viewer for research reports. 2. Implement search and filter functionality. 3. Display source citations and metadata.",
+            "status": "pending",
+            "testStrategy": "1. Test report loading performance. 2. Verify search and filter accuracy. 3. Accessibility testing."
+          },
+          {
+            "id": 4,
+            "title": "Add Outreach Campaign Manager",
+            "description": "Develop the interface for creating and managing outreach campaigns.",
+            "dependencies": [
+              "8.1",
+              "8.2"
+            ],
+            "details": "1. Build campaign creation and editing forms. 2. Implement campaign tracking and analytics. 3. Integrate with lead management interface.",
+            "status": "pending",
+            "testStrategy": "1. Unit test forms and components. 2. E2E testing for campaign workflows. 3. Validate analytics data."
+          },
+          {
+            "id": 5,
+            "title": "Create Conversation Intelligence UI",
+            "description": "Develop the interface for real-time conversation intelligence features.",
+            "dependencies": [
+              "8.1",
+              "8.6"
+            ],
+            "details": "1. Build real-time call analysis display. 2. Implement suggestion and battle card interfaces. 3. Create conversation history viewer.",
+            "status": "pending",
+            "testStrategy": "1. Test real-time updates. 2. Validate suggestion accuracy. 3. Load test interface performance."
+          }
+        ]
       },
       {
         "id": 9,
@@ -166,7 +546,60 @@
           5
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement GDPR Compliance",
+            "description": "Ensure the system adheres to GDPR regulations",
+            "dependencies": [],
+            "details": "Review and implement GDPR requirements including data subject rights, data protection impact assessments, and data breach notifications.",
+            "status": "pending",
+            "testStrategy": "Compliance checklist verification"
+          },
+          {
+            "id": 2,
+            "title": "Add SOC 2 Type II Controls",
+            "description": "Implement controls to meet SOC 2 Type II compliance",
+            "dependencies": [],
+            "details": "Establish and document security policies, procedures, and controls required for SOC 2 Type II certification.",
+            "status": "pending",
+            "testStrategy": "Security audit"
+          },
+          {
+            "id": 3,
+            "title": "Setup Data Encryption",
+            "description": "Encrypt data at rest and in transit",
+            "dependencies": [
+              "9.1",
+              "9.2"
+            ],
+            "details": "Implement encryption for sensitive data stored in databases and ensure secure transmission using TLS/SSL.",
+            "status": "pending",
+            "testStrategy": "Penetration testing"
+          },
+          {
+            "id": 4,
+            "title": "Create Audit Logging",
+            "description": "Log all security-relevant events",
+            "dependencies": [
+              "9.3"
+            ],
+            "details": "Develop a comprehensive logging system to track access, changes, and other critical activities for audit purposes.",
+            "status": "pending",
+            "testStrategy": "Audit log testing"
+          },
+          {
+            "id": 5,
+            "title": "Implement Role-Based Access and Security Monitoring",
+            "description": "Control access and monitor security events",
+            "dependencies": [
+              "9.4"
+            ],
+            "details": "Define roles and permissions for users and set up monitoring tools to detect and respond to security incidents.",
+            "status": "pending",
+            "testStrategy": "Security audit and penetration testing"
+          }
+        ]
       },
       {
         "id": 10,
@@ -181,7 +614,58 @@
           4
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Build Model Routing System",
+            "description": "Implement a routing system that prioritizes Cerebras, then DeepSeek, with a fallback mechanism.",
+            "dependencies": [],
+            "details": "Create logic to route requests first to Cerebras, then to DeepSeek if Cerebras fails, with a fallback option.",
+            "status": "pending",
+            "testStrategy": "Test routing logic under various failure scenarios."
+          },
+          {
+            "id": 2,
+            "title": "Implement Rate Limiting",
+            "description": "Add rate limiting to control the number of requests per user or system.",
+            "dependencies": [],
+            "details": "Configure rate limits to prevent abuse and ensure fair usage of the system.",
+            "status": "pending",
+            "testStrategy": "Validate rate limiting with concurrent requests."
+          },
+          {
+            "id": 3,
+            "title": "Create Usage Tracking",
+            "description": "Track and log system usage for cost analysis and optimization.",
+            "dependencies": [],
+            "details": "Implement logging for all system interactions to monitor usage patterns.",
+            "status": "pending",
+            "testStrategy": "Verify that all interactions are logged accurately."
+          },
+          {
+            "id": 4,
+            "title": "Add Cost Optimization Rules",
+            "description": "Define rules to optimize costs based on usage data.",
+            "dependencies": [
+              "10.3"
+            ],
+            "details": "Develop rules that adjust resource allocation based on usage patterns to minimize costs.",
+            "status": "pending",
+            "testStrategy": "Test optimization rules with simulated usage data."
+          },
+          {
+            "id": 5,
+            "title": "Build Reporting System",
+            "description": "Create a system to generate reports on usage and costs.",
+            "dependencies": [
+              "10.3",
+              "10.4"
+            ],
+            "details": "Develop a dashboard and export functionality for cost and usage reports.",
+            "status": "pending",
+            "testStrategy": "Test report generation and export functionality."
+          }
+        ]
       },
       {
         "id": 11,
@@ -195,7 +679,61 @@
           10
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Metrics Tracking",
+            "description": "Set up system to track and record key performance metrics",
+            "dependencies": [],
+            "details": "Define metrics to track, implement data collection methods, and store metrics in database",
+            "status": "pending",
+            "testStrategy": "Verify metrics accuracy by comparing against known data samples"
+          },
+          {
+            "id": 2,
+            "title": "Create Performance Dashboard",
+            "description": "Build visual dashboard displaying key performance metrics",
+            "dependencies": [
+              "11.1"
+            ],
+            "details": "Design UI components, connect to metrics data source, implement real-time updates",
+            "status": "pending",
+            "testStrategy": "Test dashboard loading speed and data refresh functionality"
+          },
+          {
+            "id": 3,
+            "title": "Add A/B Test Analytics",
+            "description": "Implement analytics for A/B testing experiments",
+            "dependencies": [
+              "11.1"
+            ],
+            "details": "Create experiment tracking system, implement statistical analysis, visualize results",
+            "status": "pending",
+            "testStrategy": "Validate statistical significance calculations and result accuracy"
+          },
+          {
+            "id": 4,
+            "title": "Build Custom Report Generator",
+            "description": "Develop system allowing users to create custom reports",
+            "dependencies": [
+              "11.1"
+            ],
+            "details": "Implement report template system, create query builder, design output formats",
+            "status": "pending",
+            "testStrategy": "Test report generation with various template combinations"
+          },
+          {
+            "id": 5,
+            "title": "Implement Export Functionality",
+            "description": "Add ability to export reports and data in multiple formats",
+            "dependencies": [
+              "11.4"
+            ],
+            "details": "Support CSV, PDF, and Excel formats, implement batch exports, add scheduling",
+            "status": "pending",
+            "testStrategy": "Validate export file integrity and formatting accuracy"
+          }
+        ]
       },
       {
         "id": 12,
@@ -208,7 +746,60 @@
           8
         ],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design Interactive Onboarding Flow",
+            "description": "Create an interactive onboarding flow to guide new users through the system.",
+            "dependencies": [],
+            "details": "Design user-friendly steps with tooltips and progress indicators.",
+            "status": "pending",
+            "testStrategy": "User testing to ensure clarity and engagement."
+          },
+          {
+            "id": 2,
+            "title": "Develop Help Documentation",
+            "description": "Build comprehensive help documentation for users to reference.",
+            "dependencies": [],
+            "details": "Include FAQs, troubleshooting guides, and step-by-step instructions.",
+            "status": "pending",
+            "testStrategy": "Documentation review by team and users."
+          },
+          {
+            "id": 3,
+            "title": "Implement Tutorial System",
+            "description": "Develop an in-app tutorial system to teach users key features.",
+            "dependencies": [
+              "12.1"
+            ],
+            "details": "Create interactive tutorials with hands-on tasks and quizzes.",
+            "status": "pending",
+            "testStrategy": "Tutorial completion tracking and user feedback."
+          },
+          {
+            "id": 4,
+            "title": "Add Contextual Help",
+            "description": "Integrate contextual help within the application for immediate assistance.",
+            "dependencies": [
+              "12.2"
+            ],
+            "details": "Implement tooltips, pop-up guides, and help buttons in key areas.",
+            "status": "pending",
+            "testStrategy": "User testing to verify relevance and usefulness."
+          },
+          {
+            "id": 5,
+            "title": "Create Training Videos",
+            "description": "Produce training videos to visually demonstrate system features.",
+            "dependencies": [
+              "12.1",
+              "12.2"
+            ],
+            "details": "Script, record, and edit videos covering onboarding and advanced features.",
+            "status": "pending",
+            "testStrategy": "Feedback analysis from users and stakeholders."
+          }
+        ]
       },
       {
         "id": 13,
@@ -274,7 +865,53 @@
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Identify Hardcoded Passwords in docker-compose.yml",
+            "description": "Locate all instances of hardcoded passwords within the docker-compose.yml file.",
+            "dependencies": [],
+            "details": "Review the docker-compose.yml file to identify all hardcoded database passwords and pgAdmin password entries.",
+            "status": "pending",
+            "testStrategy": "Manual review of the file to ensure all password fields are identified."
+          },
+          {
+            "id": 2,
+            "title": "Replace Hardcoded Passwords with Environment Variables",
+            "description": "Modify docker-compose.yml to use environment variables for all database passwords.",
+            "dependencies": [],
+            "details": "Replace hardcoded passwords with `${VAR:?Error message}` syntax to enforce environment variable usage.",
+            "status": "pending",
+            "testStrategy": "Verify changes by checking the docker-compose.yml file for remaining hardcoded passwords."
+          },
+          {
+            "id": 3,
+            "title": "Update pgAdmin Password Configuration",
+            "description": "Ensure pgAdmin password is configured to use an environment variable.",
+            "dependencies": [],
+            "details": "Modify the pgAdmin section in docker-compose.yml to use an environment variable for the password.",
+            "status": "pending",
+            "testStrategy": "Check that pgAdmin password field now references an environment variable."
+          },
+          {
+            "id": 4,
+            "title": "Test Missing .env Values",
+            "description": "Test the configuration to ensure it fails gracefully when required .env values are missing.",
+            "dependencies": [],
+            "details": "Run docker-compose with missing .env values and verify that it fails with the specified error messages.",
+            "status": "pending",
+            "testStrategy": "Execute docker-compose up with incomplete .env file and observe error behavior."
+          },
+          {
+            "id": 5,
+            "title": "Document Environment Variable Requirements",
+            "description": "Update project documentation to list required environment variables for database connections.",
+            "dependencies": [],
+            "details": "Add or update documentation to specify all environment variables needed for database and pgAdmin passwords.",
+            "status": "pending",
+            "testStrategy": "Review documentation to ensure all required variables are clearly listed."
+          }
+        ]
       },
       {
         "id": 19,
@@ -296,7 +933,53 @@
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement pool_pre_ping in SQLAlchemy engine",
+            "description": "Add `pool_pre_ping=True` to the SQLAlchemy engine configuration to detect stale connections.",
+            "dependencies": [],
+            "details": "Update `backend/app/models/database.py` to include `pool_pre_ping=True` in the engine configuration.",
+            "status": "pending",
+            "testStrategy": "Test by simulating database restarts and verifying that the app detects stale connections."
+          },
+          {
+            "id": 2,
+            "title": "Replace string replacement with SQLAlchemy URL parsing",
+            "description": "Replace manual string replacement with SQLAlchemy URL parsing for database connection strings.",
+            "dependencies": [],
+            "details": "Modify `backend/app/models/database.py` to use SQLAlchemy's URL parsing functionality instead of manual string manipulation.",
+            "status": "pending",
+            "testStrategy": "Verify that the URL parsing correctly handles different database connection strings."
+          },
+          {
+            "id": 3,
+            "title": "Make pool_size and max_overflow environment-configurable",
+            "description": "Update the engine configuration to read pool_size and max_overflow from environment variables.",
+            "dependencies": [],
+            "details": "Modify `backend/app/models/database.py` to use environment variables for `pool_size` and `max_overflow` settings.",
+            "status": "pending",
+            "testStrategy": "Test by setting different environment variables and verifying the pool settings are applied correctly."
+          },
+          {
+            "id": 4,
+            "title": "Add connection retry logic",
+            "description": "Implement retry logic for database connections to handle temporary failures.",
+            "dependencies": [],
+            "details": "Update `backend/app/models/database.py` to include retry logic for failed database connections.",
+            "status": "pending",
+            "testStrategy": "Test by simulating temporary database outages and verifying the retry logic works as expected."
+          },
+          {
+            "id": 5,
+            "title": "Update documentation for new configuration options",
+            "description": "Document the new `pool_pre_ping`, `pool_size`, and `max_overflow` configuration options.",
+            "dependencies": [],
+            "details": "Update project documentation to include details about the new database connection resilience features.",
+            "status": "pending",
+            "testStrategy": "Verify that the documentation accurately describes the new features and how to configure them."
+          }
+        ]
       },
       {
         "id": 21,
@@ -307,7 +990,58 @@
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Add Composite Index",
+            "description": "Add composite index on (qualification_score, created_at) in lead.py",
+            "dependencies": [],
+            "details": "Update `backend/app/models/lead.py` to include composite index on (qualification_score, created_at)",
+            "status": "pending",
+            "testStrategy": "Verify query performance improvement on score filtering"
+          },
+          {
+            "id": 2,
+            "title": "Add CHECK Constraint",
+            "description": "Add CHECK constraint for score range (0-100) in lead.py",
+            "dependencies": [],
+            "details": "Update `backend/app/models/lead.py` to include CHECK constraint ensuring qualification_score is between 0 and 100",
+            "status": "pending",
+            "testStrategy": "Test that invalid scores are rejected at database level"
+          },
+          {
+            "id": 3,
+            "title": "Add Index on contact_email",
+            "description": "Add index on contact_email field in lead.py",
+            "dependencies": [],
+            "details": "Update `backend/app/models/lead.py` to add index on contact_email field",
+            "status": "pending",
+            "testStrategy": "Verify improved query performance on email searches"
+          },
+          {
+            "id": 4,
+            "title": "Remove Redundant db.flush()",
+            "description": "Remove redundant db.flush() calls in lead.py",
+            "dependencies": [],
+            "details": "Identify and remove unnecessary db.flush() calls in `backend/app/models/lead.py`",
+            "status": "pending",
+            "testStrategy": "Ensure application behavior remains unchanged after removal"
+          },
+          {
+            "id": 5,
+            "title": "Generate and Apply Alembic Migration",
+            "description": "Create and apply Alembic migration for schema changes",
+            "dependencies": [
+              "21.1",
+              "21.2",
+              "21.3",
+              "21.4"
+            ],
+            "details": "Generate Alembic migration file reflecting all schema changes and apply it to the database",
+            "status": "pending",
+            "testStrategy": "Verify migration applies successfully and all changes are reflected in database"
+          }
+        ]
       },
       {
         "id": 22,
@@ -318,7 +1052,63 @@
         "priority": "medium",
         "dependencies": [],
         "status": "pending",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create exceptions.py file",
+            "description": "Create the file `backend/app/core/exceptions.py` to house custom exception classes.",
+            "dependencies": [],
+            "details": "Ensure the file is created in the correct directory with proper permissions.",
+            "status": "pending",
+            "testStrategy": "Verify file existence and permissions."
+          },
+          {
+            "id": 2,
+            "title": "Implement CerebrasAPIError",
+            "description": "Define the `CerebrasAPIError` class inheriting from an appropriate base exception.",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Inherit from `HTTPException` or similar, include meaningful error messages.",
+            "status": "pending",
+            "testStrategy": "Test raising and catching the exception in API calls."
+          },
+          {
+            "id": 3,
+            "title": "Implement LeadValidationError",
+            "description": "Define the `LeadValidationError` class inheriting from an appropriate base exception.",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Inherit from `ValueError` or similar, include validation-specific messages.",
+            "status": "pending",
+            "testStrategy": "Test raising during lead validation and verify error handling."
+          },
+          {
+            "id": 4,
+            "title": "Implement DatabaseConnectionError",
+            "description": "Define the `DatabaseConnectionError` class inheriting from an appropriate base exception.",
+            "dependencies": [
+              "22.1"
+            ],
+            "details": "Inherit from `ConnectionError` or similar, include connection-specific messages.",
+            "status": "pending",
+            "testStrategy": "Test raising during DB connection failures and verify handling."
+          },
+          {
+            "id": 5,
+            "title": "Integrate exceptions in services",
+            "description": "Update services to use the new custom exceptions instead of generic ones.",
+            "dependencies": [
+              "22.2",
+              "22.3",
+              "22.4"
+            ],
+            "details": "Replace generic exception catches with specific custom exceptions in service logic.",
+            "status": "pending",
+            "testStrategy": "Verify services raise and handle custom exceptions correctly."
+          }
+        ]
       },
       {
         "id": 23,

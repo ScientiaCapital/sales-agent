@@ -21,13 +21,18 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
  * Custom error class for API errors
  */
 export class APIClientError extends Error {
+  statusCode: number;
+  detail?: string;
+
   constructor(
     message: string,
-    public statusCode: number,
-    public detail?: string
+    statusCode: number,
+    detail?: string
   ) {
     super(message);
     this.name = 'APIClientError';
+    this.statusCode = statusCode;
+    this.detail = detail;
   }
 }
 

@@ -29,15 +29,24 @@ async def health_check():
 async def detailed_health_check():
     """Detailed health check with service status."""
     from app.core.config import settings
+    from app.models.database import check_database_health
+
+    # Check database health
+    db_health = await check_database_health()
+    db_status = "operational" if db_health.get("status") == "healthy" else "degraded"
+
+    # Overall system health based on critical services
+    overall_status = "healthy" if db_status == "operational" else "degraded"
 
     return {
-        "status": "healthy",
+        "status": overall_status,
         "version": settings.VERSION,
         "environment": settings.ENVIRONMENT,
         "services": {
             "api": "operational",
-            "database": "not_configured",  # Will be updated in task 1.3
+            "database": db_status,
             "redis": "not_configured",      # Will be updated in task 1.3
             "cerebras": "not_configured",   # Will be updated in task 2
         },
+        "database_details": db_health,
     }

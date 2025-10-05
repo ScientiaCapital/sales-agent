@@ -1,7 +1,7 @@
 """
 Lead qualification API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -11,10 +11,17 @@ from app.schemas import LeadQualificationRequest, LeadQualificationResponse, Lea
 from app.services import CerebrasService
 from app.services.csv_importer import CSVImportService
 from app.core.logging import setup_logging
+from app.core.exceptions import (
+    LeadNotFoundError,
+    InvalidFileFormatError,
+    FileSizeExceededError,
+    ValidationError,
+    DatabaseError
+)
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/leads", tags=["leads"])
+router = APIRouter(prefix="/leads", tags=["leads"])
 
 # Initialize services
 cerebras_service = CerebrasService()
@@ -126,7 +133,7 @@ async def get_lead(lead_id: int, db: Session = Depends(get_db)):
     """
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
-        raise HTTPException(status_code=404, detail=f"Lead with ID {lead_id} not found")
+        raise LeadNotFoundError(lead_id=lead_id)
     return lead
 
 
@@ -168,9 +175,9 @@ async def import_leads_from_csv(
     """
     # Validate file type
     if not file.filename.endswith('.csv'):
-        raise HTTPException(
-            status_code=400,
-            detail="File must be a CSV file (.csv extension)"
+        raise InvalidFileFormatError(
+            message="File must be a CSV file (.csv extension)",
+            details={"filename": file.filename}
         )
 
     # Read file content
@@ -178,9 +185,9 @@ async def import_leads_from_csv(
         content = await file.read()
         csv_content = content.decode('utf-8')
     except UnicodeDecodeError:
-        raise HTTPException(
-            status_code=400,
-            detail="File must be UTF-8 encoded"
+        raise InvalidFileFormatError(
+            message="File must be UTF-8 encoded",
+            details={"filename": file.filename}
         )
 
     # Parse CSV and validate

@@ -99,6 +99,250 @@ graph TB
     MainOrch --> DeepSeekAPI
 ```
 
+## Load Balancing Endpoint Pattern (Recommended)
+
+**Key Discovery**: RunPod serverless supports direct API access via load balancing endpoints without webhook overhead.
+
+### Endpoint Structure
+
+RunPod serverless endpoints provide OpenAI-compatible API access through load-balanced URLs:
+
+```
+https://api.runpod.ai/v2/{ENDPOINT_ID}/openai/v1
+```
+
+**Example Configuration**:
+```python
+from openai import AsyncOpenAI
+import os
+
+# RunPod vLLM endpoint with load balancing
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_VLLM_ENDPOINT_ID")
+RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY")
+
+client = AsyncOpenAI(
+    api_key=RUNPOD_API_KEY,
+    base_url=f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/openai/v1"
+)
+
+# Use just like OpenAI
+response = await client.chat.completions.create(
+    model="meta-llama/Llama-3.1-8B-Instruct",
+    messages=[{"role": "user", "content": "Qualify this lead..."}],
+    temperature=0.3,
+    max_tokens=500
+)
+```
+
+### Benefits Over Webhook Pattern
+
+1. **No Webhook Overhead**: Direct API access reduces latency by 100-300ms
+2. **Auto-Scaling Based on Health**: RunPod monitors `/ping` endpoint for intelligent worker scaling
+3. **OpenAI SDK Compatible**: Drop-in replacement with custom `base_url`
+4. **Built-in Load Balancing**: Automatic request distribution across workers
+5. **Simplified Architecture**: No webhook receiver or job polling required
+
+### Health Check Implementation
+
+RunPod serverless workers require a `/ping` endpoint for health monitoring:
+
+```python
+from fastapi import FastAPI
+from datetime import datetime
+
+app = FastAPI()
+
+@app.get("/ping")
+async def health_check():
+    """
+    Health check endpoint for RunPod auto-scaling.
+    
+    RunPod pings this endpoint to:
+    - Monitor worker health
+    - Determine when to scale up/down
+    - Replace unhealthy workers
+    """
+    return {
+        "status": "healthy",
+        "service": "context7-mcp-server",
+        "timestamp": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
+    }
+```
+
+**Auto-Scaling Behavior**:
+- RunPod pings `/ping` every 10-30 seconds
+- Healthy response (200 OK) keeps worker active
+- Failed health checks trigger worker replacement
+- Queue depth determines scale-up decisions
+- Idle workers (low queue) trigger scale-down
+
+## Dual-Mode Development Workflow
+
+### Local Development (RunPod Pod)
+
+Use RunPod Pods for direct development with exposed ports:
+
+```bash
+# Start Pod with port 8000 exposed
+# Access via: https://<POD_ID>-8000.proxy.runpod.net
+
+# Run MCP server locally
+python mcp_servers/context7_server.py
+
+# Test directly
+curl https://<POD_ID>-8000.proxy.runpod.net/ping
+```
+
+**Pod Development Advantages**:
+- Direct file system access
+- Real-time code changes
+- Full debugging capabilities
+- No cold start delays
+- SSH access for troubleshooting
+
+### Production Deployment (RunPod Serverless)
+
+Deploy to serverless endpoint for auto-scaling production:
+
+```bash
+# Deploy MCP server to serverless endpoint
+runpod deploy \
+  --endpoint-id abc123def456 \
+  --handler mcp_servers/handler.py \
+  --workers-min 2 \
+  --workers-max 20
+
+# Access via load balancer
+curl https://api.runpod.ai/v2/abc123def456/openai/v1/ping
+```
+
+**Serverless Production Advantages**:
+- Auto-scaling (2-50+ workers)
+- Pay-per-use pricing
+- Built-in load balancing
+- High availability (99.9%+)
+- Zero maintenance
+
+### Migration Path: Pod → Serverless
+
+**Step 1**: Develop on Pod
+```python
+# mcp_servers/context7_server.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/ping")
+async def health():
+    return {"status": "healthy"}
+
+@app.post("/v1/research")
+async def research(query: str):
+    # Implementation
+    return {"result": "..."}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+**Step 2**: Test on Pod
+```bash
+# Run on Pod
+python mcp_servers/context7_server.py
+
+# Test endpoints
+curl https://<POD_ID>-8000.proxy.runpod.net/ping
+curl -X POST https://<POD_ID>-8000.proxy.runpod.net/v1/research \
+  -d '{"query": "FastAPI best practices"}'
+```
+
+**Step 3**: Create Serverless Handler
+```python
+# mcp_servers/handler.py
+import runpod
+from context7_server import app
+
+def handler(event):
+    """RunPod serverless handler wrapping FastAPI app"""
+    request_data = event.get('input', {})
+    
+    # Extract HTTP method and path
+    method = request_data.get('method', 'GET')
+    path = request_data.get('path', '/ping')
+    body = request_data.get('body', {})
+    
+    # Route to FastAPI endpoints
+    if path == '/ping' and method == 'GET':
+        return {"status": "healthy", "service": "context7-mcp"}
+    
+    elif path == '/v1/research' and method == 'POST':
+        from context7_server import research
+        import asyncio
+        result = asyncio.run(research(**body))
+        return result
+    
+    else:
+        return {"error": "Not found"}, 404
+
+runpod.serverless.start({"handler": handler})
+```
+
+**Step 4**: Deploy to Serverless
+```bash
+# Deploy with configuration
+runpod deploy \
+  --endpoint-id abc123 \
+  --handler mcp_servers/handler.py \
+  --env RUNPOD_API_KEY=$RUNPOD_API_KEY \
+  --workers-min 2 \
+  --workers-max 20 \
+  --gpu-type "CPU_ONLY"
+```
+
+**Step 5**: Verify Production Endpoint
+```bash
+# Test serverless endpoint
+curl https://api.runpod.ai/v2/abc123/openai/v1/ping
+
+# Load test with 1000 concurrent requests
+ab -n 1000 -c 100 https://api.runpod.ai/v2/abc123/openai/v1/ping
+```
+
+### Development Workflow Best Practices
+
+**Daily Development Loop**:
+1. Code changes on local machine
+2. Sync to RunPod Pod via SSH/rsync
+3. Test on Pod with exposed port
+4. Iterate until feature complete
+5. Deploy to serverless endpoint
+6. Monitor with Prometheus/Grafana
+
+**Testing Strategy**:
+```python
+# tests/test_mcp_server.py
+import pytest
+from httpx import AsyncClient
+
+@pytest.mark.asyncio
+async def test_health_check():
+    """Test /ping endpoint"""
+    async with AsyncClient(base_url="http://localhost:8000") as client:
+        response = await client.get("/ping")
+        assert response.status_code == 200
+        assert response.json()["status"] == "healthy"
+
+@pytest.mark.asyncio
+async def test_serverless_integration():
+    """Test serverless endpoint"""
+    endpoint_url = f"https://api.runpod.ai/v2/{ENDPOINT_ID}/openai/v1"
+    async with AsyncClient(base_url=endpoint_url) as client:
+        response = await client.get("/ping")
+        assert response.status_code == 200
+```
+
 ## Component Architecture
 
 ### 1. API Gateway Layer
