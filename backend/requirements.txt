@@ -30,6 +30,8 @@ email-validator==2.2.0
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
+authlib==1.3.0  # OAuth 2.0 client for HubSpot/LinkedIn integrations
+cryptography==42.0.5  # Secure credential encryption (explicit version)
 
 # Monitoring & Logging
 sentry-sdk[fastapi]==2.15.0
@@ -76,3 +78,8 @@ cartesia==1.1.2  # Cartesia AI SDK for TTS/STT
 pyaudio==0.2.14  # Audio I/O for voice clients
 wave==0.0.2  # WAV file processing
 websockets==13.1  # WebSocket client/server
+
+# CRM Integrations (Task 5)
+hubspot-api-client==9.0.0  # Official HubSpot CRM SDK
+# Apollo.io: No official SDK - using httpx with API key authentication
+# LinkedIn: Using authlib for OAuth 2.0 sign-in only (ToS-compliant)
