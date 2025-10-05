@@ -36,6 +36,15 @@ from .crm import (
     CRMSyncLog,
     CRMWebhook
 )
+from .campaign import (
+    Campaign,
+    CampaignMessage,
+    MessageVariantAnalytics,
+    CampaignStatus,
+    CampaignChannel,
+    MessageStatus,
+    MessageTone
+)
 
 __all__ = [
     "Base",
@@ -65,5 +74,12 @@ __all__ = [
     "CRMCredential",
     "CRMContact",
     "CRMSyncLog",
-    "CRMWebhook"
+    "CRMWebhook",
+    "Campaign",
+    "CampaignMessage",
+    "MessageVariantAnalytics",
+    "CampaignStatus",
+    "CampaignChannel",
+    "MessageStatus",
+    "MessageTone"
 ]
