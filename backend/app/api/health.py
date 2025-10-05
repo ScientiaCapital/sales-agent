@@ -1,7 +1,9 @@
 """Health check endpoints."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from app.services.cache_manager import CacheManager
+from app.core.cache import get_cache
 
 router = APIRouter()
 
@@ -26,8 +28,8 @@ async def health_check():
 
 
 @router.get("/health/detailed")
-async def detailed_health_check():
-    """Detailed health check with service status."""
+async def detailed_health_check(cache: CacheManager = Depends(get_cache)):
+    """Detailed health check with service status including Redis cache."""
     from app.core.config import settings
     from app.models.database import check_database_health
 
@@ -35,7 +37,14 @@ async def detailed_health_check():
     db_health = await check_database_health()
     db_status = "operational" if db_health.get("status") == "healthy" else "degraded"
 
-    # Overall system health based on critical services
+    # Check Redis cache health
+    redis_health = await cache.health_check()
+    redis_status = "operational" if redis_health.get("status") == "healthy" else "degraded"
+    
+    # Get cache statistics
+    cache_stats = await cache.get_cache_stats()
+
+    # Overall system health based on critical services (Redis is non-critical)
     overall_status = "healthy" if db_status == "operational" else "degraded"
 
     return {
@@ -45,8 +54,12 @@ async def detailed_health_check():
         "services": {
             "api": "operational",
             "database": db_status,
-            "redis": "not_configured",      # Will be updated in task 1.3
+            "redis": redis_status,
             "cerebras": "not_configured",   # Will be updated in task 2
         },
         "database_details": db_health,
+        "redis_details": {
+            **redis_health,
+            "cache_stats": cache_stats
+        },
     }
