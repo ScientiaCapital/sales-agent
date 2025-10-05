@@ -30,6 +30,12 @@ from .voice_models import (
     VoiceConfiguration,
     VoiceSessionStatus
 )
+from .crm import (
+    CRMCredential,
+    CRMContact,
+    CRMSyncLog,
+    CRMWebhook
+)
 
 __all__ = [
     "Base",
@@ -55,5 +61,9 @@ __all__ = [
     "CartesiaAPICall",
     "VoiceTurn",
     "VoiceConfiguration",
-    "VoiceSessionStatus"
+    "VoiceSessionStatus",
+    "CRMCredential",
+    "CRMContact",
+    "CRMSyncLog",
+    "CRMWebhook"
 ]
