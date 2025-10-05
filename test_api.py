@@ -12,7 +12,7 @@ API_BASE = "http://localhost:8001"
 def test_health():
     """Test health endpoint"""
     print("\n=== Testing Health Endpoint ===")
-    response = requests.get(f"{API_BASE}/api/health")
+    response = requests.get(f"{API_BASE}/api/v1/health")
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2)}")
     return response.status_code == 200
@@ -38,7 +38,7 @@ def test_qualify_lead():
 
     try:
         response = requests.post(
-            f"{API_BASE}/api/leads/qualify",
+            f"{API_BASE}/api/v1/leads/qualify",
             json=lead_data,
             timeout=30
         )
@@ -69,7 +69,7 @@ def test_qualify_lead():
 def test_list_leads():
     """Test listing leads"""
     print("\n=== Testing List Leads ===")
-    response = requests.get(f"{API_BASE}/api/leads/")
+    response = requests.get(f"{API_BASE}/api/v1/leads/")
     print(f"Status: {response.status_code}")
 
     if response.status_code == 200:
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     print("\nWaiting for API server to be ready...")
     for i in range(10):
         try:
-            requests.get(f"{API_BASE}/api/health", timeout=1)
+            requests.get(f"{API_BASE}/api/v1/health", timeout=1)
             print("✓ API server is ready!")
             break
         except:

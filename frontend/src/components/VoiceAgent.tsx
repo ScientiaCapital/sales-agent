@@ -1,10 +1,11 @@
 /**
  * Voice Agent Component
- * 
+ *
  * Voice call interface with Cartesia integration
  * Audio waveform visualization and microphone controls
  */
 
+/// <reference types="node" />
 import { useState, useRef, useEffect, memo } from 'react';
 import type { VoiceCall, AudioWaveform } from '../types';
 

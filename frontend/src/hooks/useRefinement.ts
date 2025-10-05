@@ -104,7 +104,7 @@ export function useRefinement(
   /**
    * WebSocket connection for streaming
    */
-  const { isConnected, disconnect } = useWebSocket(streamUrl, {
+  const { disconnect } = useWebSocket(streamUrl, {
     onMessage: handleMessage,
     onError: () => {
       setError('WebSocket connection error');

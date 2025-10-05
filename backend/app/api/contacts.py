@@ -12,7 +12,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/contacts", tags=["contacts"])
+router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 # Initialize services
 linkedin_scraper = LinkedInScraper()

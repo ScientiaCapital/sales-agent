@@ -1,0 +1,45 @@
+{
+	"meta": {
+		"generatedAt": "2025-10-05T00:16:54.327Z",
+		"tasksAnalyzed": 4,
+		"totalTasks": 26,
+		"analysisCount": 4,
+		"thresholdScore": 5,
+		"projectName": "Taskmaster",
+		"usedResearch": true
+	},
+	"complexityAnalysis": [
+		{
+			"taskId": 23,
+			"taskTitle": "Create CSV Lead Import System",
+			"complexityScore": 7,
+			"recommendedSubtasks": 5,
+			"expansionPrompt": "Break down the CSV Lead Import System into subtasks focusing on CSV parsing, database integration, error handling, batch processing, and API endpoint implementation.",
+			"reasoning": "The task involves multiple complex components like handling large CSV files, database optimization, and API development, each requiring detailed attention to ensure performance and reliability."
+		},
+		{
+			"taskId": 24,
+			"taskTitle": "Build Customer-Facing Knowledge Management Interface",
+			"complexityScore": 8,
+			"recommendedSubtasks": 6,
+			"expansionPrompt": "Divide the task into subtasks for frontend development, backend integration, document processing, database storage, security, and user feedback mechanisms.",
+			"reasoning": "This task requires a comprehensive approach involving UI/UX design, backend processing, and secure storage, making it complex due to the integration of multiple systems and user interaction points."
+		},
+		{
+			"taskId": 25,
+			"taskTitle": "Implement Multi-Tenant Agent Team Deployment System",
+			"complexityScore": 9,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Split the task into subtasks for multi-tenant architecture, agent configuration, parallel processing, iterative refinement, scoring integration, error handling, and monitoring.",
+			"reasoning": "The complexity is high due to the need for scalable multi-tenant architecture, dynamic agent configuration, and parallel processing, along with robust error handling and monitoring."
+		},
+		{
+			"taskId": 26,
+			"taskTitle": "Build ATL Contact Discovery System",
+			"complexityScore": 9,
+			"recommendedSubtasks": 7,
+			"expansionPrompt": "Break down the task into subtasks for web scraping, LinkedIn API integration, org chart analysis, PostgreSQL storage, intelligent dot-connecting, error handling, and performance optimization.",
+			"reasoning": "This task is highly complex due to the challenges of web scraping, API integration, advanced data analysis, and performance optimization, requiring careful planning and execution."
+		}
+	]
+}

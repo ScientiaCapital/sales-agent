@@ -4,10 +4,9 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 import json
 import time
-from openai import OpenAI
-from fastapi import HTTPException
 
 from app.services.cerebras import CerebrasService
+from app.core.exceptions import CerebrasAPIError
 
 
 @pytest.fixture
@@ -161,11 +160,11 @@ class TestCerebrasService:
             side_effect=Exception("API connection failed")
         )
 
-        with pytest.raises(HTTPException) as exc_info:
+        with pytest.raises(CerebrasAPIError) as exc_info:
             cerebras_service.qualify_lead(company_name="Test Corp")
 
-        assert exc_info.value.status_code == 503
-        assert "Lead qualification service unavailable" in exc_info.value.detail
+        assert exc_info.value.status_code == 500
+        assert "Lead qualification service unavailable" in exc_info.value.message
 
     def test_calculate_cost_default_model(self, cerebras_service):
         """Test cost calculation with default model."""

@@ -17,7 +17,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
+router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
 # Initialize Knowledge Base service
 knowledge_service = KnowledgeBaseService()

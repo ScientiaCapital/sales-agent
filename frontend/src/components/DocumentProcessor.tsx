@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, memo } from 'react';
-import type { DocumentAnalysis, JobMatch } from '../types';
+import type { DocumentAnalysis } from '../types';
 
 interface DocumentProcessorProps {
   onAnalysisComplete?: (analysis: DocumentAnalysis) => void;

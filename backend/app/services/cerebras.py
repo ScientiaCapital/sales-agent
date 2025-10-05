@@ -8,6 +8,7 @@ from openai import OpenAI
 import json
 
 from app.core.logging import setup_logging
+from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError
 
 logger = setup_logging(__name__)
 
@@ -144,15 +145,17 @@ Provide your response in this exact JSON format:
             return 50.0, f"Invalid response format: {str(e)}", latency_ms
 
         except Exception as e:
-            # Critical API failure - propagate as HTTP error
+            # Critical API failure - propagate as custom exception
             end_time = time.time()
             latency_ms = int((end_time - start_time) * 1000)
 
-            logger.error(f"Cerebras API error during lead qualification: {e}", exc_info=True)
-            from fastapi import HTTPException
-            raise HTTPException(
-                status_code=503,
-                detail="Lead qualification service unavailable"
+            raise CerebrasAPIError(
+                message="Lead qualification service unavailable",
+                details={
+                    "company_name": company_name,
+                    "latency_ms": latency_ms,
+                    "error": str(e)
+                }
             )
 
     def calculate_cost(
