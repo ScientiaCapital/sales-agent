@@ -271,7 +271,7 @@
             "id": 1,
             "title": "Create abstract CRM interface",
             "description": "Develop a common interface for CRM system integrations",
-            "status": "in-progress",
+            "status": "done",
             "dependencies": [],
             "details": "Define methods and data structures required for all CRM integrations",
             "testStrategy": "Verify interface methods with mock implementations"
@@ -1175,7 +1175,7 @@
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-05T02:16:17.706Z",
+      "updated": "2025-10-05T03:53:17.497Z",
       "description": "Tasks for master context"
     }
   }
