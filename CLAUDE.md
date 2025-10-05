@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-AI-powered sales automation platform with **multi-agent streaming architecture**, leveraging Cerebras ultra-fast inference (633ms) for real-time lead qualification and intelligent outreach.
+AI-powered sales automation platform with **production-ready CRM integration**, multi-agent architecture, and intelligent outreach automation. Features HubSpot and Apollo.io integrations, voice capabilities, document processing, and knowledge base.
 
-**Current Status**: ✅ Multi-Agent Streaming Platform - Production-ready with real-time WebSocket streaming, intelligent routing across 4 AI providers, and resilience patterns.
+**Current Status**: ✅ Foundation Complete - CRM integration (HubSpot + Apollo), multi-agent architecture, voice agent, document processing, research pipeline, and campaign automation systems operational. Next: LinkedIn connector (Task 5.4).
 
 ## Architecture Principles
 
@@ -18,11 +18,14 @@ AI-powered sales automation platform with **multi-agent streaming architecture**
 ```
 Backend: FastAPI + SQLAlchemy + PostgreSQL + Redis + Celery
 Frontend: React 18 + TypeScript + Vite + Tailwind CSS v4
-AI Providers: Cerebras (633ms), Claude (4026ms), DeepSeek, Ollama
-Streaming: WebSocket + Redis pub/sub + AsyncAnthropic SDK
+AI Providers: Cerebras, Claude, DeepSeek, Ollama
+CRM Integrations: HubSpot (OAuth 2.0), Apollo.io (API key), LinkedIn (pending)
+Voice: Cartesia TTS + voice agent system
+Documents: PDF/text processing + knowledge base
+Services: Research pipeline, campaign automation, lead scoring
 Resilience: Circuit Breakers + Exponential Backoff Retry
-Infrastructure: Docker Compose (postgres, redis, pgadmin)
-Testing: pytest with 96% coverage + streaming validation
+Infrastructure: Docker Compose (PostgreSQL, Redis, PgAdmin), RunPod vLLM
+Testing: pytest with 96% coverage
 ```
 
 ### Multi-Provider AI Stack
@@ -96,70 +99,149 @@ response = client.chat.completions.create(
 sales-agent/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                    # FastAPI endpoints
-│   │   │   ├── health.py          # Health checks
-│   │   │   ├── leads.py           # Lead management
-│   │   │   └── streaming.py       # WebSocket streaming API
-│   │   ├── core/                   # Configuration
-│   │   │   ├── config.py          # Settings
-│   │   │   └── logging.py         # Structured logging
-│   │   ├── models/                 # SQLAlchemy models
-│   │   │   ├── database.py        # DB setup
-│   │   │   ├── lead.py            # Lead model
-│   │   │   ├── api_call.py        # API tracking
-│   │   │   └── agent_models.py    # Multi-agent tracking (5 tables)
-│   │   ├── schemas/                # Pydantic schemas
-│   │   │   └── lead.py            # Lead validation
-│   │   └── services/               # Business logic
-│   │       ├── cerebras.py        # Cerebras integration
-│   │       ├── claude_streaming.py # Claude SDK streaming
-│   │       ├── model_router.py    # Intelligent routing
-│   │       ├── base_agent.py      # Abstract agent class
-│   │       ├── circuit_breaker.py # Resilience pattern
-│   │       ├── retry_handler.py   # Exponential backoff
-│   │       └── celery_tasks.py    # Async workflows
-│   ├── alembic/                    # Database migrations
-│   ├── tests/                      # Test suite
+│   │   ├── api/                        # FastAPI endpoints
+│   │   │   ├── health.py              # Health checks
+│   │   │   ├── leads.py               # Lead management
+│   │   │   ├── streaming.py           # WebSocket streaming
+│   │   │   ├── voice.py               # Voice agent endpoints
+│   │   │   ├── transfer.py            # Agent transfer
+│   │   │   ├── apollo.py              # Apollo enrichment API
+│   │   │   ├── linkedin.py            # LinkedIn integration
+│   │   │   ├── campaigns.py           # Campaign management
+│   │   │   ├── contacts.py            # Contact management
+│   │   │   ├── customers.py           # Customer endpoints
+│   │   │   ├── documents.py           # Document processing
+│   │   │   ├── knowledge.py           # Knowledge base API
+│   │   │   ├── refine.py              # Iterative refinement
+│   │   │   ├── reports.py             # Report generation
+│   │   │   ├── research.py            # Research pipeline
+│   │   │   └── crm/                   # CRM endpoints
+│   │   │       ├── __init__.py
+│   │   │       └── hubspot.py         # HubSpot OAuth
+│   │   ├── core/                       # Configuration
+│   │   │   ├── config.py              # Settings
+│   │   │   └── logging.py             # Structured logging
+│   │   ├── models/                     # SQLAlchemy models
+│   │   │   ├── database.py            # DB setup
+│   │   │   ├── lead.py                # Lead model
+│   │   │   ├── api_call.py            # API tracking
+│   │   │   ├── agent_models.py        # Multi-agent tracking
+│   │   │   ├── campaign.py            # Campaign models
+│   │   │   ├── crm.py                 # CRM models
+│   │   │   ├── customer_models.py     # Customer models
+│   │   │   ├── report.py              # Report models
+│   │   │   ├── social_media.py        # Social media models
+│   │   │   └── voice_models.py        # Voice models
+│   │   ├── schemas/                    # Pydantic schemas
+│   │   │   └── lead.py                # Lead validation
+│   │   └── services/                   # Business logic
+│   │       ├── cerebras.py            # Cerebras integration
+│   │       ├── claude_streaming.py    # Claude streaming
+│   │       ├── model_router.py        # Intelligent routing
+│   │       ├── llm_router.py          # LLM routing
+│   │       ├── base_agent.py          # Abstract agent class
+│   │       ├── agent_transfer.py      # Agent handoff
+│   │       ├── voice_agent.py         # Voice agent
+│   │       ├── circuit_breaker.py     # Resilience pattern
+│   │       ├── retry_handler.py       # Exponential backoff
+│   │       ├── apollo.py              # Apollo service
+│   │       ├── linkedin_oauth.py      # LinkedIn OAuth
+│   │       ├── linkedin_scraper.py    # LinkedIn scraper
+│   │       ├── document_processor.py  # Document processing
+│   │       ├── knowledge_base.py      # Knowledge base
+│   │       ├── lead_scorer.py         # Lead scoring
+│   │       ├── report_generator.py    # Report generation
+│   │       ├── research_pipeline.py   # Research pipeline
+│   │       ├── iterative_refinement.py # Iterative refinement
+│   │       ├── social_media_scraper.py # Social scraping
+│   │       ├── customer_service.py    # Customer service
+│   │       ├── cartesia_service.py    # Voice TTS
+│   │       ├── csv_importer.py        # CSV import
+│   │       ├── runpod_vllm.py         # RunPod vLLM
+│   │       ├── runpod_storage.py      # RunPod storage
+│   │       ├── agents/                # Specialized agents
+│   │       │   ├── __init__.py
+│   │       │   ├── analysis_agent.py
+│   │       │   ├── search_agent.py
+│   │       │   └── synthesis_agent.py
+│   │       ├── outreach/              # Outreach services
+│   │       │   ├── __init__.py
+│   │       │   ├── campaign_service.py
+│   │       │   └── message_generator.py
+│   │       └── crm/                   # CRM integrations
+│   │           ├── __init__.py
+│   │           ├── base.py            # Abstract CRM interface
+│   │           ├── hubspot.py         # HubSpot provider
+│   │           └── apollo.py          # Apollo provider
+│   ├── alembic/                        # Database migrations
+│   ├── tests/                          # Test suite
 │   ├── requirements.txt
-│   └── celery_worker.py           # Celery worker
-├── frontend/                       # React + Vite + Tailwind
+│   └── celery_worker.py               # Celery worker
+├── frontend/                           # React + Vite + Tailwind
 │   ├── src/
-│   │   ├── components/            # React components
-│   │   └── pages/                # Page components
+│   │   ├── components/                # React components
+│   │   └── pages/                    # Page components
 │   └── package.json
-├── .taskmaster/                    # Task management
-├── .claude/                        # Claude Code config
-├── .env                           # API keys (DO NOT COMMIT)
-├── docker-compose.yml             # Infrastructure
-├── start_server.py                # Server launcher
-├── test_api.py                   # Integration tests
-├── test_streaming.py             # Streaming tests
-├── STREAMING_IMPLEMENTATION.md   # Streaming docs
+├── .taskmaster/                        # Task management
+├── .claude/                            # Claude Code config
+├── .env                               # API keys (DO NOT COMMIT)
+├── docker-compose.yml                 # Infrastructure
+├── start_server.py                    # Server launcher
+├── test_api.py                       # Integration tests
+├── CRM_INTERFACE_SUMMARY.md          # CRM implementation docs
 └── README.md
 ```
 
 ### API Endpoints
 
-Current working endpoints:
+Current working endpoints (24+ endpoints across multiple domains):
 
-#### REST Endpoints
+#### Core Endpoints
 ```
 GET  /                      # Root endpoint
 GET  /api/health           # Health check with service status
-POST /api/leads/qualify    # Qualify a lead with Cerebras (batch)
-GET  /api/leads/           # List all leads
 GET  /api/docs             # OpenAPI documentation
 ```
 
-#### Streaming Endpoints
+#### Lead Management
 ```
-POST /api/stream/start/{lead_id}      # Start streaming workflow
-  → Returns: {"stream_id": "...", "websocket_url": "/ws/stream/..."}
+POST /api/leads/qualify    # Qualify a lead with Cerebras
+GET  /api/leads/           # List all leads
+```
 
-WebSocket /ws/stream/{stream_id}      # Connect for real-time streaming
-  → Receives: Progressive tokens in real-time
+#### CRM Integration
+```
+GET  /api/crm/hubspot/...  # HubSpot OAuth flow
+POST /api/apollo/...       # Apollo.io enrichment
+GET  /api/linkedin/...     # LinkedIn integration
+GET  /api/contacts/...     # Contact management
+```
 
-POST /api/stream/stop/{stream_id}     # Stop streaming
+#### Campaigns & Outreach
+```
+GET  /api/campaigns/...    # Campaign management
+POST /api/campaigns/...    # Create campaign
+```
+
+#### Research & Documents
+```
+POST /api/research/...     # Research pipeline
+POST /api/documents/...    # Document processing
+GET  /api/knowledge/...    # Knowledge base queries
+POST /api/refine/...       # Iterative refinement
+POST /api/reports/...      # Report generation
+```
+
+#### Voice & Agents
+```
+POST /api/voice/...        # Voice agent endpoints
+POST /api/transfer/...     # Agent transfer/handoff
+POST /api/streaming/...    # Streaming endpoints
+```
+
+#### Customer Management
+```
+GET  /api/customers/...    # Customer endpoints
 ```
 
 ## MCP Server Usage
@@ -747,26 +829,36 @@ npm run dev
 ## Development Roadmap
 
 ### Phase 1: Core Foundation ✅ COMPLETE
-- [x] Lead qualification engine with Cerebras AI (633ms streaming)
+- [x] Development infrastructure setup (Docker, PostgreSQL, Redis)
+- [x] Lead qualification engine with Cerebras AI
+- [x] Automated report generation system
 - [x] Multi-agent architecture with BaseAgent pattern
-- [x] Real-time streaming with WebSocket + Redis pub/sub
 - [x] Circuit breakers + exponential backoff retry
-- [x] Intelligent model routing (4 providers: Cerebras, Claude, DeepSeek, Ollama)
-- [x] Database migrations for agent execution tracking (5 new tables)
+- [x] Intelligent model routing (Cerebras, Claude, DeepSeek, Ollama)
+- [x] Security hardening (global exception handling, structured logging, CORS fixes, API key rotation)
+- [x] Database connection pooling
 
-### Phase 2: Agent Implementation (In Progress)
-- [ ] QualificationAgent - Stream lead scoring with reasoning
-- [ ] EnrichmentAgent - Stream Apollo/Clay data enrichment
-- [ ] GrowthAgent - Stream market expansion insights
-- [ ] MarketingAgent - Stream personalized campaign ideas
-- [ ] BDRAgent - Stream demo booking scripts
-- [ ] ConversationAgent - Stream real-time chat responses
+### Phase 2: CRM Integration ✅ 60% COMPLETE
+- [x] Task 5.1: Abstract CRM interface (base.py)
+- [x] Task 5.2: HubSpot integration with OAuth 2.0 + PKCE
+- [x] Task 5.3: Apollo.io integration for contact enrichment
+- [ ] Task 5.4: LinkedIn connector (IN PROGRESS - Next task)
+- [ ] Task 5.5: Data sync and error handling
 
-### Phase 3: Integration & Deployment
-- [ ] Frontend WebSocket client with React hooks
-- [ ] Apollo.io API integration for enrichment
-- [ ] HubSpot CRM sync
-- [ ] Calendly scheduling integration
+### Phase 3: Advanced Features ✅ PARTIALLY COMPLETE
+- [x] Voice agent system with Cartesia TTS
+- [x] Agent transfer/handoff capability
+- [x] Document processing pipeline
+- [x] Knowledge base system
+- [x] Research pipeline with multi-agent search
+- [x] Campaign automation and message generation
+- [x] Lead scoring system
+- [x] Iterative refinement system
+- [x] Social media scraping
+- [x] Customer service endpoints
+- [x] CSV import functionality
+- [x] RunPod vLLM integration
+- [ ] Frontend UI/UX completion
 - [ ] Production deployment with monitoring
 - [ ] Performance analytics dashboards
 
@@ -823,22 +915,26 @@ curl http://localhost:8001/api/leads/
 ## Resources
 
 - **API Docs**: http://localhost:8001/api/docs (when running)
-- **Streaming Implementation**: STREAMING_IMPLEMENTATION.md (complete architecture)
-- **Celery Setup**: backend/CELERY_SETUP.md (async task queue)
+- **CRM Integration Summary**: CRM_INTERFACE_SUMMARY.md (HubSpot + Apollo implementation)
 - **Cerebras Docs**: https://inference-docs.cerebras.ai
-- **Anthropic Streaming**: https://docs.anthropic.com/claude/docs/streaming
+- **HubSpot API**: https://developers.hubspot.com/docs/api/overview
+- **Apollo.io API**: https://apolloio.github.io/apollo-api-docs/
 - **FastAPI Docs**: https://fastapi.tiangolo.com
 - **SQLAlchemy Docs**: https://docs.sqlalchemy.org
 - **Task Master Guide**: .taskmaster/CLAUDE.md
 
 ---
 
-**Remember**: This is a production-ready multi-agent streaming platform with:
-- Real-time WebSocket streaming (633ms Cerebras, 39% under target)
-- 4 AI providers with intelligent routing
-- Circuit breakers + exponential backoff resilience
-- Multi-agent architecture with BaseAgent pattern
-- All new features should follow existing patterns and maintain streaming performance targets.
+**Remember**: This is a comprehensive sales automation platform with:
+- **CRM Integration**: HubSpot (OAuth 2.0) + Apollo.io (enrichment) - 60% complete
+- **Multi-Agent System**: BaseAgent pattern, voice agent, agent transfer
+- **Document Processing**: Knowledge base, research pipeline, report generation
+- **Campaign Automation**: Message generation, outreach management
+- **AI Routing**: Cerebras, Claude, DeepSeek, Ollama with intelligent selection
+- **Resilience**: Circuit breakers + exponential backoff retry
+- **Infrastructure**: Docker Compose (PostgreSQL + Redis), RunPod vLLM
+
+**Next Task**: LinkedIn connector implementation (Task 5.4) - See `.taskmaster/CLAUDE.md` for workflow.
 
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines from the main CLAUDE.md file.**
