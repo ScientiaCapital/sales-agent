@@ -63,3 +63,14 @@ async def detailed_health_check(cache: CacheManager = Depends(get_cache)):
             "cache_stats": cache_stats
         },
     }
+
+
+@router.get("/test-error")
+async def test_error():
+    """
+    Test endpoint to trigger a Sentry error report.
+
+    This endpoint intentionally raises an exception to verify Sentry integration.
+    Use this to test that errors are being captured and sent to Sentry dashboard.
+    """
+    raise RuntimeError("Test error for Sentry monitoring - this is intentional")

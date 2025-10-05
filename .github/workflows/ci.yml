@@ -121,6 +121,9 @@ jobs:
           DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
           REDIS_URL: redis://localhost:6379/0
           CEREBRAS_API_KEY: ${{ secrets.CEREBRAS_API_KEY || 'test-key' }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          DATADOG_ENABLED: 'false'  # Disable in CI to avoid test interference
+          TESTING: 'true'  # Prevent Sentry from sending test errors
         run: |
           cd backend
           pytest tests/ \
