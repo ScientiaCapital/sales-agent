@@ -2,9 +2,9 @@
 
 ## Project Overview
 
-AI-powered sales automation platform with **production-ready CRM integration**, multi-agent architecture, and intelligent outreach automation. Features HubSpot and Apollo.io integrations, voice capabilities, document processing, and knowledge base.
+AI-powered sales automation platform with **production-ready CRM integration**, multi-agent architecture, and intelligent outreach automation. Features Close CRM, Apollo.io, and LinkedIn integrations with automated bidirectional sync, voice capabilities, document processing, and knowledge base.
 
-**Current Status**: ✅ Foundation Complete - CRM integration (HubSpot + Apollo), multi-agent architecture, voice agent, document processing, research pipeline, and campaign automation systems operational. Next: LinkedIn connector (Task 5.4).
+**Current Status**: ✅ Phase 2 Complete - CRM integration (Close CRM + Apollo + LinkedIn) with automated sync orchestration, multi-agent architecture, voice agent, document processing, research pipeline, and campaign automation systems fully operational.
 
 ## Architecture Principles
 
@@ -19,7 +19,8 @@ AI-powered sales automation platform with **production-ready CRM integration**, 
 Backend: FastAPI + SQLAlchemy + PostgreSQL + Redis + Celery
 Frontend: React 18 + TypeScript + Vite + Tailwind CSS v4
 AI Providers: Cerebras, Claude, DeepSeek, Ollama
-CRM Integrations: HubSpot (OAuth 2.0), Apollo.io (API key), LinkedIn (pending)
+CRM Integrations: Close CRM (API key, bidirectional sync), Apollo.io (enrichment), LinkedIn (scraping)
+CRM Sync: Automated bidirectional sync with conflict resolution, circuit breakers, Celery Beat scheduling
 Voice: Cartesia TTS + voice agent system
 Documents: PDF/text processing + knowledge base
 Services: Research pipeline, campaign automation, lead scoring
@@ -115,9 +116,10 @@ sales-agent/
 │   │   │   ├── refine.py              # Iterative refinement
 │   │   │   ├── reports.py             # Report generation
 │   │   │   ├── research.py            # Research pipeline
+│   │   │   ├── sync.py                # CRM sync monitoring
 │   │   │   └── crm/                   # CRM endpoints
 │   │   │       ├── __init__.py
-│   │   │       └── hubspot.py         # HubSpot OAuth
+│   │   │       └── hubspot.py         # HubSpot OAuth (COMMENTED OUT - replaced with Close CRM)
 │   │   ├── core/                       # Configuration
 │   │   │   ├── config.py              # Settings
 │   │   │   └── logging.py             # Structured logging
@@ -168,11 +170,14 @@ sales-agent/
 │   │       │   ├── __init__.py
 │   │       │   ├── campaign_service.py
 │   │       │   └── message_generator.py
+│   │       ├── crm_sync_service.py    # CRM sync orchestration
 │   │       └── crm/                   # CRM integrations
 │   │           ├── __init__.py
 │   │           ├── base.py            # Abstract CRM interface
-│   │           ├── hubspot.py         # HubSpot provider
-│   │           └── apollo.py          # Apollo provider
+│   │           ├── close.py           # Close CRM provider
+│   │           ├── apollo.py          # Apollo provider
+│   │           ├── linkedin.py        # LinkedIn provider
+│   │           └── hubspot.py         # HubSpot provider (COMMENTED OUT)
 │   ├── alembic/                        # Database migrations
 │   ├── tests/                          # Test suite
 │   ├── requirements.txt
@@ -211,10 +216,19 @@ GET  /api/leads/           # List all leads
 
 #### CRM Integration
 ```
-GET  /api/crm/hubspot/...  # HubSpot OAuth flow
 POST /api/apollo/...       # Apollo.io enrichment
 GET  /api/linkedin/...     # LinkedIn integration
 GET  /api/contacts/...     # Contact management
+```
+
+#### CRM Sync Operations
+```
+GET  /api/sync/status            # All platforms sync status
+GET  /api/sync/status/{platform} # Platform-specific status
+GET  /api/sync/history           # Sync operation history
+POST /api/sync/trigger           # Manual sync trigger
+GET  /api/sync/metrics           # Aggregate sync metrics
+GET  /api/sync/health            # Sync system health
 ```
 
 #### Campaigns & Outreach
@@ -243,6 +257,199 @@ POST /api/streaming/...    # Streaming endpoints
 ```
 GET  /api/customers/...    # Customer endpoints
 ```
+
+## CRM Sync System
+
+### Overview
+
+The CRM sync system provides automated bidirectional synchronization between the local PostgreSQL database and multiple CRM platforms (Close CRM, Apollo.io, LinkedIn). Built with production-grade resilience patterns including circuit breakers, exponential backoff retry, and dead letter queues.
+
+**Key Features:**
+- **Multi-Platform Support**: Close CRM (full CRUD), Apollo.io (enrichment), LinkedIn (scraping)
+- **Automated Scheduling**: Celery Beat periodic syncs (Close: 2 hours, Apollo/LinkedIn: daily)
+- **Conflict Resolution**: Last-write-wins strategy with manual review flagging for critical fields
+- **Resilience**: Circuit breakers + exponential backoff retry for fault tolerance
+- **Monitoring**: Real-time status, metrics, and health check endpoints
+- **Manual Control**: Trigger syncs on-demand via REST API
+
+### Close CRM Integration
+
+**Authentication**: API key via Basic auth (`Authorization: Basic {base64(api_key:)}`)
+
+**Base URL**: `https://api.close.com/api/v1/`
+
+**Data Model**: Leads contain multiple contacts. Each lead has a `name` field and a `contacts[]` array with contact details (emails, phones, etc.)
+
+**Sync Operations**:
+```python
+# Bidirectional sync (import + export)
+from app.services.crm_sync_service import CRMSyncService
+
+sync_service = CRMSyncService(db=db)
+result = await sync_service.sync_platform(
+    platform="close",
+    direction="bidirectional",
+    filters={"query": "company:Acme", "date_created__gte": "2025-01-01"}
+)
+```
+
+**Rate Limiting**: Variable by endpoint group, tracked via RateLimit headers
+
+**Implementation**: `backend/app/services/crm/close.py`
+
+### Apollo.io Integration
+
+**Authentication**: API key via `Api-Key` header
+
+**Base URL**: `https://api.apollo.io/v1/`
+
+**Data Model**: Email-based enrichment (read-only platform)
+
+**Sync Operations**:
+```python
+# Import enrichment data (requires emails list)
+result = await sync_service.sync_platform(
+    platform="apollo",
+    direction="import",
+    filters={"emails": ["john@acme.com", "jane@corp.com"]}
+)
+```
+
+**Rate Limiting**: 600 requests/hour, tracked in Redis
+
+**Implementation**: `backend/app/services/crm/apollo.py`
+
+### LinkedIn Integration
+
+**Authentication**: Cookie-based session via Browserbase
+
+**Data Model**: Profile URL-based scraping (read-only)
+
+**Sync Operations**:
+```python
+# Import profile data (requires profile URLs)
+result = await sync_service.sync_platform(
+    platform="linkedin",
+    direction="import",
+    filters={"profile_urls": ["https://linkedin.com/in/johndoe"]}
+)
+```
+
+**Rate Limiting**: 100 requests/day, tracked in Redis
+
+**Implementation**: `backend/app/services/crm/linkedin.py`
+
+### Sync Orchestration
+
+**Service**: `CRMSyncService` in `backend/app/services/crm_sync_service.py`
+
+**Architecture**:
+1. **Provider Factory**: Initializes platform-specific CRM providers from database credentials
+2. **Resilience Wrapper**: Wraps sync operations with circuit breaker + exponential backoff retry
+3. **Conflict Resolution**: Last-write-wins based on `updated_at` timestamps
+4. **Audit Logging**: All sync operations logged to `CRMSyncLog` table
+
+**Usage Example**:
+```python
+from app.services.crm_sync_service import CRMSyncService
+from app.models.database import get_db
+
+db = next(get_db())
+sync_service = CRMSyncService(db=db, redis_client=redis_client)
+
+# Sync a specific platform
+result = await sync_service.sync_platform(
+    platform="close",
+    direction="bidirectional",
+    filters={"query": "status:lead"}
+)
+
+# Process webhook event
+await sync_service.process_webhook_event(platform="close", event=webhook_event)
+
+# Get sync status
+status = await sync_service.get_sync_status(platform="close")
+```
+
+### Automated Scheduling (Celery Beat)
+
+**Configuration**: `backend/app/celery_app.py` lines 78-98
+
+**Schedule**:
+- **Close CRM**: Every 2 hours (bidirectional sync)
+- **Apollo.io**: Daily at 2 AM UTC (import enrichment)
+- **LinkedIn**: Daily at 3 AM UTC (import profiles)
+
+**Celery Task**: `sync_crm_contacts` in `backend/app/tasks/agent_tasks.py`
+
+**Start Celery Beat**:
+```bash
+cd backend
+celery -A app.celery_app beat --loglevel=info
+```
+
+### Monitoring Endpoints
+
+**Sync Status**: `GET /api/sync/status` or `GET /api/sync/status/{platform}`
+- Returns: last_sync_at, contacts_processed, contacts_created, contacts_updated, contacts_failed, duration_seconds, errors
+
+**Sync History**: `GET /api/sync/history?platform=close&status=completed&page=1`
+- Paginated sync operation history with filtering
+
+**Manual Trigger**: `POST /api/sync/trigger`
+```json
+{
+  "platform": "close",
+  "direction": "bidirectional",
+  "filters": {"query": "company:Acme"}
+}
+```
+
+**Aggregate Metrics**: `GET /api/sync/metrics?platform=close&days=7`
+- Returns: total_syncs, contacts_processed, success_rate_percent, avg_duration_seconds
+
+**Health Check**: `GET /api/sync/health`
+- Returns: configured_platforms, syncs_last_24h, failures_last_24h, health_status
+
+**Implementation**: `backend/app/api/sync.py`
+
+### Database Models
+
+**CRMCredential**: Stores encrypted API keys and OAuth tokens for each platform
+- Fields: platform, api_key, access_token, refresh_token, scopes, is_active
+
+**CRMContact**: Local contact records synced with CRM platforms
+- Fields: crm_platform, external_id, email, first_name, last_name, company, title, phone, linkedin_url, enrichment_data, last_synced_at
+
+**CRMSyncLog**: Audit trail for all sync operations
+- Fields: platform, operation, contacts_processed, contacts_created, contacts_updated, contacts_failed, errors, started_at, completed_at, duration_seconds, status
+
+**Implementation**: `backend/app/models/crm.py`
+
+### Conflict Resolution Strategy
+
+**Algorithm**: Last-write-wins based on `updated_at` timestamps
+
+**Process**:
+1. Compare `updated_at` timestamp between local and remote contact
+2. Choose newer record as the winner
+3. Merge enrichment data from both sources
+4. Flag conflicts on critical fields (email, name) for manual review
+
+**Implementation**: `CRMSyncService.resolve_conflict()` in `backend/app/services/crm_sync_service.py:296-376`
+
+### Error Handling
+
+**Circuit Breaker**: Prevents cascade failures by opening circuit after repeated failures
+- Implementation: `backend/app/services/circuit_breaker.py`
+
+**Exponential Backoff Retry**: Automatic retry with increasing delays (max 3 retries, 2s base delay, 60s max delay)
+- Implementation: `backend/app/services/retry_handler.py`
+
+**Dead Letter Queue**: Failed syncs after max retries stored in Redis for manual review
+- Key pattern: `crm:dlq:{platform}:{timestamp}`
+
+**Rate Limit Handling**: Respects platform rate limits, pauses sync when limit exceeded
 
 ## MCP Server Usage
 
@@ -683,6 +890,13 @@ POSTGRES_DB=sales_agent_db
 # Redis (Docker)
 REDIS_URL=redis://localhost:6379/0
 
+# CRM Integrations
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
+LINKEDIN_REDIRECT_URI=http://localhost:8001/api/linkedin/callback
+BROWSERBASE_API_KEY=your_browserbase_key  # For LinkedIn scraping (optional)
+BROWSERBASE_PROJECT_ID=your_project_id
+
 # Optional
 ANTHROPIC_API_KEY=your_key
 OPENAI_API_KEY=your_key
@@ -838,12 +1052,12 @@ npm run dev
 - [x] Security hardening (global exception handling, structured logging, CORS fixes, API key rotation)
 - [x] Database connection pooling
 
-### Phase 2: CRM Integration ✅ 60% COMPLETE
+### Phase 2: CRM Integration ✅ 100% COMPLETE
 - [x] Task 5.1: Abstract CRM interface (base.py)
-- [x] Task 5.2: HubSpot integration with OAuth 2.0 + PKCE
+- [x] Task 5.2: ~~HubSpot~~ → Close CRM integration with API key auth (HubSpot commented out)
 - [x] Task 5.3: Apollo.io integration for contact enrichment
-- [ ] Task 5.4: LinkedIn connector (IN PROGRESS - Next task)
-- [ ] Task 5.5: Data sync and error handling
+- [x] Task 5.4: LinkedIn connector with OAuth 2.0 + Browserbase scraping
+- [x] Task 5.5: Data sync with automated bidirectional sync orchestration, conflict resolution, circuit breakers, and Celery Beat scheduling
 
 ### Phase 3: Advanced Features ✅ PARTIALLY COMPLETE
 - [x] Voice agent system with Cartesia TTS
@@ -926,7 +1140,7 @@ curl http://localhost:8001/api/leads/
 ---
 
 **Remember**: This is a comprehensive sales automation platform with:
-- **CRM Integration**: HubSpot (OAuth 2.0) + Apollo.io (enrichment) - 60% complete
+- **CRM Integration**: HubSpot (OAuth 2.0) + Apollo.io (enrichment) + LinkedIn (OAuth 2.0 + Scraping) - 80% complete
 - **Multi-Agent System**: BaseAgent pattern, voice agent, agent transfer
 - **Document Processing**: Knowledge base, research pipeline, report generation
 - **Campaign Automation**: Message generation, outreach management
@@ -934,7 +1148,7 @@ curl http://localhost:8001/api/leads/
 - **Resilience**: Circuit breakers + exponential backoff retry
 - **Infrastructure**: Docker Compose (PostgreSQL + Redis), RunPod vLLM
 
-**Next Task**: LinkedIn connector implementation (Task 5.4) - See `.taskmaster/CLAUDE.md` for workflow.
+**Next Task**: Data sync and error handling (Task 5.5) - See `.taskmaster/CLAUDE.md` for workflow.
 
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines from the main CLAUDE.md file.**

@@ -308,32 +308,104 @@ class ApolloProvider(CRMProvider):
         """
         One-way import from Apollo search (export not supported).
 
+        Imports contacts by enriching a list of emails provided in filters.
+        Apollo doesn't support listing all contacts, so you must provide emails to enrich.
+
         Args:
             direction: Must be "import" (Apollo is read-only)
-            filters: Search filters for Apollo people search API
+            filters: Required filters for enrichment:
+                - emails: List[str] - List of email addresses to enrich
 
         Returns:
             SyncResult with import metrics
 
         Raises:
-            CRMValidationError: If direction is not "import"
+            CRMValidationError: If direction is not "import" or emails not provided
+
+        Example:
+            filters = {
+                "emails": ["john@company.com", "jane@company.com"]
+            }
+            result = await provider.sync_contacts(direction="import", filters=filters)
         """
         if direction != "import":
             raise CRMValidationError(
                 f"Apollo only supports 'import' direction (read-only platform). Got: {direction}"
             )
 
-        # TODO: Implement Apollo people search API integration
-        # This would use /api/v1/mixed_people/search endpoint
-        # For now, return empty result
-        logger.warning("Apollo sync_contacts not yet fully implemented - returning empty result")
+        if not filters or not filters.get("emails"):
+            raise CRMValidationError(
+                "Apollo sync requires 'emails' list in filters. "
+                "Example: filters={'emails': ['john@company.com']}"
+            )
+
+        emails = filters.get("emails", [])
+        if not isinstance(emails, list):
+            raise CRMValidationError("'emails' filter must be a list of email addresses")
+
+        contacts_created = 0
+        contacts_updated = 0
+        contacts_failed = 0
+        total_processed = 0
+        errors_list = []
+
+        logger.info(f"Starting Apollo enrichment for {len(emails)} email addresses")
+
+        # Enrich each email address
+        for email in emails:
+            total_processed += 1
+
+            try:
+                # Use existing enrich_contact method
+                enrichment_result = await self.enrich_contact(email)
+
+                if enrichment_result:
+                    # Successfully enriched
+                    contacts_created += 1
+                    logger.debug(f"Enriched contact: {email}")
+                else:
+                    # Email not found in Apollo
+                    contacts_failed += 1
+                    errors_list.append({
+                        "email": email,
+                        "error": "Contact not found in Apollo database"
+                    })
+                    logger.debug(f"Contact not found: {email}")
+
+            except CRMRateLimitError as e:
+                # Rate limit hit - stop processing
+                contacts_failed += 1
+                errors_list.append({
+                    "email": email,
+                    "error": f"Rate limit exceeded: {str(e)}"
+                })
+                logger.warning(f"Rate limit exceeded at email {total_processed}/{len(emails)}")
+                break
+
+            except Exception as e:
+                # Other error - log and continue
+                contacts_failed += 1
+                errors_list.append({
+                    "email": email,
+                    "error": str(e)
+                })
+                logger.error(f"Failed to enrich {email}: {e}")
+
+        logger.info(
+            f"Apollo sync completed: {contacts_created} enriched, "
+            f"{contacts_failed} failed out of {total_processed} total"
+        )
 
         return SyncResult(
-            contacts_created=0,
-            contacts_updated=0,
-            contacts_failed=0,
-            total_processed=0,
-            sync_direction=direction
+            platform="apollo",
+            operation=direction,
+            contacts_processed=total_processed,
+            contacts_created=contacts_created,
+            contacts_updated=contacts_updated,
+            contacts_failed=contacts_failed,
+            errors=errors_list,
+            started_at=datetime.utcnow(),
+            completed_at=datetime.utcnow()
         )
 
     async def get_updated_contacts(self, since: datetime) -> List[Contact]:

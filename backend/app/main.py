@@ -20,7 +20,11 @@ from app.api import reports
 from app.api import apollo
 from app.api import linkedin
 from app.api import campaigns
-from app.api.crm import hubspot
+from app.api import sync
+from app.api import auth
+from app.api import gdpr
+# HubSpot temporarily commented out - replaced with Close CRM
+# from app.api.crm import hubspot
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.exceptions import (
@@ -103,6 +107,10 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],  # Required headers only
 )
 
+# Add Audit Logging Middleware
+from app.middleware.audit import AuditLoggingMiddleware
+app.add_middleware(AuditLoggingMiddleware)
+
 
 # Exception Handlers - Ordered from specific to general
 @app.exception_handler(SalesAgentException)
@@ -166,6 +174,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers with API version prefix
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)  # Task 9.5: Authentication & authorization
+app.include_router(gdpr.router, prefix=settings.API_V1_PREFIX)  # Task 9.1: GDPR compliance
 app.include_router(leads.router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(contacts.router, prefix=settings.API_V1_PREFIX)
@@ -178,8 +188,9 @@ app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Carte
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
 app.include_router(apollo.router, prefix=settings.API_V1_PREFIX)  # Task 5.3: Apollo contact enrichment
 app.include_router(linkedin.router)  # LinkedIn OAuth 2.0 connector (no API prefix - uses /api/linkedin)
-app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX, tags=["crm"])  # Task 5.2: HubSpot CRM integration
+# app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX, tags=["crm"])  # Task 5.2: HubSpot CRM integration (COMMENTED OUT - replaced with Close CRM)
 app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
+app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
 
 
 @app.get("/")

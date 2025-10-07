@@ -382,49 +382,94 @@ def batch_generate_reports_task(self, lead_ids: List[int], force_refresh: bool =
 def sync_crm_contacts_task(
     self,
     crm_platform: str,
-    operation: str = "bidirectional",
+    operation: str = "import",
     filters: Dict[str, Any] = None
 ):
     """
-    Sync contacts with CRM platform (HubSpot, Apollo, LinkedIn)
-    
-    Placeholder for Task 5 implementation. Will handle:
-    - HubSpot: OAuth, contacts, deals, bidirectional sync
-    - Apollo: Contact enrichment, discovery API
-    - LinkedIn: Connection requests, messaging automation
-    
+    Sync contacts with CRM platform (Close, Apollo, LinkedIn)
+
+    Task 5.5: Full implementation with CRMSyncService.
+    Handles:
+    - Close CRM: Full bidirectional sync (create, update, delete)
+    - Apollo: One-way enrichment (import only)
+    - LinkedIn: Profile scraping enrichment (import only)
+
     Args:
-        crm_platform: Platform to sync with (hubspot, apollo, linkedin)
-        operation: Sync direction (push, pull, bidirectional)
-        filters: Optional filters for selective sync
-        
+        crm_platform: Platform to sync with (close, apollo, linkedin)
+        operation: Sync direction (import, export, bidirectional)
+        filters: Optional platform-specific filters
+            - Close: query, created_date_gte, updated_date_gte
+            - Apollo: emails (required list)
+            - LinkedIn: profile_urls (required list)
+
     Returns:
         Dict with sync results
     """
     try:
         logger.info(f"Starting CRM sync: platform={crm_platform}, operation={operation}")
-        
-        # Placeholder implementation
-        # Will be replaced with actual CRM connectors in Task 5
-        
-        if crm_platform == "hubspot":
-            logger.info("HubSpot sync not yet implemented (Task 5.2)")
-            return {"status": "not_implemented", "platform": "hubspot"}
-            
-        elif crm_platform == "apollo":
-            logger.info("Apollo sync not yet implemented (Task 5.3)")
-            return {"status": "not_implemented", "platform": "apollo"}
-            
-        elif crm_platform == "linkedin":
-            logger.info("LinkedIn sync not yet implemented (Task 5.4)")
-            return {"status": "not_implemented", "platform": "linkedin"}
-            
-        else:
-            logger.error(f"Unknown CRM platform: {crm_platform}")
-            return {"error": f"Unknown CRM platform: {crm_platform}"}
-            
+
+        # Initialize database session
+        db: Session = next(get_db())
+
+        try:
+            # Import asyncio for running async function
+            import asyncio
+            from app.services.crm_sync_service import CRMSyncService
+
+            # Get Redis client if available
+            redis_client = None
+            try:
+                from redis import Redis
+                import os
+                redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+                redis_client = Redis.from_url(redis_url)
+                redis_client.ping()  # Test connection
+            except Exception as e:
+                logger.warning(f"Redis not available for CRM sync: {e}")
+
+            # Initialize sync service
+            sync_service = CRMSyncService(
+                db=db,
+                redis_client=redis_client
+            )
+
+            # Run async sync operation
+            result = asyncio.run(
+                sync_service.sync_platform(
+                    platform=crm_platform,
+                    direction=operation,
+                    filters=filters
+                )
+            )
+
+            # Convert SyncResult to dict for Celery serialization
+            result_dict = {
+                "status": "success",
+                "platform": result.platform,
+                "operation": result.operation,
+                "contacts_processed": result.contacts_processed,
+                "contacts_created": result.contacts_created,
+                "contacts_updated": result.contacts_updated,
+                "contacts_failed": result.contacts_failed,
+                "errors": result.errors,
+                "started_at": result.started_at.isoformat() if result.started_at else None,
+                "completed_at": result.completed_at.isoformat() if result.completed_at else None,
+                "duration_seconds": result.duration_seconds
+            }
+
+            logger.info(
+                f"CRM sync completed: {result.platform} - "
+                f"{result.contacts_created} created, {result.contacts_updated} updated, "
+                f"{result.contacts_failed} failed"
+            )
+
+            return result_dict
+
+        finally:
+            db.close()
+
     except Exception as exc:
-        logger.error(f"Error in CRM sync ({crm_platform}): {exc}")
+        logger.error(f"Error in CRM sync ({crm_platform}): {exc}", exc_info=True)
         countdown = 2 ** self.request.retries
         raise self.retry(exc=exc, countdown=countdown)
 
