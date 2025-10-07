@@ -21,8 +21,7 @@ from datetime import datetime
 import os
 import logging
 
-from app.services.linkedin_oauth import LinkedInProvider
-from app.services.crm.base import CRMCredentials, CRMAuthenticationError, CRMRateLimitError
+from app.services.crm import LinkedInProvider, CRMCredentials, CRMAuthenticationError, CRMRateLimitError
 from app.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)

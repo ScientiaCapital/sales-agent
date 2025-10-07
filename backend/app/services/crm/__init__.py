@@ -37,8 +37,11 @@ from app.services.crm.base import (
     CredentialEncryption,
 )
 
-from app.services.crm.hubspot import HubSpotProvider
+# HubSpot temporarily commented out - replaced with Close CRM
+# from app.services.crm.hubspot import HubSpotProvider
+from app.services.crm.close import CloseProvider
 from app.services.crm.apollo import ApolloProvider
+from app.services.crm.linkedin import LinkedInProvider
 
 __all__ = [
     # Abstract Base Class
@@ -63,6 +66,8 @@ __all__ = [
     "CredentialEncryption",
 
     # Platform Implementations
-    "HubSpotProvider",
+    # "HubSpotProvider",  # Temporarily disabled
+    "CloseProvider",
     "ApolloProvider",
+    "LinkedInProvider",
 ]

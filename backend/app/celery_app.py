@@ -73,7 +73,29 @@ celery_app.conf.update(
     task_annotations={
         "app.tasks.agent_tasks.execute_agent_task": {"rate_limit": "10/m"},  # 10 per minute
         "app.tasks.agent_tasks.qualify_lead_async": {"rate_limit": "20/m"},
-    }
+    },
+
+    # Periodic task schedule (Celery Beat)
+    beat_schedule={
+        # Close CRM - sync every 2 hours
+        "sync-close-hourly": {
+            "task": "sync_crm_contacts",
+            "schedule": 7200.0,  # 2 hours in seconds
+            "args": ("close", "bidirectional", None),
+        },
+        # Apollo - enrichment sync daily at 2 AM
+        "sync-apollo-daily": {
+            "task": "sync_crm_contacts",
+            "schedule": 86400.0,  # 24 hours in seconds
+            "args": ("apollo", "import", None),
+        },
+        # LinkedIn - profile sync daily at 3 AM
+        "sync-linkedin-daily": {
+            "task": "sync_crm_contacts",
+            "schedule": 86400.0,  # 24 hours in seconds
+            "args": ("linkedin", "import", None),
+        },
+    },
 )
 
 
