@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, text
 
 from app.models.database import get_db
-from app.models.usage_tracker import APICallLog, ProviderType, OperationType
+from app.models.unified_api_call import APICallLog, ProviderType, OperationType
 from app.services.usage_tracker import UsageTracker
 from app.schemas.costs import (
     CostSummaryResponse,
