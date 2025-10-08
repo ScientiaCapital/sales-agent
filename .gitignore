@@ -55,6 +55,9 @@ htmlcov/
 .env.local
 .env.*.local
 
+# MCP Configuration (contains API keys)
+.mcp.json
+
 # Database
 *.db
 *.sqlite

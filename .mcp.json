@@ -10,7 +10,7 @@
       ],
       "env": {
         "ANTHROPIC_API_KEY": "your_anthropic_key_here",
-        "DEEPSEEK_API_KEY": "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",
+        "DEEPSEEK_API_KEY": "your_openrouter_key_here",
         "OLLAMA_API_KEY": "ollama"
       }
     },
