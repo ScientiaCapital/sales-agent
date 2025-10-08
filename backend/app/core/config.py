@@ -1,6 +1,6 @@
 """Application configuration using pydantic settings."""
 
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings
 
 
@@ -34,6 +34,17 @@ class Settings(BaseSettings):
     # DeepSeek API (via OpenRouter)
     DEEPSEEK_API_KEY: str = ""
     OPENROUTER_API_KEY: str = ""
+
+    # Cost Management & Budget Enforcement
+    DAILY_BUDGET_USD: float = 50.0
+    MONTHLY_BUDGET_USD: float = 1000.0
+    COST_WARNING_THRESHOLD: float = 0.80  # 80% - Send warning alert
+    COST_DOWNGRADE_THRESHOLD: float = 0.90  # 90% - Auto-downgrade strategy
+    COST_BLOCK_THRESHOLD: float = 1.00  # 100% - Block all requests
+
+    # Alert Configuration
+    COST_ALERT_WEBHOOK_URL: Optional[str] = None  # Webhook for budget alerts
+    COST_ALERT_EMAIL: Optional[str] = None  # Email for budget alerts
 
     # Environment
     ENVIRONMENT: str = "development"
