@@ -1,66 +1,26 @@
 {
-	"mcpServers": {
-		"taskmaster-ai": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"--package=task-master-ai",
-				"task-master-ai"
-			],
-			"env": {
-				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
-				"DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}",
-				"OLLAMA_API_KEY": "${OLLAMA_API_KEY}"
-			}
-		},
-		"shrimp-task-manager": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@shrimp-task-manager/mcp-server"
-			],
-			"env": {
-				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
-				"DEEPSEEK_API_KEY": "${DEEPSEEK_API_KEY}",
-				"OLLAMA_API_KEY": "${OLLAMA_API_KEY}"
-			}
-		},
-		"serena": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"mcp-serena"
-			],
-			"env": {
-				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
-			}
-		},
-		"sequential-thinking": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@modelcontextprotocol/server-sequential-thinking"
-			]
-		},
-		"context7": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@context7/mcp-server"
-			]
-		},
-		"memory": {
-			"type": "stdio",
-			"command": "npx",
-			"args": [
-				"-y",
-				"@modelcontextprotocol/server-memory"
-			]
-		}
-	}
+  "mcpServers": {
+    "taskmaster-ai": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package=task-master-ai",
+        "task-master-ai"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY": "your_anthropic_key_here",
+        "DEEPSEEK_API_KEY": "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",
+        "OLLAMA_API_KEY": "ollama"
+      }
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ]
+    }
+  }
 }
