@@ -921,7 +921,7 @@
         "testStrategy": "Verify that all endpoints are accessible at `/api/v1/` prefix and old `/api/` paths return 404. Ensure API docs show v1 in title.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": []
       },
       {
@@ -989,7 +989,7 @@
         "testStrategy": "Verify that query performance is improved on score filtering and invalid scores are rejected at database level. Ensure Alembic migration is generated and applied.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -997,7 +997,7 @@
             "description": "Add composite index on (qualification_score, created_at) in lead.py",
             "dependencies": [],
             "details": "Update `backend/app/models/lead.py` to include composite index on (qualification_score, created_at)",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify query performance improvement on score filtering"
           },
           {
@@ -1006,7 +1006,7 @@
             "description": "Add CHECK constraint for score range (0-100) in lead.py",
             "dependencies": [],
             "details": "Update `backend/app/models/lead.py` to include CHECK constraint ensuring qualification_score is between 0 and 100",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test that invalid scores are rejected at database level"
           },
           {
@@ -1015,7 +1015,7 @@
             "description": "Add index on contact_email field in lead.py",
             "dependencies": [],
             "details": "Update `backend/app/models/lead.py` to add index on contact_email field",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify improved query performance on email searches"
           },
           {
@@ -1024,7 +1024,7 @@
             "description": "Remove redundant db.flush() calls in lead.py",
             "dependencies": [],
             "details": "Identify and remove unnecessary db.flush() calls in `backend/app/models/lead.py`",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Ensure application behavior remains unchanged after removal"
           },
           {
@@ -1038,7 +1038,7 @@
               "21.4"
             ],
             "details": "Generate Alembic migration file reflecting all schema changes and apply it to the database",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify migration applies successfully and all changes are reflected in database"
           }
         ]
@@ -1051,7 +1051,7 @@
         "testStrategy": "Verify that all services use custom exceptions and exception handlers map to HTTP status codes. Ensure error messages are domain-specific.",
         "priority": "medium",
         "dependencies": [],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -1059,7 +1059,7 @@
             "description": "Create the file `backend/app/core/exceptions.py` to house custom exception classes.",
             "dependencies": [],
             "details": "Ensure the file is created in the correct directory with proper permissions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify file existence and permissions."
           },
           {
@@ -1070,7 +1070,7 @@
               "22.1"
             ],
             "details": "Inherit from `HTTPException` or similar, include meaningful error messages.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test raising and catching the exception in API calls."
           },
           {
@@ -1081,7 +1081,7 @@
               "22.1"
             ],
             "details": "Inherit from `ValueError` or similar, include validation-specific messages.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test raising during lead validation and verify error handling."
           },
           {
@@ -1092,7 +1092,7 @@
               "22.1"
             ],
             "details": "Inherit from `ConnectionError` or similar, include connection-specific messages.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test raising during DB connection failures and verify handling."
           },
           {
@@ -1105,7 +1105,7 @@
               "22.4"
             ],
             "details": "Replace generic exception catches with specific custom exceptions in service logic.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify services raise and handle custom exceptions correctly."
           }
         ]
@@ -1175,7 +1175,7 @@
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-09T12:25:31.841Z",
+      "updated": "2025-10-09T12:39:30.462Z",
       "description": "Tasks for master context"
     }
   }

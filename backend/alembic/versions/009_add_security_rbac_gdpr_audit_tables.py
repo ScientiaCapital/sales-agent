@@ -17,7 +17,7 @@ from datetime import datetime
 
 # revision identifiers, used by Alembic
 revision = '009_security_tables'
-down_revision = '008_add_campaign_tables'
+down_revision = '008_campaign_tables'
 branch_labels = None
 depends_on = None
 

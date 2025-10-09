@@ -188,11 +188,11 @@ app.include_router(transfer.router, prefix=settings.API_V1_PREFIX)  # Task 4: Ag
 app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Cartesia voice integration
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
 app.include_router(apollo.router, prefix=settings.API_V1_PREFIX)  # Task 5.3: Apollo contact enrichment
-app.include_router(linkedin.router)  # LinkedIn OAuth 2.0 connector (no API prefix - uses /api/linkedin)
+app.include_router(linkedin.router, prefix=settings.API_V1_PREFIX)  # Task 5.4: LinkedIn OAuth 2.0 connector
 # app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX, tags=["crm"])  # Task 5.2: HubSpot CRM integration (COMMENTED OUT - replaced with Close CRM)
 app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
 app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
-app.include_router(costs.router)  # Subtask 10.5: Cost reporting and budget monitoring
+app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Cost reporting and budget monitoring
 
 
 @app.get("/")

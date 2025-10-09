@@ -119,10 +119,10 @@ export default function CostDashboard() {
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
       const [summaryRes, budgetRes, timeseriesRes] = await Promise.all([
-        fetch('/api/costs/summary?days=7'),
-        fetch('/api/costs/budget/status'),
+        fetch('/api/v1/costs/summary?days=7'),
+        fetch('/api/v1/costs/budget/status'),
         fetch(
-          `/api/costs/usage?start_date=${sevenDaysAgo.toISOString()}&end_date=${now.toISOString()}&interval=daily`
+          `/api/v1/costs/usage?start_date=${sevenDaysAgo.toISOString()}&end_date=${now.toISOString()}&interval=daily`
         ),
       ]);
 
@@ -163,7 +163,7 @@ export default function CostDashboard() {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       const response = await fetch(
-        `/api/costs/export?format=${format}&start_date=${thirtyDaysAgo.toISOString()}&end_date=${now.toISOString()}`
+        `/api/v1/costs/export?format=${format}&start_date=${thirtyDaysAgo.toISOString()}&end_date=${now.toISOString()}`
       );
 
       if (!response.ok) {

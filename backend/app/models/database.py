@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, DBAPIError
 import os
 import logging
+from app.core.exceptions import DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +157,7 @@ def get_db_with_retry(max_retries: int = 3):
                 raise
         except (OperationalError, DBAPIError) as e:
             last_error = e
-            
+
             if attempt < max_retries - 1:
                 # Exponential backoff: 1s, 2s, 4s
                 delay = 2 ** attempt
@@ -167,11 +168,21 @@ def get_db_with_retry(max_retries: int = 3):
                 time.sleep(delay)
             else:
                 logger.error(f"All {max_retries} database connection attempts failed")
-                raise
+                raise DatabaseConnectionError(
+                    f"Failed to connect to database after {max_retries} attempts",
+                    context={
+                        "max_retries": max_retries,
+                        "last_error": str(e),
+                        "error_type": type(e).__name__
+                    }
+                )
         finally:
             if 'db' in locals():
                 db.close()
-    
+
     # Should never reach here, but for safety
     if last_error:
-        raise last_error
+        raise DatabaseConnectionError(
+            "Database connection failed after all retry attempts",
+            context={"error": str(last_error)}
+        )

@@ -592,6 +592,22 @@ class DatabaseError(SalesAgentException):
         )
 
 
+class DatabaseConnectionError(DatabaseError):
+    """Database connection failed"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            context=context
+        )
+        self.error_code = "DATABASE_CONNECTION_ERROR"
+        self.status_code = 503  # Service Unavailable
+
+
 # ============================================================================
 # RESOURCE EXCEPTIONS
 # ============================================================================
@@ -665,6 +681,7 @@ ERROR_CODE_MAPPING = {
     "INVALID_FILE_FORMAT": InvalidFileFormatError,
     "FILE_SIZE_EXCEEDED": FileSizeExceededError,
     "DATABASE_ERROR": DatabaseError,
+    "DATABASE_CONNECTION_ERROR": DatabaseConnectionError,
     "RESOURCE_NOT_FOUND": ResourceNotFoundError,
     "RESOURCE_CONFLICT": ResourceConflictError,
 }

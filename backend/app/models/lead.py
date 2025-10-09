@@ -1,7 +1,7 @@
 """
 Lead model for storing and managing sales leads
 """
-from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, JSON, Index, CheckConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -12,6 +12,14 @@ class Lead(Base):
     Lead model representing a sales prospect with AI-generated qualification score
     """
     __tablename__ = "leads"
+
+    # Table-level constraints and indexes
+    __table_args__ = (
+        # Composite index for queries filtering/sorting by score and time
+        Index('idx_leads_score_created', 'qualification_score', 'created_at'),
+        # CHECK constraint to enforce valid score range (0-100)
+        CheckConstraint('qualification_score >= 0 AND qualification_score <= 100', name='check_score_range'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
 

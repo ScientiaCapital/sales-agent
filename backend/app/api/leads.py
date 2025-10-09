@@ -149,7 +149,6 @@ async def qualify_lead(
     )
 
     db.add(lead)
-    db.flush()  # Flush to get the lead ID
 
     # Track API call for cost management (only if not cached)
     if not cache_hit:
