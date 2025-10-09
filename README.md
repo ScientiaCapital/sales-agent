@@ -161,15 +161,64 @@ The server will start on `http://localhost:8001` with:
 - Health endpoint at `http://localhost:8001/api/health`
 - WebSocket streaming at `ws://localhost:8001/ws/stream/{stream_id}`
 
-### API Keys (Pre-Configured in .env)
-The `.env` file contains:
-- ✅ `CEREBRAS_API_KEY` - Cerebras Inference (633ms streaming)
-- ✅ `ANTHROPIC_API_KEY` - Claude SDK (optional, streaming)
-- ✅ `DEEPSEEK_API_KEY` / `OPENROUTER_API_KEY` - Research model
-- ✅ `DATABASE_URL` - PostgreSQL connection
-- ✅ `REDIS_URL` - Redis connection
+### Environment Variables
 
-**Security Note:** The `.env` file is in `.gitignore` and never committed.
+#### Required Variables (Docker Infrastructure)
+
+⚠️ **IMPORTANT**: The following environment variables are **required** for docker-compose to start. Create a `.env` file by copying `.env.example`:
+
+```bash
+cp .env.example .env
+```
+
+Then configure these **mandatory** variables:
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `POSTGRES_USER` | PostgreSQL database username | `sales_agent` |
+| `POSTGRES_PASSWORD` | PostgreSQL database password | `your_secure_password_here` |
+| `POSTGRES_DB` | PostgreSQL database name | `sales_agent_db` |
+| `PGADMIN_DEFAULT_EMAIL` | PgAdmin web interface email | `admin@salesagent.local` |
+| `PGADMIN_DEFAULT_PASSWORD` | PgAdmin web interface password | `your_secure_password_here` |
+
+**Error Handling**: If these variables are not set in `.env`, docker-compose will fail with a clear error message indicating which variable is missing.
+
+#### Required Variables (Application)
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `DATABASE_URL` | Full PostgreSQL connection string | `postgresql+psycopg://sales_agent:password@localhost:5433/sales_agent_db` |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
+| `CEREBRAS_API_KEY` | Cerebras Cloud API key (ultra-fast inference) | `csk-xxxxx` |
+
+#### Optional Variables (AI Providers)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ANTHROPIC_API_KEY` | Claude AI (premium quality) | None |
+| `DEEPSEEK_API_KEY` | DeepSeek API (cost-effective research) | None |
+| `OPENROUTER_API_KEY` | OpenRouter (multi-model access) | None |
+| `OLLAMA_API_KEY` | Local Ollama models | `ollama` |
+
+#### Optional Variables (CRM Integration)
+
+| Variable | Description | Required For |
+|----------|-------------|--------------|
+| `HUBSPOT_CLIENT_ID` | HubSpot OAuth 2.0 client ID | HubSpot integration |
+| `HUBSPOT_CLIENT_SECRET` | HubSpot OAuth 2.0 secret | HubSpot integration |
+| `LINKEDIN_CLIENT_ID` | LinkedIn OAuth 2.0 client ID | LinkedIn integration |
+| `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth 2.0 secret | LinkedIn integration |
+| `CRM_ENCRYPTION_KEY` | Fernet key for encrypting CRM tokens | CRM integrations |
+
+#### Optional Variables (Monitoring)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `SENTRY_DSN` | Sentry error tracking DSN | None (disabled) |
+| `DATADOG_ENABLED` | Enable Datadog APM | `false` |
+| `DATADOG_API_KEY` | Datadog API key | None |
+
+**Security Note:** The `.env` file is in `.gitignore` and should **never** be committed to git. Use `.env.example` as a template.
 
 ## 🏃 Testing the API
 
