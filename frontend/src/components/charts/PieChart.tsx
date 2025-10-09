@@ -5,8 +5,8 @@ import {
   ArcElement,
   Tooltip,
   Legend,
-  ChartOptions,
 } from 'chart.js';
+import type { ChartOptions } from 'chart.js';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);

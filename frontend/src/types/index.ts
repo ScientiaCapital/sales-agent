@@ -122,6 +122,60 @@ export interface ResearchPipeline {
   completed_at?: string;
 }
 
+export interface ResearchRequest {
+  topic: string;
+  depth: 'shallow' | 'medium' | 'deep';
+  format_style: 'markdown' | 'json' | 'plain';
+  temperature: number;
+  stream: boolean;
+  preferred_method?: string;
+  max_queries: number;
+  timeout_seconds: number;
+}
+
+export interface ResearchResponse {
+  research_topic: string;
+  final_output: string;
+  total_latency_ms: number;
+  total_cost_usd: number;
+  queries_generated: string[];
+  search_results_count: number;
+  agents_executed: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface ResearchStatus {
+  pipeline_configuration: Record<string, unknown>;
+  resource_usage: Record<string, unknown>;
+  router_status: Record<string, unknown>;
+}
+
+export interface ResearchSSEEvent {
+  type: 'pipeline_start' | 'agent_start' | 'agent_complete' | 'final' | 'error';
+  agent?: string;
+  output?: unknown;
+  latency_ms?: number;
+  cost_usd?: number;
+  message?: string;
+  result?: ResearchResponse;
+}
+
+export interface ResearchHistoryItem {
+  id: string;
+  topic: string;
+  depth: string;
+  format_style: string;
+  status: 'completed' | 'error' | 'pending';
+  final_output?: string;
+  total_latency_ms?: number;
+  total_cost_usd?: number;
+  queries_generated?: string[];
+  search_results_count?: number;
+  agents_executed?: number;
+  created_at: string;
+  error?: string;
+}
+
 // ============================================================================
 // Knowledge Base Types
 // ============================================================================
@@ -271,6 +325,104 @@ export interface CSVImportProgress {
   succeeded: number;
   failed: number;
   errors: string[];
+}
+
+// ============================================================================
+// Campaign & Outreach Types
+// ============================================================================
+
+export interface CampaignCreateRequest {
+  name: string;
+  channel: 'email' | 'linkedin' | 'sms';
+  min_qualification_score?: number;
+  target_industries?: string[];
+  target_company_sizes?: string[];
+  message_template?: string;
+  custom_context?: string;
+}
+
+export interface CampaignResponse {
+  id: number;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+  channel: 'email' | 'linkedin' | 'sms';
+  min_qualification_score?: number;
+  target_industries?: string[];
+  target_company_sizes?: string[];
+  total_messages: number;
+  total_sent: number;
+  total_delivered: number;
+  total_opened: number;
+  total_clicked: number;
+  total_replied: number;
+  total_cost: number;
+  created_at: string;
+}
+
+export interface MessageVariant {
+  subject?: string;
+  body: string;
+  tone: 'professional' | 'friendly' | 'direct';
+}
+
+export interface MessageResponse {
+  id: number;
+  campaign_id: number;
+  lead_id: number;
+  variants: MessageVariant[];
+  selected_variant: number;
+  status: 'pending' | 'sent' | 'delivered' | 'opened' | 'clicked' | 'replied' | 'bounced' | 'failed';
+  generation_cost: number;
+  created_at: string;
+}
+
+export interface VariantAnalytics {
+  variant_number: number;
+  tone: 'professional' | 'friendly' | 'direct';
+  times_selected: number;
+  times_opened: number;
+  times_clicked: number;
+  times_replied: number;
+  open_rate: number;
+  click_rate: number;
+  reply_rate: number;
+}
+
+export interface AnalyticsResponse {
+  campaign: CampaignResponse;
+  metrics: {
+    delivery_rate: number;
+    open_rate: number;
+    click_rate: number;
+    reply_rate: number;
+  };
+  cost: {
+    total: number;
+    per_message: number;
+    per_reply: number;
+  };
+  ab_testing: {
+    variants: VariantAnalytics[];
+    winner?: number;
+    statistical_significance?: boolean;
+  };
+  top_performing_messages: Array<{
+    message_id: number;
+    lead_name: string;
+    variant: number;
+    tone: string;
+    reply_rate: number;
+    subject?: string;
+    preview: string;
+  }>;
+}
+
+export interface TimelineDataPoint {
+  date: string;
+  sent: number;
+  opened: number;
+  clicked: number;
+  replied: number;
 }
 
 // ============================================================================

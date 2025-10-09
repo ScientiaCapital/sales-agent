@@ -13,6 +13,10 @@ import type {
   StreamStatus,
   APIError,
   CSVImportProgress,
+  CampaignCreateRequest,
+  CampaignResponse,
+  MessageResponse,
+  AnalyticsResponse,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -154,6 +158,131 @@ export const apiClient = {
   },
 
   // ============================================================================
+  // Campaign Management
+  // ============================================================================
+
+  /**
+   * Create a new campaign
+   */
+  createCampaign: async (
+    request: CampaignCreateRequest
+  ): Promise<CampaignResponse> => {
+    return fetchAPI<CampaignResponse>('/api/v1/campaigns/create', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * Generate messages for a campaign
+   */
+  generateMessages: async (
+    campaignId: number,
+    customContext?: string,
+    forceRegenerate = false
+  ): Promise<{ success: boolean; campaign_id: number; statistics: any }> => {
+    return fetchAPI<{ success: boolean; campaign_id: number; statistics: any }>(
+      `/api/v1/campaigns/${campaignId}/generate-messages`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          custom_context: customContext,
+          force_regenerate: forceRegenerate,
+        }),
+      }
+    );
+  },
+
+  /**
+   * List all campaigns with optional filters
+   */
+  listCampaigns: async (
+    status?: string,
+    skip = 0,
+    limit = 100
+  ): Promise<CampaignResponse[]> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+    return fetchAPI<CampaignResponse[]>(`/api/v1/campaigns?${params}`);
+  },
+
+  /**
+   * Get campaign messages
+   */
+  getCampaignMessages: async (
+    campaignId: number,
+    status?: string,
+    skip = 0,
+    limit = 100
+  ): Promise<MessageResponse[]> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+    return fetchAPI<MessageResponse[]>(
+      `/api/v1/campaigns/${campaignId}/messages?${params}`
+    );
+  },
+
+  /**
+   * Get campaign analytics
+   */
+  getCampaignAnalytics: async (
+    campaignId: number
+  ): Promise<AnalyticsResponse> => {
+    return fetchAPI<AnalyticsResponse>(
+      `/api/v1/campaigns/${campaignId}/analytics`
+    );
+  },
+
+  /**
+   * Activate campaign for sending
+   */
+  activateCampaign: async (
+    campaignId: number
+  ): Promise<{ success: boolean; campaign: CampaignResponse }> => {
+    return fetchAPI<{ success: boolean; campaign: CampaignResponse }>(
+      `/api/v1/campaigns/${campaignId}/send`,
+      {
+        method: 'POST',
+      }
+    );
+  },
+
+  /**
+   * Get message variants
+   */
+  getMessageVariants: async (
+    messageId: number
+  ): Promise<{ message_id: number; variants: any }> => {
+    return fetchAPI<{ message_id: number; variants: any }>(
+      `/api/v1/campaigns/messages/${messageId}/variants`
+    );
+  },
+
+  /**
+   * Update message status
+   */
+  updateMessageStatus: async (
+    messageId: number,
+    status: string,
+    variantNumber?: number
+  ): Promise<{ success: boolean; message: MessageResponse }> => {
+    return fetchAPI<{ success: boolean; message: MessageResponse }>(
+      `/api/v1/campaigns/messages/${messageId}/status`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          status,
+          variant_number: variantNumber,
+        }),
+      }
+    );
+  },
+
+  // ============================================================================
   // Streaming Endpoints
   // ============================================================================
 
@@ -187,6 +316,29 @@ export const apiClient = {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = API_BASE_URL.replace(/^https?:/, '').replace(/\/$/, '');
     return `${wsProtocol}${wsHost}/api/v1/stream/ws/${streamId}`;
+  },
+
+  // ============================================================================
+  // Research Endpoints
+  // ============================================================================
+
+  /**
+   * Execute research pipeline (non-streaming)
+   */
+  executeResearch: async (
+    request: import('../types').ResearchRequest
+  ): Promise<import('../types').ResearchResponse> => {
+    return fetchAPI<import('../types').ResearchResponse>('/api/v1/research/', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * Get research pipeline status
+   */
+  getResearchStatus: async (): Promise<import('../types').ResearchStatus> => {
+    return fetchAPI<import('../types').ResearchStatus>('/api/v1/research/status');
   },
 };
 
