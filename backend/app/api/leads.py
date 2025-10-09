@@ -7,7 +7,7 @@ from typing import List
 from datetime import datetime
 
 from app.models import Lead, CerebrasAPICall, get_db
-from app.schemas import LeadQualificationRequest, LeadQualificationResponse, LeadListResponse
+from app.schemas import LeadQualificationRequest, LeadQualificationResponse, LeadListResponse, LeadImportResponse
 from app.services import CerebrasService, LeadScorer, SignalData
 from app.services.csv_importer import CSVImportService
 from app.services.cache_manager import CacheManager
@@ -216,22 +216,23 @@ async def get_lead(lead_id: int, db: Session = Depends(get_db)):
     return lead
 
 
-@router.post("/import/csv")
+@router.post("/import/csv", response_model=LeadImportResponse)
 async def import_leads_from_csv(
     file: UploadFile = File(...),
+    strict_mode: bool = False,
     db: Session = Depends(get_db)
 ):
     """
     Bulk import leads from CSV file
 
-    **Performance Target**: 1,000 leads in < 5 seconds
+    **Performance Target**: 1,000 leads in < 5 seconds (typical: ~3-4 seconds)
 
     **Required CSV Columns**:
     - company_name (max 255 chars)
-    - industry
-    - company_website
 
     **Optional CSV Columns**:
+    - industry
+    - company_website
     - company_size
     - contact_name
     - contact_email (must be valid email format)
@@ -239,46 +240,67 @@ async def import_leads_from_csv(
     - contact_title
     - notes
 
-    **CSV Format**:
+    **Query Parameters**:
+    - strict_mode (bool): If True, fail on first validation error. If False (default), skip invalid rows and continue.
+
+    **CSV Format Example**:
     ```csv
     company_name,industry,company_website,company_size,contact_name,contact_email
     TechCorp,SaaS,https://techcorp.com,50-200,John Doe,john@techcorp.com
     DataInc,Analytics,https://datainc.com,200-500,Jane Smith,jane@datainc.com
     ```
 
-    Returns import statistics including:
-    - Total leads processed
-    - Successfully imported count
-    - Import duration in milliseconds
-    - Import rate (leads per second)
+    **Returns**:
+    - message: Success message
+    - filename: Original filename
+    - total_leads: Total rows in CSV
+    - imported_count: Successfully imported leads
+    - failed_count: Failed validation leads
+    - duration_ms: Import duration
+    - leads_per_second: Import throughput
+    - errors: List of validation errors (if any)
     """
     # Validate file type
     if not file.filename.endswith('.csv'):
         raise InvalidFileFormatError(
             message="File must be a CSV file (.csv extension)",
-            details={"filename": file.filename}
+            context={"filename": file.filename}
         )
 
-    # Read file content
+    # Check file size (max 10MB)
+    content = await file.read()
+    file_size_mb = len(content) / (1024 * 1024)
+    if file_size_mb > csv_importer.MAX_FILE_SIZE_MB:
+        raise FileSizeExceededError(
+            message=f"File size ({file_size_mb:.2f}MB) exceeds maximum allowed ({csv_importer.MAX_FILE_SIZE_MB}MB)",
+            context={"filename": file.filename, "size_mb": file_size_mb, "max_size_mb": csv_importer.MAX_FILE_SIZE_MB}
+        )
+
+    # Decode file content
     try:
-        content = await file.read()
         csv_content = content.decode('utf-8')
     except UnicodeDecodeError:
         raise InvalidFileFormatError(
             message="File must be UTF-8 encoded",
-            details={"filename": file.filename}
+            context={"filename": file.filename}
         )
 
     # Parse CSV and validate
-    leads = csv_importer.parse_csv_file(csv_content)
+    logger.info(f"Starting CSV import: {file.filename} ({file_size_mb:.2f}MB, strict_mode={strict_mode})")
+    leads, errors = csv_importer.parse_csv_file(csv_content, strict_mode=strict_mode)
 
     # Bulk import leads
     result = csv_importer.bulk_import_leads(db, leads)
 
     logger.info(f"CSV import completed: {file.filename} - {result}")
-    
-    return {
-        "message": "Leads imported successfully",
-        "filename": file.filename,
-        **result
-    }
+
+    return LeadImportResponse(
+        message="Leads imported successfully",
+        filename=file.filename,
+        total_leads=result["total_leads"] + len(errors),
+        imported_count=result["imported_count"],
+        failed_count=len(errors),
+        duration_ms=result["duration_ms"],
+        leads_per_second=result["leads_per_second"],
+        errors=errors
+    )
