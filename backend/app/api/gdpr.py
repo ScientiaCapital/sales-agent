@@ -20,7 +20,7 @@ from app.core.logging import setup_logging
 
 # Import all models to gather user data
 from app.models.lead import Lead
-from app.models.campaign import Campaign, CampaignContact, CampaignMessage
+from app.models.campaign import Campaign, CampaignMessage
 from app.models.crm import CRMCredential, CRMSyncLog
 from app.models.report import Report
 

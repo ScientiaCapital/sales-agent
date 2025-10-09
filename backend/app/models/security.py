@@ -82,7 +82,7 @@ class SecurityEvent(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
 
     # Flexible metadata field for additional context
-    metadata = Column(JSON, nullable=True)
+    event_metadata = Column(JSON, nullable=True)
 
     # Relationships
     user = relationship("User", back_populates="security_events")

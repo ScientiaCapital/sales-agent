@@ -1153,3 +1153,4 @@ curl http://localhost:8001/api/leads/
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines from the main CLAUDE.md file.**
 @.taskmaster/CLAUDE.md
+- we are not using Firebase it has been removed do not add it to any code, we use RunPod for this project

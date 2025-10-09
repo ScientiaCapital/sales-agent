@@ -167,8 +167,8 @@ async def get_customer_documents(
                 'customer_id': int(customer_id),
                 'filename': doc.get('filename'),
                 'content_type': doc.get('content_type'),
-                'file_size': None,  # Not stored in Firestore yet
-                'firebase_url': doc.get('file_url'),
+                'file_size': None,  # Retrieved separately
+                'runpod_url': doc.get('file_url'),
                 'text_length': doc.get('text_length'),
                 'icp_data': doc.get('icp_criteria'),
                 'processing_status': 'completed',
