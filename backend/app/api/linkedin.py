@@ -26,7 +26,7 @@ from app.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/linkedin", tags=["LinkedIn OAuth"])
+router = APIRouter(prefix="/linkedin", tags=["LinkedIn OAuth"])
 
 
 # ============================================================================
@@ -155,7 +155,7 @@ def get_linkedin_config() -> Dict[str, str]:
     """Get LinkedIn OAuth configuration from environment variables"""
     client_id = os.getenv("LINKEDIN_CLIENT_ID")
     client_secret = os.getenv("LINKEDIN_CLIENT_SECRET")
-    redirect_uri = os.getenv("LINKEDIN_REDIRECT_URI", "http://localhost:8001/api/linkedin/callback")
+    redirect_uri = os.getenv("LINKEDIN_REDIRECT_URI", "http://localhost:8001/api/v1/linkedin/callback")
 
     if not client_id or not client_secret:
         raise ConfigurationError(

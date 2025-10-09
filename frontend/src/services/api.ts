@@ -89,7 +89,7 @@ export const apiClient = {
    * Check API health status
    */
   health: async () => {
-    return fetchAPI<{ status: string }>('/api/health');
+    return fetchAPI<{ status: string }>('/api/v1/health');
   },
 
   // ============================================================================
@@ -102,7 +102,7 @@ export const apiClient = {
   qualifyLead: async (
     request: LeadQualificationRequest
   ): Promise<LeadQualificationResponse> => {
-    return fetchAPI<LeadQualificationResponse>('/api/leads/qualify', {
+    return fetchAPI<LeadQualificationResponse>('/api/v1/leads/qualify', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -113,7 +113,7 @@ export const apiClient = {
    */
   listLeads: async (skip = 0, limit = 100): Promise<LeadListResponse[]> => {
     return fetchAPI<LeadListResponse[]>(
-      `/api/leads/?skip=${skip}&limit=${limit}`
+      `/api/v1/leads/?skip=${skip}&limit=${limit}`
     );
   },
 
@@ -121,7 +121,7 @@ export const apiClient = {
    * Get a specific lead by ID
    */
   getLead: async (leadId: number): Promise<Lead> => {
-    return fetchAPI<Lead>(`/api/leads/${leadId}`);
+    return fetchAPI<Lead>(`/api/v1/leads/${leadId}`);
   },
 
   /**
@@ -131,7 +131,7 @@ export const apiClient = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/api/leads/import/csv`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/leads/import/csv`, {
       method: 'POST',
       body: formData,
       // Don't set Content-Type header - browser will set it with boundary
@@ -168,7 +168,7 @@ export const apiClient = {
       stream_id: string;
       workflow_id: string;
       websocket_url: string;
-    }>(`/api/stream/start/${leadId}?agent_type=${agentType}`, {
+    }>(`/api/v1/stream/start/${leadId}?agent_type=${agentType}`, {
       method: 'POST',
     });
   },
@@ -177,7 +177,7 @@ export const apiClient = {
    * Get stream status
    */
   getStreamStatus: async (streamId: string): Promise<StreamStatus> => {
-    return fetchAPI<StreamStatus>(`/api/stream/status/${streamId}`);
+    return fetchAPI<StreamStatus>(`/api/v1/stream/status/${streamId}`);
   },
 
   /**
@@ -186,7 +186,7 @@ export const apiClient = {
   getWebSocketURL: (streamId: string): string => {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = API_BASE_URL.replace(/^https?:/, '').replace(/\/$/, '');
-    return `${wsProtocol}${wsHost}/api/stream/ws/${streamId}`;
+    return `${wsProtocol}${wsHost}/api/v1/stream/ws/${streamId}`;
   },
 };
 
