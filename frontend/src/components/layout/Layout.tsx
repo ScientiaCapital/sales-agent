@@ -50,10 +50,14 @@ export function Layout() {
   const NavContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 bg-gradient-to-r from-white to-indigo-50">
         <div className="flex items-center space-x-2">
-          <Bot className="h-8 w-8 text-indigo-600" />
-          <span className="text-xl font-bold text-gray-900">Sales Agent</span>
+          <div className="p-1.5 bg-indigo-600 rounded-lg">
+            <Bot className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Sales Agent
+          </span>
         </div>
         <button
           onClick={() => setSidebarOpen(false)}
@@ -139,7 +143,7 @@ export function Layout() {
 
       {/* Desktop sidebar */}
       <div className="hidden lg:flex lg:flex-shrink-0">
-        <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
+        <div className="flex flex-col w-64 border-r border-gray-200 bg-white shadow-sm">
           <NavContent />
         </div>
       </div>
