@@ -2,7 +2,7 @@
 Pydantic schemas for lead qualification requests and responses
 """
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -72,4 +72,36 @@ class LeadListResponse(BaseModel):
 
     model_config = {
         "from_attributes": True
+    }
+
+
+class LeadImportResponse(BaseModel):
+    """Response from CSV import endpoint"""
+    message: str = Field(..., description="Success message")
+    filename: str = Field(..., description="Name of imported file")
+    total_leads: int = Field(..., description="Total leads in CSV")
+    imported_count: int = Field(..., description="Number of leads successfully imported")
+    failed_count: int = Field(..., description="Number of leads that failed validation")
+    duration_ms: int = Field(..., description="Import duration in milliseconds")
+    leads_per_second: float = Field(..., description="Import throughput rate")
+    errors: List[str] = Field(default_factory=list, description="List of validation error messages")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "message": "Leads imported successfully",
+                    "filename": "leads_batch_2025.csv",
+                    "total_leads": 1000,
+                    "imported_count": 987,
+                    "failed_count": 13,
+                    "duration_ms": 3450,
+                    "leads_per_second": 286.09,
+                    "errors": [
+                        "Row 45: Missing required field 'company_name'",
+                        "Row 128: Invalid email format 'bad-email'"
+                    ]
+                }
+            ]
+        }
     }

@@ -105,7 +105,21 @@ class KnowledgeDocument(Base):
     # Processing Status
     processing_status = Column(String(50), default="completed")  # pending, processing, completed, failed
     processing_error = Column(Text)  # Error message if processing failed
-    
+
+    # Document Analysis (Gist Memory)
+    summary = Column(Text)  # AI-generated document summary
+    key_items = Column(JSON)  # Extracted entities, dates, key phrases, actions
+    page_gists = Column(JSON)  # List of page-level summaries from gist memory
+    page_metadata = Column(JSON)  # Metadata about pages (word counts, etc.)
+    analysis_status = Column(String(50), default="pending")  # pending, processing, completed, failed
+    analysis_error = Column(Text)  # Error message if analysis failed
+    analyzed_at = Column(DateTime(timezone=True))  # When analysis was completed
+
+    # Analysis Statistics
+    page_count = Column(Integer)  # Number of pages from gist memory
+    compression_ratio = Column(Float)  # Gist compression ratio
+    processing_time_ms = Column(Integer)  # Analysis processing time
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

@@ -1,0 +1,1001 @@
+company_name,industry,company_website,company_size,contact_name,contact_email,contact_title,notes
+Omega Systems 1,Analytics,https://omegasystems1.com,1-10,David Miller,david.miller@omegasystems1.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Solutions 2,Analytics,https://alphasolutions2.com,201-500,Emily Johnson,emily.johnson@alphasolutions2.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Tech 3,Analytics,https://deltatech3.com,51-200,Michael Jones,michael.jones@deltatech3.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Systems 4,AI/ML,https://sigmasystems4.com,1000+,David Miller,david.miller@sigmasystems4.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Labs 5,HealthTech,https://primelabs5.com,501-1000,Emily Miller,emily.miller@primelabs5.com,Head of Product,Lead from batch import 2025-10-09
+Nova AI 6,HealthTech,https://novaai6.com,1-10,Alex Brown,alex.brown@novaai6.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Tech 7,AI/ML,https://quantumtech7.com,51-200,David Davis,david.davis@quantumtech7.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 8,AI/ML,https://omegaai8.com,201-500,John Miller,john.miller@omegaai8.com,CEO,Lead from batch import 2025-10-09
+Apex Solutions 9,E-commerce,https://apexsolutions9.com,501-1000,Alex Smith,alex.smith@apexsolutions9.com,COO,Lead from batch import 2025-10-09
+Prime Tech 10,FinTech,https://primetech10.com,1-10,Michael Garcia,michael.garcia@primetech10.com,CEO,Lead from batch import 2025-10-09
+Delta Cloud 11,AI/ML,https://deltacloud11.com,1-10,Sarah Johnson,sarah.johnson@deltacloud11.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Cloud 12,FinTech,https://deltacloud12.com,201-500,Emily Garcia,emily.garcia@deltacloud12.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova AI 13,E-commerce,https://novaai13.com,51-200,Michael Smith,michael.smith@novaai13.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Tech 14,SaaS,https://betatech14.com,11-50,Emily Jones,emily.jones@betatech14.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Labs 15,Analytics,https://deltalabs15.com,501-1000,Alex Johnson,alex.johnson@deltalabs15.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Labs 16,FinTech,https://gammalabs16.com,1000+,John Davis,john.davis@gammalabs16.com,Founder,Lead from batch import 2025-10-09
+Nova Tech 17,SaaS,https://novatech17.com,1000+,Emily Jones,emily.jones@novatech17.com,COO,Lead from batch import 2025-10-09
+Prime Tech 18,Cybersecurity,https://primetech18.com,1-10,Alex Davis,alex.davis@primetech18.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Data 19,AI/ML,https://apexdata19.com,1000+,Michael Miller,michael.miller@apexdata19.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Systems 20,Analytics,https://betasystems20.com,501-1000,Chris Johnson,chris.johnson@betasystems20.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Solutions 21,Marketing,https://gammasolutions21.com,501-1000,Jane Davis,jane.davis@gammasolutions21.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Systems 22,Marketing,https://quantumsystems22.com,1000+,John Williams,john.williams@quantumsystems22.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Solutions 23,IoT,https://sigmasolutions23.com,201-500,Chris Smith,chris.smith@sigmasolutions23.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Systems 24,E-commerce,https://gammasystems24.com,1-10,John Davis,john.davis@gammasystems24.com,Founder,Lead from batch import 2025-10-09
+Beta Solutions 25,Analytics,https://betasolutions25.com,1000+,Michael Jones,michael.jones@betasolutions25.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Systems 26,AI/ML,https://primesystems26.com,1-10,John Garcia,john.garcia@primesystems26.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex AI 27,Cybersecurity,https://apexai27.com,11-50,Sarah Garcia,sarah.garcia@apexai27.com,CTO,Lead from batch import 2025-10-09
+Nova AI 28,FinTech,https://novaai28.com,1000+,Emily Johnson,emily.johnson@novaai28.com,CTO,Lead from batch import 2025-10-09
+Quantum Tech 29,SaaS,https://quantumtech29.com,501-1000,Emily Brown,emily.brown@quantumtech29.com,CEO,Lead from batch import 2025-10-09
+Omega AI 30,SaaS,https://omegaai30.com,201-500,David Smith,david.smith@omegaai30.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Data 31,SaaS,https://deltadata31.com,51-200,Chris Davis,chris.davis@deltadata31.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Labs 32,HealthTech,https://quantumlabs32.com,11-50,John Miller,john.miller@quantumlabs32.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Labs 33,Analytics,https://deltalabs33.com,11-50,Sarah Jones,sarah.jones@deltalabs33.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 34,Marketing,https://alphalabs34.com,51-200,David Smith,david.smith@alphalabs34.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 35,SaaS,https://omegaai35.com,1-10,Alex Garcia,alex.garcia@omegaai35.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Cloud 36,HealthTech,https://sigmacloud36.com,201-500,Alex Miller,alex.miller@sigmacloud36.com,Head of Product,Lead from batch import 2025-10-09
+Beta Solutions 37,EdTech,https://betasolutions37.com,201-500,Chris Williams,chris.williams@betasolutions37.com,CEO,Lead from batch import 2025-10-09
+Beta Cloud 38,E-commerce,https://betacloud38.com,1-10,Alex Garcia,alex.garcia@betacloud38.com,CTO,Lead from batch import 2025-10-09
+Quantum Cloud 39,HealthTech,https://quantumcloud39.com,11-50,Michael Miller,michael.miller@quantumcloud39.com,CEO,Lead from batch import 2025-10-09
+Gamma Labs 40,E-commerce,https://gammalabs40.com,11-50,Alex Williams,alex.williams@gammalabs40.com,CTO,Lead from batch import 2025-10-09
+Beta Tech 41,AI/ML,https://betatech41.com,1000+,Sarah Davis,sarah.davis@betatech41.com,Founder,Lead from batch import 2025-10-09
+Omega Cloud 42,Marketing,https://omegacloud42.com,51-200,David Smith,david.smith@omegacloud42.com,CEO,Lead from batch import 2025-10-09
+Beta Labs 43,Analytics,https://betalabs43.com,501-1000,Michael Davis,michael.davis@betalabs43.com,Founder,Lead from batch import 2025-10-09
+Omega Systems 44,AI/ML,https://omegasystems44.com,201-500,Sarah Davis,sarah.davis@omegasystems44.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Solutions 45,EdTech,https://apexsolutions45.com,1000+,John Davis,john.davis@apexsolutions45.com,COO,Lead from batch import 2025-10-09
+Quantum Cloud 46,SaaS,https://quantumcloud46.com,201-500,Alex Garcia,alex.garcia@quantumcloud46.com,CTO,Lead from batch import 2025-10-09
+Gamma Cloud 47,AI/ML,https://gammacloud47.com,11-50,Michael Jones,michael.jones@gammacloud47.com,Founder,Lead from batch import 2025-10-09
+Sigma Solutions 48,Marketing,https://sigmasolutions48.com,501-1000,David Williams,david.williams@sigmasolutions48.com,CEO,Lead from batch import 2025-10-09
+Sigma Labs 49,IoT,https://sigmalabs49.com,201-500,Jane Jones,jane.jones@sigmalabs49.com,Founder,Lead from batch import 2025-10-09
+Apex Data 50,EdTech,https://apexdata50.com,201-500,John Brown,john.brown@apexdata50.com,CTO,Lead from batch import 2025-10-09
+Sigma Cloud 51,HealthTech,https://sigmacloud51.com,201-500,Chris Jones,chris.jones@sigmacloud51.com,COO,Lead from batch import 2025-10-09
+Beta Labs 52,HealthTech,https://betalabs52.com,201-500,Michael Smith,michael.smith@betalabs52.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 53,IoT,https://alphaai53.com,201-500,David Johnson,david.johnson@alphaai53.com,COO,Lead from batch import 2025-10-09
+Beta AI 54,HealthTech,https://betaai54.com,11-50,Emily Williams,emily.williams@betaai54.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Solutions 55,Cybersecurity,https://apexsolutions55.com,51-200,Emily Garcia,emily.garcia@apexsolutions55.com,COO,Lead from batch import 2025-10-09
+Sigma Cloud 56,HealthTech,https://sigmacloud56.com,1-10,David Brown,david.brown@sigmacloud56.com,CTO,Lead from batch import 2025-10-09
+Omega AI 57,FinTech,https://omegaai57.com,501-1000,Michael Jones,michael.jones@omegaai57.com,Head of Product,Lead from batch import 2025-10-09
+Omega Data 58,AI/ML,https://omegadata58.com,1000+,Alex Miller,alex.miller@omegadata58.com,CEO,Lead from batch import 2025-10-09
+Alpha Solutions 59,IoT,https://alphasolutions59.com,11-50,David Johnson,david.johnson@alphasolutions59.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Systems 60,Cybersecurity,https://sigmasystems60.com,11-50,Chris Johnson,chris.johnson@sigmasystems60.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Systems 61,Cybersecurity,https://sigmasystems61.com,51-200,Alex Brown,alex.brown@sigmasystems61.com,COO,Lead from batch import 2025-10-09
+Gamma Solutions 62,EdTech,https://gammasolutions62.com,11-50,Sarah Davis,sarah.davis@gammasolutions62.com,CTO,Lead from batch import 2025-10-09
+Gamma Cloud 63,IoT,https://gammacloud63.com,201-500,Emily Smith,emily.smith@gammacloud63.com,COO,Lead from batch import 2025-10-09
+Apex Data 64,Cybersecurity,https://apexdata64.com,11-50,Jane Miller,jane.miller@apexdata64.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Labs 65,Analytics,https://quantumlabs65.com,51-200,Michael Smith,michael.smith@quantumlabs65.com,CEO,Lead from batch import 2025-10-09
+Delta Data 66,Analytics,https://deltadata66.com,1000+,Alex Smith,alex.smith@deltadata66.com,CEO,Lead from batch import 2025-10-09
+Prime Cloud 67,SaaS,https://primecloud67.com,501-1000,Sarah Smith,sarah.smith@primecloud67.com,CEO,Lead from batch import 2025-10-09
+Prime Systems 68,Analytics,https://primesystems68.com,11-50,Sarah Johnson,sarah.johnson@primesystems68.com,Head of Product,Lead from batch import 2025-10-09
+Omega Data 69,IoT,https://omegadata69.com,51-200,Sarah Garcia,sarah.garcia@omegadata69.com,CEO,Lead from batch import 2025-10-09
+Quantum Data 70,HealthTech,https://quantumdata70.com,51-200,Jane Brown,jane.brown@quantumdata70.com,CTO,Lead from batch import 2025-10-09
+Prime Cloud 71,Cybersecurity,https://primecloud71.com,51-200,Emily Johnson,emily.johnson@primecloud71.com,CEO,Lead from batch import 2025-10-09
+Apex Systems 72,AI/ML,https://apexsystems72.com,501-1000,Emily Miller,emily.miller@apexsystems72.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Cloud 73,HealthTech,https://alphacloud73.com,201-500,David Miller,david.miller@alphacloud73.com,Founder,Lead from batch import 2025-10-09
+Sigma Cloud 74,IoT,https://sigmacloud74.com,201-500,Chris Smith,chris.smith@sigmacloud74.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Tech 75,FinTech,https://novatech75.com,1000+,John Williams,john.williams@novatech75.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova AI 76,IoT,https://novaai76.com,501-1000,Michael Davis,michael.davis@novaai76.com,Head of Product,Lead from batch import 2025-10-09
+Apex Data 77,Marketing,https://apexdata77.com,51-200,Michael Johnson,michael.johnson@apexdata77.com,COO,Lead from batch import 2025-10-09
+Beta Tech 78,Marketing,https://betatech78.com,11-50,John Garcia,john.garcia@betatech78.com,COO,Lead from batch import 2025-10-09
+Delta Solutions 79,EdTech,https://deltasolutions79.com,1000+,Alex Brown,alex.brown@deltasolutions79.com,CTO,Lead from batch import 2025-10-09
+Sigma Systems 80,FinTech,https://sigmasystems80.com,201-500,John Miller,john.miller@sigmasystems80.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Systems 81,Analytics,https://primesystems81.com,1-10,Alex Davis,alex.davis@primesystems81.com,CEO,Lead from batch import 2025-10-09
+Apex Systems 82,FinTech,https://apexsystems82.com,1000+,Emily Jones,emily.jones@apexsystems82.com,CTO,Lead from batch import 2025-10-09
+Apex Cloud 83,IoT,https://apexcloud83.com,201-500,Michael Jones,michael.jones@apexcloud83.com,CEO,Lead from batch import 2025-10-09
+Gamma Cloud 84,Cybersecurity,https://gammacloud84.com,51-200,Alex Johnson,alex.johnson@gammacloud84.com,Founder,Lead from batch import 2025-10-09
+Gamma Labs 85,Analytics,https://gammalabs85.com,1-10,Michael Jones,michael.jones@gammalabs85.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 86,EdTech,https://alphaai86.com,501-1000,Sarah Brown,sarah.brown@alphaai86.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Solutions 87,Cybersecurity,https://deltasolutions87.com,1000+,Emily Brown,emily.brown@deltasolutions87.com,CEO,Lead from batch import 2025-10-09
+Omega Systems 88,HealthTech,https://omegasystems88.com,1000+,David Brown,david.brown@omegasystems88.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Systems 89,Analytics,https://betasystems89.com,1000+,Jane Brown,jane.brown@betasystems89.com,Founder,Lead from batch import 2025-10-09
+Prime Solutions 90,IoT,https://primesolutions90.com,51-200,Jane Williams,jane.williams@primesolutions90.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Labs 91,Cybersecurity,https://apexlabs91.com,1000+,Michael Johnson,michael.johnson@apexlabs91.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Data 92,HealthTech,https://deltadata92.com,501-1000,David Jones,david.jones@deltadata92.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Cloud 93,E-commerce,https://gammacloud93.com,201-500,David Williams,david.williams@gammacloud93.com,CTO,Lead from batch import 2025-10-09
+Nova Systems 94,EdTech,https://novasystems94.com,1000+,David Williams,david.williams@novasystems94.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Labs 95,SaaS,https://sigmalabs95.com,1-10,Emily Jones,emily.jones@sigmalabs95.com,Head of Product,Lead from batch import 2025-10-09
+Prime Systems 96,EdTech,https://primesystems96.com,11-50,Sarah Jones,sarah.jones@primesystems96.com,CEO,Lead from batch import 2025-10-09
+Omega Systems 97,Marketing,https://omegasystems97.com,1-10,Chris Jones,chris.jones@omegasystems97.com,Founder,Lead from batch import 2025-10-09
+Prime AI 98,AI/ML,https://primeai98.com,11-50,Sarah Smith,sarah.smith@primeai98.com,Head of Product,Lead from batch import 2025-10-09
+Nova Data 99,Marketing,https://novadata99.com,1000+,Sarah Miller,sarah.miller@novadata99.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 100,AI/ML,https://omegatech100.com,1000+,John Miller,john.miller@omegatech100.com,CTO,Lead from batch import 2025-10-09
+Apex Solutions 101,Marketing,https://apexsolutions101.com,11-50,David Davis,david.davis@apexsolutions101.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Cloud 102,HealthTech,https://gammacloud102.com,51-200,Michael Garcia,michael.garcia@gammacloud102.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Tech 103,AI/ML,https://apextech103.com,501-1000,David Brown,david.brown@apextech103.com,COO,Lead from batch import 2025-10-09
+Delta Data 104,EdTech,https://deltadata104.com,11-50,Emily Garcia,emily.garcia@deltadata104.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Data 105,Analytics,https://betadata105.com,501-1000,Michael Davis,michael.davis@betadata105.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Solutions 106,FinTech,https://quantumsolutions106.com,1-10,David Smith,david.smith@quantumsolutions106.com,CTO,Lead from batch import 2025-10-09
+Quantum AI 107,Marketing,https://quantumai107.com,11-50,Chris Brown,chris.brown@quantumai107.com,CTO,Lead from batch import 2025-10-09
+Apex AI 108,SaaS,https://apexai108.com,501-1000,Sarah Garcia,sarah.garcia@apexai108.com,CTO,Lead from batch import 2025-10-09
+Delta Tech 109,HealthTech,https://deltatech109.com,51-200,Chris Williams,chris.williams@deltatech109.com,COO,Lead from batch import 2025-10-09
+Delta Data 110,FinTech,https://deltadata110.com,51-200,Sarah Smith,sarah.smith@deltadata110.com,CEO,Lead from batch import 2025-10-09
+Sigma Data 111,Marketing,https://sigmadata111.com,501-1000,Michael Davis,michael.davis@sigmadata111.com,COO,Lead from batch import 2025-10-09
+Quantum Data 112,EdTech,https://quantumdata112.com,1000+,Chris Davis,chris.davis@quantumdata112.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Solutions 113,Marketing,https://novasolutions113.com,201-500,Jane Brown,jane.brown@novasolutions113.com,CEO,Lead from batch import 2025-10-09
+Quantum Data 114,AI/ML,https://quantumdata114.com,51-200,Alex Miller,alex.miller@quantumdata114.com,COO,Lead from batch import 2025-10-09
+Beta Solutions 115,Marketing,https://betasolutions115.com,501-1000,Chris Johnson,chris.johnson@betasolutions115.com,CEO,Lead from batch import 2025-10-09
+Sigma Solutions 116,IoT,https://sigmasolutions116.com,11-50,Michael Miller,michael.miller@sigmasolutions116.com,CEO,Lead from batch import 2025-10-09
+Nova Data 117,Analytics,https://novadata117.com,51-200,Jane Smith,jane.smith@novadata117.com,COO,Lead from batch import 2025-10-09
+Gamma AI 118,E-commerce,https://gammaai118.com,11-50,Michael Brown,michael.brown@gammaai118.com,Founder,Lead from batch import 2025-10-09
+Delta Labs 119,SaaS,https://deltalabs119.com,501-1000,Jane Smith,jane.smith@deltalabs119.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Systems 120,AI/ML,https://sigmasystems120.com,1-10,David Smith,david.smith@sigmasystems120.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Data 121,HealthTech,https://novadata121.com,1000+,John Davis,john.davis@novadata121.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Labs 122,Marketing,https://betalabs122.com,1-10,Jane Davis,jane.davis@betalabs122.com,Founder,Lead from batch import 2025-10-09
+Omega Systems 123,FinTech,https://omegasystems123.com,11-50,Chris Johnson,chris.johnson@omegasystems123.com,COO,Lead from batch import 2025-10-09
+Nova Labs 124,HealthTech,https://novalabs124.com,501-1000,Jane Miller,jane.miller@novalabs124.com,CEO,Lead from batch import 2025-10-09
+Alpha Tech 125,IoT,https://alphatech125.com,11-50,Michael Miller,michael.miller@alphatech125.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Systems 126,E-commerce,https://quantumsystems126.com,11-50,Chris Jones,chris.jones@quantumsystems126.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 127,E-commerce,https://omegatech127.com,1000+,Emily Williams,emily.williams@omegatech127.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha AI 128,Marketing,https://alphaai128.com,51-200,Emily Johnson,emily.johnson@alphaai128.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Data 129,Cybersecurity,https://sigmadata129.com,1000+,Jane Jones,jane.jones@sigmadata129.com,COO,Lead from batch import 2025-10-09
+Nova Cloud 130,Analytics,https://novacloud130.com,51-200,David Williams,david.williams@novacloud130.com,CEO,Lead from batch import 2025-10-09
+Prime Systems 131,FinTech,https://primesystems131.com,1-10,John Jones,john.jones@primesystems131.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta AI 132,SaaS,https://betaai132.com,201-500,John Brown,john.brown@betaai132.com,Head of Product,Lead from batch import 2025-10-09
+Quantum AI 133,Marketing,https://quantumai133.com,1-10,Jane Smith,jane.smith@quantumai133.com,Founder,Lead from batch import 2025-10-09
+Prime Tech 134,Cybersecurity,https://primetech134.com,501-1000,David Williams,david.williams@primetech134.com,COO,Lead from batch import 2025-10-09
+Beta AI 135,E-commerce,https://betaai135.com,1000+,Michael Williams,michael.williams@betaai135.com,CEO,Lead from batch import 2025-10-09
+Quantum AI 136,SaaS,https://quantumai136.com,1-10,Sarah Brown,sarah.brown@quantumai136.com,CEO,Lead from batch import 2025-10-09
+Prime AI 137,AI/ML,https://primeai137.com,201-500,David Miller,david.miller@primeai137.com,Founder,Lead from batch import 2025-10-09
+Alpha Data 138,AI/ML,https://alphadata138.com,1000+,Emily Davis,emily.davis@alphadata138.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 139,Cybersecurity,https://gammaai139.com,501-1000,Sarah Jones,sarah.jones@gammaai139.com,CEO,Lead from batch import 2025-10-09
+Prime Labs 140,Cybersecurity,https://primelabs140.com,11-50,Sarah Brown,sarah.brown@primelabs140.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Cloud 141,E-commerce,https://sigmacloud141.com,1000+,Michael Brown,michael.brown@sigmacloud141.com,VP of Sales,Lead from batch import 2025-10-09
+Beta AI 142,Analytics,https://betaai142.com,501-1000,David Smith,david.smith@betaai142.com,CEO,Lead from batch import 2025-10-09
+Gamma Data 143,E-commerce,https://gammadata143.com,201-500,Chris Smith,chris.smith@gammadata143.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Cloud 144,EdTech,https://sigmacloud144.com,1-10,John Jones,john.jones@sigmacloud144.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Cloud 145,Cybersecurity,https://betacloud145.com,1-10,Jane Jones,jane.jones@betacloud145.com,CTO,Lead from batch import 2025-10-09
+Delta Cloud 146,HealthTech,https://deltacloud146.com,51-200,Michael Miller,michael.miller@deltacloud146.com,CTO,Lead from batch import 2025-10-09
+Beta Tech 147,SaaS,https://betatech147.com,11-50,John Garcia,john.garcia@betatech147.com,Head of Product,Lead from batch import 2025-10-09
+Omega Systems 148,Analytics,https://omegasystems148.com,1000+,Alex Miller,alex.miller@omegasystems148.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Tech 149,EdTech,https://deltatech149.com,501-1000,Chris Jones,chris.jones@deltatech149.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Data 150,FinTech,https://alphadata150.com,1000+,David Davis,david.davis@alphadata150.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Labs 151,HealthTech,https://sigmalabs151.com,201-500,Jane Smith,jane.smith@sigmalabs151.com,CTO,Lead from batch import 2025-10-09
+Alpha AI 152,EdTech,https://alphaai152.com,1000+,John Jones,john.jones@alphaai152.com,CTO,Lead from batch import 2025-10-09
+Omega Tech 153,E-commerce,https://omegatech153.com,51-200,Chris Davis,chris.davis@omegatech153.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Systems 154,Marketing,https://apexsystems154.com,51-200,David Smith,david.smith@apexsystems154.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Cloud 155,Marketing,https://novacloud155.com,51-200,Michael Smith,michael.smith@novacloud155.com,CTO,Lead from batch import 2025-10-09
+Alpha AI 156,E-commerce,https://alphaai156.com,1-10,John Davis,john.davis@alphaai156.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta AI 157,Cybersecurity,https://betaai157.com,501-1000,Sarah Brown,sarah.brown@betaai157.com,Head of Product,Lead from batch import 2025-10-09
+Nova Data 158,AI/ML,https://novadata158.com,51-200,Alex Williams,alex.williams@novadata158.com,Founder,Lead from batch import 2025-10-09
+Quantum Data 159,SaaS,https://quantumdata159.com,1-10,Chris Miller,chris.miller@quantumdata159.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Data 160,IoT,https://betadata160.com,51-200,John Williams,john.williams@betadata160.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 161,IoT,https://alphalabs161.com,1-10,John Miller,john.miller@alphalabs161.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Tech 162,Marketing,https://sigmatech162.com,1-10,Alex Johnson,alex.johnson@sigmatech162.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 163,E-commerce,https://gammaai163.com,1-10,Chris Williams,chris.williams@gammaai163.com,COO,Lead from batch import 2025-10-09
+Nova Solutions 164,Marketing,https://novasolutions164.com,501-1000,Chris Williams,chris.williams@novasolutions164.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Systems 165,SaaS,https://primesystems165.com,1000+,Alex Garcia,alex.garcia@primesystems165.com,COO,Lead from batch import 2025-10-09
+Quantum Cloud 166,FinTech,https://quantumcloud166.com,1-10,Chris Brown,chris.brown@quantumcloud166.com,CEO,Lead from batch import 2025-10-09
+Sigma Labs 167,HealthTech,https://sigmalabs167.com,51-200,Jane Garcia,jane.garcia@sigmalabs167.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Systems 168,E-commerce,https://deltasystems168.com,11-50,David Miller,david.miller@deltasystems168.com,CTO,Lead from batch import 2025-10-09
+Quantum Systems 169,EdTech,https://quantumsystems169.com,51-200,Jane Garcia,jane.garcia@quantumsystems169.com,CEO,Lead from batch import 2025-10-09
+Quantum AI 170,IoT,https://quantumai170.com,201-500,Chris Garcia,chris.garcia@quantumai170.com,COO,Lead from batch import 2025-10-09
+Sigma Tech 171,Marketing,https://sigmatech171.com,1-10,Michael Davis,michael.davis@sigmatech171.com,CTO,Lead from batch import 2025-10-09
+Omega Data 172,FinTech,https://omegadata172.com,51-200,Alex Davis,alex.davis@omegadata172.com,Founder,Lead from batch import 2025-10-09
+Delta AI 173,Analytics,https://deltaai173.com,51-200,John Smith,john.smith@deltaai173.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma AI 174,E-commerce,https://sigmaai174.com,201-500,Emily Garcia,emily.garcia@sigmaai174.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Cloud 175,AI/ML,https://sigmacloud175.com,501-1000,Sarah Garcia,sarah.garcia@sigmacloud175.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 176,FinTech,https://omegaai176.com,501-1000,David Williams,david.williams@omegaai176.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Labs 177,SaaS,https://gammalabs177.com,1-10,Michael Jones,michael.jones@gammalabs177.com,VP of Sales,Lead from batch import 2025-10-09
+Delta AI 178,FinTech,https://deltaai178.com,1000+,Jane Smith,jane.smith@deltaai178.com,VP of Sales,Lead from batch import 2025-10-09
+Delta AI 179,EdTech,https://deltaai179.com,51-200,Jane Miller,jane.miller@deltaai179.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Labs 180,Analytics,https://apexlabs180.com,1000+,David Davis,david.davis@apexlabs180.com,Founder,Lead from batch import 2025-10-09
+Delta Data 181,Marketing,https://deltadata181.com,1000+,John Miller,john.miller@deltadata181.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma AI 182,Analytics,https://gammaai182.com,501-1000,John Miller,john.miller@gammaai182.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Data 183,SaaS,https://gammadata183.com,501-1000,John Brown,john.brown@gammadata183.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Cloud 184,AI/ML,https://primecloud184.com,201-500,John Davis,john.davis@primecloud184.com,VP of Sales,Lead from batch import 2025-10-09
+Omega Systems 185,SaaS,https://omegasystems185.com,1000+,Emily Jones,emily.jones@omegasystems185.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Cloud 186,AI/ML,https://deltacloud186.com,1000+,Michael Johnson,michael.johnson@deltacloud186.com,CTO,Lead from batch import 2025-10-09
+Alpha Solutions 187,AI/ML,https://alphasolutions187.com,201-500,Jane Smith,jane.smith@alphasolutions187.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Solutions 188,Marketing,https://apexsolutions188.com,11-50,Michael Jones,michael.jones@apexsolutions188.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Solutions 189,IoT,https://novasolutions189.com,501-1000,Emily Miller,emily.miller@novasolutions189.com,Head of Product,Lead from batch import 2025-10-09
+Apex Data 190,E-commerce,https://apexdata190.com,201-500,Michael Garcia,michael.garcia@apexdata190.com,Founder,Lead from batch import 2025-10-09
+Gamma Data 191,AI/ML,https://gammadata191.com,51-200,Alex Smith,alex.smith@gammadata191.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 192,Cybersecurity,https://alphalabs192.com,201-500,Sarah Miller,sarah.miller@alphalabs192.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha Tech 193,EdTech,https://alphatech193.com,11-50,David Brown,david.brown@alphatech193.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Tech 194,E-commerce,https://betatech194.com,501-1000,Michael Miller,michael.miller@betatech194.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Data 195,E-commerce,https://alphadata195.com,201-500,Michael Williams,michael.williams@alphadata195.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Systems 196,HealthTech,https://novasystems196.com,501-1000,Jane Miller,jane.miller@novasystems196.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 197,E-commerce,https://gammaai197.com,201-500,Emily Williams,emily.williams@gammaai197.com,COO,Lead from batch import 2025-10-09
+Nova Data 198,Cybersecurity,https://novadata198.com,501-1000,Chris Johnson,chris.johnson@novadata198.com,CEO,Lead from batch import 2025-10-09
+Quantum Labs 199,Analytics,https://quantumlabs199.com,11-50,Emily Davis,emily.davis@quantumlabs199.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Cloud 200,IoT,https://gammacloud200.com,1-10,Chris Miller,chris.miller@gammacloud200.com,Founder,Lead from batch import 2025-10-09
+Delta Systems 201,AI/ML,https://deltasystems201.com,11-50,David Miller,david.miller@deltasystems201.com,Founder,Lead from batch import 2025-10-09
+Beta Cloud 202,IoT,https://betacloud202.com,1-10,Chris Williams,chris.williams@betacloud202.com,COO,Lead from batch import 2025-10-09
+Beta Tech 203,SaaS,https://betatech203.com,201-500,Sarah Williams,sarah.williams@betatech203.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Tech 204,FinTech,https://alphatech204.com,1-10,Chris Miller,chris.miller@alphatech204.com,Founder,Lead from batch import 2025-10-09
+Prime Data 205,E-commerce,https://primedata205.com,201-500,Jane Garcia,jane.garcia@primedata205.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Systems 206,Cybersecurity,https://alphasystems206.com,1-10,Emily Miller,emily.miller@alphasystems206.com,CEO,Lead from batch import 2025-10-09
+Apex Tech 207,Marketing,https://apextech207.com,11-50,David Miller,david.miller@apextech207.com,CTO,Lead from batch import 2025-10-09
+Apex Data 208,Analytics,https://apexdata208.com,11-50,John Brown,john.brown@apexdata208.com,COO,Lead from batch import 2025-10-09
+Omega Tech 209,HealthTech,https://omegatech209.com,51-200,Alex Jones,alex.jones@omegatech209.com,CEO,Lead from batch import 2025-10-09
+Delta Tech 210,E-commerce,https://deltatech210.com,1000+,David Davis,david.davis@deltatech210.com,COO,Lead from batch import 2025-10-09
+Delta AI 211,AI/ML,https://deltaai211.com,501-1000,Jane Garcia,jane.garcia@deltaai211.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Data 212,SaaS,https://betadata212.com,201-500,Alex Jones,alex.jones@betadata212.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Labs 213,E-commerce,https://gammalabs213.com,11-50,David Jones,david.jones@gammalabs213.com,Founder,Lead from batch import 2025-10-09
+Apex Cloud 214,Marketing,https://apexcloud214.com,1000+,David Miller,david.miller@apexcloud214.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Cloud 215,IoT,https://deltacloud215.com,1-10,Sarah Miller,sarah.miller@deltacloud215.com,Founder,Lead from batch import 2025-10-09
+Alpha AI 216,FinTech,https://alphaai216.com,11-50,Chris Brown,chris.brown@alphaai216.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Systems 217,Cybersecurity,https://primesystems217.com,501-1000,Alex Smith,alex.smith@primesystems217.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Solutions 218,Cybersecurity,https://quantumsolutions218.com,51-200,Michael Williams,michael.williams@quantumsolutions218.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma AI 219,Analytics,https://sigmaai219.com,11-50,Emily Jones,emily.jones@sigmaai219.com,Head of Product,Lead from batch import 2025-10-09
+Nova Solutions 220,AI/ML,https://novasolutions220.com,51-200,Michael Davis,michael.davis@novasolutions220.com,Founder,Lead from batch import 2025-10-09
+Sigma Tech 221,Cybersecurity,https://sigmatech221.com,1-10,Michael Davis,michael.davis@sigmatech221.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Labs 222,Marketing,https://alphalabs222.com,11-50,Alex Garcia,alex.garcia@alphalabs222.com,CTO,Lead from batch import 2025-10-09
+Sigma Tech 223,Cybersecurity,https://sigmatech223.com,201-500,Alex Smith,alex.smith@sigmatech223.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma AI 224,AI/ML,https://sigmaai224.com,1000+,Emily Johnson,emily.johnson@sigmaai224.com,Marketing Director,Lead from batch import 2025-10-09
+Beta AI 225,Cybersecurity,https://betaai225.com,1000+,Chris Jones,chris.jones@betaai225.com,Founder,Lead from batch import 2025-10-09
+Beta Tech 226,AI/ML,https://betatech226.com,1000+,Chris Williams,chris.williams@betatech226.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 227,IoT,https://alphaai227.com,51-200,Jane Jones,jane.jones@alphaai227.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Tech 228,Cybersecurity,https://sigmatech228.com,201-500,John Smith,john.smith@sigmatech228.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Cloud 229,Marketing,https://alphacloud229.com,11-50,David Williams,david.williams@alphacloud229.com,Founder,Lead from batch import 2025-10-09
+Nova Cloud 230,Marketing,https://novacloud230.com,11-50,Alex Williams,alex.williams@novacloud230.com,COO,Lead from batch import 2025-10-09
+Apex Tech 231,Analytics,https://apextech231.com,11-50,David Brown,david.brown@apextech231.com,Founder,Lead from batch import 2025-10-09
+Apex Solutions 232,SaaS,https://apexsolutions232.com,201-500,Chris Miller,chris.miller@apexsolutions232.com,COO,Lead from batch import 2025-10-09
+Gamma Labs 233,IoT,https://gammalabs233.com,501-1000,Alex Johnson,alex.johnson@gammalabs233.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Tech 234,EdTech,https://apextech234.com,1000+,Sarah Smith,sarah.smith@apextech234.com,Head of Product,Lead from batch import 2025-10-09
+Omega Solutions 235,HealthTech,https://omegasolutions235.com,1-10,Jane Jones,jane.jones@omegasolutions235.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Cloud 236,SaaS,https://quantumcloud236.com,201-500,Chris Garcia,chris.garcia@quantumcloud236.com,COO,Lead from batch import 2025-10-09
+Nova Solutions 237,HealthTech,https://novasolutions237.com,1-10,David Jones,david.jones@novasolutions237.com,COO,Lead from batch import 2025-10-09
+Apex Tech 238,Marketing,https://apextech238.com,1-10,Chris Smith,chris.smith@apextech238.com,COO,Lead from batch import 2025-10-09
+Sigma Solutions 239,AI/ML,https://sigmasolutions239.com,201-500,Michael Jones,michael.jones@sigmasolutions239.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Tech 240,E-commerce,https://quantumtech240.com,1-10,Michael Smith,michael.smith@quantumtech240.com,COO,Lead from batch import 2025-10-09
+Beta Data 241,Marketing,https://betadata241.com,11-50,Alex Miller,alex.miller@betadata241.com,Founder,Lead from batch import 2025-10-09
+Alpha Tech 242,HealthTech,https://alphatech242.com,1-10,Jane Davis,jane.davis@alphatech242.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 243,Analytics,https://alphaai243.com,51-200,Alex Brown,alex.brown@alphaai243.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Data 244,SaaS,https://sigmadata244.com,1000+,David Miller,david.miller@sigmadata244.com,CTO,Lead from batch import 2025-10-09
+Alpha Data 245,Marketing,https://alphadata245.com,1-10,Emily Davis,emily.davis@alphadata245.com,Founder,Lead from batch import 2025-10-09
+Alpha Data 246,IoT,https://alphadata246.com,201-500,Alex Smith,alex.smith@alphadata246.com,Head of Product,Lead from batch import 2025-10-09
+Delta AI 247,Cybersecurity,https://deltaai247.com,11-50,Jane Brown,jane.brown@deltaai247.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Labs 248,SaaS,https://betalabs248.com,501-1000,Alex Jones,alex.jones@betalabs248.com,COO,Lead from batch import 2025-10-09
+Quantum AI 249,SaaS,https://quantumai249.com,501-1000,Michael Smith,michael.smith@quantumai249.com,COO,Lead from batch import 2025-10-09
+Omega AI 250,E-commerce,https://omegaai250.com,51-200,Jane Brown,jane.brown@omegaai250.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Data 251,AI/ML,https://novadata251.com,501-1000,Sarah Williams,sarah.williams@novadata251.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Labs 252,E-commerce,https://primelabs252.com,51-200,Chris Smith,chris.smith@primelabs252.com,COO,Lead from batch import 2025-10-09
+Alpha Systems 253,EdTech,https://alphasystems253.com,11-50,David Smith,david.smith@alphasystems253.com,COO,Lead from batch import 2025-10-09
+Delta Data 254,IoT,https://deltadata254.com,201-500,Sarah Brown,sarah.brown@deltadata254.com,CEO,Lead from batch import 2025-10-09
+Sigma Systems 255,HealthTech,https://sigmasystems255.com,501-1000,John Davis,john.davis@sigmasystems255.com,CTO,Lead from batch import 2025-10-09
+Beta Systems 256,Cybersecurity,https://betasystems256.com,501-1000,Jane Johnson,jane.johnson@betasystems256.com,VP of Sales,Lead from batch import 2025-10-09
+Omega Tech 257,E-commerce,https://omegatech257.com,11-50,Michael Miller,michael.miller@omegatech257.com,Head of Product,Lead from batch import 2025-10-09
+Omega Tech 258,HealthTech,https://omegatech258.com,1-10,Jane Garcia,jane.garcia@omegatech258.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Tech 259,AI/ML,https://sigmatech259.com,501-1000,Sarah Garcia,sarah.garcia@sigmatech259.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Systems 260,FinTech,https://novasystems260.com,501-1000,Alex Miller,alex.miller@novasystems260.com,COO,Lead from batch import 2025-10-09
+Gamma Data 261,FinTech,https://gammadata261.com,11-50,John Jones,john.jones@gammadata261.com,CTO,Lead from batch import 2025-10-09
+Beta AI 262,FinTech,https://betaai262.com,201-500,Alex Garcia,alex.garcia@betaai262.com,COO,Lead from batch import 2025-10-09
+Gamma AI 263,EdTech,https://gammaai263.com,1000+,David Williams,david.williams@gammaai263.com,CTO,Lead from batch import 2025-10-09
+Gamma Tech 264,E-commerce,https://gammatech264.com,201-500,Jane Jones,jane.jones@gammatech264.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Labs 265,Cybersecurity,https://alphalabs265.com,51-200,Alex Brown,alex.brown@alphalabs265.com,Head of Product,Lead from batch import 2025-10-09
+Delta AI 266,IoT,https://deltaai266.com,501-1000,Michael Davis,michael.davis@deltaai266.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Systems 267,Marketing,https://primesystems267.com,11-50,Alex Brown,alex.brown@primesystems267.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Systems 268,AI/ML,https://quantumsystems268.com,11-50,Emily Smith,emily.smith@quantumsystems268.com,CTO,Lead from batch import 2025-10-09
+Gamma Tech 269,E-commerce,https://gammatech269.com,201-500,John Davis,john.davis@gammatech269.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma AI 270,AI/ML,https://gammaai270.com,11-50,John Johnson,john.johnson@gammaai270.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Solutions 271,Cybersecurity,https://quantumsolutions271.com,201-500,Michael Smith,michael.smith@quantumsolutions271.com,COO,Lead from batch import 2025-10-09
+Omega Systems 272,FinTech,https://omegasystems272.com,51-200,Emily Jones,emily.jones@omegasystems272.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Solutions 273,AI/ML,https://betasolutions273.com,1000+,Emily Garcia,emily.garcia@betasolutions273.com,CEO,Lead from batch import 2025-10-09
+Sigma Tech 274,Analytics,https://sigmatech274.com,201-500,Emily Davis,emily.davis@sigmatech274.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Cloud 275,E-commerce,https://betacloud275.com,201-500,Alex Davis,alex.davis@betacloud275.com,CTO,Lead from batch import 2025-10-09
+Alpha Tech 276,SaaS,https://alphatech276.com,1-10,Sarah Jones,sarah.jones@alphatech276.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Cloud 277,FinTech,https://omegacloud277.com,501-1000,Sarah Jones,sarah.jones@omegacloud277.com,VP of Sales,Lead from batch import 2025-10-09
+Beta AI 278,Cybersecurity,https://betaai278.com,1000+,Emily Brown,emily.brown@betaai278.com,Head of Product,Lead from batch import 2025-10-09
+Beta Data 279,FinTech,https://betadata279.com,1-10,David Jones,david.jones@betadata279.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Data 280,Marketing,https://alphadata280.com,1-10,Sarah Brown,sarah.brown@alphadata280.com,CEO,Lead from batch import 2025-10-09
+Delta AI 281,HealthTech,https://deltaai281.com,501-1000,Emily Williams,emily.williams@deltaai281.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 282,EdTech,https://alphaai282.com,51-200,Chris Smith,chris.smith@alphaai282.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Solutions 283,SaaS,https://omegasolutions283.com,11-50,Alex Miller,alex.miller@omegasolutions283.com,CEO,Lead from batch import 2025-10-09
+Prime Systems 284,SaaS,https://primesystems284.com,501-1000,Emily Davis,emily.davis@primesystems284.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Cloud 285,SaaS,https://omegacloud285.com,1-10,Emily Davis,emily.davis@omegacloud285.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Systems 286,Analytics,https://novasystems286.com,11-50,Alex Jones,alex.jones@novasystems286.com,Founder,Lead from batch import 2025-10-09
+Alpha Cloud 287,HealthTech,https://alphacloud287.com,201-500,Chris Williams,chris.williams@alphacloud287.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Systems 288,E-commerce,https://novasystems288.com,201-500,Emily Garcia,emily.garcia@novasystems288.com,CEO,Lead from batch import 2025-10-09
+Delta Solutions 289,AI/ML,https://deltasolutions289.com,1-10,Emily Brown,emily.brown@deltasolutions289.com,Founder,Lead from batch import 2025-10-09
+Sigma Solutions 290,Analytics,https://sigmasolutions290.com,51-200,Michael Jones,michael.jones@sigmasolutions290.com,CEO,Lead from batch import 2025-10-09
+Omega Systems 291,SaaS,https://omegasystems291.com,51-200,Sarah Smith,sarah.smith@omegasystems291.com,Founder,Lead from batch import 2025-10-09
+Quantum Solutions 292,Analytics,https://quantumsolutions292.com,51-200,John Williams,john.williams@quantumsolutions292.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 293,FinTech,https://alphaai293.com,1-10,Sarah Miller,sarah.miller@alphaai293.com,Head of Product,Lead from batch import 2025-10-09
+Nova AI 294,SaaS,https://novaai294.com,11-50,David Jones,david.jones@novaai294.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Cloud 295,SaaS,https://gammacloud295.com,51-200,Chris Jones,chris.jones@gammacloud295.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 296,FinTech,https://omegaai296.com,11-50,Emily Brown,emily.brown@omegaai296.com,Founder,Lead from batch import 2025-10-09
+Gamma Tech 297,SaaS,https://gammatech297.com,501-1000,Sarah Miller,sarah.miller@gammatech297.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Tech 298,Cybersecurity,https://sigmatech298.com,1000+,Jane Johnson,jane.johnson@sigmatech298.com,CEO,Lead from batch import 2025-10-09
+Apex Solutions 299,FinTech,https://apexsolutions299.com,201-500,Jane Smith,jane.smith@apexsolutions299.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Solutions 300,HealthTech,https://gammasolutions300.com,51-200,David Johnson,david.johnson@gammasolutions300.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Data 301,EdTech,https://sigmadata301.com,11-50,John Miller,john.miller@sigmadata301.com,CEO,Lead from batch import 2025-10-09
+Prime Data 302,Marketing,https://primedata302.com,11-50,Alex Johnson,alex.johnson@primedata302.com,Marketing Director,Lead from batch import 2025-10-09
+Nova AI 303,FinTech,https://novaai303.com,51-200,David Johnson,david.johnson@novaai303.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 304,Cybersecurity,https://omegaai304.com,201-500,Alex Williams,alex.williams@omegaai304.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Labs 305,Cybersecurity,https://omegalabs305.com,201-500,Alex Williams,alex.williams@omegalabs305.com,Founder,Lead from batch import 2025-10-09
+Alpha Tech 306,Marketing,https://alphatech306.com,51-200,Jane Jones,jane.jones@alphatech306.com,CEO,Lead from batch import 2025-10-09
+Quantum Tech 307,Analytics,https://quantumtech307.com,501-1000,John Garcia,john.garcia@quantumtech307.com,Marketing Director,Lead from batch import 2025-10-09
+Nova AI 308,Cybersecurity,https://novaai308.com,201-500,John Smith,john.smith@novaai308.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Tech 309,Marketing,https://gammatech309.com,11-50,Sarah Williams,sarah.williams@gammatech309.com,CTO,Lead from batch import 2025-10-09
+Apex Solutions 310,EdTech,https://apexsolutions310.com,201-500,Emily Jones,emily.jones@apexsolutions310.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma AI 311,Marketing,https://sigmaai311.com,11-50,Alex Davis,alex.davis@sigmaai311.com,CTO,Lead from batch import 2025-10-09
+Gamma Labs 312,AI/ML,https://gammalabs312.com,11-50,John Williams,john.williams@gammalabs312.com,Head of Product,Lead from batch import 2025-10-09
+Apex Systems 313,FinTech,https://apexsystems313.com,201-500,David Smith,david.smith@apexsystems313.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Labs 314,HealthTech,https://primelabs314.com,201-500,David Garcia,david.garcia@primelabs314.com,CTO,Lead from batch import 2025-10-09
+Beta Tech 315,AI/ML,https://betatech315.com,501-1000,Michael Davis,michael.davis@betatech315.com,CTO,Lead from batch import 2025-10-09
+Nova Systems 316,IoT,https://novasystems316.com,51-200,Emily Davis,emily.davis@novasystems316.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Solutions 317,E-commerce,https://sigmasolutions317.com,11-50,Jane Williams,jane.williams@sigmasolutions317.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Data 318,Cybersecurity,https://sigmadata318.com,1000+,Alex Johnson,alex.johnson@sigmadata318.com,CTO,Lead from batch import 2025-10-09
+Sigma AI 319,HealthTech,https://sigmaai319.com,501-1000,Emily Garcia,emily.garcia@sigmaai319.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Cloud 320,IoT,https://novacloud320.com,501-1000,Jane Brown,jane.brown@novacloud320.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Solutions 321,HealthTech,https://gammasolutions321.com,201-500,Emily Garcia,emily.garcia@gammasolutions321.com,Head of Product,Lead from batch import 2025-10-09
+Prime Labs 322,Analytics,https://primelabs322.com,51-200,John Johnson,john.johnson@primelabs322.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Solutions 323,IoT,https://deltasolutions323.com,1000+,John Johnson,john.johnson@deltasolutions323.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Labs 324,Analytics,https://alphalabs324.com,1-10,Emily Davis,emily.davis@alphalabs324.com,Head of Product,Lead from batch import 2025-10-09
+Nova Data 325,SaaS,https://novadata325.com,201-500,Michael Brown,michael.brown@novadata325.com,Founder,Lead from batch import 2025-10-09
+Nova Systems 326,AI/ML,https://novasystems326.com,11-50,Jane Jones,jane.jones@novasystems326.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Tech 327,IoT,https://novatech327.com,501-1000,John Jones,john.jones@novatech327.com,CTO,Lead from batch import 2025-10-09
+Omega Systems 328,IoT,https://omegasystems328.com,11-50,Emily Smith,emily.smith@omegasystems328.com,COO,Lead from batch import 2025-10-09
+Gamma Solutions 329,SaaS,https://gammasolutions329.com,1-10,Chris Williams,chris.williams@gammasolutions329.com,CTO,Lead from batch import 2025-10-09
+Apex Systems 330,Analytics,https://apexsystems330.com,1-10,John Brown,john.brown@apexsystems330.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Data 331,Analytics,https://omegadata331.com,501-1000,John Miller,john.miller@omegadata331.com,Head of Product,Lead from batch import 2025-10-09
+Delta Solutions 332,Cybersecurity,https://deltasolutions332.com,51-200,Jane Jones,jane.jones@deltasolutions332.com,Founder,Lead from batch import 2025-10-09
+Sigma Systems 333,AI/ML,https://sigmasystems333.com,1000+,Jane Garcia,jane.garcia@sigmasystems333.com,COO,Lead from batch import 2025-10-09
+Nova Cloud 334,HealthTech,https://novacloud334.com,501-1000,Michael Williams,michael.williams@novacloud334.com,Founder,Lead from batch import 2025-10-09
+Apex Solutions 335,EdTech,https://apexsolutions335.com,1-10,Sarah Miller,sarah.miller@apexsolutions335.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Labs 336,FinTech,https://apexlabs336.com,11-50,Chris Davis,chris.davis@apexlabs336.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Solutions 337,AI/ML,https://apexsolutions337.com,11-50,John Johnson,john.johnson@apexsolutions337.com,COO,Lead from batch import 2025-10-09
+Sigma Labs 338,IoT,https://sigmalabs338.com,1-10,John Williams,john.williams@sigmalabs338.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Systems 339,FinTech,https://quantumsystems339.com,501-1000,Michael Miller,michael.miller@quantumsystems339.com,VP of Sales,Lead from batch import 2025-10-09
+Prime AI 340,EdTech,https://primeai340.com,11-50,Jane Garcia,jane.garcia@primeai340.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Cloud 341,AI/ML,https://quantumcloud341.com,11-50,David Williams,david.williams@quantumcloud341.com,Marketing Director,Lead from batch import 2025-10-09
+Omega AI 342,FinTech,https://omegaai342.com,51-200,David Brown,david.brown@omegaai342.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Cloud 343,IoT,https://apexcloud343.com,501-1000,Jane Williams,jane.williams@apexcloud343.com,CEO,Lead from batch import 2025-10-09
+Delta Systems 344,E-commerce,https://deltasystems344.com,51-200,Michael Jones,michael.jones@deltasystems344.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Labs 345,SaaS,https://novalabs345.com,1-10,Michael Garcia,michael.garcia@novalabs345.com,Head of Product,Lead from batch import 2025-10-09
+Apex Cloud 346,FinTech,https://apexcloud346.com,11-50,Emily Miller,emily.miller@apexcloud346.com,Head of Product,Lead from batch import 2025-10-09
+Beta AI 347,AI/ML,https://betaai347.com,501-1000,John Jones,john.jones@betaai347.com,COO,Lead from batch import 2025-10-09
+Prime Data 348,HealthTech,https://primedata348.com,11-50,Jane Smith,jane.smith@primedata348.com,COO,Lead from batch import 2025-10-09
+Beta Tech 349,EdTech,https://betatech349.com,501-1000,Chris Davis,chris.davis@betatech349.com,CEO,Lead from batch import 2025-10-09
+Quantum Cloud 350,SaaS,https://quantumcloud350.com,201-500,David Williams,david.williams@quantumcloud350.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Solutions 351,IoT,https://gammasolutions351.com,201-500,Emily Miller,emily.miller@gammasolutions351.com,Head of Product,Lead from batch import 2025-10-09
+Apex AI 352,Cybersecurity,https://apexai352.com,1000+,Emily Miller,emily.miller@apexai352.com,CEO,Lead from batch import 2025-10-09
+Omega AI 353,AI/ML,https://omegaai353.com,501-1000,David Brown,david.brown@omegaai353.com,Founder,Lead from batch import 2025-10-09
+Alpha Solutions 354,Analytics,https://alphasolutions354.com,501-1000,Alex Smith,alex.smith@alphasolutions354.com,Head of Product,Lead from batch import 2025-10-09
+Apex Systems 355,SaaS,https://apexsystems355.com,11-50,Michael Williams,michael.williams@apexsystems355.com,Founder,Lead from batch import 2025-10-09
+Quantum Labs 356,Cybersecurity,https://quantumlabs356.com,201-500,Alex Smith,alex.smith@quantumlabs356.com,CTO,Lead from batch import 2025-10-09
+Prime Labs 357,Marketing,https://primelabs357.com,51-200,Chris Garcia,chris.garcia@primelabs357.com,CTO,Lead from batch import 2025-10-09
+Gamma Solutions 358,Analytics,https://gammasolutions358.com,11-50,Sarah Garcia,sarah.garcia@gammasolutions358.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum AI 359,Marketing,https://quantumai359.com,1000+,Chris Brown,chris.brown@quantumai359.com,Founder,Lead from batch import 2025-10-09
+Delta AI 360,Cybersecurity,https://deltaai360.com,501-1000,Sarah Smith,sarah.smith@deltaai360.com,Founder,Lead from batch import 2025-10-09
+Quantum Tech 361,EdTech,https://quantumtech361.com,1000+,Sarah Brown,sarah.brown@quantumtech361.com,Founder,Lead from batch import 2025-10-09
+Delta Systems 362,HealthTech,https://deltasystems362.com,11-50,Alex Davis,alex.davis@deltasystems362.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Systems 363,Marketing,https://betasystems363.com,51-200,Sarah Jones,sarah.jones@betasystems363.com,CTO,Lead from batch import 2025-10-09
+Prime Data 364,SaaS,https://primedata364.com,501-1000,Alex Williams,alex.williams@primedata364.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Tech 365,SaaS,https://primetech365.com,11-50,John Williams,john.williams@primetech365.com,Founder,Lead from batch import 2025-10-09
+Omega Tech 366,FinTech,https://omegatech366.com,1000+,Alex Brown,alex.brown@omegatech366.com,CTO,Lead from batch import 2025-10-09
+Apex Labs 367,E-commerce,https://apexlabs367.com,1-10,Michael Williams,michael.williams@apexlabs367.com,Founder,Lead from batch import 2025-10-09
+Prime Solutions 368,E-commerce,https://primesolutions368.com,11-50,Jane Jones,jane.jones@primesolutions368.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Labs 369,SaaS,https://quantumlabs369.com,201-500,Michael Miller,michael.miller@quantumlabs369.com,Founder,Lead from batch import 2025-10-09
+Gamma AI 370,Marketing,https://gammaai370.com,201-500,Michael Brown,michael.brown@gammaai370.com,Founder,Lead from batch import 2025-10-09
+Delta Data 371,FinTech,https://deltadata371.com,51-200,Emily Miller,emily.miller@deltadata371.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Systems 372,E-commerce,https://deltasystems372.com,1-10,Emily Brown,emily.brown@deltasystems372.com,CTO,Lead from batch import 2025-10-09
+Quantum Tech 373,Cybersecurity,https://quantumtech373.com,11-50,David Miller,david.miller@quantumtech373.com,CEO,Lead from batch import 2025-10-09
+Delta Solutions 374,Analytics,https://deltasolutions374.com,51-200,Alex Garcia,alex.garcia@deltasolutions374.com,COO,Lead from batch import 2025-10-09
+Prime Tech 375,Analytics,https://primetech375.com,1-10,Emily Davis,emily.davis@primetech375.com,COO,Lead from batch import 2025-10-09
+Prime Labs 376,E-commerce,https://primelabs376.com,11-50,Michael Williams,michael.williams@primelabs376.com,CEO,Lead from batch import 2025-10-09
+Apex Tech 377,FinTech,https://apextech377.com,51-200,John Garcia,john.garcia@apextech377.com,CEO,Lead from batch import 2025-10-09
+Alpha Cloud 378,E-commerce,https://alphacloud378.com,1000+,Alex Jones,alex.jones@alphacloud378.com,COO,Lead from batch import 2025-10-09
+Sigma Labs 379,SaaS,https://sigmalabs379.com,51-200,John Miller,john.miller@sigmalabs379.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Solutions 380,FinTech,https://quantumsolutions380.com,1-10,Chris Jones,chris.jones@quantumsolutions380.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Cloud 381,Analytics,https://gammacloud381.com,1000+,Jane Garcia,jane.garcia@gammacloud381.com,COO,Lead from batch import 2025-10-09
+Nova Systems 382,Marketing,https://novasystems382.com,11-50,David Johnson,david.johnson@novasystems382.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum AI 383,FinTech,https://quantumai383.com,201-500,Jane Jones,jane.jones@quantumai383.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Cloud 384,EdTech,https://primecloud384.com,51-200,Sarah Smith,sarah.smith@primecloud384.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 385,Cybersecurity,https://alphalabs385.com,51-200,Chris Davis,chris.davis@alphalabs385.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Tech 386,AI/ML,https://betatech386.com,51-200,Chris Smith,chris.smith@betatech386.com,Founder,Lead from batch import 2025-10-09
+Gamma Tech 387,FinTech,https://gammatech387.com,501-1000,Sarah Davis,sarah.davis@gammatech387.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 388,Analytics,https://alphaai388.com,1-10,Sarah Miller,sarah.miller@alphaai388.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Cloud 389,AI/ML,https://betacloud389.com,11-50,Jane Williams,jane.williams@betacloud389.com,COO,Lead from batch import 2025-10-09
+Prime Data 390,E-commerce,https://primedata390.com,1-10,Chris Garcia,chris.garcia@primedata390.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Cloud 391,EdTech,https://quantumcloud391.com,11-50,Jane Williams,jane.williams@quantumcloud391.com,Founder,Lead from batch import 2025-10-09
+Quantum Cloud 392,FinTech,https://quantumcloud392.com,11-50,John Garcia,john.garcia@quantumcloud392.com,Founder,Lead from batch import 2025-10-09
+Quantum Cloud 393,HealthTech,https://quantumcloud393.com,51-200,Michael Johnson,michael.johnson@quantumcloud393.com,CTO,Lead from batch import 2025-10-09
+Delta Data 394,Analytics,https://deltadata394.com,11-50,Michael Jones,michael.jones@deltadata394.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Tech 395,IoT,https://gammatech395.com,1000+,Chris Williams,chris.williams@gammatech395.com,COO,Lead from batch import 2025-10-09
+Alpha Data 396,SaaS,https://alphadata396.com,201-500,Chris Smith,chris.smith@alphadata396.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Cloud 397,HealthTech,https://betacloud397.com,1-10,Sarah Smith,sarah.smith@betacloud397.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Systems 398,EdTech,https://sigmasystems398.com,501-1000,Jane Smith,jane.smith@sigmasystems398.com,Marketing Director,Lead from batch import 2025-10-09
+Nova AI 399,FinTech,https://novaai399.com,1-10,Emily Miller,emily.miller@novaai399.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Labs 400,Marketing,https://novalabs400.com,501-1000,Chris Garcia,chris.garcia@novalabs400.com,Founder,Lead from batch import 2025-10-09
+Gamma Solutions 401,Marketing,https://gammasolutions401.com,1000+,Chris Jones,chris.jones@gammasolutions401.com,Founder,Lead from batch import 2025-10-09
+Apex Tech 402,AI/ML,https://apextech402.com,201-500,Michael Brown,michael.brown@apextech402.com,CTO,Lead from batch import 2025-10-09
+Gamma Solutions 403,Marketing,https://gammasolutions403.com,201-500,John Davis,john.davis@gammasolutions403.com,CTO,Lead from batch import 2025-10-09
+Delta Cloud 404,Analytics,https://deltacloud404.com,501-1000,John Brown,john.brown@deltacloud404.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Cloud 405,HealthTech,https://deltacloud405.com,1-10,Jane Davis,jane.davis@deltacloud405.com,CTO,Lead from batch import 2025-10-09
+Quantum Systems 406,HealthTech,https://quantumsystems406.com,51-200,Alex Garcia,alex.garcia@quantumsystems406.com,CTO,Lead from batch import 2025-10-09
+Prime AI 407,FinTech,https://primeai407.com,1-10,John Garcia,john.garcia@primeai407.com,COO,Lead from batch import 2025-10-09
+Alpha Tech 408,Cybersecurity,https://alphatech408.com,501-1000,Emily Garcia,emily.garcia@alphatech408.com,COO,Lead from batch import 2025-10-09
+Gamma AI 409,AI/ML,https://gammaai409.com,1-10,John Jones,john.jones@gammaai409.com,CTO,Lead from batch import 2025-10-09
+Quantum Data 410,Marketing,https://quantumdata410.com,1000+,Michael Miller,michael.miller@quantumdata410.com,Head of Product,Lead from batch import 2025-10-09
+Sigma AI 411,Cybersecurity,https://sigmaai411.com,51-200,Michael Smith,michael.smith@sigmaai411.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Tech 412,HealthTech,https://gammatech412.com,1-10,Sarah Miller,sarah.miller@gammatech412.com,CEO,Lead from batch import 2025-10-09
+Quantum Cloud 413,FinTech,https://quantumcloud413.com,501-1000,Michael Jones,michael.jones@quantumcloud413.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha Labs 414,EdTech,https://alphalabs414.com,1000+,David Brown,david.brown@alphalabs414.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Tech 415,EdTech,https://deltatech415.com,1-10,Emily Smith,emily.smith@deltatech415.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Data 416,Cybersecurity,https://quantumdata416.com,1-10,Michael Brown,michael.brown@quantumdata416.com,CEO,Lead from batch import 2025-10-09
+Nova Labs 417,Analytics,https://novalabs417.com,1-10,Alex Smith,alex.smith@novalabs417.com,CTO,Lead from batch import 2025-10-09
+Alpha Labs 418,Analytics,https://alphalabs418.com,11-50,John Smith,john.smith@alphalabs418.com,Head of Product,Lead from batch import 2025-10-09
+Nova AI 419,AI/ML,https://novaai419.com,201-500,Emily Johnson,emily.johnson@novaai419.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Data 420,Analytics,https://betadata420.com,501-1000,Chris Jones,chris.jones@betadata420.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Labs 421,Cybersecurity,https://novalabs421.com,51-200,Jane Smith,jane.smith@novalabs421.com,Founder,Lead from batch import 2025-10-09
+Beta Labs 422,EdTech,https://betalabs422.com,51-200,Michael Smith,michael.smith@betalabs422.com,CTO,Lead from batch import 2025-10-09
+Delta Labs 423,HealthTech,https://deltalabs423.com,1000+,Emily Jones,emily.jones@deltalabs423.com,CTO,Lead from batch import 2025-10-09
+Prime Systems 424,IoT,https://primesystems424.com,1-10,Sarah Garcia,sarah.garcia@primesystems424.com,Founder,Lead from batch import 2025-10-09
+Nova Cloud 425,Analytics,https://novacloud425.com,11-50,Emily Williams,emily.williams@novacloud425.com,CEO,Lead from batch import 2025-10-09
+Alpha Cloud 426,Analytics,https://alphacloud426.com,51-200,Michael Davis,michael.davis@alphacloud426.com,Head of Product,Lead from batch import 2025-10-09
+Omega Solutions 427,Analytics,https://omegasolutions427.com,11-50,Michael Williams,michael.williams@omegasolutions427.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Labs 428,Analytics,https://alphalabs428.com,51-200,Alex Brown,alex.brown@alphalabs428.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova AI 429,IoT,https://novaai429.com,501-1000,Sarah Jones,sarah.jones@novaai429.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 430,HealthTech,https://alphaai430.com,11-50,Jane Brown,jane.brown@alphaai430.com,COO,Lead from batch import 2025-10-09
+Nova AI 431,AI/ML,https://novaai431.com,501-1000,Sarah Smith,sarah.smith@novaai431.com,COO,Lead from batch import 2025-10-09
+Apex Systems 432,Marketing,https://apexsystems432.com,501-1000,Michael Miller,michael.miller@apexsystems432.com,Head of Product,Lead from batch import 2025-10-09
+Prime AI 433,E-commerce,https://primeai433.com,11-50,Jane Miller,jane.miller@primeai433.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Cloud 434,IoT,https://apexcloud434.com,1-10,Emily Brown,emily.brown@apexcloud434.com,CTO,Lead from batch import 2025-10-09
+Apex Cloud 435,FinTech,https://apexcloud435.com,501-1000,Alex Davis,alex.davis@apexcloud435.com,COO,Lead from batch import 2025-10-09
+Nova AI 436,Marketing,https://novaai436.com,51-200,Jane Smith,jane.smith@novaai436.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Data 437,Marketing,https://quantumdata437.com,201-500,David Davis,david.davis@quantumdata437.com,COO,Lead from batch import 2025-10-09
+Nova Tech 438,EdTech,https://novatech438.com,1-10,John Johnson,john.johnson@novatech438.com,COO,Lead from batch import 2025-10-09
+Nova Systems 439,HealthTech,https://novasystems439.com,501-1000,Jane Jones,jane.jones@novasystems439.com,CTO,Lead from batch import 2025-10-09
+Alpha Cloud 440,FinTech,https://alphacloud440.com,51-200,David Johnson,david.johnson@alphacloud440.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 441,EdTech,https://alphaai441.com,11-50,John Brown,john.brown@alphaai441.com,Founder,Lead from batch import 2025-10-09
+Apex Cloud 442,Marketing,https://apexcloud442.com,51-200,John Williams,john.williams@apexcloud442.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Labs 443,EdTech,https://novalabs443.com,201-500,David Brown,david.brown@novalabs443.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Data 444,E-commerce,https://alphadata444.com,1-10,David Williams,david.williams@alphadata444.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Systems 445,AI/ML,https://sigmasystems445.com,501-1000,Emily Garcia,emily.garcia@sigmasystems445.com,Founder,Lead from batch import 2025-10-09
+Quantum Solutions 446,EdTech,https://quantumsolutions446.com,201-500,Michael Miller,michael.miller@quantumsolutions446.com,CTO,Lead from batch import 2025-10-09
+Alpha Solutions 447,HealthTech,https://alphasolutions447.com,11-50,Alex Davis,alex.davis@alphasolutions447.com,Marketing Director,Lead from batch import 2025-10-09
+Delta AI 448,IoT,https://deltaai448.com,51-200,David Williams,david.williams@deltaai448.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Tech 449,Marketing,https://gammatech449.com,11-50,David Smith,david.smith@gammatech449.com,CTO,Lead from batch import 2025-10-09
+Apex Systems 450,EdTech,https://apexsystems450.com,1-10,Sarah Jones,sarah.jones@apexsystems450.com,COO,Lead from batch import 2025-10-09
+Sigma Data 451,SaaS,https://sigmadata451.com,1-10,David Davis,david.davis@sigmadata451.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Cloud 452,FinTech,https://alphacloud452.com,1-10,Alex Davis,alex.davis@alphacloud452.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Tech 453,HealthTech,https://deltatech453.com,1000+,Sarah Davis,sarah.davis@deltatech453.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Labs 454,SaaS,https://sigmalabs454.com,51-200,John Davis,john.davis@sigmalabs454.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Data 455,AI/ML,https://apexdata455.com,201-500,Chris Miller,chris.miller@apexdata455.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Cloud 456,EdTech,https://apexcloud456.com,1-10,Alex Johnson,alex.johnson@apexcloud456.com,CTO,Lead from batch import 2025-10-09
+Beta Cloud 457,SaaS,https://betacloud457.com,1-10,Emily Garcia,emily.garcia@betacloud457.com,COO,Lead from batch import 2025-10-09
+Nova Tech 458,EdTech,https://novatech458.com,501-1000,David Davis,david.davis@novatech458.com,CTO,Lead from batch import 2025-10-09
+Gamma Data 459,EdTech,https://gammadata459.com,501-1000,Michael Davis,michael.davis@gammadata459.com,CEO,Lead from batch import 2025-10-09
+Beta Tech 460,Analytics,https://betatech460.com,1000+,Jane Johnson,jane.johnson@betatech460.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma AI 461,E-commerce,https://gammaai461.com,501-1000,Chris Johnson,chris.johnson@gammaai461.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Tech 462,Analytics,https://gammatech462.com,1000+,David Davis,david.davis@gammatech462.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Solutions 463,EdTech,https://apexsolutions463.com,51-200,John Johnson,john.johnson@apexsolutions463.com,Founder,Lead from batch import 2025-10-09
+Apex Tech 464,FinTech,https://apextech464.com,51-200,Michael Miller,michael.miller@apextech464.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Cloud 465,E-commerce,https://quantumcloud465.com,51-200,Emily Davis,emily.davis@quantumcloud465.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Systems 466,IoT,https://alphasystems466.com,51-200,Alex Davis,alex.davis@alphasystems466.com,CEO,Lead from batch import 2025-10-09
+Delta Data 467,EdTech,https://deltadata467.com,51-200,Michael Smith,michael.smith@deltadata467.com,Founder,Lead from batch import 2025-10-09
+Delta Labs 468,Analytics,https://deltalabs468.com,201-500,Emily Smith,emily.smith@deltalabs468.com,COO,Lead from batch import 2025-10-09
+Beta AI 469,HealthTech,https://betaai469.com,11-50,John Williams,john.williams@betaai469.com,COO,Lead from batch import 2025-10-09
+Alpha Solutions 470,HealthTech,https://alphasolutions470.com,1000+,John Davis,john.davis@alphasolutions470.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Systems 471,FinTech,https://sigmasystems471.com,1-10,Emily Davis,emily.davis@sigmasystems471.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Cloud 472,AI/ML,https://alphacloud472.com,51-200,Chris Williams,chris.williams@alphacloud472.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma AI 473,Cybersecurity,https://gammaai473.com,1000+,John Smith,john.smith@gammaai473.com,CTO,Lead from batch import 2025-10-09
+Apex Solutions 474,Analytics,https://apexsolutions474.com,1-10,David Miller,david.miller@apexsolutions474.com,Founder,Lead from batch import 2025-10-09
+Omega Labs 475,E-commerce,https://omegalabs475.com,11-50,John Johnson,john.johnson@omegalabs475.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Labs 476,FinTech,https://quantumlabs476.com,11-50,David Smith,david.smith@quantumlabs476.com,CTO,Lead from batch import 2025-10-09
+Apex AI 477,E-commerce,https://apexai477.com,201-500,David Smith,david.smith@apexai477.com,CTO,Lead from batch import 2025-10-09
+Prime Labs 478,SaaS,https://primelabs478.com,1-10,John Smith,john.smith@primelabs478.com,CEO,Lead from batch import 2025-10-09
+Sigma Solutions 479,Analytics,https://sigmasolutions479.com,201-500,Michael Jones,michael.jones@sigmasolutions479.com,CEO,Lead from batch import 2025-10-09
+Delta AI 480,E-commerce,https://deltaai480.com,501-1000,John Johnson,john.johnson@deltaai480.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 481,AI/ML,https://alphaai481.com,201-500,Chris Davis,chris.davis@alphaai481.com,CTO,Lead from batch import 2025-10-09
+Prime Data 482,E-commerce,https://primedata482.com,201-500,Emily Jones,emily.jones@primedata482.com,CEO,Lead from batch import 2025-10-09
+Beta Cloud 483,HealthTech,https://betacloud483.com,51-200,Michael Brown,michael.brown@betacloud483.com,Founder,Lead from batch import 2025-10-09
+Sigma Data 484,SaaS,https://sigmadata484.com,51-200,Alex Jones,alex.jones@sigmadata484.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Systems 485,Cybersecurity,https://sigmasystems485.com,1000+,Jane Williams,jane.williams@sigmasystems485.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Systems 486,Cybersecurity,https://primesystems486.com,1-10,Emily Davis,emily.davis@primesystems486.com,COO,Lead from batch import 2025-10-09
+Alpha Tech 487,Marketing,https://alphatech487.com,11-50,Jane Davis,jane.davis@alphatech487.com,Founder,Lead from batch import 2025-10-09
+Gamma AI 488,IoT,https://gammaai488.com,51-200,John Miller,john.miller@gammaai488.com,CTO,Lead from batch import 2025-10-09
+Alpha Labs 489,Marketing,https://alphalabs489.com,501-1000,John Davis,john.davis@alphalabs489.com,Founder,Lead from batch import 2025-10-09
+Nova Data 490,AI/ML,https://novadata490.com,1-10,Jane Garcia,jane.garcia@novadata490.com,COO,Lead from batch import 2025-10-09
+Prime Systems 491,EdTech,https://primesystems491.com,1-10,Chris Garcia,chris.garcia@primesystems491.com,CTO,Lead from batch import 2025-10-09
+Delta AI 492,HealthTech,https://deltaai492.com,11-50,Sarah Jones,sarah.jones@deltaai492.com,CTO,Lead from batch import 2025-10-09
+Delta Solutions 493,FinTech,https://deltasolutions493.com,11-50,Jane Williams,jane.williams@deltasolutions493.com,Head of Product,Lead from batch import 2025-10-09
+Apex AI 494,SaaS,https://apexai494.com,1-10,John Garcia,john.garcia@apexai494.com,Founder,Lead from batch import 2025-10-09
+Alpha Solutions 495,E-commerce,https://alphasolutions495.com,501-1000,David Brown,david.brown@alphasolutions495.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Systems 496,Analytics,https://quantumsystems496.com,201-500,John Miller,john.miller@quantumsystems496.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Data 497,FinTech,https://apexdata497.com,51-200,Emily Garcia,emily.garcia@apexdata497.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Labs 498,AI/ML,https://novalabs498.com,11-50,Chris Miller,chris.miller@novalabs498.com,COO,Lead from batch import 2025-10-09
+Beta Labs 499,AI/ML,https://betalabs499.com,501-1000,David Jones,david.jones@betalabs499.com,CTO,Lead from batch import 2025-10-09
+Sigma Tech 500,IoT,https://sigmatech500.com,1000+,Alex Johnson,alex.johnson@sigmatech500.com,CEO,Lead from batch import 2025-10-09
+Nova Data 501,AI/ML,https://novadata501.com,1-10,Jane Johnson,jane.johnson@novadata501.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Cloud 502,Marketing,https://deltacloud502.com,501-1000,Sarah Jones,sarah.jones@deltacloud502.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Cloud 503,Cybersecurity,https://betacloud503.com,51-200,Sarah Smith,sarah.smith@betacloud503.com,Marketing Director,Lead from batch import 2025-10-09
+Apex AI 504,E-commerce,https://apexai504.com,51-200,Alex Williams,alex.williams@apexai504.com,Head of Product,Lead from batch import 2025-10-09
+Beta Tech 505,Analytics,https://betatech505.com,1-10,Michael Johnson,michael.johnson@betatech505.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Cloud 506,HealthTech,https://novacloud506.com,11-50,Michael Brown,michael.brown@novacloud506.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 507,FinTech,https://alphaai507.com,1-10,Alex Brown,alex.brown@alphaai507.com,Marketing Director,Lead from batch import 2025-10-09
+Delta AI 508,Analytics,https://deltaai508.com,51-200,Emily Williams,emily.williams@deltaai508.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Data 509,Marketing,https://primedata509.com,1-10,Michael Smith,michael.smith@primedata509.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma AI 510,EdTech,https://gammaai510.com,1-10,Emily Jones,emily.jones@gammaai510.com,CEO,Lead from batch import 2025-10-09
+Delta Tech 511,EdTech,https://deltatech511.com,51-200,Sarah Garcia,sarah.garcia@deltatech511.com,Founder,Lead from batch import 2025-10-09
+Delta Solutions 512,Cybersecurity,https://deltasolutions512.com,1000+,Jane Jones,jane.jones@deltasolutions512.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Cloud 513,Analytics,https://gammacloud513.com,201-500,Sarah Brown,sarah.brown@gammacloud513.com,VP of Sales,Lead from batch import 2025-10-09
+Omega AI 514,E-commerce,https://omegaai514.com,11-50,Michael Williams,michael.williams@omegaai514.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma AI 515,Marketing,https://sigmaai515.com,501-1000,Emily Johnson,emily.johnson@sigmaai515.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Tech 516,FinTech,https://gammatech516.com,51-200,Sarah Davis,sarah.davis@gammatech516.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Systems 517,SaaS,https://sigmasystems517.com,501-1000,Sarah Miller,sarah.miller@sigmasystems517.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Cloud 518,FinTech,https://novacloud518.com,1-10,David Jones,david.jones@novacloud518.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Labs 519,Cybersecurity,https://deltalabs519.com,1-10,Chris Garcia,chris.garcia@deltalabs519.com,CTO,Lead from batch import 2025-10-09
+Gamma Cloud 520,SaaS,https://gammacloud520.com,501-1000,Chris Brown,chris.brown@gammacloud520.com,Founder,Lead from batch import 2025-10-09
+Gamma Labs 521,EdTech,https://gammalabs521.com,1000+,Chris Jones,chris.jones@gammalabs521.com,CTO,Lead from batch import 2025-10-09
+Quantum Labs 522,IoT,https://quantumlabs522.com,11-50,Emily Johnson,emily.johnson@quantumlabs522.com,CTO,Lead from batch import 2025-10-09
+Quantum Labs 523,E-commerce,https://quantumlabs523.com,501-1000,John Garcia,john.garcia@quantumlabs523.com,CEO,Lead from batch import 2025-10-09
+Delta Data 524,Analytics,https://deltadata524.com,501-1000,Jane Davis,jane.davis@deltadata524.com,COO,Lead from batch import 2025-10-09
+Beta Data 525,SaaS,https://betadata525.com,11-50,Sarah Garcia,sarah.garcia@betadata525.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Data 526,FinTech,https://quantumdata526.com,51-200,Chris Jones,chris.jones@quantumdata526.com,CTO,Lead from batch import 2025-10-09
+Nova Cloud 527,AI/ML,https://novacloud527.com,1-10,Alex Miller,alex.miller@novacloud527.com,Head of Product,Lead from batch import 2025-10-09
+Prime Cloud 528,HealthTech,https://primecloud528.com,51-200,Michael Davis,michael.davis@primecloud528.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Labs 529,Marketing,https://betalabs529.com,1000+,Sarah Smith,sarah.smith@betalabs529.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Tech 530,IoT,https://gammatech530.com,11-50,Michael Miller,michael.miller@gammatech530.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Tech 531,E-commerce,https://alphatech531.com,201-500,John Davis,john.davis@alphatech531.com,Head of Product,Lead from batch import 2025-10-09
+Omega Solutions 532,SaaS,https://omegasolutions532.com,1000+,Alex Jones,alex.jones@omegasolutions532.com,CEO,Lead from batch import 2025-10-09
+Omega AI 533,Cybersecurity,https://omegaai533.com,11-50,Jane Miller,jane.miller@omegaai533.com,CEO,Lead from batch import 2025-10-09
+Prime Solutions 534,Analytics,https://primesolutions534.com,1-10,Emily Miller,emily.miller@primesolutions534.com,CTO,Lead from batch import 2025-10-09
+Delta Solutions 535,IoT,https://deltasolutions535.com,201-500,Alex Jones,alex.jones@deltasolutions535.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Data 536,Marketing,https://primedata536.com,11-50,Sarah Miller,sarah.miller@primedata536.com,Head of Product,Lead from batch import 2025-10-09
+Quantum AI 537,FinTech,https://quantumai537.com,1-10,Sarah Smith,sarah.smith@quantumai537.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Tech 538,Analytics,https://novatech538.com,1000+,Emily Brown,emily.brown@novatech538.com,COO,Lead from batch import 2025-10-09
+Beta Solutions 539,E-commerce,https://betasolutions539.com,11-50,Sarah Garcia,sarah.garcia@betasolutions539.com,Head of Product,Lead from batch import 2025-10-09
+Omega Data 540,Cybersecurity,https://omegadata540.com,1000+,Emily Johnson,emily.johnson@omegadata540.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Data 541,Analytics,https://novadata541.com,1000+,Alex Williams,alex.williams@novadata541.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Solutions 542,E-commerce,https://novasolutions542.com,51-200,Jane Miller,jane.miller@novasolutions542.com,Head of Product,Lead from batch import 2025-10-09
+Gamma AI 543,AI/ML,https://gammaai543.com,11-50,Sarah Miller,sarah.miller@gammaai543.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 544,Marketing,https://omegatech544.com,201-500,Alex Miller,alex.miller@omegatech544.com,CEO,Lead from batch import 2025-10-09
+Nova Tech 545,Marketing,https://novatech545.com,51-200,Alex Davis,alex.davis@novatech545.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Labs 546,AI/ML,https://quantumlabs546.com,51-200,Emily Jones,emily.jones@quantumlabs546.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Data 547,AI/ML,https://deltadata547.com,1000+,David Williams,david.williams@deltadata547.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Data 548,AI/ML,https://primedata548.com,1-10,Michael Smith,michael.smith@primedata548.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 549,Analytics,https://alphaai549.com,51-200,Alex Miller,alex.miller@alphaai549.com,CEO,Lead from batch import 2025-10-09
+Delta AI 550,IoT,https://deltaai550.com,501-1000,Sarah Smith,sarah.smith@deltaai550.com,COO,Lead from batch import 2025-10-09
+Alpha Cloud 551,Analytics,https://alphacloud551.com,1000+,Michael Davis,michael.davis@alphacloud551.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Data 552,FinTech,https://gammadata552.com,501-1000,Alex Jones,alex.jones@gammadata552.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 553,Analytics,https://alphalabs553.com,501-1000,Alex Jones,alex.jones@alphalabs553.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Tech 554,Marketing,https://deltatech554.com,1-10,Alex Williams,alex.williams@deltatech554.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Systems 555,HealthTech,https://gammasystems555.com,1000+,Alex Garcia,alex.garcia@gammasystems555.com,Head of Product,Lead from batch import 2025-10-09
+Omega Cloud 556,Marketing,https://omegacloud556.com,1000+,Chris Miller,chris.miller@omegacloud556.com,CEO,Lead from batch import 2025-10-09
+Delta Cloud 557,E-commerce,https://deltacloud557.com,51-200,Emily Johnson,emily.johnson@deltacloud557.com,CTO,Lead from batch import 2025-10-09
+Apex Labs 558,Marketing,https://apexlabs558.com,11-50,Sarah Williams,sarah.williams@apexlabs558.com,CTO,Lead from batch import 2025-10-09
+Prime Labs 559,AI/ML,https://primelabs559.com,501-1000,David Brown,david.brown@primelabs559.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Tech 560,Marketing,https://betatech560.com,1000+,Chris Davis,chris.davis@betatech560.com,CEO,Lead from batch import 2025-10-09
+Sigma Tech 561,AI/ML,https://sigmatech561.com,11-50,Alex Garcia,alex.garcia@sigmatech561.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Solutions 562,AI/ML,https://primesolutions562.com,51-200,Jane Garcia,jane.garcia@primesolutions562.com,COO,Lead from batch import 2025-10-09
+Prime Labs 563,Cybersecurity,https://primelabs563.com,1-10,Emily Johnson,emily.johnson@primelabs563.com,COO,Lead from batch import 2025-10-09
+Gamma Data 564,E-commerce,https://gammadata564.com,201-500,Sarah Miller,sarah.miller@gammadata564.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Data 565,EdTech,https://sigmadata565.com,11-50,Michael Smith,michael.smith@sigmadata565.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Tech 566,EdTech,https://alphatech566.com,501-1000,David Garcia,david.garcia@alphatech566.com,COO,Lead from batch import 2025-10-09
+Quantum Solutions 567,E-commerce,https://quantumsolutions567.com,201-500,Alex Johnson,alex.johnson@quantumsolutions567.com,CEO,Lead from batch import 2025-10-09
+Apex Solutions 568,E-commerce,https://apexsolutions568.com,51-200,Michael Jones,michael.jones@apexsolutions568.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Solutions 569,E-commerce,https://betasolutions569.com,501-1000,Emily Jones,emily.jones@betasolutions569.com,CTO,Lead from batch import 2025-10-09
+Nova Solutions 570,Analytics,https://novasolutions570.com,1-10,David Garcia,david.garcia@novasolutions570.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega AI 571,Marketing,https://omegaai571.com,1000+,David Garcia,david.garcia@omegaai571.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Cloud 572,Analytics,https://quantumcloud572.com,11-50,Michael Garcia,michael.garcia@quantumcloud572.com,Founder,Lead from batch import 2025-10-09
+Prime Data 573,Marketing,https://primedata573.com,1-10,John Brown,john.brown@primedata573.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma Solutions 574,EdTech,https://gammasolutions574.com,11-50,Michael Garcia,michael.garcia@gammasolutions574.com,CEO,Lead from batch import 2025-10-09
+Delta Tech 575,IoT,https://deltatech575.com,11-50,Chris Smith,chris.smith@deltatech575.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Labs 576,EdTech,https://alphalabs576.com,1000+,David Johnson,david.johnson@alphalabs576.com,CTO,Lead from batch import 2025-10-09
+Gamma Labs 577,SaaS,https://gammalabs577.com,1-10,David Johnson,david.johnson@gammalabs577.com,COO,Lead from batch import 2025-10-09
+Omega Systems 578,Marketing,https://omegasystems578.com,51-200,John Garcia,john.garcia@omegasystems578.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Solutions 579,Marketing,https://omegasolutions579.com,201-500,Sarah Brown,sarah.brown@omegasolutions579.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Solutions 580,SaaS,https://gammasolutions580.com,1-10,John Davis,john.davis@gammasolutions580.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha AI 581,FinTech,https://alphaai581.com,1000+,John Williams,john.williams@alphaai581.com,CTO,Lead from batch import 2025-10-09
+Beta Labs 582,AI/ML,https://betalabs582.com,11-50,Michael Smith,michael.smith@betalabs582.com,Founder,Lead from batch import 2025-10-09
+Nova Tech 583,Analytics,https://novatech583.com,501-1000,Michael Williams,michael.williams@novatech583.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Systems 584,FinTech,https://apexsystems584.com,1000+,David Jones,david.jones@apexsystems584.com,Head of Product,Lead from batch import 2025-10-09
+Sigma AI 585,IoT,https://sigmaai585.com,501-1000,Alex Jones,alex.jones@sigmaai585.com,CTO,Lead from batch import 2025-10-09
+Prime Solutions 586,E-commerce,https://primesolutions586.com,501-1000,Emily Smith,emily.smith@primesolutions586.com,Founder,Lead from batch import 2025-10-09
+Prime Solutions 587,SaaS,https://primesolutions587.com,51-200,Alex Garcia,alex.garcia@primesolutions587.com,Head of Product,Lead from batch import 2025-10-09
+Nova AI 588,E-commerce,https://novaai588.com,51-200,Emily Miller,emily.miller@novaai588.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Labs 589,Marketing,https://gammalabs589.com,1-10,John Garcia,john.garcia@gammalabs589.com,Founder,Lead from batch import 2025-10-09
+Apex Labs 590,AI/ML,https://apexlabs590.com,51-200,Alex Jones,alex.jones@apexlabs590.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Systems 591,FinTech,https://deltasystems591.com,11-50,Jane Garcia,jane.garcia@deltasystems591.com,Head of Product,Lead from batch import 2025-10-09
+Delta Systems 592,IoT,https://deltasystems592.com,201-500,John Williams,john.williams@deltasystems592.com,COO,Lead from batch import 2025-10-09
+Sigma AI 593,IoT,https://sigmaai593.com,201-500,John Miller,john.miller@sigmaai593.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Systems 594,Analytics,https://alphasystems594.com,501-1000,Michael Jones,michael.jones@alphasystems594.com,Head of Product,Lead from batch import 2025-10-09
+Prime Labs 595,E-commerce,https://primelabs595.com,11-50,Sarah Jones,sarah.jones@primelabs595.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Tech 596,FinTech,https://deltatech596.com,51-200,Alex Smith,alex.smith@deltatech596.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Tech 597,AI/ML,https://gammatech597.com,1000+,John Miller,john.miller@gammatech597.com,Founder,Lead from batch import 2025-10-09
+Sigma AI 598,Marketing,https://sigmaai598.com,51-200,Emily Jones,emily.jones@sigmaai598.com,COO,Lead from batch import 2025-10-09
+Apex Labs 599,FinTech,https://apexlabs599.com,1000+,Emily Garcia,emily.garcia@apexlabs599.com,Marketing Director,Lead from batch import 2025-10-09
+Beta AI 600,IoT,https://betaai600.com,11-50,Sarah Miller,sarah.miller@betaai600.com,Founder,Lead from batch import 2025-10-09
+Delta Cloud 601,Marketing,https://deltacloud601.com,201-500,Alex Garcia,alex.garcia@deltacloud601.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 602,Analytics,https://alphaai602.com,501-1000,Chris Johnson,chris.johnson@alphaai602.com,Founder,Lead from batch import 2025-10-09
+Alpha AI 603,SaaS,https://alphaai603.com,51-200,Chris Davis,chris.davis@alphaai603.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Systems 604,Cybersecurity,https://gammasystems604.com,11-50,Chris Davis,chris.davis@gammasystems604.com,COO,Lead from batch import 2025-10-09
+Gamma Labs 605,AI/ML,https://gammalabs605.com,1000+,Michael Smith,michael.smith@gammalabs605.com,COO,Lead from batch import 2025-10-09
+Omega Cloud 606,E-commerce,https://omegacloud606.com,1-10,Jane Smith,jane.smith@omegacloud606.com,COO,Lead from batch import 2025-10-09
+Gamma AI 607,EdTech,https://gammaai607.com,51-200,David Brown,david.brown@gammaai607.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Systems 608,FinTech,https://gammasystems608.com,501-1000,John Davis,john.davis@gammasystems608.com,Marketing Director,Lead from batch import 2025-10-09
+Nova AI 609,FinTech,https://novaai609.com,201-500,Sarah Davis,sarah.davis@novaai609.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Labs 610,Analytics,https://primelabs610.com,1-10,Jane Miller,jane.miller@primelabs610.com,CTO,Lead from batch import 2025-10-09
+Quantum Solutions 611,AI/ML,https://quantumsolutions611.com,1000+,Sarah Smith,sarah.smith@quantumsolutions611.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Cloud 612,AI/ML,https://omegacloud612.com,51-200,Sarah Brown,sarah.brown@omegacloud612.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Solutions 613,HealthTech,https://deltasolutions613.com,501-1000,Chris Brown,chris.brown@deltasolutions613.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Labs 614,SaaS,https://quantumlabs614.com,51-200,Michael Jones,michael.jones@quantumlabs614.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Labs 615,E-commerce,https://alphalabs615.com,201-500,John Jones,john.jones@alphalabs615.com,VP of Sales,Lead from batch import 2025-10-09
+Prime AI 616,FinTech,https://primeai616.com,11-50,Jane Williams,jane.williams@primeai616.com,CTO,Lead from batch import 2025-10-09
+Omega Labs 617,SaaS,https://omegalabs617.com,51-200,John Jones,john.jones@omegalabs617.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Cloud 618,E-commerce,https://deltacloud618.com,501-1000,Emily Miller,emily.miller@deltacloud618.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Systems 619,Marketing,https://omegasystems619.com,1000+,Michael Garcia,michael.garcia@omegasystems619.com,COO,Lead from batch import 2025-10-09
+Delta Data 620,AI/ML,https://deltadata620.com,201-500,Michael Jones,michael.jones@deltadata620.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Labs 621,E-commerce,https://gammalabs621.com,11-50,Michael Jones,michael.jones@gammalabs621.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Data 622,HealthTech,https://omegadata622.com,501-1000,David Johnson,david.johnson@omegadata622.com,Founder,Lead from batch import 2025-10-09
+Nova Data 623,HealthTech,https://novadata623.com,501-1000,John Brown,john.brown@novadata623.com,Founder,Lead from batch import 2025-10-09
+Quantum Cloud 624,E-commerce,https://quantumcloud624.com,1-10,Alex Miller,alex.miller@quantumcloud624.com,Founder,Lead from batch import 2025-10-09
+Alpha AI 625,Analytics,https://alphaai625.com,1000+,Sarah Jones,sarah.jones@alphaai625.com,COO,Lead from batch import 2025-10-09
+Sigma Systems 626,HealthTech,https://sigmasystems626.com,501-1000,John Smith,john.smith@sigmasystems626.com,CEO,Lead from batch import 2025-10-09
+Quantum Labs 627,SaaS,https://quantumlabs627.com,501-1000,Alex Garcia,alex.garcia@quantumlabs627.com,COO,Lead from batch import 2025-10-09
+Prime AI 628,Analytics,https://primeai628.com,1-10,Sarah Garcia,sarah.garcia@primeai628.com,CEO,Lead from batch import 2025-10-09
+Delta Tech 629,EdTech,https://deltatech629.com,1-10,John Williams,john.williams@deltatech629.com,COO,Lead from batch import 2025-10-09
+Gamma Data 630,IoT,https://gammadata630.com,1-10,Emily Johnson,emily.johnson@gammadata630.com,COO,Lead from batch import 2025-10-09
+Delta Tech 631,SaaS,https://deltatech631.com,1-10,Chris Brown,chris.brown@deltatech631.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Tech 632,Marketing,https://betatech632.com,1000+,Jane Smith,jane.smith@betatech632.com,CTO,Lead from batch import 2025-10-09
+Prime Solutions 633,AI/ML,https://primesolutions633.com,51-200,Emily Garcia,emily.garcia@primesolutions633.com,CEO,Lead from batch import 2025-10-09
+Alpha Data 634,Marketing,https://alphadata634.com,501-1000,Jane Smith,jane.smith@alphadata634.com,Founder,Lead from batch import 2025-10-09
+Omega Labs 635,E-commerce,https://omegalabs635.com,1000+,Alex Miller,alex.miller@omegalabs635.com,CTO,Lead from batch import 2025-10-09
+Quantum Tech 636,HealthTech,https://quantumtech636.com,51-200,Sarah Jones,sarah.jones@quantumtech636.com,CEO,Lead from batch import 2025-10-09
+Alpha AI 637,EdTech,https://alphaai637.com,11-50,Jane Williams,jane.williams@alphaai637.com,Founder,Lead from batch import 2025-10-09
+Quantum Solutions 638,SaaS,https://quantumsolutions638.com,51-200,Chris Garcia,chris.garcia@quantumsolutions638.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Systems 639,AI/ML,https://apexsystems639.com,201-500,Chris Brown,chris.brown@apexsystems639.com,CTO,Lead from batch import 2025-10-09
+Apex Solutions 640,HealthTech,https://apexsolutions640.com,1-10,Chris Davis,chris.davis@apexsolutions640.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 641,Cybersecurity,https://gammaai641.com,1000+,John Garcia,john.garcia@gammaai641.com,Founder,Lead from batch import 2025-10-09
+Alpha Tech 642,AI/ML,https://alphatech642.com,201-500,Emily Smith,emily.smith@alphatech642.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 643,Cybersecurity,https://gammaai643.com,1-10,Jane Jones,jane.jones@gammaai643.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta AI 644,Marketing,https://deltaai644.com,201-500,Alex Smith,alex.smith@deltaai644.com,COO,Lead from batch import 2025-10-09
+Omega Systems 645,IoT,https://omegasystems645.com,1000+,Alex Williams,alex.williams@omegasystems645.com,CTO,Lead from batch import 2025-10-09
+Quantum Labs 646,E-commerce,https://quantumlabs646.com,501-1000,Jane Garcia,jane.garcia@quantumlabs646.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 647,Cybersecurity,https://omegatech647.com,201-500,Michael Brown,michael.brown@omegatech647.com,COO,Lead from batch import 2025-10-09
+Gamma Labs 648,AI/ML,https://gammalabs648.com,201-500,David Jones,david.jones@gammalabs648.com,Marketing Director,Lead from batch import 2025-10-09
+Prime AI 649,IoT,https://primeai649.com,51-200,Michael Davis,michael.davis@primeai649.com,CTO,Lead from batch import 2025-10-09
+Gamma Tech 650,Analytics,https://gammatech650.com,201-500,Michael Jones,michael.jones@gammatech650.com,CTO,Lead from batch import 2025-10-09
+Gamma AI 651,FinTech,https://gammaai651.com,1-10,Michael Brown,michael.brown@gammaai651.com,CTO,Lead from batch import 2025-10-09
+Omega AI 652,AI/ML,https://omegaai652.com,1-10,Michael Smith,michael.smith@omegaai652.com,COO,Lead from batch import 2025-10-09
+Alpha Solutions 653,HealthTech,https://alphasolutions653.com,1-10,Chris Jones,chris.jones@alphasolutions653.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Tech 654,HealthTech,https://sigmatech654.com,51-200,David Williams,david.williams@sigmatech654.com,CEO,Lead from batch import 2025-10-09
+Delta AI 655,E-commerce,https://deltaai655.com,51-200,David Johnson,david.johnson@deltaai655.com,COO,Lead from batch import 2025-10-09
+Quantum Systems 656,E-commerce,https://quantumsystems656.com,501-1000,Jane Miller,jane.miller@quantumsystems656.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma AI 657,Analytics,https://sigmaai657.com,1000+,Chris Brown,chris.brown@sigmaai657.com,CEO,Lead from batch import 2025-10-09
+Apex Systems 658,Marketing,https://apexsystems658.com,501-1000,Michael Johnson,michael.johnson@apexsystems658.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Tech 659,E-commerce,https://primetech659.com,1-10,Chris Miller,chris.miller@primetech659.com,Head of Product,Lead from batch import 2025-10-09
+Delta Data 660,Analytics,https://deltadata660.com,51-200,David Davis,david.davis@deltadata660.com,COO,Lead from batch import 2025-10-09
+Alpha AI 661,AI/ML,https://alphaai661.com,501-1000,Jane Miller,jane.miller@alphaai661.com,Head of Product,Lead from batch import 2025-10-09
+Omega Data 662,FinTech,https://omegadata662.com,201-500,John Jones,john.jones@omegadata662.com,CEO,Lead from batch import 2025-10-09
+Omega AI 663,Marketing,https://omegaai663.com,51-200,Jane Garcia,jane.garcia@omegaai663.com,CTO,Lead from batch import 2025-10-09
+Gamma Labs 664,SaaS,https://gammalabs664.com,501-1000,Jane Davis,jane.davis@gammalabs664.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Labs 665,HealthTech,https://alphalabs665.com,1000+,Michael Miller,michael.miller@alphalabs665.com,Head of Product,Lead from batch import 2025-10-09
+Sigma AI 666,IoT,https://sigmaai666.com,51-200,David Smith,david.smith@sigmaai666.com,CEO,Lead from batch import 2025-10-09
+Quantum Solutions 667,EdTech,https://quantumsolutions667.com,501-1000,Chris Jones,chris.jones@quantumsolutions667.com,CTO,Lead from batch import 2025-10-09
+Nova Solutions 668,HealthTech,https://novasolutions668.com,1-10,Michael Williams,michael.williams@novasolutions668.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Labs 669,Marketing,https://betalabs669.com,1-10,Chris Williams,chris.williams@betalabs669.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Systems 670,AI/ML,https://betasystems670.com,51-200,Emily Johnson,emily.johnson@betasystems670.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Cloud 671,AI/ML,https://sigmacloud671.com,1000+,John Smith,john.smith@sigmacloud671.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Labs 672,AI/ML,https://quantumlabs672.com,1000+,Jane Williams,jane.williams@quantumlabs672.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Systems 673,IoT,https://omegasystems673.com,201-500,Sarah Miller,sarah.miller@omegasystems673.com,CEO,Lead from batch import 2025-10-09
+Nova AI 674,SaaS,https://novaai674.com,11-50,David Johnson,david.johnson@novaai674.com,Head of Product,Lead from batch import 2025-10-09
+Nova Data 675,HealthTech,https://novadata675.com,1-10,Jane Williams,jane.williams@novadata675.com,CTO,Lead from batch import 2025-10-09
+Beta Data 676,EdTech,https://betadata676.com,11-50,Alex Miller,alex.miller@betadata676.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Systems 677,EdTech,https://deltasystems677.com,11-50,David Garcia,david.garcia@deltasystems677.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Data 678,FinTech,https://quantumdata678.com,51-200,Emily Davis,emily.davis@quantumdata678.com,COO,Lead from batch import 2025-10-09
+Delta Cloud 679,Analytics,https://deltacloud679.com,51-200,John Brown,john.brown@deltacloud679.com,Head of Product,Lead from batch import 2025-10-09
+Apex Solutions 680,EdTech,https://apexsolutions680.com,201-500,Sarah Brown,sarah.brown@apexsolutions680.com,CEO,Lead from batch import 2025-10-09
+Apex Cloud 681,SaaS,https://apexcloud681.com,501-1000,Jane Johnson,jane.johnson@apexcloud681.com,COO,Lead from batch import 2025-10-09
+Beta AI 682,Marketing,https://betaai682.com,1000+,John Jones,john.jones@betaai682.com,Founder,Lead from batch import 2025-10-09
+Nova AI 683,Cybersecurity,https://novaai683.com,201-500,David Jones,david.jones@novaai683.com,Head of Product,Lead from batch import 2025-10-09
+Omega Labs 684,E-commerce,https://omegalabs684.com,1000+,Sarah Garcia,sarah.garcia@omegalabs684.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Systems 685,E-commerce,https://primesystems685.com,1-10,Michael Johnson,michael.johnson@primesystems685.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Solutions 686,E-commerce,https://apexsolutions686.com,11-50,Jane Garcia,jane.garcia@apexsolutions686.com,COO,Lead from batch import 2025-10-09
+Omega Cloud 687,FinTech,https://omegacloud687.com,11-50,David Williams,david.williams@omegacloud687.com,COO,Lead from batch import 2025-10-09
+Nova Data 688,AI/ML,https://novadata688.com,1000+,Sarah Williams,sarah.williams@novadata688.com,CEO,Lead from batch import 2025-10-09
+Apex Data 689,E-commerce,https://apexdata689.com,51-200,David Davis,david.davis@apexdata689.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Cloud 690,Cybersecurity,https://omegacloud690.com,201-500,Michael Williams,michael.williams@omegacloud690.com,COO,Lead from batch import 2025-10-09
+Quantum Systems 691,SaaS,https://quantumsystems691.com,501-1000,Michael Jones,michael.jones@quantumsystems691.com,CEO,Lead from batch import 2025-10-09
+Alpha Data 692,IoT,https://alphadata692.com,1000+,Sarah Williams,sarah.williams@alphadata692.com,CEO,Lead from batch import 2025-10-09
+Quantum Labs 693,Cybersecurity,https://quantumlabs693.com,1000+,Chris Smith,chris.smith@quantumlabs693.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Solutions 694,HealthTech,https://omegasolutions694.com,501-1000,Jane Jones,jane.jones@omegasolutions694.com,COO,Lead from batch import 2025-10-09
+Prime Labs 695,FinTech,https://primelabs695.com,1000+,Chris Brown,chris.brown@primelabs695.com,COO,Lead from batch import 2025-10-09
+Nova Data 696,AI/ML,https://novadata696.com,501-1000,Emily Johnson,emily.johnson@novadata696.com,CTO,Lead from batch import 2025-10-09
+Apex Solutions 697,Analytics,https://apexsolutions697.com,201-500,Jane Jones,jane.jones@apexsolutions697.com,Founder,Lead from batch import 2025-10-09
+Nova Systems 698,Analytics,https://novasystems698.com,1-10,Chris Smith,chris.smith@novasystems698.com,Founder,Lead from batch import 2025-10-09
+Apex Data 699,IoT,https://apexdata699.com,501-1000,John Williams,john.williams@apexdata699.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Data 700,Analytics,https://quantumdata700.com,501-1000,Alex Miller,alex.miller@quantumdata700.com,COO,Lead from batch import 2025-10-09
+Nova Systems 701,E-commerce,https://novasystems701.com,1-10,Jane Smith,jane.smith@novasystems701.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Labs 702,Cybersecurity,https://apexlabs702.com,11-50,Alex Smith,alex.smith@apexlabs702.com,VP of Sales,Lead from batch import 2025-10-09
+Omega Solutions 703,HealthTech,https://omegasolutions703.com,501-1000,Chris Williams,chris.williams@omegasolutions703.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Tech 704,EdTech,https://omegatech704.com,1000+,Michael Garcia,michael.garcia@omegatech704.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Labs 705,Analytics,https://gammalabs705.com,1-10,Michael Smith,michael.smith@gammalabs705.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Solutions 706,FinTech,https://alphasolutions706.com,201-500,Jane Miller,jane.miller@alphasolutions706.com,CEO,Lead from batch import 2025-10-09
+Nova Solutions 707,AI/ML,https://novasolutions707.com,501-1000,Chris Williams,chris.williams@novasolutions707.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Tech 708,E-commerce,https://gammatech708.com,11-50,John Garcia,john.garcia@gammatech708.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Solutions 709,SaaS,https://novasolutions709.com,1000+,Jane Brown,jane.brown@novasolutions709.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma AI 710,FinTech,https://gammaai710.com,1-10,Jane Brown,jane.brown@gammaai710.com,VP of Sales,Lead from batch import 2025-10-09
+Apex AI 711,SaaS,https://apexai711.com,51-200,Emily Johnson,emily.johnson@apexai711.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Tech 712,Marketing,https://apextech712.com,51-200,John Garcia,john.garcia@apextech712.com,CEO,Lead from batch import 2025-10-09
+Beta Data 713,Analytics,https://betadata713.com,201-500,John Garcia,john.garcia@betadata713.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha AI 714,AI/ML,https://alphaai714.com,1-10,Chris Brown,chris.brown@alphaai714.com,Founder,Lead from batch import 2025-10-09
+Gamma Data 715,FinTech,https://gammadata715.com,1000+,Emily Miller,emily.miller@gammadata715.com,COO,Lead from batch import 2025-10-09
+Quantum Systems 716,HealthTech,https://quantumsystems716.com,11-50,Michael Smith,michael.smith@quantumsystems716.com,CTO,Lead from batch import 2025-10-09
+Sigma Tech 717,FinTech,https://sigmatech717.com,201-500,Chris Jones,chris.jones@sigmatech717.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Data 718,Marketing,https://apexdata718.com,51-200,Alex Johnson,alex.johnson@apexdata718.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Systems 719,HealthTech,https://betasystems719.com,51-200,Sarah Smith,sarah.smith@betasystems719.com,COO,Lead from batch import 2025-10-09
+Beta Data 720,Analytics,https://betadata720.com,1-10,Chris Jones,chris.jones@betadata720.com,CTO,Lead from batch import 2025-10-09
+Omega AI 721,SaaS,https://omegaai721.com,501-1000,Michael Williams,michael.williams@omegaai721.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Data 722,EdTech,https://quantumdata722.com,501-1000,Jane Jones,jane.jones@quantumdata722.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma AI 723,Analytics,https://sigmaai723.com,11-50,David Johnson,david.johnson@sigmaai723.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Systems 724,Cybersecurity,https://gammasystems724.com,51-200,Emily Smith,emily.smith@gammasystems724.com,COO,Lead from batch import 2025-10-09
+Gamma Systems 725,Analytics,https://gammasystems725.com,501-1000,Emily Jones,emily.jones@gammasystems725.com,Head of Product,Lead from batch import 2025-10-09
+Apex Labs 726,E-commerce,https://apexlabs726.com,11-50,Sarah Williams,sarah.williams@apexlabs726.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Systems 727,AI/ML,https://quantumsystems727.com,51-200,Emily Brown,emily.brown@quantumsystems727.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Cloud 728,Marketing,https://omegacloud728.com,1000+,Alex Smith,alex.smith@omegacloud728.com,CTO,Lead from batch import 2025-10-09
+Gamma Data 729,SaaS,https://gammadata729.com,201-500,Jane Davis,jane.davis@gammadata729.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Tech 730,Analytics,https://sigmatech730.com,201-500,John Jones,john.jones@sigmatech730.com,CTO,Lead from batch import 2025-10-09
+Nova Solutions 731,EdTech,https://novasolutions731.com,1000+,Michael Jones,michael.jones@novasolutions731.com,CTO,Lead from batch import 2025-10-09
+Quantum Tech 732,HealthTech,https://quantumtech732.com,501-1000,Michael Smith,michael.smith@quantumtech732.com,Founder,Lead from batch import 2025-10-09
+Nova Solutions 733,Cybersecurity,https://novasolutions733.com,51-200,Emily Smith,emily.smith@novasolutions733.com,COO,Lead from batch import 2025-10-09
+Apex Labs 734,Marketing,https://apexlabs734.com,1000+,Michael Garcia,michael.garcia@apexlabs734.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Systems 735,FinTech,https://novasystems735.com,1000+,John Johnson,john.johnson@novasystems735.com,Head of Product,Lead from batch import 2025-10-09
+Apex Systems 736,Cybersecurity,https://apexsystems736.com,51-200,Alex Davis,alex.davis@apexsystems736.com,COO,Lead from batch import 2025-10-09
+Prime Tech 737,E-commerce,https://primetech737.com,51-200,Michael Williams,michael.williams@primetech737.com,CEO,Lead from batch import 2025-10-09
+Omega Solutions 738,EdTech,https://omegasolutions738.com,501-1000,Emily Miller,emily.miller@omegasolutions738.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Labs 739,EdTech,https://alphalabs739.com,51-200,David Brown,david.brown@alphalabs739.com,CTO,Lead from batch import 2025-10-09
+Omega Tech 740,E-commerce,https://omegatech740.com,501-1000,Emily Garcia,emily.garcia@omegatech740.com,CEO,Lead from batch import 2025-10-09
+Quantum Systems 741,IoT,https://quantumsystems741.com,1-10,Jane Brown,jane.brown@quantumsystems741.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Labs 742,Cybersecurity,https://quantumlabs742.com,201-500,Michael Jones,michael.jones@quantumlabs742.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Tech 743,AI/ML,https://primetech743.com,1000+,Chris Smith,chris.smith@primetech743.com,Founder,Lead from batch import 2025-10-09
+Beta Data 744,E-commerce,https://betadata744.com,51-200,Emily Garcia,emily.garcia@betadata744.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Labs 745,Marketing,https://primelabs745.com,1-10,Sarah Brown,sarah.brown@primelabs745.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Cloud 746,Marketing,https://novacloud746.com,51-200,Emily Williams,emily.williams@novacloud746.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Tech 747,E-commerce,https://betatech747.com,51-200,David Garcia,david.garcia@betatech747.com,COO,Lead from batch import 2025-10-09
+Prime Labs 748,E-commerce,https://primelabs748.com,1000+,Jane Johnson,jane.johnson@primelabs748.com,COO,Lead from batch import 2025-10-09
+Delta Cloud 749,Marketing,https://deltacloud749.com,1000+,Chris Williams,chris.williams@deltacloud749.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Labs 750,HealthTech,https://alphalabs750.com,1000+,David Garcia,david.garcia@alphalabs750.com,Head of Product,Lead from batch import 2025-10-09
+Delta Tech 751,SaaS,https://deltatech751.com,1000+,Chris Williams,chris.williams@deltatech751.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Data 752,AI/ML,https://sigmadata752.com,1-10,Alex Smith,alex.smith@sigmadata752.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha AI 753,Marketing,https://alphaai753.com,201-500,Sarah Smith,sarah.smith@alphaai753.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma Data 754,AI/ML,https://gammadata754.com,501-1000,Michael Brown,michael.brown@gammadata754.com,Head of Product,Lead from batch import 2025-10-09
+Delta Labs 755,FinTech,https://deltalabs755.com,11-50,Chris Smith,chris.smith@deltalabs755.com,VP of Sales,Lead from batch import 2025-10-09
+Gamma AI 756,EdTech,https://gammaai756.com,501-1000,David Johnson,david.johnson@gammaai756.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Tech 757,E-commerce,https://alphatech757.com,1-10,Alex Brown,alex.brown@alphatech757.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Solutions 758,IoT,https://apexsolutions758.com,1000+,Chris Smith,chris.smith@apexsolutions758.com,COO,Lead from batch import 2025-10-09
+Quantum Cloud 759,Cybersecurity,https://quantumcloud759.com,1000+,Emily Miller,emily.miller@quantumcloud759.com,COO,Lead from batch import 2025-10-09
+Quantum Cloud 760,HealthTech,https://quantumcloud760.com,501-1000,Emily Williams,emily.williams@quantumcloud760.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega AI 761,IoT,https://omegaai761.com,11-50,Alex Smith,alex.smith@omegaai761.com,VP of Engineering,Lead from batch import 2025-10-09
+Sigma Data 762,Cybersecurity,https://sigmadata762.com,11-50,Alex Garcia,alex.garcia@sigmadata762.com,Head of Product,Lead from batch import 2025-10-09
+Nova Tech 763,E-commerce,https://novatech763.com,1-10,David Miller,david.miller@novatech763.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma AI 764,EdTech,https://gammaai764.com,1000+,Michael Brown,michael.brown@gammaai764.com,Founder,Lead from batch import 2025-10-09
+Prime Tech 765,Cybersecurity,https://primetech765.com,201-500,John Smith,john.smith@primetech765.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Cloud 766,EdTech,https://primecloud766.com,11-50,John Miller,john.miller@primecloud766.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Solutions 767,E-commerce,https://quantumsolutions767.com,1-10,David Davis,david.davis@quantumsolutions767.com,VP of Sales,Lead from batch import 2025-10-09
+Apex Cloud 768,Cybersecurity,https://apexcloud768.com,1000+,Sarah Miller,sarah.miller@apexcloud768.com,CTO,Lead from batch import 2025-10-09
+Gamma Data 769,Analytics,https://gammadata769.com,1-10,David Brown,david.brown@gammadata769.com,Founder,Lead from batch import 2025-10-09
+Prime Data 770,Analytics,https://primedata770.com,1000+,Emily Jones,emily.jones@primedata770.com,CTO,Lead from batch import 2025-10-09
+Apex Systems 771,EdTech,https://apexsystems771.com,51-200,Alex Garcia,alex.garcia@apexsystems771.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Cloud 772,IoT,https://novacloud772.com,201-500,Sarah Johnson,sarah.johnson@novacloud772.com,COO,Lead from batch import 2025-10-09
+Gamma Labs 773,SaaS,https://gammalabs773.com,1-10,David Smith,david.smith@gammalabs773.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Systems 774,FinTech,https://apexsystems774.com,1-10,Emily Jones,emily.jones@apexsystems774.com,COO,Lead from batch import 2025-10-09
+Quantum Data 775,E-commerce,https://quantumdata775.com,1-10,Alex Williams,alex.williams@quantumdata775.com,COO,Lead from batch import 2025-10-09
+Sigma Tech 776,FinTech,https://sigmatech776.com,51-200,John Brown,john.brown@sigmatech776.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Tech 777,AI/ML,https://alphatech777.com,501-1000,John Smith,john.smith@alphatech777.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Cloud 778,Analytics,https://betacloud778.com,1000+,Chris Williams,chris.williams@betacloud778.com,Founder,Lead from batch import 2025-10-09
+Apex Data 779,SaaS,https://apexdata779.com,51-200,Michael Miller,michael.miller@apexdata779.com,Head of Product,Lead from batch import 2025-10-09
+Delta Solutions 780,AI/ML,https://deltasolutions780.com,501-1000,David Garcia,david.garcia@deltasolutions780.com,Founder,Lead from batch import 2025-10-09
+Gamma AI 781,AI/ML,https://gammaai781.com,11-50,John Jones,john.jones@gammaai781.com,Founder,Lead from batch import 2025-10-09
+Prime Systems 782,E-commerce,https://primesystems782.com,1-10,Chris Smith,chris.smith@primesystems782.com,Founder,Lead from batch import 2025-10-09
+Omega Data 783,FinTech,https://omegadata783.com,501-1000,Emily Miller,emily.miller@omegadata783.com,Founder,Lead from batch import 2025-10-09
+Gamma Labs 784,HealthTech,https://gammalabs784.com,11-50,Alex Johnson,alex.johnson@gammalabs784.com,CEO,Lead from batch import 2025-10-09
+Alpha Labs 785,SaaS,https://alphalabs785.com,1-10,Emily Smith,emily.smith@alphalabs785.com,CEO,Lead from batch import 2025-10-09
+Omega Systems 786,SaaS,https://omegasystems786.com,11-50,Emily Miller,emily.miller@omegasystems786.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Cloud 787,Cybersecurity,https://quantumcloud787.com,51-200,Emily Brown,emily.brown@quantumcloud787.com,CEO,Lead from batch import 2025-10-09
+Nova Solutions 788,IoT,https://novasolutions788.com,1-10,Alex Miller,alex.miller@novasolutions788.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Systems 789,FinTech,https://novasystems789.com,1000+,Michael Miller,michael.miller@novasystems789.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Labs 790,IoT,https://sigmalabs790.com,201-500,Alex Brown,alex.brown@sigmalabs790.com,CTO,Lead from batch import 2025-10-09
+Nova Cloud 791,E-commerce,https://novacloud791.com,201-500,Michael Miller,michael.miller@novacloud791.com,VP of Sales,Lead from batch import 2025-10-09
+Omega Data 792,IoT,https://omegadata792.com,51-200,John Davis,john.davis@omegadata792.com,COO,Lead from batch import 2025-10-09
+Gamma Solutions 793,FinTech,https://gammasolutions793.com,11-50,John Smith,john.smith@gammasolutions793.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Systems 794,SaaS,https://apexsystems794.com,501-1000,Sarah Garcia,sarah.garcia@apexsystems794.com,Head of Product,Lead from batch import 2025-10-09
+Omega Tech 795,Marketing,https://omegatech795.com,11-50,Jane Jones,jane.jones@omegatech795.com,CEO,Lead from batch import 2025-10-09
+Quantum AI 796,Analytics,https://quantumai796.com,1000+,John Johnson,john.johnson@quantumai796.com,Founder,Lead from batch import 2025-10-09
+Gamma Solutions 797,FinTech,https://gammasolutions797.com,51-200,Michael Brown,michael.brown@gammasolutions797.com,COO,Lead from batch import 2025-10-09
+Prime Systems 798,SaaS,https://primesystems798.com,11-50,John Jones,john.jones@primesystems798.com,Head of Product,Lead from batch import 2025-10-09
+Prime Tech 799,Analytics,https://primetech799.com,1000+,Sarah Johnson,sarah.johnson@primetech799.com,CEO,Lead from batch import 2025-10-09
+Delta Systems 800,FinTech,https://deltasystems800.com,1000+,Michael Jones,michael.jones@deltasystems800.com,CTO,Lead from batch import 2025-10-09
+Omega Cloud 801,EdTech,https://omegacloud801.com,1-10,Michael Smith,michael.smith@omegacloud801.com,CTO,Lead from batch import 2025-10-09
+Nova Cloud 802,E-commerce,https://novacloud802.com,11-50,John Davis,john.davis@novacloud802.com,Founder,Lead from batch import 2025-10-09
+Sigma Cloud 803,IoT,https://sigmacloud803.com,51-200,Chris Garcia,chris.garcia@sigmacloud803.com,COO,Lead from batch import 2025-10-09
+Sigma Data 804,FinTech,https://sigmadata804.com,1000+,Michael Jones,michael.jones@sigmadata804.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Tech 805,EdTech,https://novatech805.com,501-1000,John Brown,john.brown@novatech805.com,VP of Engineering,Lead from batch import 2025-10-09
+Omega Cloud 806,FinTech,https://omegacloud806.com,201-500,Jane Johnson,jane.johnson@omegacloud806.com,CEO,Lead from batch import 2025-10-09
+Prime Data 807,E-commerce,https://primedata807.com,201-500,David Miller,david.miller@primedata807.com,Head of Product,Lead from batch import 2025-10-09
+Omega Systems 808,HealthTech,https://omegasystems808.com,11-50,Jane Williams,jane.williams@omegasystems808.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Labs 809,Cybersecurity,https://quantumlabs809.com,501-1000,Emily Garcia,emily.garcia@quantumlabs809.com,Founder,Lead from batch import 2025-10-09
+Nova Labs 810,IoT,https://novalabs810.com,51-200,John Garcia,john.garcia@novalabs810.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Data 811,SaaS,https://betadata811.com,11-50,Michael Garcia,michael.garcia@betadata811.com,CTO,Lead from batch import 2025-10-09
+Nova Data 812,Marketing,https://novadata812.com,501-1000,Jane Garcia,jane.garcia@novadata812.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Systems 813,HealthTech,https://betasystems813.com,501-1000,Michael Johnson,michael.johnson@betasystems813.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Cloud 814,HealthTech,https://deltacloud814.com,11-50,Alex Smith,alex.smith@deltacloud814.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Tech 815,HealthTech,https://quantumtech815.com,501-1000,Sarah Miller,sarah.miller@quantumtech815.com,CTO,Lead from batch import 2025-10-09
+Prime Tech 816,Analytics,https://primetech816.com,1-10,Sarah Jones,sarah.jones@primetech816.com,CTO,Lead from batch import 2025-10-09
+Nova Solutions 817,Marketing,https://novasolutions817.com,51-200,Michael Brown,michael.brown@novasolutions817.com,COO,Lead from batch import 2025-10-09
+Nova Solutions 818,HealthTech,https://novasolutions818.com,501-1000,Alex Miller,alex.miller@novasolutions818.com,CTO,Lead from batch import 2025-10-09
+Quantum Data 819,SaaS,https://quantumdata819.com,201-500,Chris Williams,chris.williams@quantumdata819.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Cloud 820,Analytics,https://alphacloud820.com,501-1000,Alex Smith,alex.smith@alphacloud820.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Tech 821,EdTech,https://quantumtech821.com,51-200,Jane Jones,jane.jones@quantumtech821.com,CTO,Lead from batch import 2025-10-09
+Sigma Labs 822,EdTech,https://sigmalabs822.com,501-1000,Emily Garcia,emily.garcia@sigmalabs822.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Cloud 823,HealthTech,https://gammacloud823.com,501-1000,John Smith,john.smith@gammacloud823.com,COO,Lead from batch import 2025-10-09
+Gamma Cloud 824,E-commerce,https://gammacloud824.com,201-500,Chris Davis,chris.davis@gammacloud824.com,Founder,Lead from batch import 2025-10-09
+Nova Systems 825,Cybersecurity,https://novasystems825.com,201-500,David Johnson,david.johnson@novasystems825.com,CEO,Lead from batch import 2025-10-09
+Nova Cloud 826,FinTech,https://novacloud826.com,1000+,Michael Johnson,michael.johnson@novacloud826.com,Head of Product,Lead from batch import 2025-10-09
+Beta Labs 827,Analytics,https://betalabs827.com,201-500,David Johnson,david.johnson@betalabs827.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Labs 828,SaaS,https://deltalabs828.com,501-1000,Chris Smith,chris.smith@deltalabs828.com,Head of Product,Lead from batch import 2025-10-09
+Nova Data 829,Analytics,https://novadata829.com,1000+,Alex Davis,alex.davis@novadata829.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Data 830,EdTech,https://quantumdata830.com,1-10,Jane Johnson,jane.johnson@quantumdata830.com,COO,Lead from batch import 2025-10-09
+Apex Solutions 831,E-commerce,https://apexsolutions831.com,1000+,David Williams,david.williams@apexsolutions831.com,CTO,Lead from batch import 2025-10-09
+Sigma Labs 832,AI/ML,https://sigmalabs832.com,501-1000,Chris Miller,chris.miller@sigmalabs832.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Systems 833,Analytics,https://betasystems833.com,11-50,Michael Garcia,michael.garcia@betasystems833.com,COO,Lead from batch import 2025-10-09
+Alpha Tech 834,IoT,https://alphatech834.com,11-50,Chris Brown,chris.brown@alphatech834.com,CTO,Lead from batch import 2025-10-09
+Quantum Cloud 835,IoT,https://quantumcloud835.com,1000+,Sarah Williams,sarah.williams@quantumcloud835.com,CTO,Lead from batch import 2025-10-09
+Sigma Labs 836,IoT,https://sigmalabs836.com,11-50,Jane Williams,jane.williams@sigmalabs836.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Solutions 837,AI/ML,https://novasolutions837.com,501-1000,John Miller,john.miller@novasolutions837.com,CTO,Lead from batch import 2025-10-09
+Sigma Labs 838,E-commerce,https://sigmalabs838.com,201-500,Emily Williams,emily.williams@sigmalabs838.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Data 839,FinTech,https://quantumdata839.com,501-1000,Michael Miller,michael.miller@quantumdata839.com,CEO,Lead from batch import 2025-10-09
+Omega Cloud 840,EdTech,https://omegacloud840.com,51-200,John Jones,john.jones@omegacloud840.com,COO,Lead from batch import 2025-10-09
+Beta Data 841,IoT,https://betadata841.com,51-200,Alex Garcia,alex.garcia@betadata841.com,CEO,Lead from batch import 2025-10-09
+Nova Systems 842,Marketing,https://novasystems842.com,1-10,Michael Williams,michael.williams@novasystems842.com,VP of Sales,Lead from batch import 2025-10-09
+Nova AI 843,EdTech,https://novaai843.com,1000+,Chris Miller,chris.miller@novaai843.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Data 844,EdTech,https://quantumdata844.com,11-50,John Brown,john.brown@quantumdata844.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Solutions 845,E-commerce,https://primesolutions845.com,11-50,Michael Johnson,michael.johnson@primesolutions845.com,COO,Lead from batch import 2025-10-09
+Prime Tech 846,EdTech,https://primetech846.com,1-10,David Williams,david.williams@primetech846.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Labs 847,FinTech,https://betalabs847.com,51-200,John Davis,john.davis@betalabs847.com,COO,Lead from batch import 2025-10-09
+Sigma Data 848,FinTech,https://sigmadata848.com,51-200,Alex Johnson,alex.johnson@sigmadata848.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Tech 849,FinTech,https://deltatech849.com,1000+,Emily Williams,emily.williams@deltatech849.com,COO,Lead from batch import 2025-10-09
+Nova Data 850,AI/ML,https://novadata850.com,201-500,John Jones,john.jones@novadata850.com,Head of Product,Lead from batch import 2025-10-09
+Beta Tech 851,Analytics,https://betatech851.com,1000+,Emily Brown,emily.brown@betatech851.com,CEO,Lead from batch import 2025-10-09
+Prime Labs 852,Marketing,https://primelabs852.com,1-10,David Brown,david.brown@primelabs852.com,VP of Engineering,Lead from batch import 2025-10-09
+Beta Tech 853,SaaS,https://betatech853.com,201-500,Jane Brown,jane.brown@betatech853.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Solutions 854,EdTech,https://novasolutions854.com,501-1000,Emily Williams,emily.williams@novasolutions854.com,COO,Lead from batch import 2025-10-09
+Gamma Cloud 855,Marketing,https://gammacloud855.com,1-10,Emily Brown,emily.brown@gammacloud855.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Labs 856,E-commerce,https://primelabs856.com,1-10,Chris Garcia,chris.garcia@primelabs856.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha Solutions 857,AI/ML,https://alphasolutions857.com,1000+,Sarah Garcia,sarah.garcia@alphasolutions857.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma Tech 858,EdTech,https://gammatech858.com,201-500,Alex Miller,alex.miller@gammatech858.com,VP of Sales,Lead from batch import 2025-10-09
+Alpha Data 859,AI/ML,https://alphadata859.com,1-10,John Davis,john.davis@alphadata859.com,CTO,Lead from batch import 2025-10-09
+Delta Solutions 860,Analytics,https://deltasolutions860.com,1000+,Sarah Williams,sarah.williams@deltasolutions860.com,CTO,Lead from batch import 2025-10-09
+Omega Tech 861,IoT,https://omegatech861.com,501-1000,David Davis,david.davis@omegatech861.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Tech 862,HealthTech,https://sigmatech862.com,501-1000,David Brown,david.brown@sigmatech862.com,Head of Product,Lead from batch import 2025-10-09
+Prime AI 863,Cybersecurity,https://primeai863.com,501-1000,Michael Smith,michael.smith@primeai863.com,CEO,Lead from batch import 2025-10-09
+Quantum Data 864,FinTech,https://quantumdata864.com,11-50,Michael Davis,michael.davis@quantumdata864.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Solutions 865,E-commerce,https://sigmasolutions865.com,1000+,Michael Johnson,michael.johnson@sigmasolutions865.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Labs 866,Marketing,https://betalabs866.com,11-50,David Garcia,david.garcia@betalabs866.com,CEO,Lead from batch import 2025-10-09
+Delta Labs 867,IoT,https://deltalabs867.com,1000+,John Brown,john.brown@deltalabs867.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Data 868,FinTech,https://novadata868.com,1-10,Chris Jones,chris.jones@novadata868.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 869,Cybersecurity,https://omegatech869.com,51-200,Alex Garcia,alex.garcia@omegatech869.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Cloud 870,IoT,https://primecloud870.com,1000+,John Johnson,john.johnson@primecloud870.com,CTO,Lead from batch import 2025-10-09
+Sigma Solutions 871,FinTech,https://sigmasolutions871.com,201-500,Emily Johnson,emily.johnson@sigmasolutions871.com,CEO,Lead from batch import 2025-10-09
+Gamma Cloud 872,EdTech,https://gammacloud872.com,1-10,Sarah Smith,sarah.smith@gammacloud872.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Cloud 873,AI/ML,https://novacloud873.com,201-500,Alex Williams,alex.williams@novacloud873.com,CEO,Lead from batch import 2025-10-09
+Omega Cloud 874,Marketing,https://omegacloud874.com,201-500,David Smith,david.smith@omegacloud874.com,Founder,Lead from batch import 2025-10-09
+Gamma Tech 875,EdTech,https://gammatech875.com,1-10,John Davis,john.davis@gammatech875.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Cloud 876,Cybersecurity,https://apexcloud876.com,1000+,Alex Davis,alex.davis@apexcloud876.com,Founder,Lead from batch import 2025-10-09
+Quantum AI 877,EdTech,https://quantumai877.com,501-1000,John Smith,john.smith@quantumai877.com,CTO,Lead from batch import 2025-10-09
+Delta Cloud 878,Cybersecurity,https://deltacloud878.com,11-50,Alex Brown,alex.brown@deltacloud878.com,CTO,Lead from batch import 2025-10-09
+Omega Labs 879,Cybersecurity,https://omegalabs879.com,501-1000,Jane Smith,jane.smith@omegalabs879.com,Head of Product,Lead from batch import 2025-10-09
+Omega Labs 880,SaaS,https://omegalabs880.com,501-1000,Michael Jones,michael.jones@omegalabs880.com,CTO,Lead from batch import 2025-10-09
+Prime Cloud 881,Cybersecurity,https://primecloud881.com,11-50,Jane Garcia,jane.garcia@primecloud881.com,Head of Product,Lead from batch import 2025-10-09
+Prime Solutions 882,AI/ML,https://primesolutions882.com,1000+,Michael Williams,michael.williams@primesolutions882.com,Marketing Director,Lead from batch import 2025-10-09
+Apex Systems 883,E-commerce,https://apexsystems883.com,11-50,David Davis,david.davis@apexsystems883.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Cloud 884,SaaS,https://deltacloud884.com,201-500,Alex Brown,alex.brown@deltacloud884.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum AI 885,AI/ML,https://quantumai885.com,1-10,John Miller,john.miller@quantumai885.com,CEO,Lead from batch import 2025-10-09
+Nova Cloud 886,E-commerce,https://novacloud886.com,1-10,Michael Miller,michael.miller@novacloud886.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Solutions 887,Marketing,https://sigmasolutions887.com,1000+,Chris Garcia,chris.garcia@sigmasolutions887.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Systems 888,E-commerce,https://quantumsystems888.com,1000+,John Brown,john.brown@quantumsystems888.com,Founder,Lead from batch import 2025-10-09
+Beta Cloud 889,AI/ML,https://betacloud889.com,11-50,John Smith,john.smith@betacloud889.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Cloud 890,FinTech,https://novacloud890.com,201-500,David Johnson,david.johnson@novacloud890.com,COO,Lead from batch import 2025-10-09
+Nova Labs 891,Analytics,https://novalabs891.com,1000+,David Smith,david.smith@novalabs891.com,Head of Product,Lead from batch import 2025-10-09
+Beta Systems 892,E-commerce,https://betasystems892.com,201-500,Sarah Johnson,sarah.johnson@betasystems892.com,CTO,Lead from batch import 2025-10-09
+Gamma Systems 893,E-commerce,https://gammasystems893.com,501-1000,Jane Smith,jane.smith@gammasystems893.com,COO,Lead from batch import 2025-10-09
+Quantum Systems 894,E-commerce,https://quantumsystems894.com,11-50,John Smith,john.smith@quantumsystems894.com,CEO,Lead from batch import 2025-10-09
+Delta Tech 895,E-commerce,https://deltatech895.com,51-200,Alex Jones,alex.jones@deltatech895.com,CEO,Lead from batch import 2025-10-09
+Beta Data 896,E-commerce,https://betadata896.com,501-1000,Jane Davis,jane.davis@betadata896.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Tech 897,EdTech,https://gammatech897.com,1-10,Sarah Williams,sarah.williams@gammatech897.com,VP of Engineering,Lead from batch import 2025-10-09
+Apex Tech 898,E-commerce,https://apextech898.com,51-200,Chris Jones,chris.jones@apextech898.com,CEO,Lead from batch import 2025-10-09
+Omega AI 899,IoT,https://omegaai899.com,1-10,John Garcia,john.garcia@omegaai899.com,COO,Lead from batch import 2025-10-09
+Alpha Data 900,SaaS,https://alphadata900.com,201-500,Sarah Williams,sarah.williams@alphadata900.com,CEO,Lead from batch import 2025-10-09
+Omega Systems 901,Marketing,https://omegasystems901.com,201-500,David Jones,david.jones@omegasystems901.com,VP of Sales,Lead from batch import 2025-10-09
+Omega Labs 902,Marketing,https://omegalabs902.com,201-500,David Davis,david.davis@omegalabs902.com,COO,Lead from batch import 2025-10-09
+Nova Systems 903,Analytics,https://novasystems903.com,1000+,Michael Jones,michael.jones@novasystems903.com,Head of Product,Lead from batch import 2025-10-09
+Nova Cloud 904,E-commerce,https://novacloud904.com,501-1000,Alex Davis,alex.davis@novacloud904.com,VP of Engineering,Lead from batch import 2025-10-09
+Alpha Systems 905,Analytics,https://alphasystems905.com,51-200,Emily Johnson,emily.johnson@alphasystems905.com,CEO,Lead from batch import 2025-10-09
+Apex AI 906,IoT,https://apexai906.com,201-500,David Miller,david.miller@apexai906.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Data 907,Analytics,https://betadata907.com,501-1000,Jane Brown,jane.brown@betadata907.com,Founder,Lead from batch import 2025-10-09
+Nova Tech 908,Analytics,https://novatech908.com,1-10,Jane Jones,jane.jones@novatech908.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Data 909,AI/ML,https://quantumdata909.com,1000+,Sarah Brown,sarah.brown@quantumdata909.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Data 910,Marketing,https://alphadata910.com,11-50,Jane Jones,jane.jones@alphadata910.com,CEO,Lead from batch import 2025-10-09
+Delta Systems 911,EdTech,https://deltasystems911.com,11-50,John Smith,john.smith@deltasystems911.com,Founder,Lead from batch import 2025-10-09
+Quantum Tech 912,EdTech,https://quantumtech912.com,201-500,David Garcia,david.garcia@quantumtech912.com,COO,Lead from batch import 2025-10-09
+Delta Cloud 913,Analytics,https://deltacloud913.com,11-50,Chris Brown,chris.brown@deltacloud913.com,COO,Lead from batch import 2025-10-09
+Alpha Solutions 914,EdTech,https://alphasolutions914.com,501-1000,David Brown,david.brown@alphasolutions914.com,Head of Product,Lead from batch import 2025-10-09
+Gamma Tech 915,SaaS,https://gammatech915.com,1000+,Sarah Brown,sarah.brown@gammatech915.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Labs 916,Marketing,https://alphalabs916.com,51-200,Sarah Smith,sarah.smith@alphalabs916.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Cloud 917,Analytics,https://novacloud917.com,201-500,John Garcia,john.garcia@novacloud917.com,COO,Lead from batch import 2025-10-09
+Apex Solutions 918,EdTech,https://apexsolutions918.com,11-50,Jane Miller,jane.miller@apexsolutions918.com,VP of Sales,Lead from batch import 2025-10-09
+Delta Solutions 919,FinTech,https://deltasolutions919.com,11-50,David Garcia,david.garcia@deltasolutions919.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Labs 920,HealthTech,https://quantumlabs920.com,1000+,Michael Johnson,michael.johnson@quantumlabs920.com,COO,Lead from batch import 2025-10-09
+Quantum Data 921,Marketing,https://quantumdata921.com,501-1000,Alex Garcia,alex.garcia@quantumdata921.com,Founder,Lead from batch import 2025-10-09
+Beta AI 922,IoT,https://betaai922.com,501-1000,Jane Williams,jane.williams@betaai922.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime Tech 923,Analytics,https://primetech923.com,1000+,Chris Garcia,chris.garcia@primetech923.com,Head of Product,Lead from batch import 2025-10-09
+Omega Solutions 924,E-commerce,https://omegasolutions924.com,51-200,Michael Johnson,michael.johnson@omegasolutions924.com,Founder,Lead from batch import 2025-10-09
+Omega Labs 925,HealthTech,https://omegalabs925.com,501-1000,Chris Williams,chris.williams@omegalabs925.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Cloud 926,FinTech,https://novacloud926.com,501-1000,Sarah Smith,sarah.smith@novacloud926.com,CEO,Lead from batch import 2025-10-09
+Omega Tech 927,Marketing,https://omegatech927.com,201-500,Chris Miller,chris.miller@omegatech927.com,CTO,Lead from batch import 2025-10-09
+Apex Labs 928,FinTech,https://apexlabs928.com,1-10,John Johnson,john.johnson@apexlabs928.com,Founder,Lead from batch import 2025-10-09
+Nova Systems 929,Marketing,https://novasystems929.com,51-200,Alex Brown,alex.brown@novasystems929.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Systems 930,Cybersecurity,https://novasystems930.com,11-50,John Garcia,john.garcia@novasystems930.com,Founder,Lead from batch import 2025-10-09
+Quantum Solutions 931,IoT,https://quantumsolutions931.com,11-50,Emily Smith,emily.smith@quantumsolutions931.com,VP of Engineering,Lead from batch import 2025-10-09
+Gamma AI 932,AI/ML,https://gammaai932.com,501-1000,Chris Johnson,chris.johnson@gammaai932.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Tech 933,IoT,https://sigmatech933.com,501-1000,David Miller,david.miller@sigmatech933.com,Head of Product,Lead from batch import 2025-10-09
+Quantum Cloud 934,Cybersecurity,https://quantumcloud934.com,11-50,John Jones,john.jones@quantumcloud934.com,CEO,Lead from batch import 2025-10-09
+Prime Labs 935,SaaS,https://primelabs935.com,501-1000,Sarah Williams,sarah.williams@primelabs935.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Systems 936,SaaS,https://novasystems936.com,201-500,Alex Jones,alex.jones@novasystems936.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma AI 937,E-commerce,https://sigmaai937.com,501-1000,Jane Johnson,jane.johnson@sigmaai937.com,Marketing Director,Lead from batch import 2025-10-09
+Prime Data 938,E-commerce,https://primedata938.com,201-500,Alex Brown,alex.brown@primedata938.com,Marketing Director,Lead from batch import 2025-10-09
+Nova Solutions 939,Cybersecurity,https://novasolutions939.com,501-1000,Chris Williams,chris.williams@novasolutions939.com,Marketing Director,Lead from batch import 2025-10-09
+Gamma AI 940,SaaS,https://gammaai940.com,51-200,Jane Miller,jane.miller@gammaai940.com,Head of Product,Lead from batch import 2025-10-09
+Prime Labs 941,FinTech,https://primelabs941.com,1000+,Alex Miller,alex.miller@primelabs941.com,Head of Product,Lead from batch import 2025-10-09
+Omega Cloud 942,E-commerce,https://omegacloud942.com,501-1000,Chris Brown,chris.brown@omegacloud942.com,COO,Lead from batch import 2025-10-09
+Beta Systems 943,E-commerce,https://betasystems943.com,1000+,Alex Jones,alex.jones@betasystems943.com,VP of Sales,Lead from batch import 2025-10-09
+Nova Cloud 944,HealthTech,https://novacloud944.com,201-500,David Smith,david.smith@novacloud944.com,COO,Lead from batch import 2025-10-09
+Apex Cloud 945,Marketing,https://apexcloud945.com,1000+,David Brown,david.brown@apexcloud945.com,CEO,Lead from batch import 2025-10-09
+Beta Labs 946,AI/ML,https://betalabs946.com,51-200,Alex Jones,alex.jones@betalabs946.com,CTO,Lead from batch import 2025-10-09
+Quantum Cloud 947,FinTech,https://quantumcloud947.com,51-200,Michael Jones,michael.jones@quantumcloud947.com,Founder,Lead from batch import 2025-10-09
+Beta Solutions 948,SaaS,https://betasolutions948.com,11-50,Emily Smith,emily.smith@betasolutions948.com,COO,Lead from batch import 2025-10-09
+Gamma AI 949,EdTech,https://gammaai949.com,201-500,Jane Miller,jane.miller@gammaai949.com,COO,Lead from batch import 2025-10-09
+Delta Data 950,FinTech,https://deltadata950.com,11-50,Emily Miller,emily.miller@deltadata950.com,CEO,Lead from batch import 2025-10-09
+Delta Systems 951,EdTech,https://deltasystems951.com,11-50,Michael Miller,michael.miller@deltasystems951.com,Marketing Director,Lead from batch import 2025-10-09
+Beta Cloud 952,AI/ML,https://betacloud952.com,1000+,Emily Williams,emily.williams@betacloud952.com,CTO,Lead from batch import 2025-10-09
+Quantum Data 953,AI/ML,https://quantumdata953.com,501-1000,Sarah Jones,sarah.jones@quantumdata953.com,CTO,Lead from batch import 2025-10-09
+Sigma Cloud 954,HealthTech,https://sigmacloud954.com,1-10,John Smith,john.smith@sigmacloud954.com,VP of Engineering,Lead from batch import 2025-10-09
+Delta Solutions 955,E-commerce,https://deltasolutions955.com,201-500,Alex Williams,alex.williams@deltasolutions955.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Labs 956,FinTech,https://novalabs956.com,1000+,Jane Johnson,jane.johnson@novalabs956.com,CTO,Lead from batch import 2025-10-09
+Apex Cloud 957,SaaS,https://apexcloud957.com,501-1000,Michael Miller,michael.miller@apexcloud957.com,VP of Engineering,Lead from batch import 2025-10-09
+Prime AI 958,E-commerce,https://primeai958.com,1-10,Emily Jones,emily.jones@primeai958.com,COO,Lead from batch import 2025-10-09
+Gamma Systems 959,Analytics,https://gammasystems959.com,201-500,Jane Brown,jane.brown@gammasystems959.com,Head of Product,Lead from batch import 2025-10-09
+Prime Cloud 960,IoT,https://primecloud960.com,1-10,John Brown,john.brown@primecloud960.com,Marketing Director,Lead from batch import 2025-10-09
+Quantum Tech 961,HealthTech,https://quantumtech961.com,501-1000,John Johnson,john.johnson@quantumtech961.com,Founder,Lead from batch import 2025-10-09
+Gamma Tech 962,Marketing,https://gammatech962.com,201-500,John Davis,john.davis@gammatech962.com,CEO,Lead from batch import 2025-10-09
+Quantum Data 963,Marketing,https://quantumdata963.com,51-200,Emily Brown,emily.brown@quantumdata963.com,Head of Product,Lead from batch import 2025-10-09
+Omega Labs 964,Analytics,https://omegalabs964.com,51-200,Alex Brown,alex.brown@omegalabs964.com,CEO,Lead from batch import 2025-10-09
+Prime Solutions 965,E-commerce,https://primesolutions965.com,1000+,Emily Smith,emily.smith@primesolutions965.com,COO,Lead from batch import 2025-10-09
+Alpha Solutions 966,IoT,https://alphasolutions966.com,1-10,Michael Jones,michael.jones@alphasolutions966.com,CTO,Lead from batch import 2025-10-09
+Beta Data 967,E-commerce,https://betadata967.com,51-200,John Smith,john.smith@betadata967.com,Founder,Lead from batch import 2025-10-09
+Gamma AI 968,FinTech,https://gammaai968.com,1-10,Sarah Garcia,sarah.garcia@gammaai968.com,COO,Lead from batch import 2025-10-09
+Alpha Cloud 969,Cybersecurity,https://alphacloud969.com,11-50,Michael Brown,michael.brown@alphacloud969.com,Founder,Lead from batch import 2025-10-09
+Prime AI 970,FinTech,https://primeai970.com,1000+,Michael Williams,michael.williams@primeai970.com,Founder,Lead from batch import 2025-10-09
+Quantum Solutions 971,Marketing,https://quantumsolutions971.com,51-200,Alex Smith,alex.smith@quantumsolutions971.com,VP of Engineering,Lead from batch import 2025-10-09
+Nova Cloud 972,HealthTech,https://novacloud972.com,1-10,Jane Williams,jane.williams@novacloud972.com,VP of Sales,Lead from batch import 2025-10-09
+Quantum Labs 973,HealthTech,https://quantumlabs973.com,1-10,Jane Williams,jane.williams@quantumlabs973.com,VP of Sales,Lead from batch import 2025-10-09
+Sigma Solutions 974,FinTech,https://sigmasolutions974.com,201-500,David Garcia,david.garcia@sigmasolutions974.com,CEO,Lead from batch import 2025-10-09
+Quantum Systems 975,Marketing,https://quantumsystems975.com,1000+,Emily Davis,emily.davis@quantumsystems975.com,Head of Product,Lead from batch import 2025-10-09
+Prime Systems 976,HealthTech,https://primesystems976.com,51-200,John Williams,john.williams@primesystems976.com,CEO,Lead from batch import 2025-10-09
+Beta Systems 977,Cybersecurity,https://betasystems977.com,1-10,Alex Davis,alex.davis@betasystems977.com,Marketing Director,Lead from batch import 2025-10-09
+Omega AI 978,AI/ML,https://omegaai978.com,1-10,Chris Garcia,chris.garcia@omegaai978.com,Head of Product,Lead from batch import 2025-10-09
+Alpha AI 979,EdTech,https://alphaai979.com,11-50,John Garcia,john.garcia@alphaai979.com,Head of Product,Lead from batch import 2025-10-09
+Apex Systems 980,AI/ML,https://apexsystems980.com,201-500,Michael Johnson,michael.johnson@apexsystems980.com,CTO,Lead from batch import 2025-10-09
+Gamma Data 981,SaaS,https://gammadata981.com,1000+,Alex Garcia,alex.garcia@gammadata981.com,CTO,Lead from batch import 2025-10-09
+Omega Cloud 982,IoT,https://omegacloud982.com,1-10,David Davis,david.davis@omegacloud982.com,Head of Product,Lead from batch import 2025-10-09
+Prime Systems 983,EdTech,https://primesystems983.com,11-50,John Jones,john.jones@primesystems983.com,CTO,Lead from batch import 2025-10-09
+Delta Data 984,E-commerce,https://deltadata984.com,201-500,David Garcia,david.garcia@deltadata984.com,VP of Sales,Lead from batch import 2025-10-09
+Prime Cloud 985,E-commerce,https://primecloud985.com,201-500,Alex Smith,alex.smith@primecloud985.com,Head of Product,Lead from batch import 2025-10-09
+Sigma Labs 986,Cybersecurity,https://sigmalabs986.com,51-200,Chris Williams,chris.williams@sigmalabs986.com,COO,Lead from batch import 2025-10-09
+Sigma Data 987,SaaS,https://sigmadata987.com,501-1000,Michael Smith,michael.smith@sigmadata987.com,VP of Sales,Lead from batch import 2025-10-09
+Beta Systems 988,Marketing,https://betasystems988.com,51-200,David Garcia,david.garcia@betasystems988.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Cloud 989,HealthTech,https://quantumcloud989.com,11-50,Chris Jones,chris.jones@quantumcloud989.com,Marketing Director,Lead from batch import 2025-10-09
+Sigma Labs 990,Marketing,https://sigmalabs990.com,1-10,Alex Williams,alex.williams@sigmalabs990.com,CEO,Lead from batch import 2025-10-09
+Quantum Data 991,HealthTech,https://quantumdata991.com,201-500,Alex Johnson,alex.johnson@quantumdata991.com,Marketing Director,Lead from batch import 2025-10-09
+Delta Systems 992,Marketing,https://deltasystems992.com,1-10,David Williams,david.williams@deltasystems992.com,Head of Product,Lead from batch import 2025-10-09
+Prime Solutions 993,Cybersecurity,https://primesolutions993.com,201-500,Alex Williams,alex.williams@primesolutions993.com,CEO,Lead from batch import 2025-10-09
+Sigma Solutions 994,AI/ML,https://sigmasolutions994.com,1-10,Michael Garcia,michael.garcia@sigmasolutions994.com,Marketing Director,Lead from batch import 2025-10-09
+Prime AI 995,Marketing,https://primeai995.com,1-10,Chris Smith,chris.smith@primeai995.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Solutions 996,SaaS,https://alphasolutions996.com,1-10,John Johnson,john.johnson@alphasolutions996.com,Head of Product,Lead from batch import 2025-10-09
+Alpha Data 997,IoT,https://alphadata997.com,1000+,Emily Garcia,emily.garcia@alphadata997.com,Marketing Director,Lead from batch import 2025-10-09
+Alpha Tech 998,Marketing,https://alphatech998.com,11-50,Michael Garcia,michael.garcia@alphatech998.com,Marketing Director,Lead from batch import 2025-10-09
+Omega Labs 999,Marketing,https://omegalabs999.com,1000+,John Smith,john.smith@omegalabs999.com,VP of Engineering,Lead from batch import 2025-10-09
+Quantum Solutions 1000,AI/ML,https://quantumsolutions1000.com,1-10,John Jones,john.jones@quantumsolutions1000.com,Head of Product,Lead from batch import 2025-10-09

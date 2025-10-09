@@ -57,7 +57,10 @@ class Lead(Base):
 
     # Voice interaction relationship
     voice_sessions = relationship("VoiceSessionLog", back_populates="lead", cascade="all, delete-orphan")
-    
+
+    # Conversation intelligence relationship
+    conversations = relationship("Conversation", back_populates="lead", cascade="all, delete-orphan")
+
     # Report generation relationship
     reports = relationship("Report", back_populates="lead", cascade="all, delete-orphan")
 

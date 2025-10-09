@@ -334,7 +334,7 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -342,7 +342,7 @@
             "description": "Develop the system component that processes audio streams in real-time during sales calls.",
             "dependencies": [],
             "details": "Ensure audio processing latency is under 100ms.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test latency (<100ms)"
           },
           {
@@ -353,7 +353,7 @@
               "6.1"
             ],
             "details": "Focus on high accuracy transcription suitable for analysis.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate transcription accuracy"
           },
           {
@@ -364,7 +364,7 @@
               "6.2"
             ],
             "details": "Suggestions should be relevant and actionable.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify suggestion relevance"
           },
           {
@@ -375,7 +375,7 @@
               "6.2"
             ],
             "details": "Ensure accurate sentiment detection for better suggestions.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate sentiment detection accuracy"
           },
           {
@@ -387,7 +387,7 @@
               "6.4"
             ],
             "details": "Battle cards should be contextually relevant and timely.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test relevance and timing of battle cards"
           }
         ]
@@ -402,7 +402,7 @@
         "dependencies": [
           1
         ],
-        "status": "pending",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -410,7 +410,7 @@
             "description": "Develop and integrate the Cerebras gist memory pattern into the document analysis system.",
             "dependencies": [],
             "details": "Implement the gist memory pattern as specified in the Cerebras documentation.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test processing speed and memory usage."
           },
           {
@@ -421,7 +421,7 @@
               "7.1"
             ],
             "details": "Develop a pipeline that handles document ingestion, preprocessing, and formatting.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate extraction accuracy and processing speed."
           },
           {
@@ -432,7 +432,7 @@
               "7.2"
             ],
             "details": "Create algorithms or models to produce concise summaries from document content.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Test summarization accuracy and coherence."
           },
           {
@@ -443,7 +443,7 @@
               "7.2"
             ],
             "details": "Implement NLP techniques to identify and extract important entities and terms.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Validate extraction accuracy and completeness."
           },
           {
@@ -455,7 +455,7 @@
               "7.4"
             ],
             "details": "Build a search system that indexes documents and highlights matched content.",
-            "status": "pending",
+            "status": "done",
             "testStrategy": "Verify search functionality and highlight accuracy."
           }
         ]
@@ -1116,14 +1116,84 @@
         "description": "Develop a system to import and store 1,000+ leads with company data (name, industry, size, website) into PostgreSQL for batch qualification and analysis.",
         "details": "1. **CSV Parsing**: Use Python's `csv` module or `pandas` for efficient parsing of large CSV files (>1,000 rows). Validate required fields (name, industry, size, website) and handle missing or malformed data gracefully.\n2. **Database Integration**: Implement bulk insertion using PostgreSQL's `COPY` command or `psycopg2.extras.execute_batch` for performance optimization. Ensure data is sanitized to prevent SQL injection.\n3. **Error Handling**: Leverage custom exceptions (`LeadValidationError`, `DatabaseConnectionError`) from Task 22 for domain-specific error reporting. Log errors with structured logging (Task 15).\n4. **Batch Processing**: Implement chunking logic (e.g., 100 leads per batch) to avoid memory issues. Use async/await or threading for parallel processing if needed.\n5. **Validation**: Add pre-import validation (e.g., website URL format, industry categorization) and post-import verification (e.g., row counts, duplicates).\n6. **API Endpoint**: Create a REST endpoint (`POST /api/leads/import`) accepting multipart/form-data for file upload. Use FastAPI's `UploadFile` for streaming file handling.\n7. **Performance**: Optimize for throughput (~1,000 leads/sec) and monitor with logging (Task 15). Consider using Redis for temporary storage during processing.\n\n**Technologies**: FastAPI, PostgreSQL, pandas, psycopg2, Redis (optional).",
         "testStrategy": "1. **Unit Tests**: Mock CSV parsing and database operations to verify validation and insertion logic.\n2. **Integration Tests**: Test the `/api/leads/import` endpoint with:\n   - Valid CSV files (1,000+ rows).\n   - Invalid files (missing fields, malformed data).\n   - Edge cases (empty files, large files >10MB).\n3. **Performance Tests**: Measure import time for 1,000 leads and validate against SLA (<5 seconds).\n4. **Error Handling**: Verify custom exceptions and logging for failed imports.\n5. **Database Verification**: Query PostgreSQL to confirm all leads are stored correctly.\n6. **Load Testing**: Simulate concurrent imports (10+ requests) to ensure system stability.",
-        "status": "pending",
+        "status": "done",
         "dependencies": [
           13,
           15,
           22
         ],
         "priority": "medium",
-        "subtasks": []
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement CSV Parsing Logic",
+            "description": "Develop functionality to parse large CSV files using Python's `csv` module or `pandas`, validate required fields, and handle missing or malformed data.",
+            "dependencies": [],
+            "details": "Use `pandas.read_csv()` for efficient parsing. Validate fields (name, industry, size, website) and log errors for missing or malformed data. Implement chunking for files >1,000 rows.",
+            "status": "done",
+            "testStrategy": "Unit tests for parsing and validation logic. Test with valid, invalid, and edge-case CSV files."
+          },
+          {
+            "id": 2,
+            "title": "Integrate PostgreSQL Database",
+            "description": "Implement bulk insertion into PostgreSQL using `COPY` command or `psycopg2.extras.execute_batch` for optimized performance.",
+            "dependencies": [
+              1
+            ],
+            "details": "Configure PostgreSQL connection using `psycopg2`. Implement bulk insertion with sanitized data to prevent SQL injection. Use `COPY` for high throughput.",
+            "status": "done",
+            "testStrategy": "Integration tests for database insertion. Verify data integrity and performance with 1,000+ rows."
+          },
+          {
+            "id": 3,
+            "title": "Add Error Handling and Logging",
+            "description": "Implement custom exceptions and structured logging for domain-specific error reporting.",
+            "dependencies": [
+              22
+            ],
+            "details": "Use `LeadValidationError` and `DatabaseConnectionError` from Task 22. Log errors with structured logging (Task 15) for monitoring and debugging.",
+            "status": "done",
+            "testStrategy": "Test error handling with invalid inputs and database connection failures. Verify logging output."
+          },
+          {
+            "id": 4,
+            "title": "Implement Batch Processing",
+            "description": "Add chunking logic to process leads in batches (e.g., 100 leads per batch) to avoid memory issues.",
+            "dependencies": [
+              1,
+              2
+            ],
+            "details": "Use `pandas` chunking or custom logic to split large files into batches. Optionally use async/await or threading for parallel processing.",
+            "status": "done",
+            "testStrategy": "Test batch processing with files of varying sizes. Verify memory usage and processing time."
+          },
+          {
+            "id": 5,
+            "title": "Develop API Endpoint for File Upload",
+            "description": "Create a REST endpoint (`POST /api/leads/import`) to accept CSV file uploads using FastAPI's `UploadFile`.",
+            "dependencies": [
+              1,
+              2,
+              3
+            ],
+            "details": "Use FastAPI's `UploadFile` for streaming file handling. Accept multipart/form-data and integrate with parsing and database logic.",
+            "status": "done",
+            "testStrategy": "Integration tests for the endpoint. Test with valid, invalid, and large CSV files."
+          },
+          {
+            "id": 6,
+            "title": "Optimize System Performance",
+            "description": "Optimize the system for high throughput (~1,000 leads/sec) and monitor performance.",
+            "dependencies": [
+              1,
+              2,
+              4
+            ],
+            "details": "Use Redis for temporary storage during processing. Monitor performance with logging (Task 15) and optimize database queries and file parsing.",
+            "status": "done",
+            "testStrategy": "Performance tests with 1,000+ leads. Monitor throughput and resource usage."
+          }
+        ]
       },
       {
         "id": 24,
@@ -1175,7 +1245,7 @@
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-09T12:39:30.462Z",
+      "updated": "2025-10-09T13:09:21.180Z",
       "description": "Tasks for master context"
     }
   }
