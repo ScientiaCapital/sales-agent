@@ -24,7 +24,6 @@ class Customer(Base):
     
     # Customer Information
     company_name = Column(String(255), nullable=False, index=True)
-    firebase_uid = Column(String(128), unique=True, nullable=False, index=True)  # Firebase Auth UID
     email = Column(String(255), unique=True, nullable=False, index=True)
     
     # API Access
@@ -81,12 +80,12 @@ class KnowledgeDocument(Base):
     content_type = Column(String(100))  # MIME type
     file_size = Column(Integer)  # Bytes
     
-    # Firebase Storage
-    firebase_storage_path = Column(String(1000))  # Path in Firebase Storage
-    firebase_url = Column(String(2000))  # Public or signed URL
-    
+    # RunPod S3 Storage
+    runpod_storage_path = Column(String(1000))  # Path in RunPod S3 bucket
+    runpod_url = Column(String(2000))  # Public or presigned URL
+
     # Content
-    extracted_text = Column(Text)  # Full extracted text
+    text_content = Column(Text)  # Full extracted text
     text_length = Column(Integer)  # Character count
     
     # Vector Embeddings (384 dimensions for all-MiniLM-L6-v2)

@@ -10,26 +10,29 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 
 from app.models import Customer, CustomerAgent, CustomerQuota
-from app.services.firebase_service import FirebaseService
+from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
+
+# Initialize password hasher with bcrypt (explicitly using bcrypt from requirements.txt)
+password_hash = PasswordHash((BcryptHasher(),))
 
 
 class CustomerService:
     """
     Service for customer management in multi-tenant platform
-    
+
     Features:
-    - Customer registration with Firebase Auth
+    - Customer registration with secure password hashing
     - API key generation and management
     - Agent deployment and orchestration
     - Quota enforcement and usage tracking
     """
-    
+
     def __init__(self):
-        """Initialize Customer service with Firebase"""
-        self.firebase = FirebaseService()
+        """Initialize Customer service"""
         logger.info("Initialized Customer service")
     
     def register_customer(
@@ -42,8 +45,8 @@ class CustomerService:
         db: Session = None
     ) -> Dict:
         """
-        Register a new customer with Firebase Auth and generate API key
-        
+        Register a new customer with secure password hashing and generate API key
+
         Args:
             email: Customer email
             password: Customer password
@@ -51,28 +54,21 @@ class CustomerService:
             contact_name: Contact person name
             subscription_tier: Subscription level (free, starter, pro, enterprise)
             db: Database session
-        
+
         Returns:
             Dictionary with customer data and API key
         """
         try:
-            # Create Firebase user
-            firebase_user = self.firebase.create_user(
-                email=email,
-                password=password,
-                display_name=contact_name or company_name
-            )
-            
-            logger.info(f"Created Firebase user: {firebase_user.uid}")
-            
+            # Hash password securely
+            password_hashed = password_hash.hash(password)
+
             # Generate API key
             api_key = self._generate_api_key()
             api_key_hash = self._hash_api_key(api_key)
-            
+
             # Create customer record
             customer = Customer(
                 company_name=company_name,
-                firebase_uid=firebase_user.uid,
                 email=email,
                 api_key=api_key,  # Store plain key (will be shown once)
                 api_key_hash=api_key_hash,
@@ -80,29 +76,21 @@ class CustomerService:
                 contact_name=contact_name,
                 status="active"
             )
-            
+
             db.add(customer)
             db.flush()  # Get customer ID
-            
+
             # Create default quotas based on subscription tier
             quotas = self._create_default_quotas(customer.id, subscription_tier)
             db.add(quotas)
-            
-            # Set Firebase custom claims for role-based access
-            self.firebase.set_custom_user_claims(firebase_user.uid, {
-                'customer_id': customer.id,
-                'subscription_tier': subscription_tier,
-                'role': 'admin'
-            })
-            
+
             db.commit()
             db.refresh(customer)
-            
+
             logger.info(f"Registered customer: {customer.id} ({company_name})")
-            
+
             return {
                 'customer_id': customer.id,
-                'firebase_uid': firebase_user.uid,
                 'email': email,
                 'company_name': company_name,
                 'api_key': api_key,  # Only shown once

@@ -9,6 +9,7 @@ from typing import Optional, Dict, Any, List
 import jwt
 from jwt import PyJWTError
 from pwdlib import PasswordHash
+from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy.orm import Session
 
 from app.models.security import User, Role, Permission
@@ -29,7 +30,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES
 JWT_REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_TOKEN_EXPIRE_DAYS", "7"))
 
 # Password hashing configuration
-password_hash = PasswordHash.recommended()  # Uses bcrypt by default with secure settings
+password_hash = PasswordHash((BcryptHasher(),))  # Uses bcrypt explicitly
 
 
 class AuthService:

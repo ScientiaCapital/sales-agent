@@ -3,7 +3,8 @@
 from .lead import (
     LeadQualificationRequest,
     LeadQualificationResponse,
-    LeadListResponse
+    LeadListResponse,
+    LeadImportResponse
 )
 from .customer import (
     CustomerRegistrationRequest,
@@ -22,6 +23,7 @@ __all__ = [
     "LeadQualificationRequest",
     "LeadQualificationResponse",
     "LeadListResponse",
+    "LeadImportResponse",
     "CustomerRegistrationRequest",
     "CustomerRegistrationResponse",
     "AgentDeploymentRequest",

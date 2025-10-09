@@ -19,7 +19,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
-from app.core.exceptions import ExternalAPIError, ValidationError
+from app.core.exceptions import ExternalAPIException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
-from app.core.exceptions import ExternalAPIError, ValidationError
+from app.core.exceptions import ExternalAPIException, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +141,9 @@ class SearchAgent:
             if age < self.cache_ttl:
                 logger.info(f"Returning cached research for {company_name} (age: {age})")
                 return cached
-        return None    async def research_company(
+        return None
+
+    async def research_company(
         self,
         company_name: str,
         industry: Optional[str] = None,
@@ -231,7 +233,7 @@ class SearchAgent:
             
         except Exception as e:
             logger.error(f"Failed to research company {company_name}: {e}")
-            raise ExternalAPIError(
+            raise ExternalAPIException(
                 message=f"Company research failed for {company_name}",
                 details={"company": company_name, "error": str(e)}
             )

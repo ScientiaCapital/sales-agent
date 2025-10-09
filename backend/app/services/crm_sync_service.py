@@ -30,7 +30,7 @@ from app.services.crm import (
     CRMRateLimitError,
 )
 from app.services.circuit_breaker import CircuitBreaker
-from app.services.retry_handler import ExponentialBackoffRetry
+from app.services.retry_handler import RetryWithBackoff
 from app.models.crm import CRMCredential, CRMContact, CRMSyncLog
 from app.core.logging import setup_logging
 
@@ -54,7 +54,7 @@ class CRMSyncService:
         db: Session,
         redis_client: Optional[Any] = None,
         circuit_breaker: Optional[CircuitBreaker] = None,
-        retry_handler: Optional[ExponentialBackoffRetry] = None
+        retry_handler: Optional[RetryWithBackoff] = None
     ):
         """
         Initialize CRM sync service.
@@ -68,7 +68,7 @@ class CRMSyncService:
         self.db = db
         self.redis = redis_client
         self.circuit_breaker = circuit_breaker or CircuitBreaker()
-        self.retry_handler = retry_handler or ExponentialBackoffRetry(
+        self.retry_handler = retry_handler or RetryWithBackoff(
             max_retries=3,
             base_delay=2.0,
             max_delay=60.0

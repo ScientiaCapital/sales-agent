@@ -23,7 +23,6 @@ class CustomerRegistrationRequest(BaseModel):
 class CustomerRegistrationResponse(BaseModel):
     """Response schema for customer registration"""
     customer_id: int
-    firebase_uid: str
     email: str
     company_name: str
     api_key: str  # Shown only once during registration
@@ -137,7 +136,7 @@ class DocumentListResponse(BaseModel):
     filename: str
     content_type: Optional[str]
     file_size: Optional[int]
-    firebase_url: Optional[str]
+    runpod_url: Optional[str]
     text_length: Optional[int]
     icp_data: Optional[Dict]
     processing_status: str
