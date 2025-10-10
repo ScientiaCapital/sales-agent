@@ -45,6 +45,16 @@ from .campaign import (
     MessageStatus,
     MessageTone
 )
+from .conversation_models import (
+    Conversation,
+    ConversationTurn,
+    ConversationBattleCard,
+    BattleCardTemplate,
+    ConversationStatus,
+    SpeakerRole,
+    SentimentType,
+    BattleCardType
+)
 
 __all__ = [
     "Base",
@@ -81,5 +91,13 @@ __all__ = [
     "CampaignStatus",
     "CampaignChannel",
     "MessageStatus",
-    "MessageTone"
+    "MessageTone",
+    "Conversation",
+    "ConversationTurn",
+    "ConversationBattleCard",
+    "BattleCardTemplate",
+    "ConversationStatus",
+    "SpeakerRole",
+    "SentimentType",
+    "BattleCardType"
 ]
