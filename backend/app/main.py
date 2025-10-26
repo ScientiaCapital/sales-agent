@@ -24,6 +24,7 @@ from app.api import sync
 from app.api import auth
 from app.api import gdpr
 from app.api import costs
+from app.api import langgraph_agents
 # HubSpot temporarily commented out - replaced with Close CRM
 # from app.api.crm import hubspot
 from app.core.config import settings
@@ -193,6 +194,7 @@ app.include_router(linkedin.router, prefix=settings.API_V1_PREFIX)  # Task 5.4: 
 app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
 app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
 app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Cost reporting and budget monitoring
+app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # Phase 2: LangGraph agent endpoints
 
 
 @app.get("/")
