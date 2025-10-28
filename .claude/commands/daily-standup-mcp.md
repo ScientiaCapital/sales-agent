@@ -1,51 +1,69 @@
-# Daily Standup MCP - Morning Planning Workflow
+---
+description: "MCP-powered morning standup and planning"
+---
 
-Run a comprehensive morning standup using all available MCP servers.
+# ☀️ Daily Standup with MCP Intelligence
 
-## Steps
+Generate a comprehensive morning standup using all MCP servers.
 
-1. **Review Yesterday's Work** (via Task Master & Memory)
-   - Get completed tasks from yesterday
-   - Retrieve any saved context from Memory MCP
-   - Summarize progress
+## Standup Report Includes:
 
-2. **Check Current State** (via Task Master)
-   - Run `task-master list --status=in-progress`
-   - Run `task-master list --status=pending`
-   - Identify blockers or dependencies
+### 1. Yesterday's Accomplishments
+- Review recent git commits
+- Check completed tasks in Task Master AI
+- Summarize Shrimp Task Manager completions
 
-3. **Plan Today** (via Sequential Thinking + Task Master)
-   - Find next available task: `task-master next`
-   - Use Sequential Thinking to plan approach
-   - Estimate time for top 3-5 tasks
+### 2. Today's Priorities
+- Get next available task from Task Master AI
+- List high-priority tasks from Shrimp
+- Check for blocked or deferred items
 
-4. **Code Intelligence Check** (via Serena)
-   - Review any pending code reviews
-   - Check for architectural concerns
-   - Identify technical debt
+### 3. System Health Check
+- Verify all 8 MCP servers are active
+- Check database connectivity (Neon)
+- Validate environment configuration
 
-5. **Generate Standup Report**
-   - Yesterday: Completed tasks
-   - Today: Planned tasks
-   - Blockers: Any issues
-   - Notes: Key decisions or insights
+### 4. Context Refresh
+- Load relevant memories from Memory MCP
+- Review project-specific context
+- Check for any outdated assumptions
 
-## Output Format
+### 5. Blockers & Risks
+- Identify tasks with unmet dependencies
+- Check for security or performance issues
+- Review any technical debt items
 
-```markdown
-# Daily Standup - [Date]
+## Execution Flow:
 
-## ✅ Yesterday
-- [Completed tasks list]
+1. **Check Git Status** - Recent commits and current branch
+2. **Query Task Master AI** - Get task status and priorities
+3. **Query Shrimp Manager** - Verify task completions
+4. **Health Check** - All MCP servers and services
+5. **Memory Review** - Load relevant project context
+6. **Generate Report** - Formatted standup summary
 
-## 🎯 Today's Plan
-1. [Next task with ID]
-2. [Second priority task]
-3. [Third priority task]
+## Output Format:
 
-## ⚠️  Blockers
-- [Any issues or dependencies]
-
-## 💡 Notes
-- [Key insights or decisions]
 ```
+🌅 Daily Standup - [Date]
+
+✅ Yesterday's Wins:
+- [Completed tasks]
+- [Git commits]
+- [Key achievements]
+
+🎯 Today's Focus:
+- Priority 1: [Task from Task Master AI]
+- Priority 2: [Next task]
+- Priority 3: [Additional work]
+
+⚠️ Blockers:
+- [Any blockers or dependencies]
+
+💡 Notes:
+- [Important context or reminders]
+
+🏥 System Status: All systems operational ✅
+```
+
+Ready to start your day with full context and clear priorities!

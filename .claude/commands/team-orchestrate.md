@@ -1,39 +1,61 @@
-# Team Orchestrate - Full Team Workflow for Complex Features
+---
+description: "Full multi-agent orchestration for complex features"
+---
 
-Use all MCP servers in concert for complex feature development.
+# 🎭 Team Orchestration - Complex Feature Implementation
 
-## Workflow
+Coordinate multiple MCP agents for sophisticated development tasks.
 
-1. **Planning Phase** (Sequential Thinking + Shrimp)
-   - Use Sequential Thinking to break down the feature
-   - Create detailed plan with Shrimp Task Manager
-   - Generate task hierarchy
+## Multi-Agent Coordination Strategy:
 
-2. **Architecture Review** (Serena + Memory)
-   - Analyze relevant codebase sections with Serena
-   - Check Memory for architectural patterns
-   - Design solution approach
+### Phase 1: Architecture & Planning
+**Agents**: Sequential Thinking + Serena
+- Break down the feature into logical components
+- Analyze existing codebase for integration points
+- Identify potential conflicts or dependencies
 
-3. **Task Management** (Task Master AI)
-   - Create tasks in Task Master from plan
-   - Set dependencies and priorities
-   - Expand complex tasks into subtasks
+### Phase 2: Detailed Task Breakdown
+**Agents**: Shrimp Task Manager
+- Split complex tasks into actionable subtasks
+- Define verification criteria for each subtask
+- Establish dependencies and execution order
 
-4. **Implementation** (All MCPs)
-   - Use Serena for code navigation
-   - Update progress in Task Master
-   - Save key decisions to Memory
-   - Use Sequential Thinking for complex logic
+### Phase 3: Implementation Coordination
+**Agents**: Serena + Task Master AI
+- Navigate codebase using Serena's code intelligence
+- Track progress using Task Master AI
+- Execute changes with proper context
 
-5. **Verification** (Shrimp + Task Master)
-   - Verify implementation with Shrimp
-   - Update task status
-   - Document learnings in Memory
+### Phase 4: Quality Assurance
+**Agents**: Shrimp + Sequential Thinking
+- Verify each subtask completion
+- Review code quality and patterns
+- Validate against project standards
 
-## Arguments
+## Orchestration Flow:
 
-`$ARGUMENTS` - Description of the feature to implement
+1. **Understand Request** - Use Sequential Thinking to analyze requirements
+2. **Research Context** - Use Serena to find relevant code
+3. **Plan Implementation** - Use Shrimp to create task breakdown
+4. **Track Progress** - Use Task Master AI for coordination
+5. **Verify Quality** - Use Shrimp to validate completion
 
-## Output
+## Agent Routing Logic:
 
-Progress report at each phase and final implementation summary.
+- **Code Analysis** → Serena (find_symbol, search_for_pattern)
+- **Problem Solving** → Sequential Thinking (step-by-step analysis)
+- **Task Management** → Task Master AI (next_task, set_status)
+- **Verification** → Shrimp (verify_task, analyze complexity)
+- **Context** → Memory (save insights, recall patterns)
+
+## Example Usage:
+
+Feature: "Add Supabase authentication to dual-domain platform"
+
+1. Sequential Thinking: Break down auth requirements
+2. Serena: Find existing auth code and integration points
+3. Shrimp: Split into subtasks (setup, integration, testing)
+4. Task Master: Track implementation progress
+5. Shrimp: Verify auth works across all 5 tenants
+
+Perfect for: Architecture changes, new features, complex refactoring

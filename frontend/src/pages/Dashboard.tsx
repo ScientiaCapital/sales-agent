@@ -16,9 +16,7 @@ import type { ChartOptions } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
 import {
   TrendingUp,
-  Users,
   MessageSquare,
-  FileText,
   Zap,
   ArrowRight,
   Target,
@@ -26,9 +24,7 @@ import {
   Phone,
   CheckCircle2,
   Clock,
-  DollarSign,
-  Activity,
-  AlertCircle
+  Activity
 } from 'lucide-react';
 
 // Register Chart.js components
