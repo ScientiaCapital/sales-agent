@@ -154,37 +154,27 @@ class MarketingAgentState(TypedDict):
     """
     State for MarketingAgent (parallel execution graph).
 
-    Flow: Input → [Email | LinkedIn | Twitter] in parallel → Aggregate → Output
-    Uses: Multi-channel campaign execution with parallel content generation
+    Flow: brief → [email | linkedin | social | blog] in parallel → aggregate
+    Uses: Multi-channel content generation with cost-optimized LLM selection
     """
-    # Message history
-    messages: Annotated[list[BaseMessage], add_messages]
-
-    # Agent identification
-    agent_type: str
-    lead_id: Optional[int]
-    campaign_id: Optional[int]
-
     # Input: Campaign parameters
-    campaign_theme: str
+    campaign_brief: str
     target_audience: str
-    channels: List[str]  # email, linkedin, twitter
+    campaign_goals: List[str]
 
-    # Parallel execution results (use add reducer for concurrent updates)
+    # Parallel execution results
     email_content: Optional[str]
     linkedin_content: Optional[str]
-    twitter_content: Optional[str]
-    content_variants: Annotated[List[Dict[str, Any]], add]  # All generated variants
+    social_content: Optional[str]
+    blog_content: Optional[str]
+
+    # Aggregated metadata (use add reducer for concurrent updates)
+    generation_metadata: Annotated[Dict[str, Any], add]
 
     # Aggregation results
-    campaign_plan: Optional[Dict[str, Any]]  # Unified campaign strategy
-    channel_schedule: Optional[Dict[str, str]]  # When to post on each channel
-
-    # Performance tracking
-    channels_completed: Annotated[List[str], add]  # Channels with generated content
-
-    # Metadata
-    metadata: Dict[str, Any]
+    total_cost_usd: Optional[float]
+    recommended_schedule: Optional[Dict[str, str]]
+    content_quality_score: Optional[float]
 
 
 # ========== BDR Agent (Human-in-Loop StateGraph) ==========
