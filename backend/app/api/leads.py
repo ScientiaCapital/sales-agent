@@ -20,6 +20,7 @@ from app.core.exceptions import (
     ValidationError,
     DatabaseError
 )
+from app.services.langgraph.agents import QualificationAgent
 
 logger = setup_logging(__name__)
 
@@ -29,6 +30,7 @@ router = APIRouter(prefix="/leads", tags=["leads"])
 cerebras_service = CerebrasService()
 csv_importer = CSVImportService()
 lead_scorer = LeadScorer()  # Default weights
+qualification_agent = QualificationAgent()  # LCEL-based agent (Phase 2.1)
 
 
 @router.post("/qualify", response_model=LeadQualificationResponse, status_code=201)
@@ -186,6 +188,130 @@ async def qualify_lead(
     db.refresh(lead)
 
     return lead
+
+
+@router.post("/qualify-lcel", response_model=LeadQualificationResponse, status_code=201)
+async def qualify_lead_lcel(
+    request: LeadQualificationRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Qualify a lead using LangChain LCEL chain with Cerebras (Phase 2.1)
+
+    **Architecture**: LCEL chain with structured output
+    - Pattern: ChatPromptTemplate | ChatCerebras.with_structured_output()
+    - Guaranteed schema compliance via Pydantic
+    - Built-in LangSmith tracing for observability
+    - No manual JSON parsing required
+
+    **Performance Target**: <500ms end-to-end (improved from 633ms baseline)
+    - Model: llama3.1-8b via Cerebras Cloud SDK
+    - Temperature: 0.2 (consistent scoring)
+    - Max tokens: 250 (sufficient for structured output)
+
+    **Advantages over /qualify**:
+    - Structured output eliminates parsing errors
+    - More detailed reasoning breakdown (fit, contact, potential)
+    - Type-safe Pydantic validation
+    - LangSmith observability
+    - Cleaner codebase (LCEL composition)
+
+    **Returns**: Lead with detailed qualification including:
+    - qualification_score (0-100)
+    - tier (hot/warm/cold/unqualified)
+    - fit_assessment, contact_quality, sales_potential
+    - actionable recommendations
+    """
+    logger.info(f"LCEL qualification: company={request.company_name}, industry={request.industry}")
+
+    try:
+        # Call LCEL qualification agent
+        result, latency_ms, metadata = await qualification_agent.qualify(
+            company_name=request.company_name,
+            company_website=request.company_website,
+            company_size=request.company_size,
+            industry=request.industry,
+            contact_name=request.contact_name,
+            contact_title=request.contact_title,
+            notes=request.notes
+        )
+
+        # Build combined reasoning from structured output
+        combined_reasoning = (
+            f"{result.qualification_reasoning} | "
+            f"Fit: {result.fit_assessment} | "
+            f"Contact: {result.contact_quality} | "
+            f"Potential: {result.sales_potential}"
+        )
+
+        # Create Lead record with LCEL results
+        lead = Lead(
+            company_name=request.company_name,
+            company_website=request.company_website,
+            company_size=request.company_size,
+            industry=request.industry,
+            contact_name=request.contact_name,
+            contact_email=request.contact_email,
+            contact_phone=request.contact_phone,
+            contact_title=request.contact_title,
+            qualification_score=round(result.qualification_score, 1),
+            qualification_reasoning=combined_reasoning,
+            qualification_model=f"{metadata['model']}-lcel",
+            qualification_latency_ms=latency_ms,
+            qualified_at=datetime.now(),
+            notes=request.notes,
+            additional_data={
+                "tier": result.tier,
+                "recommendations": result.recommendations,
+                "fit_assessment": result.fit_assessment,
+                "contact_quality": result.contact_quality,
+                "sales_potential": result.sales_potential,
+                "agent_type": "qualification_lcel",
+                "lcel_chain": True,
+                "estimated_cost_usd": metadata.get("estimated_cost_usd", 0.0)
+            }
+        )
+
+        db.add(lead)
+
+        # Track API call
+        api_call = CerebrasAPICall(
+            endpoint="/chat/completions",
+            model=metadata["model"],
+            prompt_tokens=metadata.get("estimated_tokens", 250) // 2,
+            completion_tokens=metadata.get("estimated_tokens", 250) // 2,
+            total_tokens=metadata.get("estimated_tokens", 250),
+            latency_ms=latency_ms,
+            cache_hit=False,
+            cost_usd=metadata.get("estimated_cost_usd", 0.000025),
+            input_cost_usd=metadata.get("estimated_cost_usd", 0.000025) * 0.5,
+            output_cost_usd=metadata.get("estimated_cost_usd", 0.000025) * 0.5,
+            operation_type="lead_qualification_lcel",
+            success=True,
+            metadata={
+                "score": round(result.qualification_score, 1),
+                "tier": result.tier,
+                "lcel_chain": True,
+                "temperature": metadata["temperature"]
+            }
+        )
+
+        db.add(api_call)
+        db.commit()
+        db.refresh(lead)
+
+        logger.info(
+            f"LCEL qualification complete: company={request.company_name}, "
+            f"score={result.qualification_score}, tier={result.tier}, "
+            f"latency={latency_ms}ms"
+        )
+
+        return lead
+
+    except Exception as e:
+        logger.error(f"LCEL qualification failed: company={request.company_name}, error={str(e)}", exc_info=True)
+        db.rollback()
+        raise
 
 
 @router.get("/", response_model=List[LeadListResponse])
