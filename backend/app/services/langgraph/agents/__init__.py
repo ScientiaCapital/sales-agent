@@ -46,8 +46,11 @@ from .qualification_agent import (
     LeadQualificationResult,
 )
 
-# Phase 2.2: EnrichmentAgent (ReAct) - Coming soon
-# from .enrichment_agent import EnrichmentAgent
+# Phase 2.2: EnrichmentAgent (ReAct) ✅ COMPLETE
+from .enrichment_agent import (
+    EnrichmentAgent,
+    EnrichmentResult,
+)
 
 # Phase 2.3: GrowthAgent (Cyclic StateGraph) - Coming soon
 # from .growth_agent import GrowthAgent
@@ -63,12 +66,15 @@ from .qualification_agent import (
 
 
 __all__ = [
-    # Phase 2.1 - Available Now
+    # Phase 2.1 - QualificationAgent (LCEL)
     "QualificationAgent",
     "LeadQualificationResult",
 
-    # Phase 2.2-2.6 - Coming Soon
-    # "EnrichmentAgent",
+    # Phase 2.2 - EnrichmentAgent (ReAct)
+    "EnrichmentAgent",
+    "EnrichmentResult",
+
+    # Phase 2.3-2.6 - Coming Soon
     # "GrowthAgent",
     # "MarketingAgent",
     # "BDRAgent",
