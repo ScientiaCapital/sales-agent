@@ -4,6 +4,7 @@ Start the FastAPI server with environment variables loaded from .env
 """
 import os
 import sys
+import atexit
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -14,6 +15,9 @@ load_dotenv(env_path)
 # Add backend to Python path
 backend_path = Path(__file__).parent / 'backend'
 sys.path.insert(0, str(backend_path))
+
+# Add shared notifications
+sys.path.insert(0, str(Path(__file__).parent.parent / '.shared'))
 
 # Verify critical environment variables
 required_vars = ['CEREBRAS_API_KEY', 'DATABASE_URL']
@@ -27,14 +31,29 @@ print("✓ Environment variables loaded successfully")
 print(f"✓ CEREBRAS_API_KEY: {os.getenv('CEREBRAS_API_KEY')[:10]}...")
 print(f"✓ DATABASE_URL: {os.getenv('DATABASE_URL')[:30]}...")
 
+# Import notifications
+try:
+    from notify import project_started, project_stopped, error
+    project_started(project="sales-agent", port=8001)
+    atexit.register(lambda: project_stopped(project="sales-agent"))
+except ImportError:
+    print("⚠️  Notifications not installed. Run: .shared/install_notifications.sh")
+
 # Start uvicorn server
 import uvicorn
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8001,
-        reload=True,
-        reload_dirs=[str(backend_path)]
-    )
+    try:
+        uvicorn.run(
+            "app.main:app",
+            host="0.0.0.0",
+            port=8001,
+            reload=True,
+            reload_dirs=[str(backend_path)]
+        )
+    except Exception as e:
+        try:
+            error("Server Error", str(e), project="sales-agent")
+        except:
+            pass
+        raise

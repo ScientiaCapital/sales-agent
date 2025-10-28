@@ -1,0 +1,421 @@
+# .cursorrules for Sales-Agent
+# AI-powered sales automation platform with LangChain/LangGraph agents
+
+## System Configuration
+
+You are an expert full-stack developer specializing in:
+- **Sales Automation & AI Agents**: Lead qualification, enrichment, conversational AI
+- **Modern Agent Frameworks**: LangChain LCEL chains, LangGraph StateGraphs, tool integration
+- **Web Development**: React/Next.js, TypeScript, FastAPI, PostgreSQL
+- **AI Integration**: Cerebras ultra-fast inference, Cartesia TTS, LangSmith observability
+- **System Architecture**: Hybrid chain/graph pattern for optimal performance
+
+## Project Context
+
+**Sales-Agent** is an AI-powered sales automation platform that:
+- Qualifies leads in <1000ms using Cerebras inference
+- Enriches contacts with Apollo.io and LinkedIn data
+- Generates personalized marketing campaigns
+- Automates BDR booking workflows
+- Provides voice-enabled conversational AI with Cartesia TTS
+- Syncs bidirectionally with Close CRM, Apollo, and LinkedIn
+
+### Technical Stack
+- **Frontend**: React 18+ with TypeScript, Vite, Tailwind CSS v4
+- **Backend**: FastAPI with Python 3.13+, SQLAlchemy ORM, Pydantic models
+- **Database**: PostgreSQL 16 with proper indexing and migrations
+- **Cache/Queue**: Redis 7 for state persistence and pub/sub
+- **AI Layer**:
+  - **LangChain/LangGraph**: Agent orchestration framework
+  - **Cerebras**: Ultra-fast inference (633ms, llama3.1-8b)
+  - **Cartesia**: Text-to-speech for voice agents
+  - **Claude Sonnet 4**: Fallback for complex reasoning
+  - **DeepSeek v3**: Cost-effective research
+- **Observability**: LangSmith tracing, Sentry error tracking, Datadog APM
+- **CRM Integration**: Close CRM, Apollo.io, LinkedIn (bidirectional sync)
+- **Deployment**: Docker containers, Redis state persistence
+
+## LangChain/LangGraph Architecture
+
+### Hybrid Agent Pattern
+
+**When to use LCEL Chains:**
+- Linear workflows without branching
+- Simple input → process → output patterns
+- Fast execution required (<1000ms)
+- Examples: QualificationAgent, EnrichmentAgent
+
+**When to use LangGraph StateGraphs:**
+- Multi-step workflows with conditional logic
+- Cyclic execution (research → validate → research again)
+- Human-in-the-loop interrupts
+- Parallel node execution
+- Stateful conversations
+- Examples: GrowthAgent, MarketingAgent, BDRAgent, ConversationAgent
+
+### Agent Design Patterns
+
+#### LCEL Chain Pattern
+```python
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+chain = (
+    RunnablePassthrough()
+    | prompt_template
+    | cerebras_llm  # Custom Cerebras wrapper
+    | StrOutputParser()
+    | post_processor
+)
+
+result = await chain.ainvoke({"lead_data": data})
+```
+
+#### LangGraph StateGraph Pattern
+```python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    messages: list
+    current_step: str
+    confidence: float
+
+graph = StateGraph(AgentState)
+graph.add_node("research", research_node)
+graph.add_node("analyze", analysis_node)
+graph.add_node("validate", validation_node)
+
+graph.add_conditional_edges(
+    "validate",
+    should_continue,
+    {
+        "continue": "research",
+        "complete": END
+    }
+)
+
+graph.set_entry_point("research")
+app = graph.compile(checkpointer=redis_checkpointer)
+```
+
+### Tool Integration
+
+All tools must use `@tool` decorator:
+
+```python
+from langchain.tools import tool
+from typing import Annotated
+
+@tool
+async def search_crm(
+    company_name: Annotated[str, "The company name to search for"]
+) -> dict:
+    """Search Close CRM for company information."""
+    # Implementation using existing CRM services
+    pass
+```
+
+**Required Tools:**
+- `search_crm` - Query Close CRM
+- `enrich_with_apollo` - Apollo.io enrichment
+- `scrape_linkedin` - LinkedIn profile data
+- `analyze_tech_stack` - Technology stack analysis
+- `generate_voice` - Cartesia TTS
+- `search_web` - Web research
+
+## Development Guidelines
+
+### Code Style & Standards
+- **Python**: Black formatting, type hints, docstrings for all functions
+- **TypeScript**: Strict mode, explicit types, no `any` usage
+- **React**: Functional components with hooks, proper error boundaries
+- **Testing**: pytest for backend, vitest for frontend, >80% coverage
+- **API Design**: RESTful endpoints, OpenAPI documentation, proper HTTP status codes
+
+### File Organization
+```
+sales-agent/
+├── frontend/                      # React application
+│   ├── src/
+│   │   ├── components/            # Reusable UI components
+│   │   ├── pages/                # Route-based page components
+│   │   ├── hooks/                # Custom React hooks
+│   │   └── services/             # API communication layer
+├── backend/                      # FastAPI application
+│   ├── app/
+│   │   ├── api/                  # API route handlers
+│   │   │   ├── langgraph_agents.py  # LangGraph agent endpoints
+│   │   │   ├── leads.py          # Lead management
+│   │   │   ├── crm/              # CRM endpoints
+│   │   │   └── streaming.py      # WebSocket streaming
+│   │   ├── models/               # SQLAlchemy database models
+│   │   │   ├── langgraph_models.py  # LangGraph execution tracking
+│   │   │   ├── lead.py           # Lead model
+│   │   │   └── crm.py           # CRM models
+│   │   ├── schemas/              # Pydantic request/response models
+│   │   ├── services/             # Business logic layer
+│   │   │   ├── langgraph/        # LangGraph agents (NEW)
+│   │   │   │   ├── agents/       # Agent implementations
+│   │   │   │   │   ├── qualification_agent.py
+│   │   │   │   │   ├── enrichment_agent.py
+│   │   │   │   │   ├── growth_agent.py
+│   │   │   │   │   ├── marketing_agent.py
+│   │   │   │   │   ├── bdr_agent.py
+│   │   │   │   │   └── conversation_agent.py
+│   │   │   │   ├── base.py       # LangGraph utilities
+│   │   │   │   ├── schemas.py    # State TypedDicts
+│   │   │   │   ├── tools.py      # LangChain tools
+│   │   │   │   └── redis_checkpointer.py
+│   │   │   ├── langchain/        # LangChain integrations
+│   │   │   │   ├── cerebras_llm.py
+│   │   │   │   └── cartesia_tool.py
+│   │   │   ├── agents/legacy/    # Legacy BaseAgent pattern
+│   │   │   └── crm/             # CRM integrations
+│   │   ├── core/                 # Configuration and utilities
+│   │   │   └── langsmith_config.py
+│   │   └── tests/                # Test suite
+│   │       └── test_langgraph_agents.py
+├── .env                          # Environment variables
+├── docker-compose.yml            # Infrastructure (PostgreSQL + Redis)
+└── LANGGRAPH_GUIDE.md           # LangGraph patterns guide
+```
+
+### LangChain/LangGraph Best Practices
+
+#### State Management
+- Use TypedDict for all state definitions
+- Keep state minimal - only what's needed across nodes
+- Use `Annotated` for field descriptions in tools
+- Persist state to Redis for long-running workflows
+
+#### Streaming
+- Always implement `.astream()` for real-time UX
+- Stream tokens from Cerebras for <1000ms TTFT
+- Stream intermediate graph states for progress updates
+- Use WebSocket for bidirectional agent communication
+
+#### Error Handling
+- Implement retry logic in nodes (3 attempts max)
+- Use circuit breakers for external services
+- Graceful degradation - return partial results on failure
+- Log all errors to LangSmith with context
+
+#### Performance Optimization
+- Use Cerebras for fast qualification (<$0.0001/request)
+- Batch tool calls when possible
+- Cache enrichment data in Redis
+- Parallel node execution for independent operations
+- Set appropriate timeout limits per agent type
+
+### AI Integration Guidelines
+
+#### Cerebras Integration
+```python
+from app.services.langchain.cerebras_llm import CerebrasLLM
+
+llm = CerebrasLLM(
+    model="llama3.1-8b",
+    temperature=0.7,
+    max_tokens=500
+)
+
+# Target: 633ms average latency
+# Cost: $0.000006 per request
+```
+
+#### Cartesia TTS
+```python
+from app.services.langchain.cartesia_tool import generate_voice
+
+@tool
+async def speak_response(text: str) -> bytes:
+    """Generate voice output using Cartesia TTS."""
+    return await generate_voice(text, voice_id="default")
+```
+
+#### LangSmith Tracing
+```python
+from langsmith import traceable
+
+@traceable(name="qualification_chain", tags=["lead", "qualification"])
+async def qualify_lead(lead_data: dict) -> dict:
+    # Automatically traced in LangSmith
+    pass
+```
+
+### CRM Integration Patterns
+
+#### Tool-based CRM Access
+```python
+@tool
+async def search_crm(company_name: str) -> dict:
+    """Search Close CRM for company data."""
+    from app.services.crm.close import CloseCRM
+
+    crm = CloseCRM()
+    leads = await crm.search_leads(query=f"company:{company_name}")
+    return {"leads": leads, "count": len(leads)}
+```
+
+#### Bidirectional Sync
+- Use existing `CRMSyncService` for background sync
+- Agents access fresh data via tools
+- State changes trigger sync events
+- Conflict resolution via last-write-wins
+
+## Project-Specific Best Practices
+
+### Lead Processing
+- **Qualification**: <1000ms with Cerebras chain
+- **Enrichment**: Use tools for Apollo + LinkedIn
+- **Scoring**: 0-100 scale with confidence intervals
+- **Audit Trails**: Track all agent decisions in database
+
+### Agent Workflow Design
+- **Simple agents**: LCEL chains (qualification, enrichment)
+- **Complex agents**: StateGraphs (growth, marketing, BDR, conversation)
+- **Human-in-loop**: Use interrupts for confirmations
+- **State persistence**: Redis checkpointer for resumable workflows
+
+### Voice Agent Patterns
+- Transcribe audio → understand intent → generate response → synthesize voice
+- Use Cerebras for fast intent recognition
+- Cartesia TTS for natural-sounding voice
+- WebSocket streaming for real-time feel
+- Context window management for long conversations
+
+### Cost Management
+- Cerebras for fast, cheap operations (<$0.0001)
+- DeepSeek for research ($0.00027)
+- Claude for complex reasoning ($0.001743)
+- Track costs per agent execution in database
+
+## Testing Strategy
+
+### Unit Tests
+```python
+@pytest.mark.asyncio
+async def test_qualification_chain():
+    """Test QualificationAgent chain with mock Cerebras."""
+    from app.services.langgraph.agents.qualification_agent import chain
+
+    result = await chain.ainvoke({
+        "company_name": "Test Corp",
+        "industry": "SaaS"
+    })
+
+    assert "score" in result
+    assert 0 <= result["score"] <= 100
+```
+
+### Integration Tests
+```python
+@pytest.mark.integration
+async def test_growth_agent_graph():
+    """Test GrowthAgent StateGraph end-to-end."""
+    from app.services.langgraph.agents.growth_agent import app
+
+    result = await app.ainvoke({
+        "company_name": "Test Corp",
+        "research_depth": "standard"
+    })
+
+    assert result["status"] == "complete"
+    assert len(result["opportunities"]) > 0
+```
+
+### Streaming Tests
+```python
+@pytest.mark.asyncio
+async def test_conversation_agent_streaming():
+    """Test ConversationAgent voice streaming."""
+    from app.services.langgraph.agents.conversation_agent import app
+
+    chunks = []
+    async for chunk in app.astream({"user_input": "Hello"}):
+        chunks.append(chunk)
+
+    assert len(chunks) > 0
+    assert chunks[-1]["type"] == "complete"
+```
+
+## Security & Compliance
+
+### API Keys & Secrets
+- **Never hardcode**: All keys in `.env` file
+- **LangSmith**: `LANGCHAIN_API_KEY`
+- **Cerebras**: `CEREBRAS_API_KEY`
+- **Cartesia**: `CARTESIA_API_KEY`
+- **CRM**: `CLOSE_API_KEY`, `APOLLO_API_KEY`
+
+### Data Protection
+- PII handling in compliance with regulations
+- Encryption at-rest and in-transit
+- Audit logging for all CRM operations
+- State data TTL in Redis (7 days max)
+
+## Performance Monitoring
+
+### LangSmith Dashboards
+- Track latency per agent type
+- Monitor token usage and costs
+- Identify failing chains/graphs
+- Trace multi-hop tool calls
+
+### Application Metrics
+- Agent execution times (target: qualification <1000ms)
+- Tool call success rates
+- State persistence operations
+- WebSocket connection stability
+
+## Error Handling & Debugging
+
+### LangSmith Debugging
+```python
+# View trace in LangSmith UI
+# URL: https://smith.langchain.com
+# Project: sales-agent-development
+```
+
+### Common Issues
+- **Tool failures**: Implement retries with exponential backoff
+- **State corruption**: Use strict TypedDict validation
+- **Streaming breaks**: Check WebSocket connection stability
+- **Cost overruns**: Monitor token usage per agent
+
+---
+
+## Quick Reference
+
+### Most Common Patterns
+
+**Create LCEL Chain:**
+```python
+chain = prompt | llm | parser | post_process
+result = await chain.ainvoke(input_data)
+```
+
+**Create StateGraph:**
+```python
+graph = StateGraph(StateClass)
+graph.add_node("step1", node_func)
+graph.add_conditional_edges("step1", router, {"a": "step2", "b": END})
+app = graph.compile(checkpointer=checkpointer)
+```
+
+**Stream Results:**
+```python
+async for chunk in app.astream(input_data):
+    print(chunk)
+```
+
+**Use Tools:**
+```python
+@tool
+async def my_tool(param: str) -> dict:
+    """Tool description."""
+    return {"result": param}
+```
+
+Remember: This is a production sales automation platform. Code quality, agent reliability, and cost efficiency are paramount. Always trace with LangSmith, test streaming, and monitor costs per agent execution.
