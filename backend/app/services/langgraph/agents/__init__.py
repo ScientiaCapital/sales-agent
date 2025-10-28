@@ -58,8 +58,11 @@ from .growth_agent import (
     GrowthCampaignResult,
 )
 
-# Phase 2.4: MarketingAgent (Parallel StateGraph) - Coming soon
-# from .marketing_agent import MarketingAgent
+# Phase 2.4: MarketingAgent (Parallel StateGraph) ✅ COMPLETE
+from .marketing_agent import (
+    MarketingAgent,
+    MarketingCampaignResult,
+)
 
 # Phase 2.5: BDRAgent (Human-in-Loop) - Coming soon
 # from .bdr_agent import BDRAgent
@@ -81,8 +84,11 @@ __all__ = [
     "GrowthAgent",
     "GrowthCampaignResult",
 
-    # Phase 2.4-2.6 - Coming Soon
-    # "MarketingAgent",
+    # Phase 2.4 - MarketingAgent (Parallel StateGraph)
+    "MarketingAgent",
+    "MarketingCampaignResult",
+
+    # Phase 2.5-2.6 - Coming Soon
     # "BDRAgent",
     # "ConversationAgent",
 ]
