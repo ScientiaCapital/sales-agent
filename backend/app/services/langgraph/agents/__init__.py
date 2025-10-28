@@ -52,8 +52,11 @@ from .enrichment_agent import (
     EnrichmentResult,
 )
 
-# Phase 2.3: GrowthAgent (Cyclic StateGraph) - Coming soon
-# from .growth_agent import GrowthAgent
+# Phase 2.3: GrowthAgent (Cyclic StateGraph) ✅ COMPLETE
+from .growth_agent import (
+    GrowthAgent,
+    GrowthCampaignResult,
+)
 
 # Phase 2.4: MarketingAgent (Parallel StateGraph) - Coming soon
 # from .marketing_agent import MarketingAgent
@@ -74,8 +77,11 @@ __all__ = [
     "EnrichmentAgent",
     "EnrichmentResult",
 
-    # Phase 2.3-2.6 - Coming Soon
-    # "GrowthAgent",
+    # Phase 2.3 - GrowthAgent (Cyclic StateGraph)
+    "GrowthAgent",
+    "GrowthCampaignResult",
+
+    # Phase 2.4-2.6 - Coming Soon
     # "MarketingAgent",
     # "BDRAgent",
     # "ConversationAgent",
