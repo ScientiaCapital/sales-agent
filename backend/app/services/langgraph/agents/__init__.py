@@ -64,8 +64,11 @@ from .marketing_agent import (
     MarketingCampaignResult,
 )
 
-# Phase 2.5: BDRAgent (Human-in-Loop) - Coming soon
-# from .bdr_agent import BDRAgent
+# Phase 2.5: BDRAgent (Human-in-Loop) ✅ COMPLETE
+from .bdr_agent import (
+    BDRAgent,
+    BDROutreachResult,
+)
 
 # Phase 2.6: ConversationAgent (Voice) - Coming soon
 # from .conversation_agent import ConversationAgent
@@ -88,7 +91,10 @@ __all__ = [
     "MarketingAgent",
     "MarketingCampaignResult",
 
-    # Phase 2.5-2.6 - Coming Soon
-    # "BDRAgent",
+    # Phase 2.5 - BDRAgent (Human-in-Loop)
+    "BDRAgent",
+    "BDROutreachResult",
+
+    # Phase 2.6 - Coming Soon
     # "ConversationAgent",
 ]
