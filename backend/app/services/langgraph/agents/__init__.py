@@ -70,8 +70,11 @@ from .bdr_agent import (
     BDROutreachResult,
 )
 
-# Phase 2.6: ConversationAgent (Voice) - Coming soon
-# from .conversation_agent import ConversationAgent
+# Phase 2.6: ConversationAgent (Voice) ✅ COMPLETE
+from .conversation_agent import (
+    ConversationAgent,
+    ConversationTurnResult,
+)
 
 
 __all__ = [
@@ -95,6 +98,7 @@ __all__ = [
     "BDRAgent",
     "BDROutreachResult",
 
-    # Phase 2.6 - Coming Soon
-    # "ConversationAgent",
+    # Phase 2.6 - ConversationAgent (Voice)
+    "ConversationAgent",
+    "ConversationTurnResult",
 ]
