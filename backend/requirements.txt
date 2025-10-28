@@ -49,8 +49,21 @@ flake8==7.1.1
 mypy==1.11.2
 pre-commit==4.0.1
 
-# AI/ML (will be expanded in Task 2)
-openai==1.52.0  # For OpenAI-compatible APIs including Cerebras
+# AI/ML - LangChain/LangGraph Framework
+langchain==0.3.15  # Core LangChain framework
+langchain-core==0.3.28  # LangChain core abstractions
+langchain-community==0.3.14  # Community integrations
+langgraph==0.2.60  # StateGraph orchestration for complex agents
+langsmith==0.2.6  # LangSmith tracing and observability
+
+# LangChain Integrations
+langchain-anthropic==0.3.3  # Anthropic Claude integration
+langchain-openai==0.2.14  # OpenAI integration (for Cerebras via custom base_url)
+langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
+
+# AI/ML - Model Providers
+cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
+openai==1.52.0  # For OpenAI-compatible APIs (keeping for compatibility)
 anthropic==0.39.0  # Claude streaming and batch API support
 
 # Cloud Infrastructure - RunPod
@@ -73,8 +86,12 @@ sentence-transformers==3.3.1  # For generating text embeddings
 numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
 pgvector==0.3.6  # PostgreSQL vector extension support
 
+# Web Search (for Research Agents - NEW: 2025)
+tavily-python==0.7.12  # Production-grade web search API
+duckduckgo-search==3.8.5  # Fallback search engine
+
 # Voice Processing (Task 6: Cartesia Integration)
-cartesia==1.1.2  # Cartesia AI SDK for TTS/STT
+cartesia==2.0.13  # Cartesia AI SDK for TTS/STT (UPGRADED: WebSocket streaming, sonic-3, 50% faster)
 pyaudio==0.2.14  # Audio I/O for voice clients
 wave==0.0.2  # WAV file processing
 websockets==13.1  # WebSocket client/server

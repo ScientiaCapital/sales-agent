@@ -1,8 +1,11 @@
 """
 Cartesia Voice Service - Ultra-fast text-to-speech and speech-to-text
 
-Provides real-time voice synthesis and recognition with <200ms latency per operation.
-Implements WebSocket streaming, voice cloning, and emotion control.
+Uses cartesia 2.0.13 with WebSocket streaming for ultra-low latency TTS.
+Models: sonic-2 (90ms, highest quality) and sonic-turbo (40ms, fastest).
+
+Provides real-time voice synthesis with <100ms latency using sonic-turbo.
+Implements WebSocket streaming, voice cloning, and model selection.
 """
 
 import asyncio
@@ -54,6 +57,7 @@ class VoiceConfig:
     """Voice configuration for synthesis."""
     voice_id: str
     language: str = "en"
+    model: str = "sonic-2"  # "sonic-2" (90ms, quality) or "sonic-turbo" (40ms, speed)
     emotion: Optional[VoiceEmotion] = None
     speed: VoiceSpeed = VoiceSpeed.NORMAL
     sample_rate: int = 44100
@@ -89,8 +93,9 @@ class CartesiaService:
     TTS_COST_PER_CHAR = 0.000006  # $6 per 1M characters
     STT_COST_PER_SECOND = 0.0004  # $0.40 per 1000 seconds
 
-    # Performance targets
-    MAX_TTS_LATENCY_MS = 200
+    # Performance targets (cartesia 2.0.13)
+    MAX_TTS_LATENCY_MS_TURBO = 100  # sonic-turbo target: 40ms model + 60ms overhead
+    MAX_TTS_LATENCY_MS_SONIC2 = 150  # sonic-2 target: 90ms model + 60ms overhead
     MAX_STT_LATENCY_MS = 300
 
     # Audio buffer settings for minimal jitter
@@ -178,9 +183,9 @@ class CartesiaService:
                 ws = await self.async_client.tts.websocket()
 
                 try:
-                    # Send TTS request
+                    # Send TTS request with configured model
                     async for output in ws.send(
-                        model_id="sonic-2",  # Latest ultra-fast model
+                        model_id=voice_config.model,  # sonic-2 (quality) or sonic-turbo (speed)
                         transcript=text,
                         voice=voice_params,
                         language=voice_config.language,
@@ -213,7 +218,7 @@ class CartesiaService:
             else:
                 # Non-streaming: Get complete audio at once
                 response = await self.async_client.tts.bytes(
-                    model_id="sonic-2",
+                    model_id=voice_config.model,  # sonic-2 (quality) or sonic-turbo (speed)
                     transcript=text,
                     voice=voice_params,
                     language=voice_config.language,
@@ -222,10 +227,14 @@ class CartesiaService:
 
                 total_latency = int((time.perf_counter() - start_time) * 1000)
 
-                # Verify latency target
-                if total_latency > self.MAX_TTS_LATENCY_MS:
+                # Verify latency target based on model
+                max_latency = (
+                    self.MAX_TTS_LATENCY_MS_TURBO if "turbo" in voice_config.model
+                    else self.MAX_TTS_LATENCY_MS_SONIC2
+                )
+                if total_latency > max_latency:
                     logger.warning(
-                        f"TTS latency {total_latency}ms exceeds target {self.MAX_TTS_LATENCY_MS}ms"
+                        f"TTS latency {total_latency}ms exceeds target {max_latency}ms for {voice_config.model}"
                     )
 
                 metric = VoiceMetrics(
@@ -575,9 +584,9 @@ class CartesiaService:
         if experimental_controls:
             voice_params["experimental_controls"] = experimental_controls
 
-        # Stream audio
+        # Stream audio with configured model
         async for output in ws.send(
-            model_id="sonic-2",
+            model_id=voice_config.model,  # sonic-2 (quality) or sonic-turbo (speed)
             transcript=text,
             voice=voice_params,
             language=voice_config.language,
