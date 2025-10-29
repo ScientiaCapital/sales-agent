@@ -234,38 +234,38 @@ class BatchEnrichmentService:
                     
                     # Update lead with company enrichment
                     if company_data:
-                if company_data.get('name') and not lead.company_name:
-                    lead.company_name = company_data['name']
-                
-                if company_data.get('industry') and not lead.industry:
-                    lead.industry = company_data['industry']
-                
-                if company_data.get('employee_count'):
-                    # Map employee count to company_size
-                    emp_count = company_data['employee_count']
-                    if emp_count < 10:
-                        lead.company_size = "1-10"
-                    elif emp_count < 50:
-                        lead.company_size = "10-50"
-                    elif emp_count < 200:
-                        lead.company_size = "50-200"
-                    elif emp_count < 500:
-                        lead.company_size = "200-500"
-                    else:
-                        lead.company_size = "500+"
-                
-                    # Store company enrichment data
-                    if not lead.additional_data:
-                        lead.additional_data = {}
-                    
-                    lead.additional_data['company_enrichment'] = {
-                        'domain': domain,
-                        'enriched_at': datetime.now().isoformat(),
-                        'apollo_data': company_data
-                    }
-                    
-                    self.db.commit()
-                    
+                        if company_data.get('name') and not lead.company_name:
+                            lead.company_name = company_data['name']
+                        
+                        if company_data.get('industry') and not lead.industry:
+                            lead.industry = company_data['industry']
+                        
+                        if company_data.get('employee_count'):
+                            # Map employee count to company_size
+                            emp_count = company_data['employee_count']
+                            if emp_count < 10:
+                                lead.company_size = "1-10"
+                            elif emp_count < 50:
+                                lead.company_size = "10-50"
+                            elif emp_count < 200:
+                                lead.company_size = "50-200"
+                            elif emp_count < 500:
+                                lead.company_size = "200-500"
+                            else:
+                                lead.company_size = "500+"
+                        
+                        # Store company enrichment data
+                        if not lead.additional_data:
+                            lead.additional_data = {}
+                        
+                        lead.additional_data['company_enrichment'] = {
+                            'domain': domain,
+                            'enriched_at': datetime.now().isoformat(),
+                            'apollo_data': company_data
+                        }
+                        
+                        self.db.commit()
+                        
                         return {
                             'status': 'company_enriched',
                             'lead_id': lead.id,
