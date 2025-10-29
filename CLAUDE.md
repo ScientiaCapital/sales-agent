@@ -4,7 +4,7 @@
 
 AI-powered sales automation platform with **production-ready CRM integration**, multi-agent architecture, and intelligent outreach automation. Features Close CRM, Apollo.io, and LinkedIn integrations with automated bidirectional sync, voice capabilities, document processing, and knowledge base.
 
-**Current Status**: ✅ Phase 3 Complete - LangGraph migration with 6 specialized agents (QualificationAgent, EnrichmentAgent, GrowthAgent, MarketingAgent, BDRAgent, ConversationAgent), Redis checkpointing, database tracking, streaming support, and comprehensive testing suite.
+**Current Status**: ✅ Phase 3 Complete - LangGraph migration with 6 specialized agents (QualificationAgent, EnrichmentAgent, GrowthAgent, MarketingAgent, BDRAgent, ConversationAgent), Redis checkpointing, database tracking, streaming support, and comprehensive testing suite. ✅ Phase 4 Complete - CSV bulk import and ATL contact discovery workflows. ✅ Server startup fixes complete.
 
 ## Architecture Principles
 
@@ -1184,7 +1184,7 @@ npm run dev
 - [x] Task 5.4: LinkedIn connector with OAuth 2.0 + Browserbase scraping
 - [x] Task 5.5: Data sync with automated bidirectional sync orchestration, conflict resolution, circuit breakers, and Celery Beat scheduling
 
-### Phase 3: Advanced Features ✅ PARTIALLY COMPLETE
+### Phase 3: Advanced Features ✅ COMPLETE
 - [x] Voice agent system with Cartesia TTS
 - [x] Agent transfer/handoff capability
 - [x] Document processing pipeline
@@ -1195,8 +1195,25 @@ npm run dev
 - [x] Iterative refinement system
 - [x] Social media scraping
 - [x] Customer service endpoints
-- [x] CSV import functionality
+- [x] CSV import functionality (bulk import with PostgreSQL COPY)
 - [x] RunPod vLLM integration
+
+### Phase 4: CSV Import & ATL Discovery ✅ COMPLETE
+- [x] CSV bulk import with PostgreSQL COPY (50-70 leads/second)
+- [x] ATL contact discovery workflow (website scraping → LinkedIn fallback)
+- [x] Apollo company search integration (search_company_contacts method)
+- [x] Batch enrichment workflows
+- [x] Executive title matching (CEO, COO, CFO, CTO, VP Finance, VP Operations)
+- [x] LinkedIn profile URL capture
+
+### Phase 5: Server Stability ✅ COMPLETE
+- [x] Virtual environment setup (venv/)
+- [x] Optional dependency handling (Cerebras SDK, pdfplumber, etc.)
+- [x] Graceful error handling for missing dependencies
+- [x] Server startup fixes (10+ files updated)
+- [x] Documentation cleanup (46 → 21 files)
+
+### Phase 6: Production Readiness 🚧 IN PROGRESS
 - [ ] Frontend UI/UX completion
 - [ ] Production deployment with monitoring
 - [ ] Performance analytics dashboards
@@ -1205,6 +1222,9 @@ npm run dev
 
 ### Start Development
 ```bash
+# IMPORTANT: Always activate virtual environment first
+source venv/bin/activate
+
 # Start infrastructure
 docker-compose up -d
 
@@ -1212,7 +1232,7 @@ docker-compose up -d
 cd backend && python celery_worker.py &
 
 # Start backend
-python start_server.py
+python3 start_server.py
 
 # Start frontend (separate terminal)
 cd frontend && npm run dev
@@ -1221,6 +1241,8 @@ cd frontend && npm run dev
 python test_api.py          # Standard API tests
 python test_streaming.py    # Streaming tests (validates all components)
 ```
+
+**Note**: Server now uses virtual environment (`venv/`) for dependency isolation. Always activate it before starting the server.
 
 ### Common Commands
 ```bash
@@ -1239,24 +1261,34 @@ cd backend && pytest -v
 
 ### API Testing
 ```bash
-# Health check
-curl http://localhost:8001/api/health
+# Health check (IMPORTANT: API uses /api/v1/ prefix)
+curl http://localhost:8001/api/v1/health
 
 # Qualify lead
-curl -X POST http://localhost:8001/api/leads/qualify \
+curl -X POST http://localhost:8001/api/v1/leads/qualify \
   -H "Content-Type: application/json" \
   -d '{"company_name": "Test Corp", "industry": "SaaS"}'
 
 # List leads
-curl http://localhost:8001/api/leads/
+curl http://localhost:8001/api/v1/leads/
+
+# Import CSV
+curl -X POST http://localhost:8001/api/v1/leads/import/csv \
+  -F "file=@companies_ready_to_import.csv"
+
+# API documentation
+# Visit: http://localhost:8001/api/v1/docs
 ```
 
 ## Resources
 
-- **API Docs**: http://localhost:8001/api/docs (when running)
-- **CRM Integration Summary**: CRM_INTERFACE_SUMMARY.md (HubSpot + Apollo implementation)
+- **API Docs**: http://localhost:8001/api/v1/docs (when running)
+- **Quick Start**: See `QUICK_START.md` and `NEXT_STEPS.md`
+- **CSV Import**: See `CSV_IMPORT_GUIDE.md`
+- **ATL Discovery**: See `ATL_DISCOVERY_GUIDE.md`
+- **Server Setup**: See `VENV_SETUP.md` and `SERVER_STARTUP_FIX.md`
 - **Cerebras Docs**: https://inference-docs.cerebras.ai
-- **HubSpot API**: https://developers.hubspot.com/docs/api/overview
+- **Close CRM API**: https://developer.close.com/
 - **Apollo.io API**: https://apolloio.github.io/apollo-api-docs/
 - **FastAPI Docs**: https://fastapi.tiangolo.com
 - **SQLAlchemy Docs**: https://docs.sqlalchemy.org
@@ -1265,15 +1297,19 @@ curl http://localhost:8001/api/leads/
 ---
 
 **Remember**: This is a comprehensive sales automation platform with:
-- **CRM Integration**: HubSpot (OAuth 2.0) + Apollo.io (enrichment) + LinkedIn (OAuth 2.0 + Scraping) - 80% complete
-- **Multi-Agent System**: BaseAgent pattern, voice agent, agent transfer
-- **Document Processing**: Knowledge base, research pipeline, report generation
-- **Campaign Automation**: Message generation, outreach management
-- **AI Routing**: Cerebras, Claude, DeepSeek, Ollama with intelligent selection
-- **Resilience**: Circuit breakers + exponential backoff retry
-- **Infrastructure**: Docker Compose (PostgreSQL + Redis), RunPod vLLM
+- **CRM Integration**: Close CRM (API key, bidirectional sync) ✅ + Apollo.io (enrichment) ✅ + LinkedIn (scraping) ✅ - 100% complete
+- **Multi-Agent System**: LangGraph agents (6 agents complete) ✅ + voice agent ✅ + agent transfer ✅
+- **Document Processing**: Knowledge base ✅, research pipeline ✅, report generation ✅
+- **Campaign Automation**: Message generation ✅, outreach management ✅
+- **CSV Import**: Bulk import with PostgreSQL COPY (50-70 leads/second) ✅
+- **ATL Discovery**: Website + LinkedIn multi-source discovery ✅
+- **AI Routing**: Cerebras (633ms) ✅, Claude, DeepSeek, Ollama with intelligent selection ✅
+- **Resilience**: Circuit breakers ✅ + exponential backoff retry ✅
+- **Infrastructure**: Docker Compose (PostgreSQL + Redis) ✅, virtual environment ✅, RunPod vLLM ✅
 
-**Next Task**: Data sync and error handling (Task 5.5) - See `.taskmaster/CLAUDE.md` for workflow.
+**Current Status**: ✅ Server running successfully. ✅ CSV import ready. ✅ ATL discovery ready. ✅ All 6 LangGraph agents complete.
+
+**Next Steps**: See `NEXT_STEPS.md` for current workflow guide (CSV import → ATL discovery → enrichment).
 
 ## Task Master AI Instructions
 **Import Task Master's development workflow commands and guidelines from the main CLAUDE.md file.**
