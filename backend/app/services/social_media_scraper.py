@@ -25,6 +25,7 @@ except ImportError:
 
 from fastapi import HTTPException
 from app.services.cerebras import CerebrasService
+from app.core.exceptions import MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,12 @@ class SocialMediaScraper:
     """
 
     def __init__(self):
-        self.cerebras = CerebrasService()
+        # Initialize Cerebras service (optional - may fail if SDK not installed)
+        try:
+            self.cerebras = CerebrasService()
+        except (ImportError, MissingAPIKeyError):
+            self.cerebras = None
+            logger.warning("CerebrasService unavailable. Social media sentiment analysis will be limited.")
         
         # Initialize Twitter/X client
         self.twitter_client = self._init_twitter_client()
