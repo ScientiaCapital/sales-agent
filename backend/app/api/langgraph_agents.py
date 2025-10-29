@@ -26,9 +26,12 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, AsyncGenerator
 import json
 import logging
+import time
+import uuid
 from datetime import datetime
 
 from app.models.database import get_db
+from app.models.langgraph_models import LangGraphExecution, LangGraphCheckpoint, LangGraphToolCall
 from app.services.langgraph import (
     get_redis_checkpointer,
     create_streaming_config,
@@ -185,42 +188,147 @@ async def invoke_agent(
             recursion_limit=25
         )
 
-        # TODO (Phase 3): Replace with actual agent invocation
-        # Example for QualificationAgent:
-        # from app.services.langgraph.agents import QualificationAgent
-        # agent = QualificationAgent()
-        # graph = await agent.compile(enable_checkpointing=True)
-        # result = await graph.ainvoke(request.input, config)
-
-        # Placeholder response demonstrating expected structure
-        logger.info(f"Invoked {request.agent_type} agent with thread_id={thread_id}")
-
-        placeholder_output = {
-            "agent_type": request.agent_type,
-            "messages": [],
-            "metadata": {
-                "note": "Phase 2 placeholder - actual agents will be implemented in Phase 3-4",
-                "received_input": request.input,
-                "thread_id": thread_id
-            }
-        }
-
-        # Build response
-        response = AgentResponse(
-            status="success",
+        # Import and invoke actual agents
+        from app.services.langgraph.agents.qualification_agent import QualificationAgent
+        from app.services.langgraph.agents.enrichment_agent import EnrichmentAgent
+        from app.services.langgraph.agents.growth_agent import GrowthAgent
+        from app.services.langgraph.agents.marketing_agent import MarketingAgent
+        from app.services.langgraph.agents.bdr_agent import BDRAgent
+        from app.services.langgraph.agents.conversation_agent import ConversationAgent
+        
+        # Track execution start time
+        start_time = time.time()
+        
+        # Create execution record
+        execution = LangGraphExecution(
+            execution_id=str(uuid.uuid4()),
             agent_type=request.agent_type,
             thread_id=thread_id,
-            output=placeholder_output,
-            metadata={
-                "latency_ms": 0,
-                "cost_usd": 0.0,
-                "phase": "placeholder",
-                "note": "Actual agent execution will be added in Phase 3"
-            },
-            timestamp=datetime.utcnow().isoformat()
+            status="running",
+            started_at=datetime.utcnow(),
+            input_data=request.input,
+            graph_type="chain" if request.agent_type in ["qualification", "enrichment"] else "graph"
         )
-
-        return response
+        db.add(execution)
+        db.commit()
+        db.refresh(execution)
+        
+        try:
+            # Invoke appropriate agent
+            if request.agent_type == "qualification":
+                agent = QualificationAgent()
+                result = await agent.qualify(**request.input)
+                output_data = {
+                    "score": result.qualification_score,
+                    "reasoning": result.qualification_reasoning,
+                    "tier": result.tier,
+                    "confidence": result.confidence_score,
+                    "recommendations": result.recommendations
+                }
+                
+            elif request.agent_type == "enrichment":
+                agent = EnrichmentAgent()
+                result = await agent.enrich(**request.input)
+                output_data = {
+                    "enriched_data": result.enriched_data,
+                    "sources": result.sources,
+                    "confidence": result.confidence_score,
+                    "completeness": result.completeness_score
+                }
+                
+            elif request.agent_type == "growth":
+                agent = GrowthAgent()
+                result = await agent.analyze(**request.input)
+                output_data = {
+                    "opportunities": result.opportunities,
+                    "confidence": result.confidence_score,
+                    "market_analysis": result.market_analysis,
+                    "recommendations": result.recommendations
+                }
+                
+            elif request.agent_type == "marketing":
+                agent = MarketingAgent()
+                result = await agent.generate(**request.input)
+                output_data = {
+                    "campaigns": result.campaigns,
+                    "channels": result.channels,
+                    "personalization": result.personalization_data,
+                    "performance_prediction": result.performance_prediction
+                }
+                
+            elif request.agent_type == "bdr":
+                agent = BDRAgent()
+                result = await agent.book(**request.input)
+                output_data = {
+                    "status": result.status,
+                    "calendar_link": result.calendar_link,
+                    "scheduled_time": result.scheduled_time,
+                    "meeting_type": result.meeting_type,
+                    "next_steps": result.next_steps
+                }
+                
+            elif request.agent_type == "conversation":
+                agent = ConversationAgent()
+                result = await agent.converse(**request.input)
+                output_data = {
+                    "response": result.response,
+                    "audio_data": result.audio_data,
+                    "sentiment": result.sentiment,
+                    "intent": result.intent,
+                    "next_action": result.next_action
+                }
+            
+            # Calculate execution metrics
+            end_time = time.time()
+            duration_ms = int((end_time - start_time) * 1000)
+            
+            # Update execution record
+            execution.status = "success"
+            execution.completed_at = datetime.utcnow()
+            execution.duration_ms = duration_ms
+            execution.output_data = output_data
+            execution.cost_usd = getattr(result, 'cost_usd', 0.0)
+            execution.tokens_used = getattr(result, 'tokens_used', 0)
+            
+            db.commit()
+            
+            # Prepare response
+            response_data = AgentResponse(
+                status="success",
+                agent_type=request.agent_type,
+                thread_id=thread_id,
+                output=output_data,
+                metadata={
+                    "execution_id": execution.execution_id,
+                    "duration_ms": duration_ms,
+                    "cost_usd": execution.cost_usd,
+                    "tokens_used": execution.tokens_used,
+                    "graph_type": execution.graph_type
+                },
+                timestamp=execution.completed_at.isoformat()
+            )
+            
+            logger.info(f"✅ {request.agent_type} agent completed successfully in {duration_ms}ms")
+            return response_data
+            
+        except Exception as e:
+            # Update execution record with error
+            end_time = time.time()
+            duration_ms = int((end_time - start_time) * 1000)
+            
+            execution.status = "failed"
+            execution.completed_at = datetime.utcnow()
+            execution.duration_ms = duration_ms
+            execution.error_message = str(e)
+            
+            db.commit()
+            
+            logger.error(f"❌ {request.agent_type} agent failed: {str(e)}", exc_info=True)
+            
+            raise HTTPException(
+                status_code=500,
+                detail=f"Agent execution failed: {str(e)}"
+            )
 
     except HTTPException:
         raise
@@ -315,49 +423,141 @@ async def stream_agent(
                 # Send initial event
                 yield f"data: {json.dumps({'type': 'start', 'agent_type': request.agent_type, 'thread_id': thread_id})}\n\n"
 
-                # TODO (Phase 3): Replace with actual agent streaming
-                # Example for EnrichmentAgent:
-                # from app.services.langgraph.agents import EnrichmentAgent
-                # agent = EnrichmentAgent()
-                # graph = await agent.compile(enable_checkpointing=True)
-                #
-                # async for event in graph.astream(request.input, config, stream_mode=request.stream_mode):
-                #     yield f"data: {json.dumps({'type': 'message', 'content': event})}\n\n"
-
-                # Placeholder streaming events
-                logger.info(f"Streaming {request.agent_type} agent with thread_id={thread_id}")
-
-                # Simulate progress events
-                events = [
-                    {"type": "message", "content": f"Initializing {request.agent_type} agent..."},
-                    {"type": "update", "node": "start", "state": request.input},
-                    {"type": "message", "content": "Processing input data..."},
-                    {"type": "message", "content": "Phase 2 placeholder - actual streaming will be added in Phase 3"},
-                ]
-
-                for event in events:
-                    yield f"data: {json.dumps(event)}\n\n"
-
-                # Send completion event
-                final_output = {
-                    "type": "end",
-                    "status": "success",
-                    "output": {
-                        "agent_type": request.agent_type,
-                        "thread_id": thread_id,
-                        "note": "Placeholder response - actual agent output will be added in Phase 3"
-                    }
-                }
-                yield f"data: {json.dumps(final_output)}\n\n"
-
+                # Import agents
+                from app.services.langgraph.agents.qualification_agent import QualificationAgent
+                from app.services.langgraph.agents.enrichment_agent import EnrichmentAgent
+                from app.services.langgraph.agents.growth_agent import GrowthAgent
+                from app.services.langgraph.agents.marketing_agent import MarketingAgent
+                from app.services.langgraph.agents.bdr_agent import BDRAgent
+                from app.services.langgraph.agents.conversation_agent import ConversationAgent
+                
+                # Track execution start time
+                start_time = time.time()
+                
+                # Create execution record
+                execution = LangGraphExecution(
+                    execution_id=str(uuid.uuid4()),
+                    agent_type=request.agent_type,
+                    thread_id=thread_id,
+                    status="running",
+                    started_at=datetime.utcnow(),
+                    input_data=request.input,
+                    graph_type="chain" if request.agent_type in ["qualification", "enrichment"] else "graph"
+                )
+                db.add(execution)
+                db.commit()
+                db.refresh(execution)
+                
+                try:
+                    # Send progress event
+                    yield f"data: {json.dumps({'type': 'message', 'content': f'Starting {request.agent_type} agent...'})}\n\n"
+                    
+                    # Invoke appropriate agent
+                    if request.agent_type == "qualification":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Qualifying lead with Cerebras AI...'})}\n\n"
+                        agent = QualificationAgent()
+                        result = await agent.qualify(**request.input)
+                        output_data = {
+                            "score": result.qualification_score,
+                            "reasoning": result.qualification_reasoning,
+                            "tier": result.tier,
+                            "confidence": result.confidence_score,
+                            "recommendations": result.recommendations
+                        }
+                        
+                    elif request.agent_type == "enrichment":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Enriching contact data...'})}\n\n"
+                        agent = EnrichmentAgent()
+                        result = await agent.enrich(**request.input)
+                        output_data = {
+                            "enriched_data": result.enriched_data,
+                            "sources": result.sources,
+                            "confidence": result.confidence_score,
+                            "completeness": result.completeness_score
+                        }
+                        
+                    elif request.agent_type == "growth":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Analyzing growth opportunities...'})}\n\n"
+                        agent = GrowthAgent()
+                        result = await agent.analyze(**request.input)
+                        output_data = {
+                            "opportunities": result.opportunities,
+                            "confidence": result.confidence_score,
+                            "market_analysis": result.market_analysis,
+                            "recommendations": result.recommendations
+                        }
+                        
+                    elif request.agent_type == "marketing":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Generating marketing campaigns...'})}\n\n"
+                        agent = MarketingAgent()
+                        result = await agent.generate(**request.input)
+                        output_data = {
+                            "campaigns": result.campaigns,
+                            "channels": result.channels,
+                            "personalization": result.personalization_data,
+                            "performance_prediction": result.performance_prediction
+                        }
+                        
+                    elif request.agent_type == "bdr":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Processing BDR workflow...'})}\n\n"
+                        agent = BDRAgent()
+                        result = await agent.book(**request.input)
+                        output_data = {
+                            "status": result.status,
+                            "calendar_link": result.calendar_link,
+                            "scheduled_time": result.scheduled_time,
+                            "meeting_type": result.meeting_type,
+                            "next_steps": result.next_steps
+                        }
+                        
+                    elif request.agent_type == "conversation":
+                        yield f"data: {json.dumps({'type': 'message', 'content': 'Processing conversation...'})}\n\n"
+                        agent = ConversationAgent()
+                        result = await agent.converse(**request.input)
+                        output_data = {
+                            "response": result.response,
+                            "audio_data": result.audio_data,
+                            "sentiment": result.sentiment,
+                            "intent": result.intent,
+                            "next_action": result.next_action
+                        }
+                    
+                    # Calculate execution metrics
+                    end_time = time.time()
+                    duration_ms = int((end_time - start_time) * 1000)
+                    
+                    # Update execution record
+                    execution.status = "success"
+                    execution.completed_at = datetime.utcnow()
+                    execution.duration_ms = duration_ms
+                    execution.output_data = output_data
+                    execution.cost_usd = getattr(result, 'cost_usd', 0.0)
+                    execution.tokens_used = getattr(result, 'tokens_used', 0)
+                    
+                    db.commit()
+                    
+                    # Send completion event
+                    yield f"data: {json.dumps({'type': 'complete', 'output': output_data, 'metadata': {'duration_ms': duration_ms, 'cost_usd': execution.cost_usd}})}\n\n"
+                    
+                except Exception as e:
+                    # Update execution record with error
+                    end_time = time.time()
+                    duration_ms = int((end_time - start_time) * 1000)
+                    
+                    execution.status = "failed"
+                    execution.completed_at = datetime.utcnow()
+                    execution.duration_ms = duration_ms
+                    execution.error_message = str(e)
+                    
+                    db.commit()
+                    
+                    # Send error event
+                    yield f"data: {json.dumps({'type': 'error', 'error': str(e), 'metadata': {'duration_ms': duration_ms}})}\n\n"
+                    raise
+                    
             except Exception as e:
                 logger.error(f"Error in event generator: {e}", exc_info=True)
-                error_event = {
-                    "type": "error",
-                    "error": str(e),
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-                yield f"data: {json.dumps(error_event)}\n\n"
+                yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
 
         return StreamingResponse(
             event_generator(),

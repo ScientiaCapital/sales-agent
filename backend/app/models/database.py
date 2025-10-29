@@ -52,6 +52,17 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for all models
 Base = declarative_base()
 
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models.lead import Lead
+from app.models.api_call import CerebrasAPICall
+from app.models.agent_models import (
+    AgentExecution, AgentWorkflow, EnrichedLead, 
+    MarketingCampaign, BookedMeeting
+)
+from app.models.campaign import Campaign, CampaignMessage
+from app.models.crm import CRMCredential, CRMContact, CRMSyncLog
+from app.models.langgraph_models import LangGraphExecution, LangGraphCheckpoint, LangGraphToolCall
+
 def get_db():
     """
     Dependency function for FastAPI to get database sessions
