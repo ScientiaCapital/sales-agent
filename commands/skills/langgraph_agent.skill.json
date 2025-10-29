@@ -1,0 +1,66 @@
+{
+  "skill_id": "langgraph_agent",
+  "version": "1.0.0",
+  "description": "Create LangGraph agent (LCEL chain or StateGraph) with 90% token reduction",
+  "token_cost": 1700,
+  "decision_tree": {
+    "question": "What type of workflow do you need?",
+    "options": {
+      "lcel_chain": {
+        "description": "Linear workflow (input → process → output)",
+        "template": "lcel_chain.py.jinja2",
+        "file_path": "backend/app/services/langgraph/agents/{{ name }}_agent.py",
+        "extension": ".py"
+      },
+      "state_graph": {
+        "description": "Multi-step workflow with conditional logic",
+        "template": "state_graph.py.jinja2",
+        "file_path": "backend/app/services/langgraph/agents/{{ name }}_agent.py",
+        "extension": ".py"
+      }
+    }
+  },
+  "prerequisites": {
+    "files_exist": [
+      "backend/app/services/langgraph/",
+      "backend/app/services/langchain/"
+    ],
+    "env_vars": [
+      "CEREBRAS_API_KEY",
+      "REDIS_URL"
+    ]
+  },
+  "code_templates": {
+    "lcel_chain": "from langchain_core.runnables import RunnablePassthrough\nfrom langchain_core.output_parsers import StrOutputParser\nfrom app.services.langchain.cerebras_llm import CerebrasLLM\nfrom app.services.langgraph.tools import {{ tools }}\n\nclass {{ class_name }}:\n    \"\"\"{{ description }}\"\"\"\n    \n    def __init__(self):\n        self.llm = CerebrasLLM(\n            model=\"llama3.1-8b\",\n            temperature=0.7,\n            max_tokens=500\n        )\n        self.tools = {{ tools }}\n        \n    def create_chain(self):\n        \"\"\"Create LCEL chain for {{ name }}.\"\"\"\n        prompt = \"\"\"{{ prompt_template }}\"\"\"\n        \n        chain = (\n            RunnablePassthrough()\n            | prompt\n            | self.llm\n            | StrOutputParser()\n        )\n        \n        return chain\n    \n    async def execute(self, input_data: dict) -> dict:\n        \"\"\"Execute {{ name }} agent.\"\"\"\n        chain = self.create_chain()\n        result = await chain.ainvoke(input_data)\n        \n        return {\n            \"result\": result,\n            \"agent_type\": \"{{ name }}\",\n            \"status\": \"completed\"\n        }",
+    "state_graph": "from langgraph.graph import StateGraph, END\nfrom typing import TypedDict\nfrom app.services.langchain.cerebras_llm import CerebrasLLM\nfrom app.services.langgraph.tools import {{ tools }}\n\nclass {{ class_name }}State(TypedDict):\n    \"\"\"State for {{ name }} agent.\"\"\"\n    messages: list\n    current_step: str\n    confidence: float\n    result: dict\n\nclass {{ class_name }}:\n    \"\"\"{{ description }}\"\"\"\n    \n    def __init__(self):\n        self.llm = CerebrasLLM(\n            model=\"llama3.1-8b\",\n            temperature=0.7,\n            max_tokens=500\n        )\n        self.tools = {{ tools }}\n        \n    def create_graph(self):\n        \"\"\"Create StateGraph for {{ name }}.\"\"\"\n        graph = StateGraph({{ class_name }}State)\n        \n        # Add nodes\n        graph.add_node(\"start\", self.start_node)\n        graph.add_node(\"process\", self.process_node)\n        graph.add_node(\"validate\", self.validate_node)\n        \n        # Add edges\n        graph.add_edge(\"start\", \"process\")\n        graph.add_conditional_edges(\n            \"process\",\n            self.should_continue,\n            {\"continue\": \"validate\", \"complete\": END}\n        )\n        graph.add_edge(\"validate\", \"process\")\n        \n        graph.set_entry_point(\"start\")\n        \n        return graph.compile()\n    \n    async def start_node(self, state: {{ class_name }}State) -> {{ class_name }}State:\n        \"\"\"Initialize agent state.\"\"\"\n        return {\n            **state,\n            \"current_step\": \"started\",\n            \"confidence\": 0.0\n        }\n    \n    async def process_node(self, state: {{ class_name }}State) -> {{ class_name }}State:\n        \"\"\"Process input data.\"\"\"\n        # Implementation here\n        return {\n            **state,\n            \"current_step\": \"processed\",\n            \"confidence\": 0.8\n        }\n    \n    async def validate_node(self, state: {{ class_name }}State) -> {{ class_name }}State:\n        \"\"\"Validate results.\"\"\"\n        # Implementation here\n        return {\n            **state,\n            \"current_step\": \"validated\",\n            \"confidence\": 0.9\n        }\n    \n    def should_continue(self, state: {{ class_name }}State) -> str:\n        \"\"\"Determine if processing should continue.\"\"\"\n        if state[\"confidence\"] > 0.8:\n            return \"complete\"\n        return \"continue\"\n    \n    async def execute(self, input_data: dict) -> dict:\n        \"\"\"Execute {{ name }} agent.\"\"\"\n        graph = self.create_graph()\n        result = await graph.ainvoke({\n            \"messages\": [],\n            \"current_step\": \"\",\n            \"confidence\": 0.0,\n            \"result\": input_data\n        })\n        \n        return {\n            \"result\": result,\n            \"agent_type\": \"{{ name }}\",\n            \"status\": \"completed\"\n        }"
+  },
+  "related_skills": [
+    "fastapi_endpoint",
+    "write_tests"
+  ],
+  "examples": [
+    {
+      "scenario": "Lead qualification agent",
+      "pattern": "lcel_chain",
+      "parameters": {
+        "name": "qualification",
+        "description": "Qualify leads using Cerebras AI",
+        "tools": "qualification_tools",
+        "prompt_template": "Analyze this lead data and provide a qualification score..."
+      },
+      "files_created": ["backend/app/services/langgraph/agents/qualification_agent.py"],
+      "test_command": "pytest tests/test_qualification_agent.py"
+    },
+    {
+      "scenario": "Multi-step research agent",
+      "pattern": "state_graph",
+      "parameters": {
+        "name": "research",
+        "description": "Conduct multi-step research with validation",
+        "tools": "research_tools"
+      },
+      "files_created": ["backend/app/services/langgraph/agents/research_agent.py"],
+      "test_command": "pytest tests/test_research_agent.py"
+    }
+  ]
+}

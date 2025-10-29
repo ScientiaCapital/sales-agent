@@ -1,0 +1,34 @@
+"""Add {{ table_name }} table
+
+Revision ID: {{ migration_id }}
+Revises: {{ parent_revision }}
+Create Date: {{ create_date }}
+
+"""
+from alembic import op
+import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
+# revision identifiers, used by Alembic.
+revision = '{{ migration_id }}'
+down_revision = '{{ parent_revision }}'
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Add {{ table_name }} table."""
+    op.create_table(
+        '{{ table_name }}',
+        sa.Column('id', sa.Integer(), nullable=False),
+        sa.Column('created_at', sa.DateTime(), nullable=False),
+        sa.Column('updated_at', sa.DateTime(), nullable=False),
+        {{ columns }}
+        sa.PrimaryKeyConstraint('id')
+    )
+    {{ indexes }}
+
+
+def downgrade() -> None:
+    """Remove {{ table_name }} table."""
+    op.drop_table('{{ table_name }}')

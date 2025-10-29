@@ -62,6 +62,10 @@ from app.models.agent_models import (
 from app.models.campaign import Campaign, CampaignMessage
 from app.models.crm import CRMCredential, CRMContact, CRMSyncLog
 from app.models.langgraph_models import LangGraphExecution, LangGraphCheckpoint, LangGraphToolCall
+from app.models.analytics_models import (
+    AnalyticsUserSession, AnalyticsLeadMetrics, AnalyticsCampaignMetrics,
+    AnalyticsSystemMetrics, AnalyticsABTest, AnalyticsReport
+)
 
 def get_db():
     """

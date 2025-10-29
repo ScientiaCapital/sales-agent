@@ -1,0 +1,78 @@
+{
+  "skill_id": "fastapi_endpoint",
+  "version": "1.0.0",
+  "description": "Create FastAPI endpoint with 90% token reduction",
+  "token_cost": 1200,
+  "decision_tree": {
+    "question": "What type of endpoint do you need?",
+    "options": {
+      "standard": {
+        "description": "Standard CRUD endpoint",
+        "template": "fastapi_route.py.jinja2",
+        "file_path": "backend/app/api/{{ name }}.py",
+        "extension": ".py"
+      },
+      "streaming": {
+        "description": "Streaming endpoint (WebSocket/SSE)",
+        "template": "fastapi_streaming.py.jinja2",
+        "file_path": "backend/app/api/{{ name }}.py",
+        "extension": ".py"
+      },
+      "agent_endpoint": {
+        "description": "LangGraph agent endpoint",
+        "template": "fastapi_agent.py.jinja2",
+        "file_path": "backend/app/api/{{ name }}.py",
+        "extension": ".py"
+      }
+    }
+  },
+  "prerequisites": {
+    "files_exist": [
+      "backend/app/api/",
+      "backend/app/schemas/",
+      "backend/app/models/"
+    ],
+    "env_vars": [
+      "DATABASE_URL",
+      "REDIS_URL"
+    ]
+  },
+  "code_templates": {
+    "standard": "from fastapi import APIRouter, Depends, HTTPException, status\nfrom sqlalchemy.orm import Session\nfrom typing import List\n\nfrom app.models.database import get_db\nfrom app.schemas.{{ schema_name }} import {{ SchemaName }}Create, {{ SchemaName }}Response, {{ SchemaName }}Update\nfrom app.services.{{ service_name }} import {{ ServiceName }}Service\n\nrouter = APIRouter(prefix=\"/{{ name }}\", tags=[\"{{ name }}\"])\n\n@router.post(\"/\", response_model={{ SchemaName }}Response, status_code=status.HTTP_201_CREATED)\nasync def create_{{ name }}(\n    {{ name }}_data: {{ SchemaName }}Create,\n    db: Session = Depends(get_db)\n) -> {{ SchemaName }}Response:\n    \"\"\"Create new {{ name }}.\"\"\"\n    try:\n        service = {{ ServiceName }}Service(db)\n        result = await service.create({{ name }}_data)\n        return result\n    except Exception as e:\n        raise HTTPException(\n            status_code=status.HTTP_400_BAD_REQUEST,\n            detail=f\"Failed to create {{ name }}: {str(e)}\"\n        )\n\n@router.get(\"/\", response_model=List[{{ SchemaName }}Response])\nasync def list_{{ name }}s(\n    skip: int = 0,\n    limit: int = 100,\n    db: Session = Depends(get_db)\n) -> List[{{ SchemaName }}Response]:\n    \"\"\"List all {{ name }}s.\"\"\"\n    service = {{ ServiceName }}Service(db)\n    return await service.list_all(skip=skip, limit=limit)\n\n@router.get(\"/{id}\", response_model={{ SchemaName }}Response)\nasync def get_{{ name }}(\n    id: int,\n    db: Session = Depends(get_db)\n) -> {{ SchemaName }}Response:\n    \"\"\"Get {{ name }} by ID.\"\"\"\n    service = {{ ServiceName }}Service(db)\n    result = await service.get_by_id(id)\n    if not result:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"{{ name }} not found\"\n        )\n    return result\n\n@router.put(\"/{id}\", response_model={{ SchemaName }}Response)\nasync def update_{{ name }}(\n    id: int,\n    {{ name }}_data: {{ SchemaName }}Update,\n    db: Session = Depends(get_db)\n) -> {{ SchemaName }}Response:\n    \"\"\"Update {{ name }}.\"\"\"\n    service = {{ ServiceName }}Service(db)\n    result = await service.update(id, {{ name }}_data)\n    if not result:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"{{ name }} not found\"\n        )\n    return result\n\n@router.delete(\"/{id}\", status_code=status.HTTP_204_NO_CONTENT)\nasync def delete_{{ name }}(\n    id: int,\n    db: Session = Depends(get_db)\n):\n    \"\"\"Delete {{ name }}.\"\"\"\n    service = {{ ServiceName }}Service(db)\n    success = await service.delete(id)\n    if not success:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=\"{{ name }} not found\"\n        )",
+    "streaming": "from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect\nfrom fastapi.responses import StreamingResponse\nfrom sqlalchemy.orm import Session\nimport asyncio\nimport json\n\nfrom app.models.database import get_db\nfrom app.schemas.{{ schema_name }} import {{ SchemaName }}Request, {{ SchemaName }}Response\nfrom app.services.{{ service_name }} import {{ ServiceName }}Service\n\nrouter = APIRouter(prefix=\"/{{ name }}\", tags=[\"{{ name }}\"])\n\n@router.post(\"/stream\")\nasync def stream_{{ name }}(\n    request: {{ SchemaName }}Request,\n    db: Session = Depends(get_db)\n):\n    \"\"\"Stream {{ name }} processing.\"\"\"\n    async def generate():\n        service = {{ ServiceName }}Service(db)\n        \n        async for chunk in service.process_stream(request):\n            yield f\"data: {json.dumps(chunk)}\\n\\n\"\n            await asyncio.sleep(0.1)  # Prevent overwhelming client\n    \n    return StreamingResponse(\n        generate(),\n        media_type=\"text/plain\",\n        headers={\n            \"Cache-Control\": \"no-cache\",\n            \"Connection\": \"keep-alive\"\n        }\n    )\n\n@router.websocket(\"/ws\")\nasync def websocket_{{ name }}(websocket: WebSocket):\n    \"\"\"WebSocket endpoint for {{ name }}.\"\"\"\n    await websocket.accept()\n    \n    try:\n        while True:\n            data = await websocket.receive_text()\n            request = json.loads(data)\n            \n            # Process request\n            response = {\n                \"type\": \"response\",\n                \"data\": request,\n                \"timestamp\": \"{{ timestamp }}\"\n            }\n            \n            await websocket.send_text(json.dumps(response))\n            \n    except WebSocketDisconnect:\n        print(\"WebSocket disconnected\")",
+    "agent_endpoint": "from fastapi import APIRouter, Depends, HTTPException, status\nfrom sqlalchemy.orm import Session\nfrom typing import Dict, Any\n\nfrom app.models.database import get_db\nfrom app.schemas.{{ schema_name }} import {{ SchemaName }}Request, {{ SchemaName }}Response\nfrom app.services.langgraph.agents.{{ agent_name }}_agent import {{ AgentClassName }}\nfrom app.services.langgraph.redis_checkpointer import get_redis_checkpointer\n\nrouter = APIRouter(prefix=\"/{{ name }}\", tags=[\"{{ name }}\"])\n\n@router.post(\"/invoke\", response_model={{ SchemaName }}Response)\nasync def invoke_{{ name }}_agent(\n    request: {{ SchemaName }}Request,\n    db: Session = Depends(get_db)\n) -> {{ SchemaName }}Response:\n    \"\"\"Invoke {{ name }} agent and return complete response.\"\"\"\n    try:\n        agent = {{ AgentClassName }}()\n        checkpointer = get_redis_checkpointer()\n        \n        # Create app with checkpointer\n        app = agent.create_graph().compile(checkpointer=checkpointer)\n        \n        # Execute agent\n        result = await app.ainvoke(request.dict())\n        \n        return {{ SchemaName }}Response(\n            result=result,\n            agent_type=\"{{ name }}\",\n            status=\"completed\",\n            timestamp=\"{{ timestamp }}\"\n        )\n        \n    except Exception as e:\n        raise HTTPException(\n            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,\n            detail=f\"Agent execution failed: {str(e)}\"\n        )\n\n@router.post(\"/stream\")\nasync def stream_{{ name }}_agent(\n    request: {{ SchemaName }}Request,\n    db: Session = Depends(get_db)\n):\n    \"\"\"Stream {{ name }} agent execution via SSE.\"\"\"\n    from fastapi.responses import StreamingResponse\n    import asyncio\n    import json\n    \n    async def generate():\n        try:\n            agent = {{ AgentClassName }}()\n            checkpointer = get_redis_checkpointer()\n            \n            # Create app with checkpointer\n            app = agent.create_graph().compile(checkpointer=checkpointer)\n            \n            # Stream execution\n            async for chunk in app.astream(request.dict()):\n                yield f\"data: {json.dumps(chunk)}\\n\\n\"\n                await asyncio.sleep(0.1)\n                \n        except Exception as e:\n            error_chunk = {\n                \"type\": \"error\",\n                \"message\": str(e),\n                \"timestamp\": \"{{ timestamp }}\"\n            }\n            yield f\"data: {json.dumps(error_chunk)}\\n\\n\"\n    \n    return StreamingResponse(\n        generate(),\n        media_type=\"text/plain\",\n        headers={\n            \"Cache-Control\": \"no-cache\",\n            \"Connection\": \"keep-alive\"\n        }\n    )\n\n@router.get(\"/state/{thread_id}\")\nasync def get_{{ name }}_state(\n    thread_id: str,\n    db: Session = Depends(get_db)\n) -> Dict[str, Any]:\n    \"\"\"Retrieve conversation state from checkpoint.\"\"\"\n    try:\n        checkpointer = get_redis_checkpointer()\n        \n        # Get state from checkpointer\n        state = await checkpointer.aget({\"configurable\": {\"thread_id\": thread_id}})\n        \n        if not state:\n            raise HTTPException(\n                status_code=status.HTTP_404_NOT_FOUND,\n                detail=\"Thread not found\"\n            )\n        \n        return {\n            \"thread_id\": thread_id,\n            \"state\": state,\n            \"timestamp\": \"{{ timestamp }}\"\n        }\n        \n    except Exception as e:\n        raise HTTPException(\n            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,\n            detail=f\"Failed to retrieve state: {str(e)}\"\n        )"
+  },
+  "related_skills": [
+    "langgraph_agent",
+    "write_tests",
+    "database_migration"
+  ],
+  "examples": [
+    {
+      "scenario": "Lead management API",
+      "pattern": "standard",
+      "parameters": {
+        "name": "leads",
+        "schema_name": "lead",
+        "SchemaName": "Lead",
+        "service_name": "lead",
+        "ServiceName": "Lead"
+      },
+      "files_created": ["backend/app/api/leads.py"],
+      "test_command": "pytest tests/test_leads_api.py"
+    },
+    {
+      "scenario": "Real-time agent streaming",
+      "pattern": "agent_endpoint",
+      "parameters": {
+        "name": "conversation",
+        "schema_name": "conversation",
+        "SchemaName": "Conversation",
+        "agent_name": "conversation",
+        "AgentClassName": "ConversationAgent"
+      },
+      "files_created": ["backend/app/api/conversation.py"],
+      "test_command": "pytest tests/test_conversation_api.py"
+    }
+  ]
+}
