@@ -229,14 +229,11 @@ class BatchEnrichmentService:
                 }
             else:
                 # Fallback: Enrich company data even if no contacts found
-                company_data = await self.apollo_service.enrich_company(domain)
-            
-            # Note: Apollo doesn't have a direct "find all contacts at company" API
-            # This would require Apollo People Search API or manual search
-            # For now, we'll enrich company data and note that contacts need manual discovery
-            
-            # Update lead with company enrichment
-            if company_data:
+                try:
+                    company_data = await self.apollo_service.enrich_company(domain)
+                    
+                    # Update lead with company enrichment
+                    if company_data:
                 if company_data.get('name') and not lead.company_name:
                     lead.company_name = company_data['name']
                 
@@ -269,13 +266,15 @@ class BatchEnrichmentService:
                     
                     self.db.commit()
                     
-                    return {
-                        'status': 'company_enriched',
-                        'lead_id': lead.id,
-                        'company': lead.company_name,
-                        'domain': domain,
-                        'note': 'Company data enriched. No ATL contacts found via Apollo search.'
-                    }
+                        return {
+                            'status': 'company_enriched',
+                            'lead_id': lead.id,
+                            'company': lead.company_name,
+                            'domain': domain,
+                            'note': 'Company data enriched. No ATL contacts found via Apollo search.'
+                        }
+                except:
+                    pass  # Continue to return no_contacts if company enrichment also fails
                 
                 return {
                     'status': 'no_contacts',
