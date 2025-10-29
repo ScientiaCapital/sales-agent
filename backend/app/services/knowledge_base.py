@@ -16,11 +16,22 @@ try:
     import PyPDF2
 except ImportError:
     PyPDF2 = None
-from docx import Document as DocxDocument
 
-# Embeddings
-from sentence_transformers import SentenceTransformer
-import numpy as np
+# DOCX processing - optional dependency
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    DocxDocument = None
+
+# Embeddings - optional dependency
+try:
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SentenceTransformer = None
+    np = None
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
 
 # RunPod storage and database
 from sqlalchemy.orm import Session
