@@ -31,13 +31,20 @@ print("✓ Environment variables loaded successfully")
 print(f"✓ CEREBRAS_API_KEY: {os.getenv('CEREBRAS_API_KEY')[:10]}...")
 print(f"✓ DATABASE_URL: {os.getenv('DATABASE_URL')[:30]}...")
 
-# Import notifications
+# Import notifications (optional - don't fail if notification system has issues)
 try:
     from notify import project_started, project_stopped, error
-    project_started(project="sales-agent", port=8001)
-    atexit.register(lambda: project_stopped(project="sales-agent"))
+    try:
+        project_started(project="sales-agent", port=8001)
+        atexit.register(lambda: project_stopped(project="sales-agent"))
+    except Exception as e:
+        print(f"⚠️  Notification system error (non-fatal): {e}")
+        print("   Continuing without notifications...")
 except ImportError:
     print("⚠️  Notifications not installed. Run: .shared/install_notifications.sh")
+except Exception as e:
+    print(f"⚠️  Notification system unavailable (non-fatal): {e}")
+    print("   Continuing without notifications...")
 
 # Start uvicorn server
 import uvicorn
