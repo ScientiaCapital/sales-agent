@@ -6,15 +6,25 @@ for 21% faster TTFT compared to OpenAI SDK wrapper.
 """
 import os
 import time
-from typing import Dict, Tuple
-from cerebras.cloud.sdk import Cerebras
-import cerebras.cloud.sdk
+from typing import Dict, Tuple, Optional
 import json
 
 from app.core.logging import setup_logging
 from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError, MissingAPIKeyError
 
 logger = setup_logging(__name__)
+
+# Make cerebras import optional - lazy load when needed
+Cerebras = None
+CEREBRAS_AVAILABLE = False
+
+try:
+    from cerebras.cloud.sdk import Cerebras as _Cerebras
+    Cerebras = _Cerebras
+    CEREBRAS_AVAILABLE = True
+except ImportError:
+    logger.warning("cerebras-cloud-sdk not installed. CerebrasService features will be disabled.")
+    CEREBRAS_AVAILABLE = False
 
 
 class CerebrasService:
@@ -26,6 +36,11 @@ class CerebrasService:
     """
 
     def __init__(self):
+        if not CEREBRAS_AVAILABLE:
+            raise ImportError(
+                "cerebras-cloud-sdk not installed. Install with: pip install cerebras-cloud-sdk"
+            )
+        
         self.api_key = os.getenv("CEREBRAS_API_KEY")
 
         if not self.api_key:
