@@ -100,3 +100,7 @@ websockets==13.1  # WebSocket client/server
 hubspot-api-client==9.0.0  # Official HubSpot CRM SDK
 # Apollo.io: No official SDK - using httpx with API key authentication
 # LinkedIn: Using authlib for OAuth 2.0 sign-in only (ToS-compliant)
+
+# CLI Dependencies (Agent CLI)
+rich==13.7.0  # Beautiful terminal UI for agent CLI
+click==8.1.7  # CLI framework for command-line interface
