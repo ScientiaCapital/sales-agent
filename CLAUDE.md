@@ -4,7 +4,7 @@
 
 AI-powered sales automation platform with **production-ready CRM integration**, multi-agent architecture, and intelligent outreach automation. Features Close CRM, Apollo.io, and LinkedIn integrations with automated bidirectional sync, voice capabilities, document processing, and knowledge base.
 
-**Current Status**: ✅ Phase 2 Complete - CRM integration (Close CRM + Apollo + LinkedIn) with automated sync orchestration, multi-agent architecture, voice agent, document processing, research pipeline, and campaign automation systems fully operational.
+**Current Status**: ✅ Phase 3 Complete - LangGraph migration with 6 specialized agents (QualificationAgent, EnrichmentAgent, GrowthAgent, MarketingAgent, BDRAgent, ConversationAgent), Redis checkpointing, database tracking, streaming support, and comprehensive testing suite.
 
 ## Architecture Principles
 
@@ -37,6 +37,116 @@ Research: DeepSeek v3 ($0.00027) - Cost-effective analysis
 Local: Ollama (500ms, $0) - Private inference
 Development: Claude Sonnet 4.5 - Code generation
 ```
+
+## LangGraph Architecture
+
+### Hybrid Agent Pattern
+
+The platform uses a hybrid approach combining LangChain LCEL chains and LangGraph StateGraphs:
+
+#### LCEL Chains (Simple Agents)
+**When to use:**
+- Linear workflows without branching
+- Fast execution required (<1000ms)
+- Simple input → process → output pattern
+
+**Implementation:**
+```python
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+
+chain = (
+    RunnablePassthrough()
+    | prompt_template
+    | cerebras_llm
+    | StrOutputParser()
+    | post_processor
+)
+
+result = await chain.ainvoke(input_data)
+```
+
+**Agents:**
+1. **QualificationAgent** - Lead data → Cerebras → qualification score + reasoning
+2. **EnrichmentAgent** - Lead + email → Apollo/LinkedIn tools → enriched data
+
+#### LangGraph StateGraphs (Complex Agents)
+**When to use:**
+- Multi-step workflows with conditional logic
+- Cyclic execution (research → validate → research again)
+- Human-in-the-loop interrupts
+- Parallel node execution
+- Stateful conversations
+
+**Implementation:**
+```python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    messages: list
+    current_step: str
+    confidence: float
+
+graph = StateGraph(AgentState)
+graph.add_node("research", research_node)
+graph.add_node("analyze", analysis_node)
+graph.add_conditional_edges(
+    "validate",
+    should_continue_research,
+    {"continue": "research", "complete": END}
+)
+
+app = graph.compile(checkpointer=redis_checkpointer)
+```
+
+**Agents:**
+1. **GrowthAgent** - Cyclic: research → analyze → validate → (loop if confidence low)
+2. **MarketingAgent** - Parallel: generate angles → [draft messages || create subjects] → optimize
+3. **BDRAgent** - Human-in-loop: qualify → calendar → propose → await confirmation → book
+4. **ConversationAgent** - Voice-enabled: transcribe → intent → respond → TTS (Cartesia)
+
+### Performance Targets
+- Qualification: <1000ms (Cerebras chain)
+- Enrichment: <3000ms (Apollo + LinkedIn)
+- Growth Analysis: <5000ms (DeepSeek graph)
+- Marketing: <4000ms (parallel nodes)
+- BDR: <2000ms per node
+- Conversation: <1000ms per turn (Cerebras + Cartesia)
+
+### Cost Targets
+- Cerebras: <$0.0001 per qualification
+- DeepSeek: <$0.001 per research operation
+- Voice (Cartesia): Per TTS call pricing
+
+### State Management
+- **Redis Checkpointing**: Persistent state for resumable workflows
+- **Database Tracking**: Execution logs, tool calls, performance metrics
+- **LangSmith Tracing**: Observability and debugging
+- **Streaming Support**: Real-time token delivery via SSE and WebSocket
+
+### Tool Integration
+All tools use `@tool` decorator:
+```python
+from langchain.tools import tool
+from typing import Annotated
+
+@tool
+async def search_crm(
+    company_name: Annotated[str, "The company name to search for"]
+) -> dict:
+    """Search Close CRM for company information."""
+    # Implementation using existing CRM services
+    pass
+```
+
+**Required Tools:**
+- `search_crm` - Query Close CRM
+- `enrich_with_apollo` - Apollo.io enrichment
+- `scrape_linkedin` - LinkedIn profile data
+- `analyze_tech_stack` - Technology stack analysis
+- `generate_voice` - Cartesia TTS
+- `search_web` - Web research
 
 ## Development Workflow
 
@@ -252,6 +362,21 @@ POST /api/voice/...        # Voice agent endpoints
 POST /api/transfer/...     # Agent transfer/handoff
 POST /api/streaming/...    # Streaming endpoints
 ```
+
+#### LangGraph Agents (NEW)
+```
+POST /api/langgraph/invoke         # Invoke agent and return complete response
+POST /api/langgraph/stream         # Stream agent execution via SSE
+GET  /api/langgraph/state/{thread_id} # Retrieve conversation state from checkpoint
+```
+
+**Supported Agents:**
+- `qualification` - Lead qualification with Cerebras AI (<1000ms)
+- `enrichment` - Contact enrichment with Apollo/LinkedIn tools (<3000ms)
+- `growth` - Market analysis with cyclic research (<5000ms)
+- `marketing` - Multi-channel campaign generation (<4000ms)
+- `bdr` - Human-in-loop meeting booking (<2000ms/node)
+- `conversation` - Voice-enabled conversational AI (<1000ms/turn)
 
 #### Customer Management
 ```
