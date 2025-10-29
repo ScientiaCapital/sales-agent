@@ -18,6 +18,7 @@ from datetime import datetime
 from app.services.gist_memory import GistMemory
 from app.services.document_processor import DocumentProcessor
 from app.services.cerebras import CerebrasService
+from app.core.exceptions import MissingAPIKeyError
 from app.core.logging import logger
 
 
