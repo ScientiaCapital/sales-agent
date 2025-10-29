@@ -249,6 +249,48 @@ python commands/review_workflow.py
 
 ---
 
+## 🤖 Interactive Agent CLI
+
+**New**: Terminal-based interface for testing and interacting with all LangGraph agents.
+
+### Quick Start
+
+```bash
+# Interactive mode (recommended)
+python agent_cli.py
+
+# Direct agent invocation
+python agent_cli.py --agent qualify
+python agent_cli.py --agent enrich  
+python agent_cli.py --agent converse
+
+# With LangSmith tracing
+python agent_cli.py --trace
+```
+
+### Available Agents
+
+| Agent | Latency | Cost | Use Case |
+|-------|---------|------|----------|
+| **Qualification** | <1000ms | <$0.0001 | Lead scoring with Cerebras AI |
+| **Enrichment** | <3000ms | <$0.01 | Contact enrichment (Apollo/LinkedIn) |
+| **Conversation** | <1000ms/turn | <$0.01 | Voice-enabled chat |
+
+### Features
+
+- 🎨 **Rich Terminal UI** - Beautiful color-coded output with progress spinners
+- ⚡ **Ultra-Fast Performance** - Sub-second response times for all agents
+- 🔍 **Production Ready** - Comprehensive error handling and monitoring
+- 📊 **Real-time Metrics** - Latency, cost, and performance tracking
+- 🔗 **LangSmith Integration** - Optional tracing and observability
+
+### Documentation
+
+- **[Agent CLI Guide](AGENT_CLI_GUIDE.md)** - Complete usage guide with examples
+- **[Production Launcher](scripts/run_agent_cli.sh)** - Automated setup and execution
+
+---
+
 ## Contact
 
 **Tim Kipper** – Sales Professional → Software Engineer
