@@ -1,7 +1,5 @@
 # Next Steps - Server is Running! 🚀
 
-# Next Steps - Server is Running! 🚀
-
 ## ✅ Server Status
 
 Your server is now running at: **http://localhost:8001**
