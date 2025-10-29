@@ -32,17 +32,23 @@ print(f"✓ CEREBRAS_API_KEY: {os.getenv('CEREBRAS_API_KEY')[:10]}...")
 print(f"✓ DATABASE_URL: {os.getenv('DATABASE_URL')[:30]}...")
 
 # Import notifications (optional - don't fail if notification system has issues)
+_notification_error = None
+_notification_available = False
+
 try:
     from notify import project_started, project_stopped, error
+    _notification_available = True
     try:
         project_started(project="sales-agent", port=8001)
         atexit.register(lambda: project_stopped(project="sales-agent"))
     except Exception as e:
+        _notification_error = e
         print(f"⚠️  Notification system error (non-fatal): {e}")
         print("   Continuing without notifications...")
 except ImportError:
     print("⚠️  Notifications not installed. Run: .shared/install_notifications.sh")
 except Exception as e:
+    _notification_error = e
     print(f"⚠️  Notification system unavailable (non-fatal): {e}")
     print("   Continuing without notifications...")
 
@@ -59,8 +65,10 @@ if __name__ == "__main__":
             reload_dirs=[str(backend_path)]
         )
     except Exception as e:
-        try:
-            error("Server Error", str(e), project="sales-agent")
-        except:
-            pass
+        # Try to send error notification if available
+        if _notification_available:
+            try:
+                error("Server Error", str(e), project="sales-agent")
+            except:
+                pass  # Ignore notification errors
         raise
