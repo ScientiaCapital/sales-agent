@@ -8,6 +8,7 @@ import logging
 import time
 from typing import Dict, Any, List, Optional
 from .cerebras import CerebrasService
+from app.core.exceptions import MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,12 @@ class SentimentAnalyzer:
 
     def __init__(self):
         """Initialize sentiment analyzer with Cerebras service."""
-        self.cerebras = CerebrasService()
+        # Initialize Cerebras service (optional - may fail if SDK not installed)
+        try:
+            self.cerebras = CerebrasService()
+        except (ImportError, MissingAPIKeyError):
+            self.cerebras = None
+            logger.warning("CerebrasService unavailable. Sentiment analysis features will be limited.")
 
         # Performance tracking
         self.total_analyses = 0

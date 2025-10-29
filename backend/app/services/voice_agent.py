@@ -24,7 +24,7 @@ import redis.asyncio as redis
 
 from .cartesia_service import CartesiaService, VoiceConfig, VoiceEmotion, VoiceSpeed
 from .cerebras import CerebrasService
-from app.core.exceptions import VoiceSessionNotFoundError
+from app.core.exceptions import VoiceSessionNotFoundError, MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 
@@ -165,8 +165,19 @@ class VoiceAgent:
         """Initialize voice agent with all required services."""
         # Initialize services
         self.cartesia = CartesiaService()
-        self.cerebras = CerebrasService()
-        self.talking_node = TalkingNode(self.cerebras)
+        
+        # Initialize Cerebras service (optional - may fail if SDK not installed)
+        try:
+            self.cerebras = CerebrasService()
+        except (ImportError, MissingAPIKeyError):
+            self.cerebras = None
+            logger.warning("CerebrasService unavailable. Voice agent features will be limited.")
+        
+        if self.cerebras:
+            self.talking_node = TalkingNode(self.cerebras)
+        else:
+            self.talking_node = None
+            logger.warning("TalkingNode unavailable - voice responses will be limited.")
 
         # Redis for session management
         self.redis_url = redis_url or "redis://localhost:6379/0"
