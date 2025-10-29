@@ -16,6 +16,7 @@ from typing import List, Dict, Tuple, Optional
 from datetime import datetime
 
 from app.services.cerebras import CerebrasService
+from app.core.exceptions import MissingAPIKeyError
 from app.core.logging import logger
 
 
@@ -78,7 +79,12 @@ class GistMemory:
         Args:
             target_page_words: Target word count per page for pagination
         """
-        self.cerebras = CerebrasService()
+        # Initialize Cerebras service (optional - may fail if SDK not installed)
+        try:
+            self.cerebras = CerebrasService()
+        except (ImportError, MissingAPIKeyError):
+            self.cerebras = None
+            logger.warning("CerebrasService unavailable. Gist memory features will be limited.")
         self.target_page_words = target_page_words
 
         # Storage for dual memory
