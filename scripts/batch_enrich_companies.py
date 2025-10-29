@@ -175,7 +175,7 @@ class BatchEnrichmentService:
             }
     
     async def enrich_lead_via_domain(self, lead: Lead) -> Dict[str, Any]:
-        """Enrich a lead by finding contacts via company domain"""
+        """Enrich a lead by finding contacts via company domain using Apollo search"""
         domain = self.extract_domain(lead.company_website, lead.notes)
         
         if not domain:
@@ -187,8 +187,49 @@ class BatchEnrichmentService:
             }
         
         try:
-            # Enrich company data first
-            company_data = await self.apollo_service.enrich_company(domain)
+            # Search for ATL contacts at company domain
+            # Target: CEO, COO, CFO, CTO, VP Finance, VP Operations
+            atl_titles = ["CEO", "COO", "CFO", "CTO", "VP Finance", "VP Operations", 
+                         "Vice President Finance", "Vice President Operations"]
+            
+            contacts = await self.apollo_service.search_company_contacts(
+                domain=domain,
+                job_titles=atl_titles,
+                max_results=10
+            )
+            
+            if contacts:
+                # Update lead with found contacts
+                if not lead.additional_data:
+                    lead.additional_data = {}
+                
+                lead.additional_data['apollo_contacts'] = contacts
+                lead.additional_data['apollo_search_at'] = datetime.now().isoformat()
+                
+                # Update lead with top contact info
+                top_contact = contacts[0]
+                if top_contact.get('email'):
+                    lead.contact_email = top_contact['email']
+                if top_contact.get('name'):
+                    lead.contact_name = top_contact['name']
+                if top_contact.get('title'):
+                    lead.contact_title = top_contact['title']
+                if top_contact.get('phone'):
+                    lead.contact_phone = top_contact['phone']
+                
+                self.db.commit()
+                
+                return {
+                    'status': 'contacts_found',
+                    'lead_id': lead.id,
+                    'company': lead.company_name,
+                    'domain': domain,
+                    'contacts_found': len(contacts),
+                    'top_contact': top_contact.get('name')
+                }
+            else:
+                # Fallback: Enrich company data even if no contacts found
+                company_data = await self.apollo_service.enrich_company(domain)
             
             # Note: Apollo doesn't have a direct "find all contacts at company" API
             # This would require Apollo People Search API or manual search
@@ -216,24 +257,32 @@ class BatchEnrichmentService:
                     else:
                         lead.company_size = "500+"
                 
-                # Store company enrichment data
-                if not lead.additional_data:
-                    lead.additional_data = {}
-                
-                lead.additional_data['company_enrichment'] = {
-                    'domain': domain,
-                    'enriched_at': datetime.now().isoformat(),
-                    'apollo_data': company_data
-                }
-                
-                self.db.commit()
+                    # Store company enrichment data
+                    if not lead.additional_data:
+                        lead.additional_data = {}
+                    
+                    lead.additional_data['company_enrichment'] = {
+                        'domain': domain,
+                        'enriched_at': datetime.now().isoformat(),
+                        'apollo_data': company_data
+                    }
+                    
+                    self.db.commit()
+                    
+                    return {
+                        'status': 'company_enriched',
+                        'lead_id': lead.id,
+                        'company': lead.company_name,
+                        'domain': domain,
+                        'note': 'Company data enriched. No ATL contacts found via Apollo search.'
+                    }
                 
                 return {
-                    'status': 'company_enriched',
+                    'status': 'no_contacts',
                     'lead_id': lead.id,
                     'company': lead.company_name,
                     'domain': domain,
-                    'note': 'Company data enriched. Contacts need manual discovery via Apollo People Search.'
+                    'note': 'No contacts found at domain'
                 }
             
         except Exception as e:
