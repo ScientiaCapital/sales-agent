@@ -4,7 +4,15 @@ Customer and knowledge base models for multi-tenant platform
 from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from pgvector.sqlalchemy import Vector
+
+# Make pgvector optional - server can start without it
+try:
+    from pgvector.sqlalchemy import Vector
+    PGVECTOR_AVAILABLE = True
+except ImportError:
+    # Fallback: Use Text for embedding storage if pgvector not available
+    Vector = lambda size: Text  # type: ignore
+    PGVECTOR_AVAILABLE = False
 
 from app.models.database import Base
 
