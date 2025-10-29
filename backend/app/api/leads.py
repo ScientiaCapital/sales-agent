@@ -18,7 +18,8 @@ from app.core.exceptions import (
     InvalidFileFormatError,
     FileSizeExceededError,
     ValidationError,
-    DatabaseError
+    DatabaseError,
+    MissingAPIKeyError
 )
 from app.services.langgraph.agents import QualificationAgent
 
