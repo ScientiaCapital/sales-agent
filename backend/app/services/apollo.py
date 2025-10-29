@@ -389,6 +389,142 @@ class ApolloService:
             }
         )
     
+    async def search_company_contacts(
+        self,
+        domain: str,
+        job_titles: Optional[List[str]] = None,
+        max_results: int = 25
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for contacts at a company using Apollo People Search API.
+        
+        Uses Apollo's Mixed People Search endpoint to find people by domain.
+        Can filter by job titles to find specific roles (e.g., CEO, VP Finance).
+        
+        Args:
+            domain: Company domain without "www." or "@" (e.g., "apollo.io")
+            job_titles: Optional list of job titles to filter (e.g., ["CEO", "CFO", "VP"])
+            max_results: Maximum number of contacts to return (default: 25, max: 100)
+        
+        Returns:
+            List of contact dictionaries with:
+            - email, name, title, company
+            - linkedin_url, phone
+            - seniority, departments
+        
+        Raises:
+            ValidationError: If domain is invalid
+            APIAuthenticationError: If API key is invalid
+            APIRateLimitError: If rate limit exceeded
+            APIConnectionError: If request fails
+        
+        Example:
+            >>> contacts = await apollo.search_company_contacts(
+            ...     domain="acme.com",
+            ...     job_titles=["CEO", "CFO", "VP"]
+            ... )
+            >>> for contact in contacts:
+            ...     print(f"{contact['name']} - {contact['title']}")
+        """
+        # Clean domain
+        clean_domain = domain.replace("www.", "").replace("@", "").strip()
+        
+        if not clean_domain:
+            raise ValidationError(
+                "Domain cannot be empty",
+                context={"domain": domain}
+            )
+        
+        # Build search query
+        search_params = {
+            "organization_domains": clean_domain,
+            "per_page": min(max_results, 100),  # Apollo max is 100
+            "page": 1
+        }
+        
+        # Add job title filters if provided
+        if job_titles:
+            # Apollo supports title filtering via "person_titles" parameter
+            search_params["person_titles"] = job_titles
+        
+        try:
+            response = await self.client.post(
+                "/mixed_people/search",
+                json=search_params
+            )
+            
+            # Handle response
+            if response.status_code == 200:
+                data = response.json()
+                people = data.get("people", [])
+                
+                contacts = []
+                for person in people:
+                    # Extract employment info
+                    employment = person.get("employment_history", [])
+                    current_job = employment[0] if employment else {}
+                    
+                    contact = {
+                        "email": person.get("email"),
+                        "name": person.get("name"),
+                        "first_name": person.get("first_name"),
+                        "last_name": person.get("last_name"),
+                        "title": person.get("title") or current_job.get("title"),
+                        "company": current_job.get("organization_name") or person.get("organization", {}).get("name"),
+                        "linkedin_url": person.get("linkedin_url"),
+                        "phone": person.get("phone_number"),
+                        "seniority": person.get("seniority"),
+                        "departments": person.get("departments", []),
+                        "apollo_id": person.get("id"),
+                        "source": "apollo_search"
+                    }
+                    contacts.append(contact)
+                
+                logger.info(
+                    f"Found {len(contacts)} contacts at {clean_domain} "
+                    f"(requested: {max_results}, filtered by titles: {bool(job_titles)})"
+                )
+                
+                return contacts
+            
+            elif response.status_code == 401:
+                raise APIAuthenticationError(
+                    "Invalid Apollo API key",
+                    context={"status_code": 401}
+                )
+            
+            elif response.status_code == 429:
+                error_data = response.json()
+                raise APIRateLimitError(
+                    f"Apollo rate limit exceeded: {error_data.get('message', 'Too many requests')}",
+                    context={"status_code": 429, "response": error_data}
+                )
+            
+            elif response.status_code == 422:
+                error_data = response.json()
+                raise ValidationError(
+                    f"Apollo API validation error: {error_data.get('error', 'Invalid search parameters')}",
+                    context={"status_code": 422, "domain": clean_domain, "params": search_params}
+                )
+            
+            else:
+                raise APIConnectionError(
+                    f"Apollo API error: HTTP {response.status_code}",
+                    context={"status_code": response.status_code, "response": response.text}
+                )
+        
+        except httpx.TimeoutException as e:
+            raise APITimeoutError(
+                f"Apollo search request timed out after {self.TIMEOUT}s",
+                context={"timeout": self.TIMEOUT, "domain": clean_domain}
+            )
+        
+        except httpx.RequestError as e:
+            raise APIConnectionError(
+                f"Failed to connect to Apollo API: {str(e)}",
+                context={"error": str(e), "domain": clean_domain}
+            )
+    
     async def get_credit_balance(self) -> Dict[str, Any]:
         """
         Get remaining API credits and usage information.
