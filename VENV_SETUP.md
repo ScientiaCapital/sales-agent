@@ -1,6 +1,6 @@
-# Quick Start Guide - Virtual Environment
+# Virtual Environment Setup - Complete Instructions
 
-## Setup (One-Time)
+## Quick Setup
 
 ```bash
 # 1. Create virtual environment
@@ -9,16 +9,21 @@ python3 -m venv venv
 # 2. Activate it
 source venv/bin/activate
 
-# 3. Install core dependencies
-pip install fastapi uvicorn sqlalchemy "psycopg[binary]" python-dotenv httpx beautifulsoup4 requests pydantic
+# 3. Install dependencies (install in this order to avoid conflicts)
+pip install --upgrade pip setuptools wheel
 
-# 4. Install LangChain dependencies
-pip install langchain langchain-core langchain-openai langchain-anthropic langchain-community langgraph
+# Core dependencies
+pip install fastapi uvicorn sqlalchemy "psycopg[binary]==3.2.3" python-dotenv httpx beautifulsoup4 requests pydantic
 
-# 5. Install optional dependencies (if needed)
-pip install redis celery
+# LangChain dependencies (install in order)
+pip install "langchain-core>=1.0.0"
+pip install langchain langchain-openai langchain-anthropic langchain-community langgraph
+pip install langchain-cerebras langgraph-checkpoint-redis
 
-# OR use the setup script:
+# Redis (optional but recommended)
+pip install redis
+
+# Or use the automated script:
 ./setup.sh
 ```
 
@@ -30,31 +35,31 @@ source venv/bin/activate
 
 # Then start server
 python3 start_server.py
-
-# Or run scripts
-python3 scripts/import_csv_simple.py
-python3 scripts/discover_atl_contacts.py
 ```
 
 ## Troubleshooting
 
-**If you get "command not found" after closing terminal:**
-- Reactivate venv: `source venv/bin/activate`
+**Version conflicts:**
+- Make sure langchain-core >= 1.0.0 before installing other langchain packages
+- If you get conflicts, reinstall: `pip install --force-reinstall langchain-core>=1.0.0`
 
-**If dependencies are missing:**
+**Missing dependencies:**
 ```bash
 source venv/bin/activate
 pip install <package-name>
 ```
 
-**To install all dependencies:**
+**Reset environment:**
 ```bash
+rm -rf venv
+python3 -m venv venv
 source venv/bin/activate
-pip install -r backend/requirements.txt
+# Then reinstall dependencies
 ```
 
-## Note
+## Installation Order Matters
 
-The virtual environment is in `venv/` directory (gitignored).
-Activate it each time you open a new terminal session.
-
+1. Core Python packages first
+2. LangChain core (1.0.0+) before other LangChain packages
+3. LangChain integrations after core
+4. Optional packages last
