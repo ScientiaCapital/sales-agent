@@ -4,17 +4,32 @@
 
 The server requires Python packages that may not be installed. Install them:
 
-### Quick Fix
+### Quick Fix (Recommended)
 
 ```bash
 cd /Users/tmkipper/Desktop/tk_projects/sales-agent
 
-# Install all dependencies
+# Install ALL dependencies (recommended)
 pip3 install -r backend/requirements.txt
 
-# Or install minimal set for CSV import/enrichment:
-pip3 install fastapi uvicorn sqlalchemy psycopg3-binary python-dotenv httpx beautifulsoup4 requests
+# If you get permission errors, use:
+pip3 install --user -r backend/requirements.txt
+
+# Or install in a virtual environment (best practice):
+python3 -m venv venv
+source venv/bin/activate  # On macOS/Linux
+pip install -r backend/requirements.txt
 ```
+
+### Minimal Setup (Just CSV Import - No AI)
+
+If you only need CSV import (no AI agents), install minimal dependencies:
+
+```bash
+pip3 install fastapi uvicorn sqlalchemy psycopg3-binary python-dotenv httpx beautifulsoup4 requests pydantic
+```
+
+**Note:** Without AI dependencies, qualification endpoints will use default scores.
 
 ### Optional Dependencies (Server works without these)
 
