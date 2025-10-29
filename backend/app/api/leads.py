@@ -26,11 +26,23 @@ logger = setup_logging(__name__)
 
 router = APIRouter(prefix="/leads", tags=["leads"])
 
-# Initialize services
-cerebras_service = CerebrasService()
+# Initialize services (lazy load to avoid import errors if dependencies missing)
 csv_importer = CSVImportService()
 lead_scorer = LeadScorer()  # Default weights
-qualification_agent = QualificationAgent()  # LCEL-based agent (Phase 2.1)
+
+# Lazy load CerebrasService and QualificationAgent (may fail if cerebras not installed)
+cerebras_service = None
+qualification_agent = None
+
+try:
+    cerebras_service = CerebrasService()
+except (ImportError, MissingAPIKeyError) as e:
+    logger.warning(f"CerebrasService unavailable: {e}. Qualification features disabled.")
+
+try:
+    qualification_agent = QualificationAgent()
+except Exception as e:
+    logger.warning(f"QualificationAgent unavailable: {e}. Agent features disabled.")
 
 
 @router.post("/qualify", response_model=LeadQualificationResponse, status_code=201)
@@ -93,7 +105,7 @@ async def qualify_lead(
                 "score": ai_score,
                 "reasoning": ai_reasoning,
                 "latency_ms": latency_ms,
-                "model": cerebras_service.default_model
+                "model": cerebras_service.default_model if cerebras_service else "default"
             }
         )
 
@@ -136,7 +148,7 @@ async def qualify_lead(
         contact_title=request.contact_title,
         qualification_score=round(final_score, 1),
         qualification_reasoning=combined_reasoning,
-        qualification_model=f"{cerebras_service.default_model}+LeadScorer",
+        qualification_model=f"{cerebras_service.default_model if cerebras_service else 'default'}+LeadScorer",
         qualification_latency_ms=latency_ms,
         qualified_at=datetime.now(),
         notes=request.notes,
@@ -159,11 +171,11 @@ async def qualify_lead(
         prompt_est = len(str(request.dict())) // 4  # Rough token estimate
         completion_est = len(ai_reasoning) // 4
 
-        cost_info = cerebras_service.calculate_cost(prompt_est, completion_est)
+        cost_info = cerebras_service.calculate_cost(prompt_est, completion_est) if cerebras_service else {"cost": 0.0, "estimated_cost_usd": 0.0}
 
         api_call = CerebrasAPICall(
             endpoint="/chat/completions",
-            model=cerebras_service.default_model,
+            model=cerebras_service.default_model if cerebras_service else "default",
             prompt_tokens=prompt_est,
             completion_tokens=completion_est,
             total_tokens=prompt_est + completion_est,
