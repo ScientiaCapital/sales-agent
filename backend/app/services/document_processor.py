@@ -25,6 +25,7 @@ except ImportError:
 
 from fastapi import HTTPException
 from app.services.cerebras import CerebrasService
+from app.core.exceptions import MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,12 @@ class DocumentProcessor:
     """
 
     def __init__(self):
-        self.cerebras = CerebrasService()
+        # Initialize Cerebras service (optional - may fail if SDK not installed)
+        try:
+            self.cerebras = CerebrasService()
+        except (ImportError, MissingAPIKeyError):
+            self.cerebras = None
+            logger.warning("CerebrasService unavailable. Document analysis features will be limited.")
         
         # Check dependencies
         if not pdfplumber:
