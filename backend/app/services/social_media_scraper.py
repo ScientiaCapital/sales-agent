@@ -61,7 +61,7 @@ class SocialMediaScraper:
         # Initialize Reddit client
         self.reddit_client = self._init_reddit_client()
 
-    def _init_twitter_client(self) -> Optional[tweepy.Client]:
+    def _init_twitter_client(self):
         """Initialize Twitter API v2 client with bearer token"""
         if not tweepy:
             logger.warning("Tweepy not installed - Twitter scraping disabled")
@@ -81,7 +81,7 @@ class SocialMediaScraper:
             logger.error(f"Twitter client initialization failed: {e}")
             return None
 
-    def _init_reddit_client(self) -> Optional[praw.Reddit]:
+    def _init_reddit_client(self):
         """Initialize Reddit PRAW client"""
         if not praw:
             logger.warning("PRAW not installed - Reddit scraping disabled")
