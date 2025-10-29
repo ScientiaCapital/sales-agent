@@ -11,7 +11,11 @@ from typing import List, Dict, Optional
 from datetime import datetime
 
 # Document parsing
-import PyPDF2
+# PDF processing - optional dependency
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 from docx import Document as DocxDocument
 
 # Embeddings
