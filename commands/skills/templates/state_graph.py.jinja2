@@ -1,0 +1,92 @@
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+from app.services.langchain.cerebras_llm import CerebrasLLM
+from app.services.langgraph.tools import {{ tools }}
+
+class {{ class_name }}State(TypedDict):
+    """State for {{ name }} agent."""
+    messages: list
+    current_step: str
+    confidence: float
+    result: dict
+
+class {{ class_name }}:
+    """{{ description }}"""
+    
+    def __init__(self):
+        self.llm = CerebrasLLM(
+            model="llama3.1-8b",
+            temperature=0.7,
+            max_tokens=500
+        )
+        self.tools = {{ tools }}
+        
+    def create_graph(self):
+        """Create StateGraph for {{ name }}."""
+        graph = StateGraph({{ class_name }}State)
+        
+        # Add nodes
+        graph.add_node("start", self.start_node)
+        graph.add_node("process", self.process_node)
+        graph.add_node("validate", self.validate_node)
+        
+        # Add edges
+        graph.add_edge("start", "process")
+        graph.add_conditional_edges(
+            "process",
+            self.should_continue,
+            {"continue": "validate", "complete": END}
+        )
+        graph.add_edge("validate", "process")
+        
+        graph.set_entry_point("start")
+        
+        return graph.compile()
+    
+    async def start_node(self, state: {{ class_name }}State) -> {{ class_name }}State:
+        """Initialize agent state."""
+        return {
+            **state,
+            "current_step": "started",
+            "confidence": 0.0
+        }
+    
+    async def process_node(self, state: {{ class_name }}State) -> {{ class_name }}State:
+        """Process input data."""
+        # Implementation here
+        return {
+            **state,
+            "current_step": "processed",
+            "confidence": 0.8
+        }
+    
+    async def validate_node(self, state: {{ class_name }}State) -> {{ class_name }}State:
+        """Validate results."""
+        # Implementation here
+        return {
+            **state,
+            "current_step": "validated",
+            "confidence": 0.9
+        }
+    
+    def should_continue(self, state: {{ class_name }}State) -> str:
+        """Determine if processing should continue."""
+        if state["confidence"] > 0.8:
+            return "complete"
+        return "continue"
+    
+    async def execute(self, input_data: dict) -> dict:
+        """Execute {{ name }} agent."""
+        graph = self.create_graph()
+        result = await graph.ainvoke({
+            "messages": [],
+            "current_step": "",
+            "confidence": 0.0,
+            "result": input_data
+        })
+        
+        return {
+            "result": result,
+            "agent_type": "{{ name }}",
+            "status": "completed"
+        }

@@ -1,0 +1,75 @@
+import pytest
+from unittest.mock import Mock, patch, AsyncMock
+from datetime import datetime
+
+from app.services.{{ module_name }} import {{ ClassName }}
+from app.schemas.{{ schema_name }} import {{ SchemaName }}Create, {{ SchemaName }}Response
+from app.models.{{ model_name }} import {{ ModelName }}
+
+
+class Test{{ ClassName }}:
+    """Unit tests for {{ ClassName }}."""
+    
+    @pytest.fixture
+    def {{ instance_name }}(self):
+        """Create {{ instance_name }} instance for testing."""
+        return {{ ClassName }}()
+    
+    @pytest.fixture
+    def sample_data(self):
+        """Sample data for testing."""
+        return {
+            "name": "Test {{ name }}",
+            "description": "Test description",
+            "status": "active"
+        }
+    
+    def test_{{ method_name }}_success(self, {{ instance_name }}, sample_data):
+        """Test successful {{ method_name }} execution."""
+        # Arrange
+        expected_result = {
+            "id": 1,
+            "name": "Test {{ name }}",
+            "status": "completed"
+        }
+        
+        # Act
+        with patch.object({{ instance_name }}, '_{{ private_method }}', return_value=expected_result):
+            result = {{ instance_name }}.{{ method_name }}(sample_data)
+        
+        # Assert
+        assert result == expected_result
+        assert result["status"] == "completed"
+    
+    def test_{{ method_name }}_validation_error(self, {{ instance_name }}):
+        """Test {{ method_name }} with invalid data."""
+        # Arrange
+        invalid_data = {
+            "name": "",  # Invalid: empty name
+            "description": "Test description"
+        }
+        
+        # Act & Assert
+        with pytest.raises(ValueError, match="Name cannot be empty"):
+            {{ instance_name }}.{{ method_name }}(invalid_data)
+    
+    def test_{{ method_name }}_database_error(self, {{ instance_name }}, sample_data):
+        """Test {{ method_name }} with database error."""
+        # Arrange
+        with patch.object({{ instance_name }}, '_{{ private_method }}', side_effect=Exception("Database error")):
+            # Act & Assert
+            with pytest.raises(Exception, match="Database error"):
+                {{ instance_name }}.{{ method_name }}(sample_data)
+    
+    @pytest.mark.asyncio
+    async def test_async_{{ method_name }}(self, {{ instance_name }}, sample_data):
+        """Test async {{ method_name }} execution."""
+        # Arrange
+        expected_result = {"status": "completed"}
+        
+        # Act
+        with patch.object({{ instance_name }}, '_{{ private_method }}', new_callable=AsyncMock, return_value=expected_result):
+            result = await {{ instance_name }}.async_{{ method_name }}(sample_data)
+        
+        # Assert
+        assert result == expected_result
