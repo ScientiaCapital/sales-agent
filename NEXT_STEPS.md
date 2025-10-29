@@ -1,18 +1,22 @@
 # Next Steps - Server is Running! 🚀
 
+# Next Steps - Server is Running! 🚀
+
 ## ✅ Server Status
 
 Your server is now running at: **http://localhost:8001**
+
+**IMPORTANT**: All API endpoints are prefixed with `/api/v1/` (not `/api/`)
 
 ## Quick Start Guide
 
 ### 1. Check Server Health
 
 ```bash
-curl http://localhost:8001/api/health
+curl http://localhost:8001/api/v1/health
 ```
 
-Or visit: http://localhost:8001/api/docs (Swagger UI)
+Or visit: http://localhost:8001/api/v1/docs (Swagger UI)
 
 ### 2. Import Your CSV File
 
@@ -28,7 +32,7 @@ python3 scripts/import_csv_simple.py companies_ready_to_import.csv
 
 Or use the API directly:
 ```bash
-curl -X POST http://localhost:8001/api/leads/import/csv \
+curl -X POST http://localhost:8001/api/v1/leads/import/csv \
   -F "file=@companies_ready_to_import.csv"
 ```
 
@@ -65,32 +69,32 @@ python3 scripts/full_pipeline.py --limit 5
 ## Available API Endpoints
 
 ### Lead Management
-- `GET /api/leads/` - List all leads
-- `POST /api/leads/qualify` - Qualify a lead
-- `POST /api/leads/import/csv` - Import CSV
+- `GET /api/v1/leads/` - List all leads
+- `POST /api/v1/leads/qualify` - Qualify a lead
+- `POST /api/v1/leads/import/csv` - Import CSV
 
 ### Contact Discovery
-- `POST /api/contacts/discover` - Discover ATL contacts
-- `GET /api/contacts/org-chart/{company_name}` - Build org chart
+- `POST /api/v1/contacts/discover` - Discover ATL contacts
+- `GET /api/v1/contacts/org-chart/{company_name}` - Build org chart
 
 ### Apollo Enrichment
-- `POST /api/apollo/enrich` - Enrich single contact
-- `POST /api/apollo/enrich/bulk` - Bulk enrich
+- `POST /api/v1/apollo/enrich` - Enrich single contact
+- `POST /api/v1/apollo/enrich/bulk` - Bulk enrich
 
 ### LangGraph Agents
-- `POST /api/langgraph/invoke` - Run agent (qualification, enrichment, etc.)
-- `POST /api/langgraph/stream` - Stream agent execution
+- `POST /api/v1/langgraph/invoke` - Run agent (qualification, enrichment, etc.)
+- `POST /api/v1/langgraph/stream` - Stream agent execution
 
 ## View Your Data
 
 ### Check imported leads:
 ```bash
-curl http://localhost:8001/api/leads/ | python3 -m json.tool | head -50
+curl http://localhost:8001/api/v1/leads/ | python3 -m json.tool | head -50
 ```
 
 ### Check specific lead:
 ```bash
-curl http://localhost:8001/api/leads/{lead_id} | python3 -m json.tool
+curl http://localhost:8001/api/v1/leads/{lead_id} | python3 -m json.tool
 ```
 
 ## Interactive Testing
