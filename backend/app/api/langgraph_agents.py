@@ -217,13 +217,15 @@ async def invoke_agent(
             # Invoke appropriate agent
             if request.agent_type == "qualification":
                 agent = QualificationAgent()
-                result = await agent.qualify(**request.input)
+                result, latency_ms, metadata = await agent.qualify(**request.input)
                 output_data = {
                     "score": result.qualification_score,
                     "reasoning": result.qualification_reasoning,
                     "tier": result.tier,
-                    "confidence": result.confidence_score,
-                    "recommendations": result.recommendations
+                    "fit_assessment": result.fit_assessment,
+                    "contact_quality": result.contact_quality,
+                    "sales_potential": result.sales_potential,
+                    "recommendations": result.recommendations or []
                 }
                 
             elif request.agent_type == "enrichment":

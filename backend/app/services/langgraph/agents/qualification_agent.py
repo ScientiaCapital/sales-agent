@@ -55,8 +55,6 @@ class LeadQualificationResult(BaseModel):
     without manual JSON parsing or error handling.
     """
     qualification_score: float = Field(
-        ge=0,
-        le=100,
         description="Qualification score from 0-100 based on company fit, contact quality, and sales potential"
     )
 
@@ -80,9 +78,9 @@ class LeadQualificationResult(BaseModel):
         description="Buying signals and readiness indicators"
     )
 
-    recommendations: List[str] = Field(
-        default_factory=list,
-        description="2-4 actionable next steps for this lead"
+    recommendations: Optional[List[str]] = Field(
+        default=None,
+        description="2-4 actionable next steps for this lead (provide at least 2)"
     )
 
 

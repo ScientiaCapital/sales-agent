@@ -103,8 +103,8 @@ user_roles = Table(
     Base.metadata,
     Column("user_id", Integer, ForeignKey("users.id"), primary_key=True),
     Column("role_id", Integer, ForeignKey("roles.id"), primary_key=True),
-    Column("assigned_at", DateTime(timezone=True), server_default=func.now()),
-    Column("assigned_by", Integer, ForeignKey("users.id"))
+    Column("assigned_at", DateTime(timezone=True), server_default=func.now())
+    # Removed assigned_by column - was causing SQLAlchemy ambiguous FK errors
 )
 
 role_permissions = Table(
@@ -157,8 +157,6 @@ class User(Base):
     roles = relationship(
         "Role",
         secondary=user_roles,
-        primaryjoin="User.id == user_roles.c.user_id",
-        secondaryjoin="Role.id == user_roles.c.role_id",
         back_populates="users"
     )
     security_events = relationship("SecurityEvent", back_populates="user", cascade="all, delete-orphan")
@@ -199,8 +197,7 @@ class Role(Base):
     users = relationship(
         "User",
         secondary=user_roles,
-        back_populates="roles",
-        foreign_keys=[user_roles.c.user_id, user_roles.c.role_id]
+        back_populates="roles"
     )
     permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
 
