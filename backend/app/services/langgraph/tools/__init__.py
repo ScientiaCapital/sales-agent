@@ -55,6 +55,22 @@ from .cartesia_tools import (
     get_cartesia_tools as _get_cartesia_tools_impl,
 )
 
+from .linkedin_content_tools import (
+    scrape_linkedin_company_posts_tool,
+    scrape_linkedin_profile_posts_tool,
+    track_atl_contact_linkedin_activity_tool,
+    analyze_linkedin_content_tool,
+    get_linkedin_content_tools,
+)
+
+from .contractor_tools import (
+    scrape_contractor_reviews_tool,
+    verify_contractor_license_tool,
+    search_ahj_databases_tool,
+    audit_contractor_compliance_tool,
+    get_contractor_tools,
+)
+
 
 # ========== Convenience Functions ==========
 
@@ -139,6 +155,68 @@ def get_linkedin_tools():
     return [
         get_linkedin_profile_tool,
     ]
+
+
+def get_linkedin_content_tools():
+    """
+    Get all LinkedIn content scraping tools.
+
+    Returns:
+        List of LinkedIn content tools: [
+            scrape_linkedin_company_posts_tool,
+            scrape_linkedin_profile_posts_tool,
+            track_atl_contact_linkedin_activity_tool,
+            analyze_linkedin_content_tool
+        ]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_linkedin_content_tools
+        from langgraph.prebuilt import create_react_agent
+
+        linkedin_tools = get_linkedin_content_tools()
+        agent = create_react_agent(llm, linkedin_tools)
+
+        # Agent can now scrape LinkedIn content and analyze it
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Scrape Acme Corp's LinkedIn posts and analyze sentiment"
+            )]
+        })
+        ```
+    """
+    return get_linkedin_content_tools()
+
+
+def get_contractor_tools():
+    """
+    Get all contractor industry tools.
+
+    Returns:
+        List of contractor tools: [
+            scrape_contractor_reviews_tool,
+            verify_contractor_license_tool,
+            search_ahj_databases_tool,
+            audit_contractor_compliance_tool
+        ]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_contractor_tools
+        from langgraph.prebuilt import create_react_agent
+
+        contractor_tools = get_contractor_tools()
+        agent = create_react_agent(llm, contractor_tools)
+
+        # Agent can now research contractors comprehensively
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Research and audit 'ABC Construction' for compliance"
+            )]
+        })
+        ```
+    """
+    return get_contractor_tools()
 
 
 def get_cartesia_tools():

@@ -76,6 +76,59 @@ from .conversation_agent import (
     ConversationTurnResult,
 )
 
+# Phase 2.7: LicenseAuditorAgent (Compliance StateGraph) ✅ COMPLETE
+from .license_auditor_agent import (
+    LicenseAuditorAgent,
+    LicenseAuditResult,
+)
+
+# Phase 2.8: LinkedInPostWriterAgent (Content Generation StateGraph) ✅ COMPLETE
+from .linkedin_post_writer import (
+    LinkedInPostWriter,
+    LinkedInPostResult,
+)
+
+# Phase 2.9: SocialResearchAgent (Social Media StateGraph) ✅ COMPLETE
+from .social_research_agent import (
+    SocialResearchAgent,
+    SocialResearchResult,
+)
+
+# Phase 3.0: Advanced Agentic Agents (DeepSeek-based) ✅ COMPLETE
+from .reasoner_agent import (
+    ReasonerAgent,
+    ReasoningResult,
+)
+
+from .orchestrator_agent import (
+    OrchestratorAgent,
+    OrchestrationResult,
+)
+
+# Phase 3.1: Master Agent System (LangGraph-based) ✅ COMPLETE
+from .master_agent_system import (
+    MasterAgentSystem,
+    MasterAgentState,
+)
+
+# Phase 3.2: Agent Subgraphs (Modular Composition) ✅ COMPLETE
+from .agent_subgraphs import (
+    create_reasoner_subgraph,
+    create_orchestrator_subgraph,
+    create_social_research_subgraph,
+    create_linkedin_content_subgraph,
+    create_contractor_reviews_subgraph,
+    create_license_auditor_subgraph,
+)
+
+# Phase 3.3: Agent Communication Hub (Inter-Agent Communication) ✅ COMPLETE
+from .agent_communication_hub import (
+    AgentCommunicationHub,
+    InterAgentMessage,
+    MessageType,
+    AgentStatus,
+)
+
 
 __all__ = [
     # Phase 2.1 - QualificationAgent (LCEL)
@@ -101,4 +154,40 @@ __all__ = [
     # Phase 2.6 - ConversationAgent (Voice)
     "ConversationAgent",
     "ConversationTurnResult",
+
+    # Phase 2.7 - LicenseAuditorAgent (Compliance)
+    "LicenseAuditorAgent",
+    "LicenseAuditResult",
+
+    # Phase 2.8 - LinkedInPostWriterAgent (Content Generation)
+    "LinkedInPostWriter",
+    "LinkedInPostResult",
+
+    # Phase 2.9 - SocialResearchAgent (Social Media)
+    "SocialResearchAgent",
+    "SocialResearchResult",
+
+    # Phase 3.0 - Advanced Agentic Agents (DeepSeek-based)
+    "ReasonerAgent",
+    "ReasoningResult",
+    "OrchestratorAgent",
+    "OrchestrationResult",
+
+    # Phase 3.1 - Master Agent System (LangGraph-based)
+    "MasterAgentSystem",
+    "MasterAgentState",
+
+    # Phase 3.2 - Agent Subgraphs (Modular Composition)
+    "create_reasoner_subgraph",
+    "create_orchestrator_subgraph",
+    "create_social_research_subgraph",
+    "create_linkedin_content_subgraph",
+    "create_contractor_reviews_subgraph",
+    "create_license_auditor_subgraph",
+
+    # Phase 3.3 - Agent Communication Hub (Inter-Agent Communication)
+    "AgentCommunicationHub",
+    "InterAgentMessage",
+    "MessageType",
+    "AgentStatus",
 ]

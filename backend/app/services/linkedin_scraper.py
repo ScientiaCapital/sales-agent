@@ -8,8 +8,9 @@ No Selenium setup required - Browserbase handles browser infrastructure.
 import logging
 import os
 import json
+import asyncio
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Note: Browserbase integration would typically use their API
 # For now, implementing the structure to show the pattern
@@ -32,6 +33,10 @@ class LinkedInScraper:
     - Employee discovery
     - Profile data extraction
     - Org chart inference
+    - Company posts and updates scraping
+    - Personal profile posts scraping
+    - ATL contact activity tracking
+    - Content engagement metrics
     - Stealth mode operation
     """
 
@@ -321,4 +326,273 @@ class LinkedInScraper:
             "contacts": atl_contacts,
             "discovery_method": "linkedin_browserbase",
             "discovered_at": datetime.now().isoformat()
+        }
+
+    # ========== Content Scraping Methods ==========
+
+    async def scrape_company_posts(
+        self,
+        company_url: str,
+        max_posts: int = 20,
+        days_back: int = 30,
+        include_engagement: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Scrape LinkedIn company page posts and updates.
+
+        Args:
+            company_url: LinkedIn company page URL
+            max_posts: Maximum number of posts to scrape
+            days_back: Days back to scrape posts
+            include_engagement: Include engagement metrics
+
+        Returns:
+            Company posts data with engagement metrics
+        """
+        if not self.browserbase_api_key:
+            return {
+                "error": "Browserbase not configured",
+                "company_url": company_url,
+                "scraped": False
+            }
+
+        # Browserbase automation would:
+        # 1. Navigate to company page
+        # 2. Scroll through posts feed
+        # 3. Extract post content, timestamps, engagement
+        # 4. Filter by date range
+        # 5. Return structured post data
+
+        # Mock company posts data
+        posts = [
+            {
+                "post_id": "company_post_1",
+                "content": "Excited to announce our Series A funding round! 🚀",
+                "post_type": "text",
+                "posted_at": (datetime.now() - timedelta(days=2)).isoformat(),
+                "engagement": {
+                    "likes": 45,
+                    "comments": 12,
+                    "shares": 8,
+                    "total_engagement": 65
+                },
+                "hashtags": ["#funding", "#startup", "#growth"],
+                "media_urls": [],
+                "author": "TechCorp Official"
+            },
+            {
+                "post_id": "company_post_2",
+                "content": "Join us for our upcoming webinar on AI in SaaS!",
+                "post_type": "event",
+                "posted_at": (datetime.now() - timedelta(days=5)).isoformat(),
+                "engagement": {
+                    "likes": 23,
+                    "comments": 5,
+                    "shares": 3,
+                    "total_engagement": 31
+                },
+                "hashtags": ["#webinar", "#AI", "#SaaS"],
+                "media_urls": ["https://example.com/webinar-image.jpg"],
+                "author": "TechCorp Official"
+            }
+        ]
+
+        # Calculate average engagement
+        total_engagement = sum(post["engagement"]["total_engagement"] for post in posts)
+        avg_engagement = total_engagement / len(posts) if posts else 0
+
+        return {
+            "company_url": company_url,
+            "posts": posts[:max_posts],
+            "total_posts": len(posts),
+            "avg_engagement": avg_engagement,
+            "scraped_at": datetime.now().isoformat(),
+            "scraping_method": "browserbase_stealth",
+            "metadata": {
+                "days_back": days_back,
+                "include_engagement": include_engagement,
+                "rate_limit_remaining": 45  # Mock rate limit
+            }
+        }
+
+    async def scrape_profile_posts(
+        self,
+        profile_url: str,
+        max_posts: int = 15,
+        days_back: int = 30,
+        include_engagement: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Scrape LinkedIn profile posts and activity.
+
+        Args:
+            profile_url: LinkedIn profile URL
+            max_posts: Maximum number of posts to scrape
+            days_back: Days back to scrape posts
+            include_engagement: Include engagement metrics
+
+        Returns:
+            Profile posts data with engagement metrics
+        """
+        if not self.browserbase_api_key:
+            return {
+                "error": "Browserbase not configured",
+                "profile_url": profile_url,
+                "scraped": False
+            }
+
+        # Browserbase automation would:
+        # 1. Navigate to profile page
+        # 2. Scroll through activity feed
+        # 3. Extract posts, comments, shares
+        # 4. Filter by date range
+        # 5. Return structured activity data
+
+        # Mock profile posts data
+        posts = [
+            {
+                "post_id": "profile_post_1",
+                "content": "Great insights from the SaaS conference today!",
+                "post_type": "text",
+                "posted_at": (datetime.now() - timedelta(days=1)).isoformat(),
+                "engagement": {
+                    "likes": 12,
+                    "comments": 3,
+                    "shares": 1,
+                    "total_engagement": 16
+                },
+                "hashtags": ["#SaaS", "#conference", "#insights"],
+                "media_urls": [],
+                "author": "John Doe"
+            },
+            {
+                "post_id": "profile_post_2",
+                "content": "Sharing our latest product update...",
+                "post_type": "article",
+                "posted_at": (datetime.now() - timedelta(days=3)).isoformat(),
+                "engagement": {
+                    "likes": 28,
+                    "comments": 7,
+                    "shares": 4,
+                    "total_engagement": 39
+                },
+                "hashtags": ["#product", "#update", "#innovation"],
+                "media_urls": ["https://example.com/article-image.jpg"],
+                "author": "John Doe"
+            }
+        ]
+
+        # Calculate average engagement
+        total_engagement = sum(post["engagement"]["total_engagement"] for post in posts)
+        avg_engagement = total_engagement / len(posts) if posts else 0
+
+        return {
+            "profile_url": profile_url,
+            "posts": posts[:max_posts],
+            "total_posts": len(posts),
+            "avg_engagement": avg_engagement,
+            "scraped_at": datetime.now().isoformat(),
+            "scraping_method": "browserbase_stealth",
+            "metadata": {
+                "days_back": days_back,
+                "include_engagement": include_engagement,
+                "rate_limit_remaining": 28  # Mock rate limit
+            }
+        }
+
+    async def track_atl_contact_activity(
+        self,
+        contact_url: str,
+        company_url: str,
+        max_posts: int = 10,
+        days_back: int = 14
+    ) -> Dict[str, Any]:
+        """
+        Track ATL contact's LinkedIn activity and company engagement.
+
+        Args:
+            contact_url: ATL contact's LinkedIn profile URL
+            company_url: Company's LinkedIn page URL
+            max_posts: Maximum posts per contact
+            days_back: Days back to track activity
+
+        Returns:
+            ATL contact activity data including personal posts and company engagement
+        """
+        if not self.browserbase_api_key:
+            return {
+                "error": "Browserbase not configured",
+                "contact_url": contact_url,
+                "company_url": company_url,
+                "scraped": False
+            }
+
+        # Browserbase automation would:
+        # 1. Scrape contact's personal posts
+        # 2. Check for company page interactions
+        # 3. Identify company content engagement
+        # 4. Track activity patterns
+        # 5. Return comprehensive activity data
+
+        # Mock ATL contact activity data
+        personal_posts = [
+            {
+                "post_id": "personal_1",
+                "content": "Excited about our new product launch!",
+                "posted_at": (datetime.now() - timedelta(days=2)).isoformat(),
+                "engagement": {"likes": 15, "comments": 4, "shares": 2},
+                "mentions_company": True,
+                "sentiment": "positive"
+            },
+            {
+                "post_id": "personal_2",
+                "content": "Great team meeting today on our Q4 strategy",
+                "posted_at": (datetime.now() - timedelta(days=5)).isoformat(),
+                "engagement": {"likes": 8, "comments": 2, "shares": 1},
+                "mentions_company": True,
+                "sentiment": "neutral"
+            }
+        ]
+
+        company_engagements = [
+            {
+                "engagement_id": "company_eng_1",
+                "type": "like",
+                "company_post_id": "company_post_1",
+                "engaged_at": (datetime.now() - timedelta(days=1)).isoformat(),
+                "engagement_content": "Liked company funding announcement"
+            },
+            {
+                "engagement_id": "company_eng_2",
+                "type": "comment",
+                "company_post_id": "company_post_2",
+                "engaged_at": (datetime.now() - timedelta(days=3)).isoformat(),
+                "engagement_content": "Commented on webinar announcement"
+            }
+        ]
+
+        # Generate activity summary
+        activity_summary = {
+            "total_personal_posts": len(personal_posts),
+            "total_company_engagements": len(company_engagements),
+            "avg_personal_engagement": sum(post["engagement"]["likes"] + post["engagement"]["comments"] + post["engagement"]["shares"] for post in personal_posts) / len(personal_posts) if personal_posts else 0,
+            "company_engagement_rate": len(company_engagements) / len(personal_posts) if personal_posts else 0,
+            "most_active_day": "Monday",  # Would be calculated from actual data
+            "content_themes": ["product", "strategy", "team"],  # Would be extracted from content
+            "sentiment_trend": "positive"  # Would be calculated from sentiment analysis
+        }
+
+        return {
+            "contact_url": contact_url,
+            "company_url": company_url,
+            "personal_posts": personal_posts[:max_posts],
+            "company_engagements": company_engagements,
+            "summary": activity_summary,
+            "tracked_at": datetime.now().isoformat(),
+            "tracking_method": "browserbase_stealth",
+            "metadata": {
+                "days_back": days_back,
+                "max_posts": max_posts,
+                "rate_limit_remaining": 18  # Mock rate limit
+            }
         }
