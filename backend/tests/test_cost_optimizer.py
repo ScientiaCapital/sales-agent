@@ -20,7 +20,7 @@ from app.services.cost_optimizer import (
     AlertPayload
 )
 from app.services.unified_router import RoutingStrategy
-from app.services.unified_router_cost_integration import CostOptimizedUnifiedRouter
+# CostOptimizedUnifiedRouter removed - not used in production
 from app.services.usage_tracker import UsageTracker
 
 

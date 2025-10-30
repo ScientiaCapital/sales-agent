@@ -51,20 +51,31 @@ pre-commit==4.0.1
 
 # AI/ML - LangChain/LangGraph Framework
 langchain==0.3.15  # Core LangChain framework
-langchain-core==0.3.28  # LangChain core abstractions
+langchain-core==0.3.31  # LangChain core abstractions
 langchain-community==0.3.14  # Community integrations
 langgraph==0.2.60  # StateGraph orchestration for complex agents
 langsmith==0.2.6  # LangSmith tracing and observability
 
+# Deep Agents Implementation (Custom - 2025)
+# Note: Using custom implementation based on LangChain patterns
+# No external dependencies needed - built on existing LangChain/LangGraph
+
+# LangChain Vector Store Integrations (NEW: 2025)
+langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
+langchain-community==0.3.14  # Community integrations (FAISS, Chroma, Qdrant)
+langchain-huggingface==0.1.0  # Hugging Face embeddings and models
+langchain-ollama==0.1.0  # Ollama local models and embeddings
+langchain-text-splitters==0.3.2  # Advanced text splitting strategies
+
 # LangChain Integrations
 langchain-anthropic==0.3.3  # Anthropic Claude integration
-langchain-openai==0.2.14  # OpenAI integration (for Cerebras via custom base_url)
+langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
 langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
 
 # AI/ML - Model Providers
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
-openai==1.52.0  # For OpenAI-compatible APIs (keeping for compatibility)
-anthropic==0.39.0  # Claude streaming and batch API support
+openai==1.58.1  # For OpenAI-compatible APIs (keeping for compatibility)
+anthropic==0.41.0  # Claude streaming and batch API support
 
 # Cloud Infrastructure - RunPod
 # Note: Using RunPod for compute, not Firebase/GCP
@@ -75,7 +86,7 @@ boto3==1.35.80  # AWS SDK for S3-compatible RunPod storage
 # Document Processing
 pdfplumber==0.11.4  # Best PDF text extraction (Context7 recommended)
 python-docx==1.1.2  # DOCX document parsing
-pypandoc==1.13  # Universal document conversion
+# pypandoc==1.13  # Universal document conversion (removed - not used)
 
 # Social Media Scraping
 tweepy==4.14.0  # Twitter API v2 client

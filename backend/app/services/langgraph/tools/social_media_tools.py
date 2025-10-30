@@ -29,7 +29,11 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 
 from langchain.tools import tool
-from langchain_core.exceptions import ToolException
+
+# Note: ToolException doesn't exist in langchain_core, using ValueError instead
+class ToolException(ValueError):
+    """Exception raised when a tool encounters an error."""
+    pass
 
 from app.services.social_media_scraper import SocialMediaScraper
 from app.services.cerebras import CerebrasService

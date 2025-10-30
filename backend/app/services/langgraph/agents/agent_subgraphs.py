@@ -28,11 +28,11 @@ from typing import Dict, Any, List, Optional, TypedDict, Annotated
 from datetime import datetime
 
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.redis import RedisCheckpointer
+from langgraph.checkpoint.redis import RedisSaver as RedisCheckpointer
 from langgraph.channels import Topic, LastValue
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 
-from app.core.logging import get_logger
+from app.core.logging import setup_logging as get_logger
 
 logger = get_logger(__name__)
 

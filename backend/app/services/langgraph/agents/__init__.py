@@ -105,11 +105,7 @@ from .orchestrator_agent import (
     OrchestrationResult,
 )
 
-# Phase 3.1: Master Agent System (LangGraph-based) ✅ COMPLETE
-from .master_agent_system import (
-    MasterAgentSystem,
-    MasterAgentState,
-)
+# Phase 3.1: Master Agent System (LangGraph-based) - REMOVED (not used in production)
 
 # Phase 3.2: Agent Subgraphs (Modular Composition) ✅ COMPLETE
 from .agent_subgraphs import (
@@ -174,8 +170,6 @@ __all__ = [
     "OrchestrationResult",
 
     # Phase 3.1 - Master Agent System (LangGraph-based)
-    "MasterAgentSystem",
-    "MasterAgentState",
 
     # Phase 3.2 - Agent Subgraphs (Modular Composition)
     "create_reasoner_subgraph",
