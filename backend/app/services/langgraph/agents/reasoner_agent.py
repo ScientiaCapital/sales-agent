@@ -65,7 +65,7 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import InMemorySaver
 
-from app.core.logging import get_logger
+from app.core.logging import setup_logging as get_logger
 
 logger = get_logger(__name__)
 

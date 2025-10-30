@@ -40,7 +40,11 @@ from pydantic import BaseModel, Field
 import re
 
 from langchain.tools import tool
-from langchain_core.exceptions import ToolException
+
+# Note: ToolException doesn't exist in langchain_core, using ValueError instead
+class ToolException(ValueError):
+    """Exception raised when a tool encounters an error."""
+    pass
 
 logger = logging.getLogger(__name__)
 

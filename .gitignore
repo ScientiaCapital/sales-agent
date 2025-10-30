@@ -98,3 +98,16 @@ out/
 .vercel
 .turbo
 venv/
+
+# Old virtual environments
+venv.old/
+
+# Test data (keep only template)
+test_*.csv
+*_ready_for_import.csv
+!CSV_TEMPLATE.csv
+!test_200_leads.csv
+
+# Coverage reports
+htmlcov/
+coverage.xml

@@ -62,7 +62,7 @@ from enum import Enum
 import redis.asyncio as redis
 from pydantic import BaseModel, Field
 
-from app.core.logging import get_logger
+from app.core.logging import setup_logging as get_logger
 
 logger = get_logger(__name__)
 

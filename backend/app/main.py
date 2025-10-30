@@ -25,8 +25,7 @@ from app.api import auth
 from app.api import gdpr
 from app.api import costs
 from app.api import langgraph_agents
-# HubSpot temporarily commented out - replaced with Close CRM
-# from app.api.crm import hubspot
+# HubSpot removed - replaced with Close CRM
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.exceptions import (
@@ -190,7 +189,7 @@ app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Carte
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
 app.include_router(apollo.router, prefix=settings.API_V1_PREFIX)  # Task 5.3: Apollo contact enrichment
 app.include_router(linkedin.router, prefix=settings.API_V1_PREFIX)  # Task 5.4: LinkedIn OAuth 2.0 connector
-# app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX, tags=["crm"])  # Task 5.2: HubSpot CRM integration (COMMENTED OUT - replaced with Close CRM)
+# HubSpot CRM integration removed - replaced with Close CRM
 app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
 app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
 app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Cost reporting and budget monitoring
