@@ -13,6 +13,7 @@ import {
   Bot,
   Menu,
   X,
+  BarChart3,
 } from 'lucide-react';
 
 interface NavItem {
@@ -31,6 +32,7 @@ const navigation: NavItem[] = [
   { name: 'Conversations', path: '/conversations', icon: MessageSquare, category: 'Intelligence' },
   { name: 'Knowledge Base', path: '/knowledge', icon: BookOpen, category: 'Intelligence' },
   { name: 'Agent Teams', path: '/agents', icon: Bot, category: 'Operations' },
+  { name: 'Performance', path: '/performance', icon: BarChart3, category: 'Operations' },
   { name: 'Costs', path: '/costs', icon: DollarSign, category: 'Operations' },
   { name: 'CSV Import', path: '/csv-import', icon: Upload, category: 'Operations' },
 ];
