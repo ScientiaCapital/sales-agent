@@ -7,6 +7,15 @@ GREEN="\033[0;32m"; RED="\033[0;31m"; YELLOW="\033[1;33m"; NC="\033[0m"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Load backend/.env if present
+if [[ -f "$ROOT_DIR/.env" ]]; then
+  echo -e "${YELLOW}==> Loading environment from backend/.env...${NC}"
+  set -a
+  # shellcheck disable=SC1090
+  . "$ROOT_DIR/.env"
+  set +a
+fi
+
 echo -e "${YELLOW}==> Starting infrastructure (Redis)...${NC}"
 # Prefer 'docker compose', fallback to 'docker-compose'; if neither exists, skip with warning
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
@@ -34,8 +43,82 @@ done
 export DATABASE_URL="${DATABASE_URL:-postgresql+psycopg://sales_agent:password@localhost:5433/sales_agent_db}"
 
 echo -e "${YELLOW}==> Applying Alembic migration...${NC}"
-if command -v alembic >/dev/null 2>&1; then
-  alembic upgrade head || { echo -e "${RED}Alembic upgrade failed${NC}"; exit 1; }
+ALEMBIC_CMD="alembic"
+if ! command -v alembic >/dev/null 2>&1; then
+  if [[ -x "$ROOT_DIR/venv/bin/alembic" ]]; then
+    ALEMBIC_CMD="$ROOT_DIR/venv/bin/alembic -c $ROOT_DIR/alembic.ini"
+  else
+    ALEMBIC_CMD=""
+  fi
+fi
+
+if [[ -n "$ALEMBIC_CMD" ]]; then
+  # Try migration, on password auth failure optionally prompt or use DBPASS env
+  set +e
+  MIGRATION_OUTPUT=$($ALEMBIC_CMD upgrade head 2>&1)
+  MIGRATION_STATUS=$?
+  set -e
+  if [[ $MIGRATION_STATUS -ne 0 ]]; then
+    echo -e "${YELLOW}Alembic reported an error. Inspecting...${NC}"
+    echo "$MIGRATION_OUTPUT" | grep -qi "password authentication failed"
+    if [[ $? -eq 0 ]]; then
+      echo -e "${YELLOW}Password authentication failed for current DATABASE_URL.${NC}"
+      if [[ -n "${DBPASS:-}" ]]; then
+        echo -e "${YELLOW}Using DBPASS from environment to rebuild DATABASE_URL...${NC}"
+        export DBURL="$DATABASE_URL" DBPASS="$DBPASS"
+        NEW_URL=$(python3 - <<'PY'
+import os, urllib.parse
+u=os.environ['DBURL']
+p=os.environ['DBPASS']
+parts=urllib.parse.urlsplit(u)
+netloc=parts.netloc
+if '@' in netloc:
+    userinfo, host = netloc.split('@',1)
+    if ':' in userinfo:
+        user, _ = userinfo.split(':',1)
+    else:
+        user = userinfo
+    netloc = f"{user}:{p}@{host}"
+else:
+    netloc = netloc
+print(urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment)))
+PY
+)
+        export DATABASE_URL="$NEW_URL"
+      elif [[ -t 0 ]]; then
+        read -s -p "Enter DB password to retry migration: " NEWPASS; echo
+        export DBURL="$DATABASE_URL" DBPASS="$NEWPASS"
+        NEW_URL=$(python3 - <<'PY'
+import os, urllib.parse
+u=os.environ['DBURL']
+p=os.environ['DBPASS']
+parts=urllib.parse.urlsplit(u)
+netloc=parts.netloc
+if '@' in netloc:
+    userinfo, host = netloc.split('@',1)
+    if ':' in userinfo:
+        user, _ = userinfo.split(':',1)
+    else:
+        user = userinfo
+    netloc = f"{user}:{p}@{host}"
+else:
+    netloc = netloc
+print(urllib.parse.urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment)))
+PY
+)
+        export DATABASE_URL="$NEW_URL"
+      else
+        echo -e "${RED}Non-interactive session and no DBPASS provided. Cannot prompt for password. Set DBPASS and rerun.${NC}"
+        exit 1
+      fi
+      echo -e "${YELLOW}Retrying Alembic migration...${NC}"
+      $ALEMBIC_CMD upgrade head || { echo -e "${RED}Alembic upgrade failed again${NC}"; exit 1; }
+    else
+      echo "$MIGRATION_OUTPUT"
+      echo -e "${RED}Alembic upgrade failed.${NC}"
+      exit 1
+    fi
+  fi
 else
   echo -e "${YELLOW}alembic not found. Skipping migration. Run manually after activating venv.${NC}"
 fi
