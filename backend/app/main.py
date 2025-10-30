@@ -32,6 +32,7 @@ from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
 from app.core.cache import get_cache_manager
 from sqlalchemy import text
+from app.models.database import engine
 from app.core.exceptions import (
     SalesAgentException,
     ValidationError,
