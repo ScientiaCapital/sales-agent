@@ -154,7 +154,13 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    roles = relationship("Role", secondary=user_roles, back_populates="users")
+    roles = relationship(
+        "Role",
+        secondary=user_roles,
+        primaryjoin="User.id == user_roles.c.user_id",
+        secondaryjoin="Role.id == user_roles.c.role_id",
+        back_populates="users"
+    )
     security_events = relationship("SecurityEvent", back_populates="user", cascade="all, delete-orphan")
     consent_records = relationship("UserConsent", back_populates="user", cascade="all, delete-orphan")
 
@@ -190,7 +196,12 @@ class Role(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    users = relationship("User", secondary=user_roles, back_populates="roles")
+    users = relationship(
+        "User",
+        secondary=user_roles,
+        back_populates="roles",
+        foreign_keys=[user_roles.c.user_id, user_roles.c.role_id]
+    )
     permissions = relationship("Permission", secondary=role_permissions, back_populates="roles")
 
     def __repr__(self):
