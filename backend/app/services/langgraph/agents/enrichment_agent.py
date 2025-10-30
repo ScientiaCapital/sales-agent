@@ -180,7 +180,7 @@ class EnrichmentAgent:
         self.agent = create_react_agent(
             self.llm,
             self.tools,
-            state_modifier=self.system_message
+            prompt=self.system_message
         )
 
         logger.info(
