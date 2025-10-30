@@ -30,6 +30,8 @@ from app.api import dealer_import
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
+from app.core.cache import get_cache_manager
+from sqlalchemy import text
 from app.core.exceptions import (
     SalesAgentException,
     ValidationError,
@@ -213,6 +215,33 @@ async def root():
 @app.get("/metrics")
 async def metrics():
     return metrics_endpoint()
+
+# JSON metrics summary endpoint
+@app.get(f"{settings.API_V1_PREFIX}/metrics/summary")
+async def metrics_summary():
+    """Return JSON summary of cache and database health/metrics."""
+    # Cache stats
+    cache = get_cache_manager()
+    cache_stats = await cache.get_cache_stats()
+
+    # Database health
+    db_health = {"status": "unknown"}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        db_health = {"status": "healthy"}
+    except Exception as e:
+        db_health = {"status": "unhealthy", "error": str(e)}
+
+    return {
+        "app": {
+            "name": settings.PROJECT_NAME,
+            "version": settings.VERSION,
+            "environment": os.getenv("ENVIRONMENT", "development"),
+        },
+        "database": db_health,
+        "cache": cache_stats,
+    }
 
 
 if __name__ == "__main__":
