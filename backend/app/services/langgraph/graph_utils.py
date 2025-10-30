@@ -35,6 +35,7 @@ T = TypeVar('T')
 
 # Global checkpointer instance (singleton)
 _redis_checkpointer: Optional[AsyncRedisSaver] = None
+_checkpointer_context_manager: Optional[Any] = None  # Store context manager for cleanup
 _checkpointer_initialized: bool = False
 
 
@@ -62,7 +63,7 @@ async def get_redis_checkpointer() -> AsyncRedisSaver:
         - Connection is persistent across all agent invocations
         - Call close_redis_checkpointer() on application shutdown
     """
-    global _redis_checkpointer, _checkpointer_initialized
+    global _redis_checkpointer, _checkpointer_context_manager, _checkpointer_initialized
 
     if _redis_checkpointer is None:
         redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
@@ -70,7 +71,9 @@ async def get_redis_checkpointer() -> AsyncRedisSaver:
         logger.info(f"Initializing AsyncRedisSaver with URL: {redis_url}")
 
         # Create checkpointer from connection string
-        _redis_checkpointer = AsyncRedisSaver.from_conn_string(redis_url)
+        # Note: from_conn_string() returns an async context manager, we need to enter it
+        _checkpointer_context_manager = AsyncRedisSaver.from_conn_string(redis_url)
+        _redis_checkpointer = await _checkpointer_context_manager.__aenter__()
 
         # Initialize Redis indices for checkpoint storage
         if not _checkpointer_initialized:
@@ -80,7 +83,10 @@ async def get_redis_checkpointer() -> AsyncRedisSaver:
                 logger.info("✅ Redis checkpointer initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize Redis checkpointer: {e}")
+                # Clean up context manager
+                await _checkpointer_context_manager.__aexit__(None, None, None)
                 _redis_checkpointer = None
+                _checkpointer_context_manager = None
                 raise
 
     return _redis_checkpointer
@@ -99,17 +105,18 @@ async def close_redis_checkpointer():
             await close_redis_checkpointer()
         ```
     """
-    global _redis_checkpointer, _checkpointer_initialized
+    global _redis_checkpointer, _checkpointer_context_manager, _checkpointer_initialized
 
-    if _redis_checkpointer:
+    if _checkpointer_context_manager:
         try:
-            # AsyncRedisSaver uses context manager pattern, close via aexit
-            await _redis_checkpointer.__aexit__(None, None, None)
+            # Exit the context manager to properly close the connection
+            await _checkpointer_context_manager.__aexit__(None, None, None)
             logger.info("Redis checkpointer closed successfully")
         except Exception as e:
             logger.error(f"Error closing Redis checkpointer: {e}")
         finally:
             _redis_checkpointer = None
+            _checkpointer_context_manager = None
             _checkpointer_initialized = False
 
 

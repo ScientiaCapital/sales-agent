@@ -19,7 +19,7 @@ services:
       - sales-agent-network
 
   redis:
-    image: redis:7-alpine
+    image: redis/redis-stack-server:latest
     container_name: sales-agent-redis
     ports:
       - "6379:6379"

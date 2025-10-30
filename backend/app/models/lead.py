@@ -17,6 +17,10 @@ class Lead(Base):
     __table_args__ = (
         # Composite index for queries filtering/sorting by score and time
         Index('idx_leads_score_created', 'qualification_score', 'created_at'),
+        # Standalone indexes to speed up common filters/sorts
+        Index('idx_leads_created_at', 'created_at'),
+        Index('idx_leads_updated_at', 'updated_at'),
+        Index('idx_leads_qualified_at', 'qualified_at'),
         # CHECK constraint to enforce valid score range (0-100)
         CheckConstraint('qualification_score >= 0 AND qualification_score <= 100', name='check_score_range'),
     )

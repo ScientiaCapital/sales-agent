@@ -507,7 +507,8 @@ Remember: This is a VOICE conversation - be concise and natural!"""
         try:
             current_state = await self.graph.aget_state(config)
             existing_turn_count = current_state.values.get("turn_count", 0) if current_state.values else 0
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to get current state, using default turn count: {e}")
             existing_turn_count = 0
 
         # Run graph with thread_id
