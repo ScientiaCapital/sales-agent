@@ -21,11 +21,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 
 from app.models.lead import Lead
-from app.models.campaign import Campaign, MessageTemplate, MessageVariantAnalytics
+from app.models.campaign import Campaign, CampaignMessage, MessageVariantAnalytics
 from app.models.analytics_models import (
     AnalyticsLeadMetrics,
     AnalyticsCampaignMetrics,
-    AnalyticsCostTracking,
     AnalyticsABTest
 )
 
@@ -67,11 +66,10 @@ class QueryBuilder:
     ALLOWED_TABLES = {
         'leads': Lead,
         'campaigns': Campaign,
-        'message_templates': MessageTemplate,
+        'message_templates': CampaignMessage,
         'message_variant_analytics': MessageVariantAnalytics,
         'analytics_lead_metrics': AnalyticsLeadMetrics,
         'analytics_campaign_metrics': AnalyticsCampaignMetrics,
-        'analytics_cost_tracking': AnalyticsCostTracking,
         'analytics_ab_tests': AnalyticsABTest,
     }
 
