@@ -249,9 +249,13 @@ async def invoke_agent(
                 result = await agent.enrich(**request.input)
                 output_data = {
                     "enriched_data": result.enriched_data,
-                    "sources": result.sources,
-                    "confidence": result.confidence_score,
-                    "completeness": result.completeness_score
+                    "data_sources": result.data_sources,  # Fixed: was 'sources'
+                    "confidence_score": result.confidence_score,
+                    "tools_called": result.tools_called,
+                    "latency_ms": result.latency_ms,
+                    "iterations_used": result.iterations_used,
+                    "total_cost_usd": result.total_cost_usd,
+                    "errors": result.errors
                 }
                 
             elif request.agent_type == "growth":
