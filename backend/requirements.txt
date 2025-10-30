@@ -74,7 +74,7 @@ langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
 
 # AI/ML - Model Providers
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
-openai==1.58.1  # For OpenAI-compatible APIs (keeping for compatibility)
+openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras via OpenAI client)
 anthropic==0.41.0  # Claude streaming and batch API support
 
 # Cloud Infrastructure - RunPod
