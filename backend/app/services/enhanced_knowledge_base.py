@@ -323,7 +323,7 @@ class EnhancedKnowledgeBase:
         if document_type == "pdf":
             import pdfplumber
             with pdfplumber.open(document_path) as pdf:
-                content = "\n".join([page.extract_text() for page in pdf.pages])
+                content = "\n".join(filter(None, [page.extract_text() for page in pdf.pages]))
         elif document_type == "docx":
             from docx import Document
             doc = Document(document_path)
