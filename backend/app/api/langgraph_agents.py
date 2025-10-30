@@ -70,6 +70,15 @@ class InvokeAgentRequest(BaseModel):
         default="values",
         description="Streaming mode: messages, updates, values, custom"
     )
+    # Multi-provider support
+    provider: Optional[str] = Field(
+        default="cerebras",
+        description="LLM provider: cerebras, claude, deepseek, ollama (qualification agent only)"
+    )
+    model: Optional[str] = Field(
+        default=None,
+        description="Model ID (auto-selects if None). Examples: llama3.1-8b, claude-3-haiku-20240307, deepseek-chat, llama3.1:8b"
+    )
 
 
 class AgentResponse(BaseModel):
@@ -216,7 +225,11 @@ async def invoke_agent(
         try:
             # Invoke appropriate agent
             if request.agent_type == "qualification":
-                agent = QualificationAgent()
+                # Multi-provider support with configurable provider and model
+                agent = QualificationAgent(
+                    provider=request.provider or "cerebras",
+                    model=request.model  # None = auto-select
+                )
                 result, latency_ms, metadata = await agent.qualify(**request.input)
                 output_data = {
                     "score": result.qualification_score,
@@ -225,7 +238,10 @@ async def invoke_agent(
                     "fit_assessment": result.fit_assessment,
                     "contact_quality": result.contact_quality,
                     "sales_potential": result.sales_potential,
-                    "recommendations": result.recommendations or []
+                    "recommendations": result.recommendations or [],
+                    # Include provider/model info in output
+                    "provider": metadata.get("provider"),
+                    "model": metadata.get("model")
                 }
                 
             elif request.agent_type == "enrichment":
