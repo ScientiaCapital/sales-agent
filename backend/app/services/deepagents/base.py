@@ -77,7 +77,7 @@ class DeepAgentState:
     
     # Subagent State
     active_subagents: List[str] = field(default_factory=list)
-    subagent_results: Dict[str, Any] = field(default_factory=list)
+    subagent_results: Dict[str, Any] = field(default_factory=dict)
     
     # Human-in-the-loop State
     waiting_for_human: bool = False
