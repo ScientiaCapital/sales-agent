@@ -22,6 +22,7 @@ from app.core.logging import setup_logging
 from app.services.leads import LeadService
 from app.services.langgraph.agents.qualification_agent import QualificationAgent
 from app.services.langgraph.agents.enrichment_agent import EnrichmentAgent
+from app.services.scoring.mep_e_scorer import MEPEScorer, calculate_mep_e_score
 
 logger = setup_logging(__name__)
 
@@ -39,6 +40,7 @@ class DealerScraperImporter:
         self.lead_service = LeadService()
         self.qualification_agent = QualificationAgent()
         self.enrichment_agent = EnrichmentAgent()
+        self.mep_e_scorer = MEPEScorer()
         
         # Field mapping from dealer scraper to sales-agent format
         self.field_mapping = {
@@ -246,34 +248,50 @@ class DealerScraperImporter:
     def _map_contractor_to_lead(self, contractor_row: pd.Series) -> Dict[str, Any]:
         """Map contractor data from dealer scraper to sales-agent lead format."""
         lead_data = {}
-        
+
         # Map basic fields
         for dealer_field, lead_field in self.field_mapping.items():
             if dealer_field in contractor_row and pd.notna(contractor_row[dealer_field]):
                 lead_data[lead_field] = contractor_row[dealer_field]
-        
+
         # Add derived fields
         lead_data['industry'] = self._determine_industry(contractor_row)
         lead_data['company_size'] = self._determine_company_size(contractor_row)
         lead_data['priority_score'] = self._calculate_priority_score(contractor_row)
         lead_data['lead_source'] = 'dealer_scraper'
         lead_data['import_timestamp'] = datetime.now().isoformat()
-        
-        # Parse OEM certifications
-        if 'OEMs_Certified' in contractor_row and pd.notna(contractor_row['OEMs_Certified']):
-            oem_certs = str(contractor_row['OEMs_Certified']).split(', ')
-            lead_data['oem_certifications'] = oem_certs
-            lead_data['oem_count'] = len(oem_certs)
-        
+
         # Parse address components
         if 'address_full' in contractor_row and pd.notna(contractor_row['address_full']):
             lead_data['address'] = contractor_row['address_full']
-        
-        # Set qualification status based on ICP tier
-        icp_tier = contractor_row.get('ICP_Tier', 'BRONZE')
-        lead_data['qualified'] = icp_tier in ['PLATINUM', 'GOLD']
+
+        # Set initial qualification score from ICP_Score
         lead_data['qualification_score'] = contractor_row.get('ICP_Score', 0)
-        
+
+        # =====================================================================
+        # NEW: OEM Parsing and MEP+E Scoring
+        # =====================================================================
+        try:
+            # Parse OEM data and calculate MEP+E scores
+            oem_scoring = self.parse_oem_data(contractor_row)
+
+            # Integrate OEM scoring into lead data
+            lead_data = self._integrate_oem_scoring(lead_data, oem_scoring)
+
+            logger.debug(
+                f"OEM scoring for {lead_data.get('company_name')}: "
+                f"MEP+E={oem_scoring.get('mep_e_score')}/100, "
+                f"Tier={oem_scoring.get('tier')}, "
+                f"OEMs={oem_scoring.get('total_oem_count')}"
+            )
+        except Exception as e:
+            logger.warning(f"OEM scoring failed for {lead_data.get('company_name')}: {e}")
+            # Continue without OEM scoring if it fails
+
+        # Set qualification status based on MEP+E tier (overrides ICP_Tier)
+        mep_e_tier = lead_data.get('icp_tier', 'BRONZE')
+        lead_data['qualified'] = mep_e_tier in ['PLATINUM', 'GOLD']
+
         return lead_data
     
     def _determine_industry(self, contractor_row: pd.Series) -> str:
@@ -400,3 +418,121 @@ class DealerScraperImporter:
                 'total_fields': 0,
                 'total_records': 0
             }
+
+    # =========================================================================
+    # OEM Parsing and MEP+E Scoring Methods
+    # =========================================================================
+
+    def parse_oem_data(self, contractor_row: pd.Series) -> Dict[str, Any]:
+        """
+        Parse OEM certifications from dealer-scraper CSV and calculate MEP+E scores.
+
+        Extracts:
+        - OEMs_Certified list (comma-separated brands)
+        - Service capability flags (has_solar, has_battery, has_hvac, etc.)
+        - Explicit capability flags (has_commercial, has_ops_maintenance)
+
+        Calculates:
+        - MEP+E score (0-100) using BuildOps scoring patterns
+        - Tier classification (PLATINUM, GOLD, SILVER, BRONZE)
+        - OEM category counts (hvac_oem_count, solar_oem_count, etc.)
+        - ICP category scores (renewable_readiness, asset_centric, projects_service)
+
+        Args:
+            contractor_row: Pandas series with dealer-scraper CSV data
+
+        Returns:
+            Dictionary with OEM data and MEP+E scoring results
+        """
+        # Parse OEM certifications list
+        oems_certified = []
+        if 'OEMs_Certified' in contractor_row and pd.notna(contractor_row['OEMs_Certified']):
+            oems_str = str(contractor_row['OEMs_Certified'])
+            # Handle both comma-separated and comma-space-separated formats
+            oems_certified = [oem.strip() for oem in oems_str.split(',') if oem.strip()]
+
+        # Build lead data for MEP+E scoring
+        lead_data = {
+            'oems_certified': oems_certified,
+            # Service capability flags from CSV
+            'has_heat_pump': contractor_row.get('has_heat_pump', False),
+            'has_ev_charger': contractor_row.get('has_ev_charger', False),
+            'has_smart_panel': contractor_row.get('has_smart_panel', False),
+            'has_microgrid': contractor_row.get('has_microgrid', False),
+            # Business model flags from CSV
+            'has_commercial': contractor_row.get('is_commercial', False) or contractor_row.get('is_resimercial', False),
+            'has_ops_maintenance': contractor_row.get('has_ops_maintenance', False),
+        }
+
+        # Calculate MEP+E scores using BuildOps patterns
+        oem_scoring_result = calculate_mep_e_score(lead_data)
+
+        # Add OEM tier mapping (from dealer-scraper tier field)
+        oem_tiers = {}
+        if 'tier' in contractor_row and pd.notna(contractor_row['tier']):
+            # If single OEM tier provided (e.g., "Elite Plus" from Generac CSV)
+            if oems_certified:
+                oem_source = contractor_row.get('oem_source', '')
+                if oem_source:
+                    oem_tiers[oem_source] = contractor_row['tier']
+
+        # Add OEM tiers to result
+        oem_scoring_result['oem_tiers'] = oem_tiers
+        oem_scoring_result['oems_certified'] = oems_certified
+
+        return oem_scoring_result
+
+    def _integrate_oem_scoring(self, lead_data: Dict[str, Any], oem_scoring: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Integrate OEM scoring results into lead data.
+
+        Merges MEP+E scores, OEM counts, capability flags, and ICP category scores
+        into the lead data dictionary.
+
+        Args:
+            lead_data: Existing lead data dictionary
+            oem_scoring: OEM scoring results from parse_oem_data()
+
+        Returns:
+            Updated lead data with OEM scoring integrated
+        """
+        # Add MEP+E scoring fields
+        lead_data['mep_e_score'] = oem_scoring.get('mep_e_score', 0)
+        lead_data['icp_tier'] = oem_scoring.get('tier', 'BRONZE')  # Override with MEP+E tier
+
+        # Add OEM category counts
+        lead_data['total_oem_count'] = oem_scoring.get('total_oem_count', 0)
+        lead_data['hvac_oem_count'] = oem_scoring.get('hvac_oem_count', 0)
+        lead_data['solar_oem_count'] = oem_scoring.get('solar_oem_count', 0)
+        lead_data['battery_oem_count'] = oem_scoring.get('battery_oem_count', 0)
+        lead_data['generator_oem_count'] = oem_scoring.get('generator_oem_count', 0)
+        lead_data['smart_panel_oem_count'] = oem_scoring.get('smart_panel_oem_count', 0)
+        lead_data['iot_oem_count'] = oem_scoring.get('iot_oem_count', 0)
+
+        # Add OEM details
+        lead_data['oems_certified'] = oem_scoring.get('oems_certified', [])
+        lead_data['oem_tiers'] = oem_scoring.get('oem_tiers', {})
+
+        # Add service capability flags
+        lead_data['has_hvac'] = oem_scoring.get('has_hvac', False)
+        lead_data['has_solar'] = oem_scoring.get('has_solar', False)
+        lead_data['has_battery'] = oem_scoring.get('has_battery', False)
+        lead_data['has_generator'] = oem_scoring.get('has_generator', False)
+        lead_data['has_ev_charger'] = oem_scoring.get('has_ev_charger', False)
+        lead_data['has_smart_panel'] = oem_scoring.get('has_smart_panel', False)
+        lead_data['has_heat_pump'] = oem_scoring.get('has_heat_pump', False)
+        lead_data['has_microgrid'] = oem_scoring.get('has_microgrid', False)
+        lead_data['has_commercial'] = oem_scoring.get('has_commercial', False)
+        lead_data['has_ops_maintenance'] = oem_scoring.get('has_ops_maintenance', False)
+
+        # Add ICP category scores
+        lead_data['renewable_readiness_score'] = oem_scoring.get('renewable_readiness_score', 0)
+        lead_data['asset_centric_score'] = oem_scoring.get('asset_centric_score', 0)
+        lead_data['projects_service_score'] = oem_scoring.get('projects_service_score', 0)
+
+        # Update qualification score with MEP+E score (blend with ICP_Score)
+        icp_score = lead_data.get('qualification_score', 0)
+        mep_e_score = oem_scoring.get('mep_e_score', 0)
+        lead_data['qualification_score'] = max(icp_score, mep_e_score)  # Use higher of two scores
+
+        return lead_data
