@@ -20,6 +20,16 @@ import type {
   MetricsSummaryResponse,
   AgentMetricResponse,
   ProviderCostMetrics,
+  ABTest,
+  ABTestCreate,
+  ABTestUpdate,
+  ABTestAnalysis,
+  ABTestRecommendations,
+  ReportTemplate,
+  ReportTemplateCreate,
+  ReportGenerateRequest,
+  ReportGenerateResponse,
+  ExportRequest,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -412,6 +422,227 @@ export const apiClient = {
     params.append('limit', limit.toString());
 
     return fetchAPI<ProviderCostMetrics[]>(`/api/v1/metrics/costs?${params}`);
+  },
+
+  // ============================================================================
+  // A/B Testing Endpoints (Task 11.3)
+  // ============================================================================
+
+  /**
+   * List all A/B tests with optional filters
+   *
+   * @param status - Filter by test status (draft, running, completed, paused)
+   * @param testType - Filter by test type (campaign, agent_performance, ui_element)
+   * @param skip - Number of records to skip for pagination
+   * @param limit - Maximum number of results to return
+   */
+  listABTests: async (
+    status?: string,
+    testType?: string,
+    skip = 0,
+    limit = 100
+  ): Promise<ABTest[]> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (testType) params.append('test_type', testType);
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+    return fetchAPI<ABTest[]>(`/api/v1/ab-tests?${params}`);
+  },
+
+  /**
+   * Create a new A/B test
+   */
+  createABTest: async (request: ABTestCreate): Promise<ABTest> => {
+    return fetchAPI<ABTest>('/api/v1/ab-tests', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * Get A/B test by ID
+   */
+  getABTest: async (testId: string): Promise<ABTest> => {
+    return fetchAPI<ABTest>(`/api/v1/ab-tests/${testId}`);
+  },
+
+  /**
+   * Get detailed statistical analysis for A/B test
+   */
+  getABTestAnalysis: async (testId: string): Promise<ABTestAnalysis> => {
+    return fetchAPI<ABTestAnalysis>(`/api/v1/ab-tests/${testId}/analysis`);
+  },
+
+  /**
+   * Update A/B test metrics
+   */
+  updateABTestMetrics: async (
+    testId: string,
+    metrics: ABTestUpdate
+  ): Promise<ABTest> => {
+    return fetchAPI<ABTest>(`/api/v1/ab-tests/${testId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(metrics),
+    });
+  },
+
+  /**
+   * Start A/B test
+   */
+  startABTest: async (testId: string): Promise<ABTest> => {
+    return fetchAPI<ABTest>(`/api/v1/ab-tests/${testId}/start`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Stop A/B test and run final analysis
+   */
+  stopABTest: async (testId: string): Promise<ABTest> => {
+    return fetchAPI<ABTest>(`/api/v1/ab-tests/${testId}/stop`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Get early stopping recommendations for A/B test
+   */
+  getABTestRecommendations: async (
+    testId: string
+  ): Promise<ABTestRecommendations> => {
+    return fetchAPI<ABTestRecommendations>(
+      `/api/v1/ab-tests/${testId}/recommendations`
+    );
+  },
+
+  // ============================================================================
+  // Report Template Endpoints (Task 11.4)
+  // ============================================================================
+
+  /**
+   * List all report templates
+   *
+   * @param reportType - Filter by report type
+   * @param skip - Number of records to skip for pagination
+   * @param limit - Maximum number of results to return
+   */
+  listReportTemplates: async (
+    reportType?: string,
+    skip = 0,
+    limit = 100
+  ): Promise<ReportTemplate[]> => {
+    const params = new URLSearchParams();
+    if (reportType) params.append('report_type', reportType);
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+    return fetchAPI<ReportTemplate[]>(`/api/v1/report-templates?${params}`);
+  },
+
+  /**
+   * Create a new report template
+   */
+  createReportTemplate: async (
+    request: ReportTemplateCreate
+  ): Promise<ReportTemplate> => {
+    return fetchAPI<ReportTemplate>('/api/v1/report-templates', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  /**
+   * Get report template by ID
+   */
+  getReportTemplate: async (templateId: string): Promise<ReportTemplate> => {
+    return fetchAPI<ReportTemplate>(`/api/v1/report-templates/${templateId}`);
+  },
+
+  /**
+   * Generate report from template
+   */
+  generateReportFromTemplate: async (
+    request: ReportGenerateRequest
+  ): Promise<ReportGenerateResponse> => {
+    return fetchAPI<ReportGenerateResponse>(
+      '/api/v1/report-templates/generate',
+      {
+        method: 'POST',
+        body: JSON.stringify(request),
+      }
+    );
+  },
+
+  /**
+   * Delete report template
+   */
+  deleteReportTemplate: async (templateId: string): Promise<{ success: boolean }> => {
+    return fetchAPI<{ success: boolean }>(
+      `/api/v1/report-templates/${templateId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  },
+
+  // ============================================================================
+  // Export Endpoints (Task 11.5)
+  // ============================================================================
+
+  /**
+   * Export report data in specified format (CSV, PDF, XLSX)
+   *
+   * Returns a Blob that can be downloaded as a file
+   */
+  exportReport: async (request: ExportRequest): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/api/v1/exports/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const error: APIError = await response.json().catch(() => ({
+        detail: response.statusText,
+        status_code: response.status,
+      }));
+
+      throw new APIClientError(
+        error.detail || 'Export failed',
+        response.status,
+        error.detail
+      );
+    }
+
+    return await response.blob();
+  },
+
+  /**
+   * Download exported file
+   *
+   * Helper method to trigger file download in browser
+   */
+  downloadExport: async (
+    request: ExportRequest,
+    filename?: string
+  ): Promise<void> => {
+    const blob = await apiClient.exportReport(request);
+
+    // Generate filename if not provided
+    const timestamp = new Date().toISOString().split('T')[0];
+    const defaultFilename = `report_${timestamp}.${request.format}`;
+
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || defaultFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   },
 };
 

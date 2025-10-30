@@ -27,6 +27,9 @@ from app.api import costs
 from app.api import langgraph_agents
 from app.api import dealer_import
 from app.api import metrics
+from app.api import ab_tests
+from app.api import report_templates
+from app.api import exports
 # HubSpot removed - replaced with Close CRM
 from app.core.config import settings
 from app.core.logging import setup_logging
@@ -203,6 +206,9 @@ app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Co
 app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # Phase 2: LangGraph agent endpoints
 app.include_router(dealer_import.router, prefix=settings.API_V1_PREFIX)  # Dealer scraper integration
 app.include_router(metrics.router, prefix=settings.API_V1_PREFIX)  # Task 11.1: Metrics tracking and analytics
+app.include_router(ab_tests.router, prefix=settings.API_V1_PREFIX)  # Task 11.3: A/B test analytics with statistical significance
+app.include_router(report_templates.router, prefix=settings.API_V1_PREFIX)  # Task 11.4: Custom report templates with flexible queries
+app.include_router(exports.router, prefix=settings.API_V1_PREFIX)  # Task 11.5: Export functionality (CSV, PDF, Excel)
 
 
 @app.get("/")

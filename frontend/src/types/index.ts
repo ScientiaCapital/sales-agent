@@ -566,3 +566,280 @@ export interface EndpointMetricResponse {
   error_count: number;
   error_rate: number;
 }
+
+// ============================================================================
+// A/B Testing Types (Task 11.3)
+// ============================================================================
+
+/**
+ * A/B Test entity
+ */
+export interface ABTest {
+  id: number;
+  test_id: string;
+  test_name: string;
+  test_description?: string;
+  variant_a_name: string;
+  variant_b_name: string;
+  test_type: 'campaign' | 'agent_performance' | 'ui_element';
+  status: 'draft' | 'running' | 'completed' | 'paused';
+  participants_a: number;
+  participants_b: number;
+  conversions_a: number;
+  conversions_b: number;
+  conversion_rate_a?: number;
+  conversion_rate_b?: number;
+  statistical_significance?: number;
+  confidence_level?: number;
+  winner?: 'A' | 'B' | null;
+  start_date?: string;
+  end_date?: string;
+  created_at: string;
+  updated_at?: string;
+  campaign_id?: number;
+  segment_filters?: Record<string, unknown>;
+}
+
+/**
+ * Create A/B Test request
+ */
+export interface ABTestCreate {
+  test_name: string;
+  test_description?: string;
+  variant_a_name: string;
+  variant_b_name: string;
+  test_type: 'campaign' | 'agent_performance' | 'ui_element';
+  campaign_id?: number;
+  segment_filters?: Record<string, unknown>;
+}
+
+/**
+ * Update A/B Test metrics request
+ */
+export interface ABTestUpdate {
+  participants_a?: number;
+  participants_b?: number;
+  conversions_a?: number;
+  conversions_b?: number;
+}
+
+/**
+ * Complete A/B Test statistical analysis
+ */
+export interface ABTestAnalysis {
+  test_id: string;
+  test_name: string;
+  variant_a_name: string;
+  variant_a_conversions: number;
+  variant_a_participants: number;
+  variant_a_conversion_rate: number;
+  variant_a_confidence_interval: [number, number];
+  variant_b_name: string;
+  variant_b_conversions: number;
+  variant_b_participants: number;
+  variant_b_conversion_rate: number;
+  variant_b_confidence_interval: [number, number];
+  p_value: number;
+  chi_square_statistic: number;
+  is_significant: boolean;
+  confidence_level: number;
+  winner?: 'A' | 'B' | null;
+  lift_percentage: number;
+  minimum_sample_size: number;
+  sample_adequacy: number;
+  can_stop_early: boolean;
+  recommendations: string[];
+  days_remaining_estimate?: number;
+}
+
+/**
+ * A/B Test recommendations for early stopping
+ */
+export interface ABTestRecommendations {
+  test_id: string;
+  can_stop_early: boolean;
+  recommendations: string[];
+  confidence_level: number;
+  sample_adequacy: number;
+  days_remaining_estimate?: number;
+}
+
+// ============================================================================
+// Report Template Types (Task 11.4)
+// ============================================================================
+
+/**
+ * Report Template for custom reports
+ */
+export interface ReportTemplate {
+  id: number;
+  template_id: string;
+  name: string;
+  description?: string;
+  report_type: string;
+  query_config: QueryConfig;
+  visualization_config?: VisualizationConfig;
+  filter_config?: FilterConfig;
+  is_system_template: boolean;
+  created_by?: string;
+  created_at: string;
+  updated_at?: string;
+  usage_count: number;
+}
+
+/**
+ * Query configuration for report builder
+ */
+export interface QueryConfig {
+  table: string;
+  columns: string[];
+  filters: FilterClause[];
+  aggregations: Aggregation[];
+  group_by: string[];
+  order_by: OrderClause[];
+  limit: number;
+}
+
+/**
+ * Filter clause for WHERE conditions
+ */
+export interface FilterClause {
+  column: string;
+  operator: '=' | '>' | '<' | '>=' | '<=' | '!=' | 'in' | 'like';
+  value: string | number | string[] | number[];
+}
+
+/**
+ * Aggregation function configuration
+ */
+export interface Aggregation {
+  function: 'count' | 'sum' | 'avg' | 'min' | 'max';
+  column: string;
+  alias: string;
+}
+
+/**
+ * Order by clause configuration
+ */
+export interface OrderClause {
+  column: string;
+  direction: 'asc' | 'desc';
+}
+
+/**
+ * Visualization configuration for charts
+ */
+export interface VisualizationConfig {
+  chart_type: 'bar' | 'line' | 'pie' | 'scatter' | 'table';
+  x_axis?: string;
+  y_axis?: string;
+  color_by?: string;
+  bubble_size?: string;
+}
+
+/**
+ * Filter configuration with defaults
+ */
+export interface FilterConfig {
+  default_filters?: FilterClause[];
+  available_filters?: string[];
+}
+
+/**
+ * Create Report Template request
+ */
+export interface ReportTemplateCreate {
+  name: string;
+  description?: string;
+  report_type: string;
+  query_config: QueryConfig;
+  visualization_config?: VisualizationConfig;
+  filter_config?: FilterConfig;
+}
+
+/**
+ * Generate report from template request
+ */
+export interface ReportGenerateRequest {
+  template_id: string;
+  override_filters?: FilterClause[];
+  time_range_start?: string;
+  time_range_end?: string;
+}
+
+/**
+ * Generated report response
+ */
+export interface ReportGenerateResponse {
+  template_id: string;
+  template_name: string;
+  report_type: string;
+  data: Record<string, unknown>[];
+  row_count: number;
+  generated_at: string;
+}
+
+// ============================================================================
+// Export Types (Task 11.5)
+// ============================================================================
+
+/**
+ * Export request configuration
+ */
+export interface ExportRequest {
+  report_id?: number;
+  template_id?: string;
+  query_config?: QueryConfig;
+  format: 'csv' | 'pdf' | 'xlsx';
+  include_charts: boolean;
+}
+
+/**
+ * Scheduled export configuration
+ */
+export interface ScheduledExport {
+  id: number;
+  schedule_id: string;
+  name: string;
+  template_id?: string;
+  query_config?: QueryConfig;
+  export_format: 'csv' | 'pdf' | 'xlsx';
+  schedule_type: 'daily' | 'weekly' | 'monthly';
+  schedule_time: string; // HH:MM format
+  schedule_day?: number; // Day of week (0-6) or month (1-31)
+  recipient_emails: string[];
+  is_active: boolean;
+  last_run_at?: string;
+  next_run_at?: string;
+  created_at: string;
+}
+
+/**
+ * Create scheduled export request
+ */
+export interface ScheduledExportCreate {
+  name: string;
+  template_id?: string;
+  query_config?: QueryConfig;
+  export_format: 'csv' | 'pdf' | 'xlsx';
+  schedule_type: 'daily' | 'weekly' | 'monthly';
+  schedule_time: string;
+  schedule_day?: number;
+  recipient_emails: string[];
+}
+
+/**
+ * Batch export result
+ */
+export interface BatchExportResult {
+  status: 'completed' | 'partial' | 'failed';
+  total: number;
+  successful: number;
+  failed: number;
+  results: Array<{
+    report_id: number;
+    status: 'success' | 'failed';
+    file_path?: string;
+    error?: string;
+  }>;
+}
