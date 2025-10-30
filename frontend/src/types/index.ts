@@ -473,3 +473,96 @@ export interface LoadingState {
   isLoading: boolean;
   error?: string | null;
 }
+
+// ============================================================================
+// Metrics & Analytics Types (Task 11.2)
+// ============================================================================
+
+/**
+ * Single time-series metric point
+ */
+export interface MetricPoint {
+  timestamp: string;
+  value: number;
+  count: number;
+}
+
+/**
+ * Agent execution metrics response
+ */
+export interface AgentMetricResponse {
+  agent_type: string;
+  date: string;
+  total_executions: number;
+  successful_executions: number;
+  failed_executions: number;
+  avg_latency_ms: number;
+  min_latency_ms?: number;
+  max_latency_ms?: number;
+  total_cost_usd: number;
+  avg_cost_usd: number;
+  success_rate: number;
+}
+
+/**
+ * Cost metrics by AI provider
+ */
+export interface ProviderCostMetrics {
+  provider: string;
+  date: string;
+  total_calls: number;
+  total_tokens: number;
+  total_cost_usd: number;
+  avg_latency_ms?: number;
+}
+
+/**
+ * System-level metric response
+ */
+export interface SystemMetricResponse {
+  metric_name: string;
+  metric_value: number;
+  metric_unit: string;
+  category: string;
+  recorded_at: string;
+  tags?: Record<string, unknown>;
+}
+
+/**
+ * Comprehensive metrics summary for dashboard
+ */
+export interface MetricsSummaryResponse {
+  period_start: string;
+  period_end: string;
+  // API Performance
+  total_api_requests: number;
+  avg_response_time_ms: number;
+  error_rate: number;
+  // Agent Performance
+  total_agent_executions: number;
+  agent_success_rate: number;
+  avg_agent_latency_ms: number;
+  // Cost Tracking
+  total_cost_usd: number;
+  cost_by_provider: Record<string, number>;
+  // Business Metrics
+  leads_processed: number;
+  leads_qualified: number;
+  qualification_rate: number;
+}
+
+/**
+ * API endpoint performance metrics
+ */
+export interface EndpointMetricResponse {
+  endpoint_path: string;
+  method: string;
+  date: string;
+  total_requests: number;
+  avg_response_time_ms: number;
+  p50_response_time_ms?: number;
+  p95_response_time_ms?: number;
+  p99_response_time_ms?: number;
+  error_count: number;
+  error_rate: number;
+}

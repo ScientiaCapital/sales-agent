@@ -17,6 +17,9 @@ import type {
   CampaignResponse,
   MessageResponse,
   AnalyticsResponse,
+  MetricsSummaryResponse,
+  AgentMetricResponse,
+  ProviderCostMetrics,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -339,6 +342,76 @@ export const apiClient = {
    */
   getResearchStatus: async (): Promise<import('../types').ResearchStatus> => {
     return fetchAPI<import('../types').ResearchStatus>('/api/v1/research/status');
+  },
+
+  // ============================================================================
+  // Metrics Endpoints (Task 11.2)
+  // ============================================================================
+
+  /**
+   * Get comprehensive metrics summary for dashboard
+   *
+   * @param startDate - Start date for metrics (ISO 8601). Defaults to 7 days ago on backend
+   * @param endDate - End date for metrics (ISO 8601). Defaults to now on backend
+   */
+  getMetricsSummary: async (
+    startDate?: string,
+    endDate?: string
+  ): Promise<MetricsSummaryResponse> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+
+    const query = params.toString();
+    return fetchAPI<MetricsSummaryResponse>(
+      `/api/v1/metrics/summary${query ? `?${query}` : ''}`
+    );
+  },
+
+  /**
+   * Get agent execution metrics with optional filtering
+   *
+   * @param startDate - Start date for metrics (ISO 8601)
+   * @param endDate - End date for metrics (ISO 8601)
+   * @param agentType - Filter by specific agent type (e.g., 'qualification', 'enrichment')
+   * @param limit - Maximum number of results to return (default: 100, max: 1000)
+   */
+  getAgentMetrics: async (
+    startDate?: string,
+    endDate?: string,
+    agentType?: string,
+    limit = 100
+  ): Promise<AgentMetricResponse[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (agentType) params.append('agent_type', agentType);
+    params.append('limit', limit.toString());
+
+    return fetchAPI<AgentMetricResponse[]>(`/api/v1/metrics/agents?${params}`);
+  },
+
+  /**
+   * Get cost metrics by AI provider
+   *
+   * @param startDate - Start date for metrics (ISO 8601)
+   * @param endDate - End date for metrics (ISO 8601)
+   * @param provider - Filter by specific provider (cerebras, claude, deepseek, ollama)
+   * @param limit - Maximum number of results to return (default: 100, max: 1000)
+   */
+  getCostMetrics: async (
+    startDate?: string,
+    endDate?: string,
+    provider?: string,
+    limit = 100
+  ): Promise<ProviderCostMetrics[]> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    if (provider) params.append('provider', provider);
+    params.append('limit', limit.toString());
+
+    return fetchAPI<ProviderCostMetrics[]>(`/api/v1/metrics/costs?${params}`);
   },
 };
 

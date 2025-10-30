@@ -15,6 +15,7 @@ const CSVImport = lazy(() => import('./pages/CSVImport').then(m => ({ default: m
 const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase').then(m => ({ default: m.KnowledgeBase })));
 const ContactDiscovery = lazy(() => import('./pages/ContactDiscovery').then(m => ({ default: m.ContactDiscovery })));
 const AgentTeams = lazy(() => import('./pages/AgentTeams').then(m => ({ default: m.AgentTeams })));
+const PerformanceDashboard = lazy(() => import('./pages/PerformanceDashboard').then(m => ({ default: m.PerformanceDashboard })));
 
 function App() {
   return (
@@ -91,6 +92,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <AgentTeams />
+              </Suspense>
+            }
+          />
+          <Route
+            path="performance"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <PerformanceDashboard />
               </Suspense>
             }
           />
