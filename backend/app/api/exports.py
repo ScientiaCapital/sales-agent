@@ -6,7 +6,7 @@ Integrates with QueryBuilder, PDFExporter, and ExcelExporter services.
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
@@ -155,7 +155,7 @@ async def export_report(
 )
 async def export_from_template(
     template_id: str,
-    format: str = Field(..., pattern="^(csv|pdf|xlsx)$"),
+    format: str = Query(..., pattern="^(csv|pdf|xlsx)$"),
     db: Session = Depends(get_db)
 ):
     """
