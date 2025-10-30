@@ -289,13 +289,13 @@ async def analyze_content_sentiment_tool(
             elif "Engagement Potential" in line:
                 try:
                     engagement_potential = int(line.split(":")[-1].strip().split()[0])
-                except:
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Failed to parse engagement potential: {e}")
             elif "Content Quality" in line:
                 try:
                     content_quality = int(line.split(":")[-1].strip().split()[0])
-                except:
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Failed to parse content quality: {e}")
         
         # Determine overall sentiment
         if sentiment_score >= 70:

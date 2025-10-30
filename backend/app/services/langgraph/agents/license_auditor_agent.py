@@ -342,8 +342,8 @@ class LicenseAuditorAgent:
                         risk_factors.append(f"License expires in {days_until_expiry} days")
                     elif days_until_expiry < 90:
                         risk_factors.append(f"License expires in {days_until_expiry} days")
-                except:
-                    pass
+                except (ValueError, TypeError) as e:
+                    logger.warning(f"Failed to calculate license expiry days: {e}")
             
             # Violations risk
             violations_count = state.license_info.get("violations_count", 0)
@@ -391,8 +391,8 @@ class LicenseAuditorAgent:
                 elif "Risk Score:" in line:
                     try:
                         risk_score = int(line.split(":")[-1].strip())
-                    except:
-                        pass
+                    except (ValueError, IndexError) as e:
+                        logger.warning(f"Failed to parse risk score: {e}")
                 elif line.startswith(("1.", "2.", "3.")) and "Key Risk" in reasoning:
                     key_factors.append(line)
                 elif line.startswith(("1.", "2.", "3.", "4.", "5.")) and "Mitigation" in reasoning:
@@ -592,5 +592,6 @@ __all__ = [
     "LicenseAuditResult",
     "LicenseAuditState"
 ]
+
 
 

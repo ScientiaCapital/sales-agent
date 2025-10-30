@@ -264,8 +264,8 @@ async def conversation_stream(
                 "type": "error",
                 "message": str(e)
             })
-        except:
-            pass
+        except Exception as ws_error:
+            logger.warning(f"Failed to send error message to WebSocket: {ws_error}")
 
     finally:
         # Cleanup
@@ -277,8 +277,8 @@ async def conversation_stream(
 
         try:
             await websocket.close()
-        except:
-            pass
+        except Exception as close_error:
+            logger.warning(f"Failed to close WebSocket: {close_error}")
 
 
 @router.get("/{conversation_id}")

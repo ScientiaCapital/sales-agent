@@ -267,8 +267,8 @@ async def websocket_voice_endpoint(websocket: WebSocket, session_id: str):
                 "type": "error",
                 "error": str(e)
             })
-        except:
-            pass
+        except Exception as ws_error:
+            logger.warning(f"Failed to send error message to voice WebSocket: {ws_error}")
 
     finally:
         manager.disconnect(connection_id)

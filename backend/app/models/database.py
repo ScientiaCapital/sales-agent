@@ -167,8 +167,9 @@ def get_db_with_retry(max_retries: int = 3):
                 db.execute(text("SELECT 1"))
                 yield db
                 return  # Success - exit retry loop
-            except:
+            except Exception as e:
                 db.close()
+                logger.error(f"Database connection test failed: {e}")
                 raise
         except (OperationalError, DBAPIError) as e:
             last_error = e

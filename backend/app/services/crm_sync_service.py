@@ -318,7 +318,8 @@ class CRMSyncService:
         if remote_updated and isinstance(remote_updated, str):
             try:
                 remote_updated = datetime.fromisoformat(remote_updated)
-            except:
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Failed to parse remote updated timestamp: {e}")
                 remote_updated = None
 
         # Default to remote if no clear timestamp
