@@ -23,5 +23,13 @@
     "mcp__shrimp-task-manager__*",
     "mcp__serena__*"
   ],
-  "preferredOutputFormat": "markdown"
+  "preferredOutputFormat": "markdown",
+  "extraKnownMarketplaces": {
+    "claude-code": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/claude-code.git"
+      }
+    }
+  }
 }
