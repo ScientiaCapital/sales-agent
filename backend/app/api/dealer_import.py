@@ -25,7 +25,7 @@ from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
 
-router = APIRouter(prefix="/api/v1/dealer-import", tags=["dealer-import"])
+router = APIRouter(prefix="/dealer-import", tags=["dealer-import"])
 
 # Global importer instance
 dealer_importer: Optional[DealerScraperImporter] = None
