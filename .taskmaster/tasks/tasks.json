@@ -677,7 +677,7 @@
           8,
           10
         ],
-        "status": "in-progress",
+        "status": "done",
         "subtasks": [
           {
             "id": 1,
@@ -698,39 +698,6 @@
             "details": "Design UI components, connect to metrics data source, implement real-time updates",
             "status": "done",
             "testStrategy": "Test dashboard loading speed and data refresh functionality"
-          },
-          {
-            "id": 3,
-            "title": "Add A/B Test Analytics",
-            "description": "Implement analytics for A/B testing experiments",
-            "dependencies": [
-              "11.1"
-            ],
-            "details": "Create experiment tracking system, implement statistical analysis, visualize results",
-            "status": "pending",
-            "testStrategy": "Validate statistical significance calculations and result accuracy"
-          },
-          {
-            "id": 4,
-            "title": "Build Custom Report Generator",
-            "description": "Develop system allowing users to create custom reports",
-            "dependencies": [
-              "11.1"
-            ],
-            "details": "Implement report template system, create query builder, design output formats",
-            "status": "pending",
-            "testStrategy": "Test report generation with various template combinations"
-          },
-          {
-            "id": 5,
-            "title": "Implement Export Functionality",
-            "description": "Add ability to export reports and data in multiple formats",
-            "dependencies": [
-              "11.4"
-            ],
-            "details": "Support CSV, PDF, and Excel formats, implement batch exports, add scheduling",
-            "status": "pending",
-            "testStrategy": "Validate export file integrity and formatting accuracy"
           }
         ]
       },
@@ -1200,7 +1167,7 @@
         "description": "Develop a user interface for companies to upload ICP docs, target market info, and sales playbooks, with backend integration for document analysis and structured storage in PostgreSQL.",
         "details": "1. **Frontend Development**: Use React and TypeScript to create a responsive and intuitive interface for document uploads. Include drag-and-drop functionality, file validation, and progress tracking. 2. **Backend Integration**: Implement FastAPI endpoints to handle file uploads, process documents using the Document Analysis System (Task 7), and store structured data in PostgreSQL. 3. **Document Processing**: Leverage the Cerebras gist memory pattern (Task 7) for summarization and key item extraction. 4. **Database Storage**: Design PostgreSQL tables to store structured knowledge (e.g., ICP docs, market info, playbooks) with proper indexing for efficient retrieval. 5. **Security**: Ensure secure file handling and storage, including sanitization and access controls. 6. **User Feedback**: Provide real-time feedback on upload status and processing results.",
         "testStrategy": "1. **Frontend Testing**: Use Cypress for end-to-end testing of the upload interface, including file validation and error handling. 2. **Backend Testing**: Mock document processing to test FastAPI endpoints for upload and storage. 3. **Integration Testing**: Verify seamless interaction between the frontend, backend, and Document Analysis System. 4. **Performance Testing**: Measure upload and processing times for large documents. 5. **Security Testing**: Validate file sanitization and access controls.",
-        "status": "pending",
+        "status": "cancelled",
         "dependencies": [
           7,
           8,
@@ -1215,7 +1182,7 @@
         "description": "Develop a system where each customer gets dedicated agents (QualificationAgent, EnrichmentAgent, ResearchAgent, BDRAgent) configured with their ICP knowledge base to process CSV leads in parallel and return scored prospects with personalized outreach recommendations.",
         "details": "1. **Multi-Tenant Architecture**: Design a scalable multi-tenant system where each customer has isolated agent instances.\n2. **Agent Configuration**: Implement dynamic agent configuration using customer-specific ICP knowledge bases.\n3. **Parallel Processing**: Use asynchronous task queues (e.g., Celery with Redis/RabbitMQ) to process CSV leads in parallel.\n4. **Iterative Refinement**: Implement iterative refinement logic for lead quality improvement.\n5. **Scoring and Recommendations**: Integrate with Task 2 (Lead Qualification Engine Core) for scoring and generate personalized outreach recommendations.\n6. **Error Handling**: Add robust error handling and retry mechanisms for agent failures.\n7. **Monitoring**: Implement logging and monitoring for agent performance and lead processing status.\n8. **Security**: Ensure data isolation between tenants and compliance with Task 9 (Security and Compliance).",
         "testStrategy": "1. **Multi-Tenant Isolation**: Verify that agent instances and data are isolated per customer.\n2. **Agent Configuration**: Test dynamic agent setup with mock ICP knowledge bases.\n3. **Parallel Processing**: Validate parallel lead processing with large CSV files.\n4. **Refinement Logic**: Test iterative refinement by simulating low-quality leads.\n5. **Scoring Integration**: Ensure seamless integration with Task 2 for lead scoring.\n6. **Error Handling**: Simulate agent failures and verify retry mechanisms.\n7. **Performance**: Benchmark processing speed and resource usage.\n8. **Security**: Confirm compliance with GDPR and SOC 2 controls (Task 9).",
-        "status": "pending",
+        "status": "cancelled",
         "dependencies": [
           2,
           9
@@ -1240,11 +1207,66 @@
         ],
         "priority": "medium",
         "subtasks": []
+      },
+      {
+        "id": 27,
+        "title": "Import Top 200 Dealer Prospects from CSV",
+        "description": "Import top_200_prospects_final_20251029.csv from dealer-scraper-mvp into sales-agent PostgreSQL database using existing CSV import system",
+        "details": "Use existing /api/v1/leads/import/csv endpoint (Task 23) to import /Users/tmkipper/Desktop/dealer-scraper-mvp/output/top_200_prospects_final_20251029.csv. CSV contains 60+ fields including name, domain, website, ICP_Score, ICP_Tier, OEM_Count, has_hvac, has_solar, employee_count, linkedin_url. Verify all 200 records are imported with proper field mapping. Expected time: <5 seconds for 200 records.",
+        "testStrategy": "1. Test CSV import endpoint with top_200 file. 2. Query PostgreSQL to verify 200 records imported. 3. Validate field mappings (especially ICP_Score, OEM data). 4. Check for duplicate detection. 5. Verify import performance (<5 seconds).",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 28,
+        "title": "Test LinkedIn Enrichment with Browserbase",
+        "description": "Test LinkedIn scraper with Browserbase on 5 sample leads from top_200 list to validate ATL contact discovery workflow",
+        "details": "1. Select 5 leads with linkedin_url from imported top_200 list. 2. Configure Browserbase API keys in .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID). 3. Test LinkedIn scraper (backend/app/services/linkedin_scraper.py) for: company page scraping, employee discovery (CEO, CTO, VP Sales), ATL contact scoring (C-level: 100, VP: 85, Director: 70). 4. Validate rate limits (100 req/day). 5. Store enriched contacts in PostgreSQL with relationship data.",
+        "testStrategy": "1. Test LinkedIn scraper with 5 sample URLs. 2. Verify ATL contact extraction (C-level, VP). 3. Validate enrichment data quality (job titles, seniority). 4. Check rate limit handling. 5. Verify PostgreSQL storage of enriched contacts.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 29,
+        "title": "Test EnrichmentAgent ReAct Workflow",
+        "description": "Test EnrichmentAgent (LangGraph ReAct) on 10 leads to validate tool orchestration and data merging logic",
+        "details": "1. Select 10 leads with varied data completeness from top_200. 2. Test EnrichmentAgent (backend/app/services/langgraph/agents/enrichment_agent.py) with tools: get_linkedin_profile_tool (Browserbase), get_lead_tool (CRM data). 3. Validate intelligent tool selection: LinkedIn scraper for career history, CRM fallback for contact info. 4. Test confidence scoring (0-1 based on completeness 40%, source quality 30%, freshness 30%). 5. Verify data merging logic and enriched field population.",
+        "testStrategy": "1. Test EnrichmentAgent with 10 leads. 2. Verify tool orchestration (LinkedIn → CRM fallback). 3. Validate confidence scoring algorithm. 4. Check data merging quality. 5. Measure latency (<3000ms per lead).",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 30,
+        "title": "Qualify All 200 Leads with Cerebras",
+        "description": "Run QualificationAgent (Cerebras ultra-fast inference) on all 200 imported leads to generate qualification scores and AI reasoning",
+        "details": "1. Use QualificationAgent with Cerebras (633ms avg latency, $0.000006 per request). 2. Generate qualification scores (0-100) based on: ICP_Score, OEM_Count, has_hvac, has_solar, employee_count, Resimercial_Score. 3. Generate AI reasoning for each score. 4. Update PostgreSQL leads table with qualification_score and reasoning fields. 5. Track API calls in cerebras_api_calls table (latency_ms, cost, tokens). Expected total time: ~2 minutes for 200 leads, total cost: ~$0.0012.",
+        "testStrategy": "1. Test qualification on all 200 leads. 2. Verify score distribution (0-100 range). 3. Validate reasoning quality. 4. Check latency (<1000ms per lead). 5. Verify cost tracking. 6. Confirm PostgreSQL updates.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 31,
+        "title": "Build Simple Enrichment Status Dashboard",
+        "description": "Create React dashboard showing enrichment progress: imported leads, enrichment status, qualification scores, and ATL contacts discovered",
+        "details": "1. Create React component (frontend/src/pages/EnrichmentDashboard.tsx). 2. Display metrics: total imported leads, enrichment completed/pending/failed, avg qualification score, ATL contacts discovered. 3. Show lead list with filters: ICP_Tier (Gold/Silver/Bronze), qualification_score range, enrichment_status. 4. Add action buttons: trigger enrichment, export enriched list, view ATL contacts. 5. Use existing API endpoints: GET /api/v1/leads/, GET /api/v1/contacts/. Mobile responsive with Tailwind CSS.",
+        "testStrategy": "1. Test dashboard rendering with 200 leads. 2. Verify metrics accuracy. 3. Test filters and sorting. 4. Validate action buttons. 5. Check mobile responsiveness. 6. Test with empty/partial data.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-10-04T12:49:29.019Z",
-      "updated": "2025-10-30T13:49:40.301Z",
+      "updated": "2025-10-30T19:35:35.117Z",
       "description": "Tasks for master context"
     }
   }
