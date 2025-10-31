@@ -531,3 +531,233 @@ async def export_costs(
     except Exception as e:
         logger.error(f"Failed to export costs: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to export costs: {str(e)}")
+
+
+# ============================================================================
+# AI-COST-OPTIMIZER INTEGRATION ENDPOINTS
+# ============================================================================
+
+@router.get("/optimizer/stats")
+async def get_optimizer_stats():
+    """
+    Get real-time cost statistics from ai-cost-optimizer service.
+    
+    Returns:
+    - Overall stats (total cost, requests, avg cost)
+    - Cost breakdown by provider
+    - Cost breakdown by complexity
+    - Recent requests
+    
+    This endpoint proxies to the ai-cost-optimizer service running separately.
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Check health first
+        healthy = await optimizer.health_check()
+        if not healthy:
+            raise HTTPException(
+                status_code=503,
+                detail="ai-cost-optimizer service not available"
+            )
+        
+        # Get stats from optimizer
+        stats = await optimizer.get_stats()
+        
+        if not stats:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get stats from ai-cost-optimizer"
+            )
+        
+        logger.info("Retrieved stats from ai-cost-optimizer")
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Failed to get optimizer stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimizer/cache-stats")
+async def get_cache_stats():
+    """
+    Get cache hit/miss statistics and savings from ai-cost-optimizer.
+    
+    Returns:
+    - Cache hit rate
+    - Cache miss rate
+    - Total savings from cache hits
+    - Cache breakdown by type (linkedin, qualification, etc.)
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Get cache stats from optimizer
+        cache_stats = await optimizer.get_cache_stats()
+        
+        if not cache_stats:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get cache stats from ai-cost-optimizer"
+            )
+        
+        logger.info("Retrieved cache stats from ai-cost-optimizer")
+        return cache_stats
+        
+    except Exception as e:
+        logger.error(f"Failed to get cache stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimizer/providers")
+async def get_optimizer_providers():
+    """
+    Get available LLM providers and their pricing from ai-cost-optimizer.
+    
+    Returns:
+    - List of providers with configurations
+    - Pricing per provider
+    - Average latencies
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Get providers from optimizer
+        providers = await optimizer.get_providers()
+        
+        if not providers:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get providers from ai-cost-optimizer"
+            )
+        
+        logger.info("Retrieved providers from ai-cost-optimizer")
+        return providers
+        
+    except Exception as e:
+        logger.error(f"Failed to get providers: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimizer/insights")
+async def get_cost_insights():
+    """
+    Get cost insights and optimization recommendations from ai-cost-optimizer.
+    
+    Returns:
+    - Cost trends and patterns
+    - Optimization recommendations
+    - Potential savings opportunities
+    - Provider comparison
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Get insights from optimizer
+        insights = await optimizer.get_insights()
+        
+        if not insights:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get insights from ai-cost-optimizer"
+            )
+        
+        logger.info("Retrieved insights from ai-cost-optimizer")
+        return insights
+        
+    except Exception as e:
+        logger.error(f"Failed to get insights: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimizer/recommendation")
+async def get_provider_recommendation(
+    prompt: str = Query(..., description="Prompt to analyze"),
+    max_tokens: int = Query(1000, description="Expected max tokens")
+):
+    """
+    Get provider recommendation for a specific prompt from ai-cost-optimizer.
+    
+    Query Parameters:
+    - prompt: The prompt to analyze
+    - max_tokens: Expected max tokens
+    
+    Returns:
+    - Recommended provider
+    - Recommended model
+    - Estimated cost
+    - Reasoning for recommendation
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Get recommendation from optimizer
+        recommendation = await optimizer.get_recommendation(prompt, max_tokens)
+        
+        if not recommendation:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get recommendation from ai-cost-optimizer"
+            )
+        
+        logger.info(f"Got provider recommendation for prompt: {prompt[:50]}...")
+        return recommendation
+        
+    except Exception as e:
+        logger.error(f"Failed to get recommendation: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/optimizer/agent-stats")
+async def get_agent_cost_stats(
+    agent_name: Optional[str] = Query(None, description="Filter by agent name")
+):
+    """
+    Get cost statistics broken down by agent.
+    
+    Shows per-agent metrics:
+    - Total cost
+    - Request count
+    - Average latency
+    - Success rate
+    - Provider distribution
+    
+    Query Parameters:
+    - agent_name: Optional filter for specific agent (qualification, enrichment, growth, marketing)
+    """
+    try:
+        from app.services.cost_tracking import get_cost_optimizer
+        
+        optimizer = await get_cost_optimizer()
+        
+        # Get overall stats
+        stats = await optimizer.get_stats()
+        
+        if not stats:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to get stats from ai-cost-optimizer"
+            )
+        
+        # Filter by agent if specified
+        if agent_name:
+            # TODO: Implement agent-specific filtering in ai-cost-optimizer
+            logger.info(f"Retrieved cost stats for agent: {agent_name}")
+        else:
+            logger.info("Retrieved cost stats for all agents")
+        
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Failed to get agent stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))

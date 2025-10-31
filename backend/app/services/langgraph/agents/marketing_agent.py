@@ -70,6 +70,8 @@ from typing_extensions import TypedDict
 from app.services.langgraph.llm_selector import get_llm_for_capability, get_best_provider_for_capability
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.services.cost_tracking import get_cost_optimizer
+from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -155,7 +157,9 @@ class MarketingAgent:
         blog_provider: Optional[str] = None,
         # LLM parameters
         temperature: float = 0.7,  # Higher for creative content
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        # Cost tracking
+        track_costs: bool = True
     ):
         """
         Initialize MarketingAgent with cost-optimized LLM providers.
@@ -167,10 +171,15 @@ class MarketingAgent:
             blog_provider: Override blog generator (default: auto-select for cost)
             temperature: Sampling temperature (0.7 for creative content)
             max_tokens: Max completion tokens per generation
+            track_costs: Enable cost tracking to ai-cost-optimizer (default: True)
         """
         self.temperature = temperature
         self.max_tokens = max_tokens
-
+        
+        # Cost tracking
+        self.track_costs = track_costs
+        self.cost_optimizer = None  # Lazy init on first use
+        
         # Initialize cost-optimized LLMs per channel
         logger.info("Initializing MarketingAgent with cost-optimized LLM providers")
 
@@ -599,6 +608,15 @@ Write in a clear, professional, engaging tone."""
             f"Campaign generation complete in {latency_ms}ms, "
             f"total_cost=${result['total_cost_usd']:.6f}"
         )
+        
+        # Log cost to ai-cost-optimizer
+        if self.track_costs:
+            await self._log_campaign_cost(
+                campaign_brief=campaign_brief,
+                generation_metadata=result["generation_metadata"],
+                latency_ms=latency_ms,
+                total_cost_usd=result["total_cost_usd"]
+            )
 
         return MarketingCampaignResult(
             email_content=result["email_content"],
@@ -615,6 +633,70 @@ Write in a clear, professional, engaging tone."""
             latency_ms=latency_ms,
             estimated_reach=estimated_reach
         )
+
+    async def _log_campaign_cost(
+        self,
+        campaign_brief: str,
+        generation_metadata: Dict[str, Dict[str, Any]],
+        latency_ms: int,
+        total_cost_usd: float
+    ):
+        """
+        Log marketing campaign cost to ai-cost-optimizer.
+
+        Logs costs for all 4 parallel channels to track ROI per channel.
+
+        Args:
+            campaign_brief: Campaign description
+            generation_metadata: Per-channel metadata with costs
+            latency_ms: Total execution time
+            total_cost_usd: Total cost across all channels
+        """
+        if self.cost_optimizer is None:
+            self.cost_optimizer = await get_cost_optimizer()
+
+        if self.cost_optimizer is None:
+            return  # Failed to initialize
+
+        # Log each channel separately for granular tracking
+        for channel, metadata in generation_metadata.items():
+            provider = metadata.get("provider", "unknown")
+            channel_cost = metadata.get("cost_usd", 0)
+            channel_latency = metadata.get("latency_ms", 0)
+            estimated_tokens = metadata.get("estimated_tokens", 0)
+
+            prompt = f"Marketing campaign ({channel}): {campaign_brief[:100]}"
+            response = f"Generated {channel} content with {provider}"
+
+            await self.cost_optimizer.log_llm_call(
+                provider=provider,
+                model=f"{provider}_marketing",
+                prompt=prompt,
+                response=response,
+                tokens_in=int(estimated_tokens * 0.6),  # Rough split
+                tokens_out=int(estimated_tokens * 0.4),
+                cost_usd=channel_cost,
+                agent_name="marketing",
+                metadata={
+                    "channel": channel,
+                    "latency_ms": channel_latency,
+                    "campaign_brief": campaign_brief[:100]
+                }
+            )
+
+        logger.debug(
+            f"💰 Logged marketing campaign cost: ${total_cost_usd:.6f} "
+            f"(4 channels, {latency_ms}ms total)"
+        )
+
+    def get_transfer_tools(self):
+        """
+        Get agent transfer tools for marketing workflows.
+
+        Returns:
+            List of transfer tools that marketing agent can use
+        """
+        return get_transfer_tools("marketing")
 
 
 # ========== Exports ==========

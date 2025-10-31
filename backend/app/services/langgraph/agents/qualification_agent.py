@@ -61,6 +61,9 @@ from langchain_core.language_models import BaseChatModel
 
 from app.core.logging import setup_logging
 from app.core.exceptions import CerebrasAPIError
+from app.services.cache.qualification_cache import get_qualification_cache
+from app.services.cost_tracking import get_cost_optimizer
+from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -146,7 +149,9 @@ class QualificationAgent:
         provider: Literal["cerebras", "claude", "deepseek", "ollama"] = "cerebras",
         model: Optional[str] = None,
         temperature: float = 0.2,
-        max_tokens: int = 500
+        max_tokens: int = 500,
+        use_cache: bool = True,
+        track_costs: bool = True
     ):
         """
         Initialize QualificationAgent with specified provider.
@@ -156,10 +161,15 @@ class QualificationAgent:
             model: Model ID (auto-selects if None)
             temperature: Sampling temperature (0.2 for consistent scoring)
             max_tokens: Max completion tokens (500 for free-form JSON)
+            use_cache: Enable qualification caching (default: True, saves $0.000006/call + 633ms)
         """
         self.provider = provider
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.use_cache = use_cache
+        self.cache = None  # Initialize on first use
+        self.cost_optimizer = None  # Lazy init for cost tracking
+        self.track_costs = track_costs
 
         # Auto-select model if not provided
         if model is None:
@@ -211,18 +221,18 @@ class QualificationAgent:
             )
 
         elif self.provider == "deepseek":
-            api_key = os.getenv("DEEPSEEK_API_KEY")
+            # DeepSeek supports Anthropic-compatible API (no OpenAI needed!)
+            # https://api-docs.deepseek.com/guides/anthropic_api
+            api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("DEEPSEEK_API_KEY environment variable not set")
+                raise ValueError("ANTHROPIC_API_KEY environment variable not set")
 
-            # DeepSeek uses OpenAI-compatible API
-            from langchain_openai import ChatOpenAI
-            return ChatOpenAI(
+            return ChatAnthropic(
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 api_key=api_key,
-                base_url="https://api.deepseek.com"
+                base_url="https://api.deepseek.com"  # Anthropic-compatible endpoint
             )
 
         elif self.provider == "ollama":
@@ -406,6 +416,43 @@ Respond with JSON only."""
         if not company_name:
             raise ValueError("company_name is required")
 
+        # Initialize cache on first use
+        if self.use_cache and self.cache is None:
+            self.cache = await get_qualification_cache()
+
+        # Check cache before LLM call
+        if self.use_cache:
+            cached_qualification = await self.cache.get_qualification(company_name, industry)
+            if cached_qualification:
+                # Cache hit! Return immediately
+                result = LeadQualificationResult(**cached_qualification["result"])
+                
+                # Log cache hit savings
+                if self.track_costs and self.cost_optimizer is None:
+                    try:
+                        self.cost_optimizer = await get_cost_optimizer()
+                    except Exception:
+                        pass
+                
+                if self.cost_optimizer:
+                    # Calculate savings
+                    cost_per_m = self.PROVIDER_PRICING.get(self.provider, {}).get(
+                        self.model,
+                        self.PROVIDER_PRICING.get(self.provider, {}).get("*", {"per_m_tokens": 0})
+                    )["per_m_tokens"]
+                    estimated_tokens = 100  # Rough estimate for qualification
+                    savings_usd = (estimated_tokens / 1_000_000) * cost_per_m
+                    
+                    await self.cost_optimizer.log_cache_hit(
+                        cache_type="qualification",
+                        cache_key=f"{company_name}:{industry or 'none'}",
+                        savings_usd=savings_usd,
+                        latency_saved_ms=cached_qualification["latency_ms"],
+                        agent_name="qualification"
+                    )
+                
+                return result, cached_qualification["latency_ms"], cached_qualification["metadata"]
+
         # Format optional fields
         optional_fields = self._format_optional_fields(
             company_website=company_website,
@@ -462,6 +509,26 @@ Respond with JSON only."""
                 f"latency={latency_ms}ms, provider={self.provider}, model={self.model}"
             )
 
+            # Cache qualification result
+            if self.use_cache:
+                cache_data = {
+                    "result": result.model_dump(),
+                    "latency_ms": latency_ms,
+                    "metadata": metadata
+                }
+                await self.cache.set_qualification(company_name, industry, cache_data)
+                logger.info(f"💾 Cached qualification for future use")
+
+            # Log cost to ai-cost-optimizer
+            if self.track_costs:
+                await self._log_qualification_cost(
+                    company_name=company_name,
+                    response_text=response_text,
+                    estimated_tokens=estimated_tokens,
+                    estimated_cost_usd=estimated_cost_usd,
+                    latency_ms=latency_ms
+                )
+
             return result, latency_ms, metadata
 
         except Exception as e:
@@ -484,6 +551,63 @@ Respond with JSON only."""
                     "error": str(e)
                 }
             )
+
+    async def _log_qualification_cost(
+        self,
+        company_name: str,
+        response_text: str,
+        estimated_tokens: int,
+        estimated_cost_usd: float,
+        latency_ms: int
+    ):
+        """
+        Log qualification cost to ai-cost-optimizer.
+
+        Args:
+            company_name: Company being qualified
+            response_text: LLM response
+            estimated_tokens: Estimated token count
+            estimated_cost_usd: Estimated cost
+            latency_ms: Execution latency
+        """
+        # Initialize cost optimizer if needed
+        if self.cost_optimizer is None:
+            try:
+                self.cost_optimizer = await get_cost_optimizer()
+            except Exception as e:
+                logger.warning(f"Failed to init cost optimizer: {e}")
+                return
+
+        # Log to ai-cost-optimizer
+        try:
+            await self.cost_optimizer.log_llm_call(
+                provider=self.provider,
+                model=self.model,
+                prompt=f"Qualify company: {company_name}",
+                response=response_text[:200],  # Truncate for logging
+                tokens_in=estimated_tokens // 2,  # Rough split
+                tokens_out=estimated_tokens // 2,
+                cost_usd=estimated_cost_usd,
+                agent_name="qualification",
+                metadata={
+                    "company_name": company_name,
+                    "latency_ms": latency_ms,
+                    "provider": self.provider,
+                    "model": self.model
+                }
+            )
+            logger.debug(f"💰 Logged qualification cost: ${estimated_cost_usd:.6f}")
+        except Exception as e:
+            logger.error(f"Failed to log qualification cost: {e}")
+
+    def get_transfer_tools(self):
+        """
+        Get agent transfer tools for qualification workflows.
+
+        Returns:
+            List of transfer tools allowing handoff to enrichment/growth agents
+        """
+        return get_transfer_tools("qualification")
 
     async def qualify_batch(
         self,

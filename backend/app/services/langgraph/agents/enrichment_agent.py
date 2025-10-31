@@ -52,8 +52,11 @@ from app.services.langgraph.tools import (
     get_linkedin_profile_tool,
     get_lead_tool
 )
+from app.services.cache.enrichment_cache import get_enrichment_cache
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.services.cost_tracking import get_cost_optimizer
+from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -113,10 +116,12 @@ class EnrichmentAgent:
         model: str = "claude-3-5-haiku-20241022",
         temperature: float = 0.3,
         max_iterations: int = 25,
-        provider: str = "anthropic"
+        provider: str = "anthropic",
+        use_cache: bool = True,
+        track_costs: bool = True
     ):
         """
-        Initialize EnrichmentAgent with configurable LLM provider.
+        Initialize EnrichmentAgent with configurable LLM provider and caching.
 
         Supported Providers:
             - anthropic: Claude models (best tool calling, higher cost)
@@ -127,11 +132,18 @@ class EnrichmentAgent:
             temperature: Sampling temperature (0.3 for balanced reasoning)
             max_iterations: Max ReAct loop iterations (prevents infinite loops)
             provider: LLM provider ("anthropic" or "openrouter")
+            use_cache: Enable LinkedIn profile caching (default: True, saves $0.10/profile)
         """
         self.model = model
         self.temperature = temperature
         self.max_iterations = max_iterations
         self.provider = provider
+        self.use_cache = use_cache
+        self.cache = None  # Initialize on first use
+        
+        # Cost tracking
+        self.track_costs = track_costs
+        self.cost_optimizer = None  # Lazy init on first use
 
         # Initialize LLM based on provider
         if provider == "anthropic":
@@ -394,9 +406,14 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
         lead_id: Optional[int] = None
     ) -> EnrichmentResult:
         """
-        Enrich a contact using ReAct agent with multiple tools.
+        Enrich a contact using ReAct agent with multiple tools and intelligent caching.
 
         Requires at least ONE identifier: email, linkedin_url, or lead_id.
+
+        Caching Strategy:
+            - LinkedIn profiles cached for 7 days (saves $0.10 + 3s per cache hit)
+            - Check cache before scraping LinkedIn
+            - Always cache successful LinkedIn scrapes
 
         Args:
             email: Email address for Apollo enrichment
@@ -421,6 +438,40 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
             raise ValidationError(
                 "At least one identifier required: email, linkedin_url, or lead_id"
             )
+
+        # Initialize cache on first use
+        if self.use_cache and self.cache is None:
+            self.cache = await get_enrichment_cache()
+
+        # Check cache if LinkedIn URL provided
+        if self.use_cache and linkedin_url:
+            cached_profile = await self.cache.get_profile(linkedin_url)
+            if cached_profile:
+                # Cache hit! Log savings
+                if self.track_costs and self.cost_optimizer is None:
+                    self.cost_optimizer = await get_cost_optimizer()
+                if self.cost_optimizer:
+                    await self.cost_optimizer.log_cache_hit(
+                        cache_type="linkedin",
+                        cache_key=linkedin_url,
+                        savings_usd=0.10,  # LinkedIn scrape cost
+                        latency_saved_ms=3000,  # Avg scrape time
+                        agent_name="enrichment"
+                    )
+                    logger.info(f"💾 LinkedIn cache hit saved $0.10 + 3s")
+                
+                # Return cached result immediately
+                return EnrichmentResult(
+                    enriched_data=cached_profile,
+                    data_sources=["linkedin_cache"],
+                    confidence_score=1.0,
+                    tools_called=[],
+                    tool_results={"linkedin_cache": cached_profile},
+                    latency_ms=5,  # Cache hit is fast!
+                    iterations_used=0,
+                    total_cost_usd=0.0,  # Free!
+                    errors=[]
+                )
 
         # Build enrichment request message
         request_parts = []
@@ -488,11 +539,28 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
                 errors=errors
             )
 
+            # Cache LinkedIn profile if successfully scraped
+            if self.use_cache and linkedin_url and "get_linkedin_profile_tool" in tool_results:
+                linkedin_data = tool_results["get_linkedin_profile_tool"]
+                if linkedin_data and linkedin_data.get("found") is not False:
+                    await self.cache.set_profile(linkedin_url, linkedin_data)
+                    logger.info(f"💾 Cached LinkedIn profile for future use")
+
             logger.info(
                 f"Enrichment complete: sources={data_sources}, "
                 f"confidence={confidence_score}, latency={latency_ms}ms, "
                 f"iterations={iterations}"
             )
+            
+            # Log cost to ai-cost-optimizer
+            if self.track_costs:
+                await self._log_enrichment_cost(
+                    enriched_data=enriched_data,
+                    tools_called=tools_called,
+                    iterations=iterations,
+                    latency_ms=latency_ms,
+                    total_cost_usd=enrichment_result.total_cost_usd
+                )
 
             return enrichment_result
 
@@ -600,6 +668,83 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
                 enrichment_results.append(result)
 
         return enrichment_results
+
+    async def _log_enrichment_cost(
+        self,
+        enriched_data: Dict[str, Any],
+        tools_called: List[str],
+        iterations: int,
+        latency_ms: int,
+        total_cost_usd: float
+    ):
+        """
+        Log enrichment cost to ai-cost-optimizer.
+
+        Args:
+            enriched_data: Enriched contact data
+            tools_called: List of tools that were called
+            iterations: Number of ReAct loop iterations
+            latency_ms: Total execution time
+            total_cost_usd: Total cost of enrichment
+        """
+        if self.cost_optimizer is None:
+            self.cost_optimizer = await get_cost_optimizer()
+
+        if self.cost_optimizer is None:
+            return  # Failed to initialize
+
+        # Build prompt summary
+        identifiers = []
+        if enriched_data.get("email"):
+            identifiers.append(f"email={enriched_data['email']}")
+        if enriched_data.get("linkedin_url"):
+            identifiers.append(f"linkedin={enriched_data['linkedin_url'][:50]}")
+        prompt = f"Enrich contact: {', '.join(identifiers)}"
+
+        # Build response summary
+        response_parts = [
+            f"Sources: {', '.join(tools_called)}",
+            f"Company: {enriched_data.get('company', 'N/A')}",
+            f"Title: {enriched_data.get('title', 'N/A')}"
+        ]
+        response = " | ".join(response_parts)
+
+        # Estimate token counts (rough estimate)
+        estimated_input_tokens = 2000 * iterations
+        estimated_output_tokens = 500 * iterations
+
+        await self.cost_optimizer.log_llm_call(
+            provider=self.provider,
+            model=self.model,
+            prompt=prompt,
+            response=response,
+            tokens_in=estimated_input_tokens,
+            tokens_out=estimated_output_tokens,
+            cost_usd=total_cost_usd,
+            agent_name="enrichment",
+            metadata={
+                "tools_called": tools_called,
+                "iterations": iterations,
+                "latency_ms": latency_ms,
+                "confidence_score": self._calculate_confidence_score(
+                    enriched_data, tools_called, tools_called
+                )
+            }
+        )
+
+        logger.debug(
+            f"💰 Logged enrichment cost: ${total_cost_usd:.6f} "
+            f"({iterations} iterations, {latency_ms}ms)"
+        )
+
+    def get_transfer_tools(self):
+        """
+        Get agent transfer tools for enrichment workflows.
+
+        Returns:
+            List of transfer tools that enrichment agent can use
+        """
+        return get_transfer_tools("enrichment")
 
 
 # ========== Exports ==========

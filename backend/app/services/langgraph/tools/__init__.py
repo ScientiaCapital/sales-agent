@@ -71,6 +71,18 @@ from .contractor_tools import (
     get_contractor_tools,
 )
 
+from .agent_transfer_tools import (
+    create_transfer_tools,
+    transfer_to_enrichment,
+    transfer_to_growth,
+    transfer_to_marketing,
+    transfer_to_bdr,
+    transfer_to_conversation,
+    get_allowed_transfers,
+    is_transfer_allowed,
+    DEFAULT_TRANSFER_TOOLS,
+)
+
 
 # ========== Convenience Functions ==========
 
@@ -219,6 +231,37 @@ def get_contractor_tools():
     return get_contractor_tools()
 
 
+def get_transfer_tools(agent_name: str):
+    """
+    Get agent transfer tools for multi-agent workflows.
+
+    Args:
+        agent_name: Name of current agent
+
+    Returns:
+        List of transfer tools specific to this agent
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_transfer_tools
+        from langgraph.prebuilt import create_react_agent
+
+        # Get transfer tools for qualification agent
+        transfer_tools = get_transfer_tools("qualification")
+        agent = create_react_agent(llm, transfer_tools)
+
+        # Agent can now transfer to enrichment, growth, etc.
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Transfer to enrichment for LinkedIn scraping"
+            )]
+        })
+        ```
+    """
+    allowed_transfers = get_allowed_transfers(agent_name)
+    return create_transfer_tools(agent_name, allowed_transfers)
+
+
 def get_cartesia_tools():
     """
     Get all Cartesia voice tools for ultra-fast TTS synthesis.
@@ -317,11 +360,23 @@ __all__ = [
     "cartesia_text_to_speech",
     "cartesia_list_voices",
 
+    # Agent Transfer Tools
+    "create_transfer_tools",
+    "transfer_to_enrichment",
+    "transfer_to_growth",
+    "transfer_to_marketing",
+    "transfer_to_bdr",
+    "transfer_to_conversation",
+    "get_allowed_transfers",
+    "is_transfer_allowed",
+    "DEFAULT_TRANSFER_TOOLS",
+
     # Convenience Functions
     "get_crm_tools",
     "get_apollo_tools",
     "get_linkedin_tools",
     "get_cartesia_tools",
+    "get_transfer_tools",
     "get_all_integration_tools",
     "get_all_tools",
 ]
