@@ -18,6 +18,13 @@ from .customer import (
     DocumentListResponse,
     CustomerQuotaResponse
 )
+from .pipeline import (
+    PipelineTestRequest,
+    PipelineTestOptions,
+    PipelineStageResult,
+    PipelineTestResponse,
+    CSVLeadImportRequest
+)
 
 __all__ = [
     "LeadQualificationRequest",
@@ -33,5 +40,10 @@ __all__ = [
     "DocumentSearchRequest",
     "DocumentSearchResult",
     "DocumentListResponse",
-    "CustomerQuotaResponse"
+    "CustomerQuotaResponse",
+    "PipelineTestRequest",
+    "PipelineTestOptions",
+    "PipelineStageResult",
+    "PipelineTestResponse",
+    "CSVLeadImportRequest"
 ]
