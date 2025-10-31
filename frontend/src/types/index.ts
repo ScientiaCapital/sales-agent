@@ -22,6 +22,7 @@ export interface Lead {
   qualification_latency_ms?: number;
   qualified_at?: string;
   notes?: string;
+  additional_data?: Record<string, any>; // For ICP tier, LinkedIn URLs, etc.
   created_at: string;
   updated_at: string;
 }

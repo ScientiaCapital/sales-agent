@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
+import { ErrorBoundary } from './components/ui/error-boundary';
 
 // Eager load: Dashboard (home page)
 import { Dashboard } from './pages/Dashboard';
@@ -20,10 +21,11 @@ const EnrichmentDashboard = lazy(() => import('./pages/EnrichmentDashboard').the
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
+    <ErrorBoundary>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Dashboard />} />
           <Route
             path="leads"
             element={
@@ -115,6 +117,7 @@ function App() {
         </Route>
       </Routes>
     </Router>
+    </ErrorBoundary>
   );
 }
 

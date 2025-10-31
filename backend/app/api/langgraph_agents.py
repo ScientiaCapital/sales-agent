@@ -260,44 +260,91 @@ async def invoke_agent(
                 
             elif request.agent_type == "growth":
                 agent = GrowthAgent()
-                result = await agent.analyze(**request.input)
+                # GrowthAgent expects: lead_id, goal, max_cycles
+                result = await agent.run_campaign(
+                    lead_id=request.input.get("lead_id"),
+                    goal=request.input.get("goal", "engagement"),
+                    max_cycles=request.input.get("max_cycles", 5)
+                )
                 output_data = {
-                    "opportunities": result.opportunities,
-                    "confidence": result.confidence_score,
-                    "market_analysis": result.market_analysis,
-                    "recommendations": result.recommendations
+                    "lead_id": result.lead_id,
+                    "goal": result.goal,
+                    "goal_met": result.goal_met,
+                    "cycle_count": result.cycle_count,
+                    "response_rate": result.response_rate,
+                    "engagement_score": result.engagement_score,
+                    "learnings": result.learnings,
+                    "executed_touches": result.executed_touches,
+                    "final_strategy": result.final_strategy,
+                    "latency_ms": result.latency_ms,
+                    "total_cost_usd": result.total_cost_usd
                 }
                 
             elif request.agent_type == "marketing":
                 agent = MarketingAgent()
-                result = await agent.generate(**request.input)
+                # MarketingAgent expects: campaign_brief, target_audience, campaign_goals
+                result = await agent.generate_campaign(
+                    campaign_brief=request.input.get("campaign_brief"),
+                    target_audience=request.input.get("target_audience"),
+                    campaign_goals=request.input.get("campaign_goals", ["awareness"])
+                )
                 output_data = {
-                    "campaigns": result.campaigns,
-                    "channels": result.channels,
-                    "personalization": result.personalization_data,
-                    "performance_prediction": result.performance_prediction
+                    "email_content": result.email_content,
+                    "linkedin_content": result.linkedin_content,
+                    "social_content": result.social_content,
+                    "blog_content": result.blog_content,
+                    "campaign_brief": result.campaign_brief,
+                    "target_audience": result.target_audience,
+                    "campaign_goals": result.campaign_goals,
+                    "total_cost_usd": result.total_cost_usd,
+                    "content_quality_score": result.content_quality_score,
+                    "recommended_schedule": result.recommended_schedule,
+                    "estimated_reach": result.estimated_reach,
+                    "latency_ms": result.latency_ms
                 }
                 
             elif request.agent_type == "bdr":
                 agent = BDRAgent()
-                result = await agent.book(**request.input)
+                # BDRAgent expects: lead_id, company_name, contact_name, contact_title, config
+                config = create_streaming_config(thread_id=thread_id)
+                result = await agent.start_outreach(
+                    lead_id=request.input.get("lead_id"),
+                    company_name=request.input.get("company_name"),
+                    contact_name=request.input.get("contact_name"),
+                    contact_title=request.input.get("contact_title"),
+                    config=config
+                )
+                # BDRAgent returns interrupt data - extract draft for response
+                interrupt_data = result.get("__interrupt__", [{}])[0].get("value", {}) if "__interrupt__" in result else {}
                 output_data = {
-                    "status": result.status,
-                    "calendar_link": result.calendar_link,
-                    "scheduled_time": result.scheduled_time,
-                    "meeting_type": result.meeting_type,
-                    "next_steps": result.next_steps
+                    "status": "draft_ready",
+                    "draft_subject": interrupt_data.get("draft_subject"),
+                    "draft_body": interrupt_data.get("draft_body"),
+                    "research_summary": interrupt_data.get("research_summary"),
+                    "company_name": interrupt_data.get("company_name"),
+                    "contact_name": interrupt_data.get("contact_name"),
+                    "revision_count": interrupt_data.get("revision_count", 0),
+                    "requires_approval": True
                 }
                 
             elif request.agent_type == "conversation":
                 agent = ConversationAgent()
-                result = await agent.converse(**request.input)
+                # ConversationAgent expects: text, voice_config, context, config
+                config = create_streaming_config(thread_id=thread_id)
+                result = await agent.send_message(
+                    text=request.input.get("text") or request.input.get("user_input"),
+                    context=request.input.get("context"),
+                    config=config if thread_id else None
+                )
                 output_data = {
-                    "response": result.response,
-                    "audio_data": result.audio_data,
-                    "sentiment": result.sentiment,
-                    "intent": result.intent,
-                    "next_action": result.next_action
+                    "user_input": result.user_input,
+                    "assistant_response": result.assistant_response,
+                    "audio_output": result.audio_output,  # Base64 encoded if needed
+                    "turn_number": result.turn_number,
+                    "audio_metadata": result.audio_metadata,
+                    "latency_breakdown": result.latency_breakdown,
+                    "total_cost_usd": result.total_cost_usd,
+                    "estimated_audio_duration_ms": result.estimated_audio_duration_ms
                 }
             
             # Calculate execution metrics
@@ -493,55 +540,101 @@ async def stream_agent(
                         result = await agent.enrich(**request.input)
                         output_data = {
                             "enriched_data": result.enriched_data,
-                            "sources": result.sources,
-                            "confidence": result.confidence_score,
-                            "completeness": result.completeness_score
+                            "data_sources": result.data_sources,
+                            "confidence_score": result.confidence_score,
+                            "tools_called": result.tools_called,
+                            "latency_ms": result.latency_ms,
+                            "iterations_used": result.iterations_used,
+                            "total_cost_usd": result.total_cost_usd,
+                            "errors": result.errors
                         }
                         
                     elif request.agent_type == "growth":
                         yield f"data: {json.dumps({'type': 'message', 'content': 'Analyzing growth opportunities...'})}\n\n"
                         agent = GrowthAgent()
-                        result = await agent.analyze(**request.input)
+                        result = await agent.run_campaign(
+                            lead_id=request.input.get("lead_id"),
+                            goal=request.input.get("goal", "engagement"),
+                            max_cycles=request.input.get("max_cycles", 5)
+                        )
                         output_data = {
-                            "opportunities": result.opportunities,
-                            "confidence": result.confidence_score,
-                            "market_analysis": result.market_analysis,
-                            "recommendations": result.recommendations
+                            "lead_id": result.lead_id,
+                            "goal": result.goal,
+                            "goal_met": result.goal_met,
+                            "cycle_count": result.cycle_count,
+                            "response_rate": result.response_rate,
+                            "engagement_score": result.engagement_score,
+                            "learnings": result.learnings,
+                            "executed_touches": result.executed_touches,
+                            "final_strategy": result.final_strategy,
+                            "latency_ms": result.latency_ms,
+                            "total_cost_usd": result.total_cost_usd
                         }
                         
                     elif request.agent_type == "marketing":
                         yield f"data: {json.dumps({'type': 'message', 'content': 'Generating marketing campaigns...'})}\n\n"
                         agent = MarketingAgent()
-                        result = await agent.generate(**request.input)
+                        result = await agent.generate_campaign(
+                            campaign_brief=request.input.get("campaign_brief"),
+                            target_audience=request.input.get("target_audience"),
+                            campaign_goals=request.input.get("campaign_goals", ["awareness"])
+                        )
                         output_data = {
-                            "campaigns": result.campaigns,
-                            "channels": result.channels,
-                            "personalization": result.personalization_data,
-                            "performance_prediction": result.performance_prediction
+                            "email_content": result.email_content,
+                            "linkedin_content": result.linkedin_content,
+                            "social_content": result.social_content,
+                            "blog_content": result.blog_content,
+                            "campaign_brief": result.campaign_brief,
+                            "target_audience": result.target_audience,
+                            "campaign_goals": result.campaign_goals,
+                            "total_cost_usd": result.total_cost_usd,
+                            "content_quality_score": result.content_quality_score,
+                            "recommended_schedule": result.recommended_schedule,
+                            "estimated_reach": result.estimated_reach,
+                            "latency_ms": result.latency_ms
                         }
                         
                     elif request.agent_type == "bdr":
                         yield f"data: {json.dumps({'type': 'message', 'content': 'Processing BDR workflow...'})}\n\n"
                         agent = BDRAgent()
-                        result = await agent.book(**request.input)
+                        config = create_streaming_config(thread_id=thread_id)
+                        result = await agent.start_outreach(
+                            lead_id=request.input.get("lead_id"),
+                            company_name=request.input.get("company_name"),
+                            contact_name=request.input.get("contact_name"),
+                            contact_title=request.input.get("contact_title"),
+                            config=config
+                        )
+                        interrupt_data = result.get("__interrupt__", [{}])[0].get("value", {}) if "__interrupt__" in result else {}
                         output_data = {
-                            "status": result.status,
-                            "calendar_link": result.calendar_link,
-                            "scheduled_time": result.scheduled_time,
-                            "meeting_type": result.meeting_type,
-                            "next_steps": result.next_steps
+                            "status": "draft_ready",
+                            "draft_subject": interrupt_data.get("draft_subject"),
+                            "draft_body": interrupt_data.get("draft_body"),
+                            "research_summary": interrupt_data.get("research_summary"),
+                            "company_name": interrupt_data.get("company_name"),
+                            "contact_name": interrupt_data.get("contact_name"),
+                            "revision_count": interrupt_data.get("revision_count", 0),
+                            "requires_approval": True
                         }
                         
                     elif request.agent_type == "conversation":
                         yield f"data: {json.dumps({'type': 'message', 'content': 'Processing conversation...'})}\n\n"
                         agent = ConversationAgent()
-                        result = await agent.converse(**request.input)
+                        config = create_streaming_config(thread_id=thread_id)
+                        result = await agent.send_message(
+                            text=request.input.get("text") or request.input.get("user_input"),
+                            context=request.input.get("context"),
+                            config=config if thread_id else None
+                        )
                         output_data = {
-                            "response": result.response,
-                            "audio_data": result.audio_data,
-                            "sentiment": result.sentiment,
-                            "intent": result.intent,
-                            "next_action": result.next_action
+                            "user_input": result.user_input,
+                            "assistant_response": result.assistant_response,
+                            "audio_output": result.audio_output,
+                            "turn_number": result.turn_number,
+                            "audio_metadata": result.audio_metadata,
+                            "latency_breakdown": result.latency_breakdown,
+                            "total_cost_usd": result.total_cost_usd,
+                            "estimated_audio_duration_ms": result.estimated_audio_duration_ms
                         }
                     
                     # Calculate execution metrics
