@@ -13,6 +13,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { apiClient } from '../services/api';
 import type { Lead } from '../types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { MetricsCard } from '../components/ui/metrics-card';
 
 interface EnrichmentMetrics {
   totalLeads: number;
@@ -224,85 +229,84 @@ export function EnrichmentDashboard() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-3">Enrichment Dashboard</h1>
-        <p className="text-xl text-gray-700 font-medium leading-relaxed">Monitor lead enrichment progress and ATL contact discovery</p>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Enrichment Dashboard</CardTitle>
+          <CardDescription>
+            Monitor lead enrichment progress and ATL contact discovery
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       {/* Metrics Cards */}
       {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
-            <h3 className="text-base font-semibold text-gray-600 mb-4">Total Imported Leads</h3>
-            <p className="text-5xl font-bold text-gray-900 leading-none">{metrics.totalLeads}</p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
-            <h3 className="text-base font-semibold text-gray-600 mb-4">Enrichment Status</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-base font-bold text-green-700">Completed:</span>
-                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentCompleted}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricsCard
+            title="Total Imported Leads"
+            value={metrics.totalLeads}
+            icon={undefined}
+          />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Enrichment Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-emerald-700">Completed:</span>
+                <Badge variant="success">{metrics.enrichmentCompleted}</Badge>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                <span className="text-base font-bold text-yellow-700">Pending:</span>
-                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentPending}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-amber-700">Pending:</span>
+                <Badge variant="warning">{metrics.enrichmentPending}</Badge>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-base font-bold text-red-700">Failed:</span>
-                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentFailed}</span>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-red-700">Failed:</span>
+                <Badge variant="destructive">{metrics.enrichmentFailed}</Badge>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
-            <h3 className="text-base font-semibold text-gray-600 mb-4">Avg Qualification Score</h3>
-            <p className="text-5xl font-bold text-gray-900 leading-none">
-              {metrics.avgQualificationScore.toFixed(1)}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
-            <h3 className="text-base font-semibold text-gray-600 mb-4">ATL Contacts Discovered</h3>
-            <p className="text-5xl font-bold text-blue-600 leading-none">{metrics.atlContactsDiscovered}</p>
-          </div>
+            </CardContent>
+          </Card>
+          <MetricsCard
+            title="Avg Qualification Score"
+            value={metrics.avgQualificationScore.toFixed(1)}
+            icon={undefined}
+          />
+          <MetricsCard
+            title="ATL Contacts Discovered"
+            value={metrics.atlContactsDiscovered}
+            icon={undefined}
+          />
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="mb-8 flex flex-wrap gap-4">
-        <button
-          onClick={handleTriggerEnrichment}
-          className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-base hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl border-2 border-blue-500"
-        >
-          Trigger Enrichment
-        </button>
-        <button
-          onClick={handleExportEnrichedList}
-          className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-base hover:bg-green-700 transition-all shadow-lg hover:shadow-xl border-2 border-green-500"
-        >
-          Export Enriched List
-        </button>
-        <button
-          onClick={handleViewATLContacts}
-          className="px-8 py-4 bg-purple-600 text-white rounded-xl font-bold text-base hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl border-2 border-purple-500"
-        >
-          View ATL Contacts
-        </button>
-        <button
-          onClick={fetchData}
-          className="px-8 py-4 bg-gray-600 text-white rounded-xl font-bold text-base hover:bg-gray-700 transition-all shadow-lg hover:shadow-xl border-2 border-gray-500"
-        >
-          Refresh Data
-        </button>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={handleTriggerEnrichment} variant="primary" size="lg">
+              Trigger Enrichment
+            </Button>
+            <Button onClick={handleExportEnrichedList} variant="success" size="lg">
+              Export Enriched List
+            </Button>
+            <Button onClick={handleViewATLContacts} variant="secondary" size="lg">
+              View ATL Contacts
+            </Button>
+            <Button onClick={fetchData} variant="outline" size="lg">
+              Refresh Data
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 mb-8">
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* ICP Tier Filter */}
           <div>
             <label className="block text-base font-bold text-gray-800 mb-3">
@@ -375,149 +379,126 @@ export function EnrichmentDashboard() {
             </select>
           </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Leads Table */}
-      <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 overflow-hidden" id="leads-table">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y-2 divide-gray-200">
-            <thead className="bg-gradient-to-r from-gray-50 to-slate-50">
-              <tr>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  Company Name
-                </th>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  ICP Tier
-                </th>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  Qualification Score
-                </th>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  Enrichment Status
-                </th>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  Contact Email
-                </th>
-                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
-                  LinkedIn
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y-2 divide-gray-100">
-              {paginatedLeads.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center">
-                    <p className="text-xl font-bold text-gray-600">No leads found matching filters</p>
-                  </td>
-                </tr>
-              ) : (
-                paginatedLeads.map((lead) => {
-                  const additional = lead.additional_data as any;
-                  const icpTier = additional?.icp_tier || additional?.ICP_Tier || 'N/A';
-                  const linkedinUrl = additional?.linkedin_url || null;
+      <Card id="leads-table">
+        <CardHeader>
+          <CardTitle>Leads ({filteredLeads.length})</CardTitle>
+          <CardDescription>Filtered and paginated lead list</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company Name</TableHead>
+                  <TableHead>ICP Tier</TableHead>
+                  <TableHead>Qualification Score</TableHead>
+                  <TableHead>Enrichment Status</TableHead>
+                  <TableHead>Contact Email</TableHead>
+                  <TableHead>LinkedIn</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedLeads.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <p className="text-lg font-medium text-slate-500">No leads found matching filters</p>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedLeads.map((lead) => {
+                    const additional = lead.additional_data as any;
+                    const icpTier = additional?.icp_tier || additional?.ICP_Tier || 'N/A';
+                    const linkedinUrl = additional?.linkedin_url || null;
 
-                  const hasEmail = !!lead.contact_email;
-                  const hasWebsite = !!lead.company_website;
-                  const hasAdditionalData = !!lead.additional_data;
-                  let enrichmentStatus = 'failed';
-                  let statusColor = 'bg-red-100 text-red-800';
+                    const hasEmail = !!lead.contact_email;
+                    const hasWebsite = !!lead.company_website;
+                    const hasAdditionalData = !!lead.additional_data;
+                    let enrichmentStatus = 'failed';
+                    let statusVariant: 'success' | 'warning' | 'destructive' = 'destructive';
 
-                  if (hasEmail && hasWebsite && hasAdditionalData) {
-                    enrichmentStatus = 'completed';
-                    statusColor = 'bg-green-100 text-green-800';
-                  } else if (hasEmail || hasWebsite) {
-                    enrichmentStatus = 'pending';
-                    statusColor = 'bg-yellow-100 text-yellow-800';
-                  }
+                    if (hasEmail && hasWebsite && hasAdditionalData) {
+                      enrichmentStatus = 'completed';
+                      statusVariant = 'success';
+                    } else if (hasEmail || hasWebsite) {
+                      enrichmentStatus = 'pending';
+                      statusVariant = 'warning';
+                    }
 
-                  return (
-                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-8 py-6">
-                        <div className="text-base font-bold text-gray-900 mb-1">
-                          {lead.company_name}
-                        </div>
-                        {lead.company_website && (
-                          <div className="text-sm text-gray-600 font-medium">{lead.company_website}</div>
-                        )}
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <span className={`px-4 py-2 text-sm font-bold rounded-full shadow-sm ${
-                          icpTier === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
-                          icpTier === 'SILVER' ? 'bg-gray-100 text-gray-800' :
-                          icpTier === 'BRONZE' ? 'bg-orange-100 text-orange-800' :
-                          'bg-gray-100 text-gray-500'
-                        }`}>
-                          {icpTier}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        {lead.qualification_score !== null && lead.qualification_score !== undefined ? (
-                          <span className="text-lg font-bold text-gray-900">
-                            {lead.qualification_score.toFixed(1)}
-                          </span>
-                        ) : (
-                          <span className="text-base text-gray-400 font-medium">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        <span className={`px-4 py-2 text-sm font-bold rounded-full shadow-sm ${statusColor}`}>
-                          {enrichmentStatus}
-                        </span>
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        {lead.contact_email ? (
-                          <span className="text-base font-medium text-gray-900">{lead.contact_email}</span>
-                        ) : (
-                          <span className="text-base text-gray-400 font-medium">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-8 py-6 whitespace-nowrap">
-                        {linkedinUrl ? (
-                          <a
-                            href={linkedinUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-base font-bold underline"
-                          >
-                            View Profile
-                          </a>
-                        ) : (
-                          <span className="text-base text-gray-400 font-medium">N/A</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                    const tierVariant = icpTier === 'GOLD' ? 'gold' : icpTier === 'SILVER' ? 'silver' : icpTier === 'BRONZE' ? 'bronze' : 'secondary';
 
-        {/* Pagination */}
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell>
+                          <div className="font-semibold text-slate-900">{lead.company_name}</div>
+                          {lead.company_website && (
+                            <div className="text-sm text-slate-500">{lead.company_website}</div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={tierVariant as any}>{icpTier}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {lead.qualification_score !== null && lead.qualification_score !== undefined ? (
+                            <span className="font-semibold">{lead.qualification_score.toFixed(1)}</span>
+                          ) : (
+                            <span className="text-slate-400">N/A</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant}>{enrichmentStatus}</Badge>
+                        </TableCell>
+                        <TableCell className="text-slate-600">
+                          {lead.contact_email || <span className="text-slate-400">N/A</span>}
+                        </TableCell>
+                        <TableCell>
+                          {linkedinUrl ? (
+                            <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
+                              View Profile
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">N/A</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
         {totalPages > 1 && (
-          <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-8 py-5 flex items-center justify-between border-t-2 border-gray-200">
-            <div className="text-base font-bold text-gray-800">
-              Showing <span className="text-indigo-600">{(currentPage - 1) * leadsPerPage + 1}</span> to <span className="text-indigo-600">{Math.min(currentPage * leadsPerPage, filteredLeads.length)}</span> of <span className="text-indigo-600">{filteredLeads.length}</span> leads
+          <CardContent className="border-t flex items-center justify-between">
+            <div className="text-sm text-slate-600">
+              Showing <span className="font-semibold">{(currentPage - 1) * leadsPerPage + 1}</span> to{' '}
+              <span className="font-semibold">{Math.min(currentPage * leadsPerPage, filteredLeads.length)}</span> of{' '}
+              <span className="font-semibold">{filteredLeads.length}</span> leads
             </div>
-            <div className="flex gap-3">
-              <button
+            <div className="flex gap-2">
+              <Button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 hover:border-gray-400 transition-all shadow-sm disabled:shadow-none"
+                variant="outline"
+                size="sm"
               >
                 Previous
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 hover:border-gray-400 transition-all shadow-sm disabled:shadow-none"
+                variant="outline"
+                size="sm"
               >
                 Next
-              </button>
+              </Button>
             </div>
-          </div>
+          </CardContent>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

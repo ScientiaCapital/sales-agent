@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_report_templates'
-down_revision = None  # Set this to the ID of the previous migration
+down_revision = '20251030_add_analytics'  # After analytics tables migration
 branch_labels = None
 depends_on = None
 
