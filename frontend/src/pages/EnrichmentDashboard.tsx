@@ -224,88 +224,88 @@ export function EnrichmentDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-8 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Enrichment Dashboard</h1>
-        <p className="text-gray-600 mt-1">Monitor lead enrichment progress and ATL contact discovery</p>
+      <div className="mb-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-3">Enrichment Dashboard</h1>
+        <p className="text-xl text-gray-700 font-medium leading-relaxed">Monitor lead enrichment progress and ATL contact discovery</p>
       </div>
 
       {/* Metrics Cards */}
       {metrics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Total Imported Leads</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{metrics.totalLeads}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
+            <h3 className="text-base font-semibold text-gray-600 mb-4">Total Imported Leads</h3>
+            <p className="text-5xl font-bold text-gray-900 leading-none">{metrics.totalLeads}</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Enrichment Status</h3>
-            <div className="mt-2 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-green-600">Completed:</span>
-                <span className="font-semibold">{metrics.enrichmentCompleted}</span>
+          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
+            <h3 className="text-base font-semibold text-gray-600 mb-4">Enrichment Status</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-base font-bold text-green-700">Completed:</span>
+                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentCompleted}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-yellow-600">Pending:</span>
-                <span className="font-semibold">{metrics.enrichmentPending}</span>
+              <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                <span className="text-base font-bold text-yellow-700">Pending:</span>
+                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentPending}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-red-600">Failed:</span>
-                <span className="font-semibold">{metrics.enrichmentFailed}</span>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-base font-bold text-red-700">Failed:</span>
+                <span className="text-xl font-bold text-gray-900">{metrics.enrichmentFailed}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">Avg Qualification Score</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
+          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
+            <h3 className="text-base font-semibold text-gray-600 mb-4">Avg Qualification Score</h3>
+            <p className="text-5xl font-bold text-gray-900 leading-none">
               {metrics.avgQualificationScore.toFixed(1)}
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-sm font-medium text-gray-500">ATL Contacts Discovered</h3>
-            <p className="text-3xl font-bold text-blue-600 mt-2">{metrics.atlContactsDiscovered}</p>
+          <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 hover:shadow-lg transition-all">
+            <h3 className="text-base font-semibold text-gray-600 mb-4">ATL Contacts Discovered</h3>
+            <p className="text-5xl font-bold text-blue-600 leading-none">{metrics.atlContactsDiscovered}</p>
           </div>
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-8 flex flex-wrap gap-4">
         <button
           onClick={handleTriggerEnrichment}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-base hover:bg-blue-700 transition-all shadow-lg hover:shadow-xl border-2 border-blue-500"
         >
           Trigger Enrichment
         </button>
         <button
           onClick={handleExportEnrichedList}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+          className="px-8 py-4 bg-green-600 text-white rounded-xl font-bold text-base hover:bg-green-700 transition-all shadow-lg hover:shadow-xl border-2 border-green-500"
         >
           Export Enriched List
         </button>
         <button
           onClick={handleViewATLContacts}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          className="px-8 py-4 bg-purple-600 text-white rounded-xl font-bold text-base hover:bg-purple-700 transition-all shadow-lg hover:shadow-xl border-2 border-purple-500"
         >
           View ATL Contacts
         </button>
         <button
           onClick={fetchData}
-          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+          className="px-8 py-4 bg-gray-600 text-white rounded-xl font-bold text-base hover:bg-gray-700 transition-all shadow-lg hover:shadow-xl border-2 border-gray-500"
         >
           Refresh Data
         </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h3 className="text-lg font-semibold mb-3">Filters</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 p-8 mb-8">
+        <h3 className="text-2xl font-bold text-gray-900 mb-6">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* ICP Tier Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-base font-bold text-gray-800 mb-3">
               ICP Tier
             </label>
             <select
@@ -314,7 +314,7 @@ export function EnrichmentDashboard() {
                 setIcpFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white shadow-sm hover:border-gray-400 transition-colors"
             >
               <option value="">All Tiers</option>
               <option value="GOLD">Gold</option>
@@ -325,10 +325,10 @@ export function EnrichmentDashboard() {
 
           {/* Score Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-base font-bold text-gray-800 mb-3">
               Qualification Score Range
             </label>
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-3 items-center">
               <input
                 type="number"
                 min="0"
@@ -338,9 +338,9 @@ export function EnrichmentDashboard() {
                   setScoreRange([parseInt(e.target.value) || 0, scoreRange[1]]);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-sm"
               />
-              <span className="text-gray-500">-</span>
+              <span className="text-lg font-bold text-gray-600">-</span>
               <input
                 type="number"
                 min="0"
@@ -350,14 +350,14 @@ export function EnrichmentDashboard() {
                   setScoreRange([scoreRange[0], parseInt(e.target.value) || 100]);
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium shadow-sm"
               />
             </div>
           </div>
 
           {/* Enrichment Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-base font-bold text-gray-800 mb-3">
               Enrichment Status
             </label>
             <select
@@ -366,7 +366,7 @@ export function EnrichmentDashboard() {
                 setEnrichmentStatusFilter(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-5 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-medium bg-white shadow-sm hover:border-gray-400 transition-colors"
             >
               <option value="">All Statuses</option>
               <option value="completed">Completed</option>
@@ -378,36 +378,36 @@ export function EnrichmentDashboard() {
       </div>
 
       {/* Leads Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden" id="leads-table">
+      <div className="bg-white rounded-xl shadow-md border-2 border-gray-100 overflow-hidden" id="leads-table">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y-2 divide-gray-200">
+            <thead className="bg-gradient-to-r from-gray-50 to-slate-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   Company Name
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   ICP Tier
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   Qualification Score
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   Enrichment Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   Contact Email
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-left text-base font-bold text-gray-900 uppercase tracking-wider">
                   LinkedIn
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y-2 divide-gray-100">
               {paginatedLeads.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                    No leads found matching filters
+                  <td colSpan={6} className="px-8 py-12 text-center">
+                    <p className="text-xl font-bold text-gray-600">No leads found matching filters</p>
                   </td>
                 </tr>
               ) : (
@@ -431,17 +431,17 @@ export function EnrichmentDashboard() {
                   }
 
                   return (
-                    <tr key={lead.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
+                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="text-base font-bold text-gray-900 mb-1">
                           {lead.company_name}
                         </div>
                         {lead.company_website && (
-                          <div className="text-xs text-gray-500">{lead.company_website}</div>
+                          <div className="text-sm text-gray-600 font-medium">{lead.company_website}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <span className={`px-4 py-2 text-sm font-bold rounded-full shadow-sm ${
                           icpTier === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
                           icpTier === 'SILVER' ? 'bg-gray-100 text-gray-800' :
                           icpTier === 'BRONZE' ? 'bg-orange-100 text-orange-800' :
@@ -450,35 +450,39 @@ export function EnrichmentDashboard() {
                           {icpTier}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-8 py-6 whitespace-nowrap">
                         {lead.qualification_score !== null && lead.qualification_score !== undefined ? (
-                          <span className="text-sm font-medium text-gray-900">
+                          <span className="text-lg font-bold text-gray-900">
                             {lead.qualification_score.toFixed(1)}
                           </span>
                         ) : (
-                          <span className="text-sm text-gray-400">N/A</span>
+                          <span className="text-base text-gray-400 font-medium">N/A</span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColor}`}>
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        <span className={`px-4 py-2 text-sm font-bold rounded-full shadow-sm ${statusColor}`}>
                           {enrichmentStatus}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {lead.contact_email || <span className="text-gray-400">N/A</span>}
+                      <td className="px-8 py-6 whitespace-nowrap">
+                        {lead.contact_email ? (
+                          <span className="text-base font-medium text-gray-900">{lead.contact_email}</span>
+                        ) : (
+                          <span className="text-base text-gray-400 font-medium">N/A</span>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-8 py-6 whitespace-nowrap">
                         {linkedinUrl ? (
                           <a
                             href={linkedinUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
+                            className="text-blue-600 hover:text-blue-800 text-base font-bold underline"
                           >
                             View Profile
                           </a>
                         ) : (
-                          <span className="text-gray-400 text-sm">N/A</span>
+                          <span className="text-base text-gray-400 font-medium">N/A</span>
                         )}
                       </td>
                     </tr>
@@ -491,22 +495,22 @@ export function EnrichmentDashboard() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-            <div className="text-sm text-gray-700">
-              Showing {(currentPage - 1) * leadsPerPage + 1} to {Math.min(currentPage * leadsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
+          <div className="bg-gradient-to-r from-gray-50 to-slate-50 px-8 py-5 flex items-center justify-between border-t-2 border-gray-200">
+            <div className="text-base font-bold text-gray-800">
+              Showing <span className="text-indigo-600">{(currentPage - 1) * leadsPerPage + 1}</span> to <span className="text-indigo-600">{Math.min(currentPage * leadsPerPage, filteredLeads.length)}</span> of <span className="text-indigo-600">{filteredLeads.length}</span> leads
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 hover:border-gray-400 transition-all shadow-sm disabled:shadow-none"
               >
                 Previous
               </button>
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                className="px-6 py-3 border-2 border-gray-300 rounded-xl text-base font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 hover:border-gray-400 transition-all shadow-sm disabled:shadow-none"
               >
                 Next
               </button>
