@@ -16,6 +16,7 @@ const KnowledgeBase = lazy(() => import('./pages/KnowledgeBase').then(m => ({ de
 const ContactDiscovery = lazy(() => import('./pages/ContactDiscovery').then(m => ({ default: m.ContactDiscovery })));
 const AgentTeams = lazy(() => import('./pages/AgentTeams').then(m => ({ default: m.AgentTeams })));
 const PerformanceDashboard = lazy(() => import('./pages/PerformanceDashboard').then(m => ({ default: m.PerformanceDashboard })));
+const EnrichmentDashboard = lazy(() => import('./pages/EnrichmentDashboard').then(m => ({ default: m.EnrichmentDashboard })));
 
 function App() {
   return (
@@ -100,6 +101,14 @@ function App() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <PerformanceDashboard />
+              </Suspense>
+            }
+          />
+          <Route
+            path="enrichment"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <EnrichmentDashboard />
               </Suspense>
             }
           />
