@@ -106,18 +106,75 @@ sales-agent/
 ### State Management Flow
 ```python
 # LangGraph State Definition
-class AgentState(TypedDict):
-    lead_data: dict
-    qualification_score: int
-    enrichment_data: dict
-    growth_insights: list
-    marketing_plan: dict
-    bdr_actions: list
-    conversation_history: list
-    current_agent: str
+$1
+
+## 4.5. Pipeline Testing System
+
+### Architecture (Phase 6 - In Development)
+```
+Pipeline Test Flow:
+1. CSV Lead Import → LeadCSVImporter
+2. Pipeline Execution → PipelineOrchestrator
+   ├── Qualification Agent
+   ├── Enrichment Agent  
+   ├── Deduplication Check
+   └── Close CRM Sync
+3. Metrics Tracking → PipelineTestExecution (database)
+4. API Response → PipelineTestResponse (schema)
 ```
 
-## 5. External Dependencies
+### Database Model
+```python
+class PipelineTestExecution(Base):
+    """Tracks end-to-end pipeline test runs"""
+    id: int
+    lead_name: str
+    csv_index: Optional[int]
+    
+    # Results
+    success: bool
+    error_stage: Optional[str]
+    error_message: Optional[Text]
+    
+    # Performance Metrics
+    total_latency_ms: int
+    total_cost_usd: float
+    stages_json: JSON  # Per-stage timing and cost
+    
+    # Test Configuration
+    stop_on_duplicate: bool
+    skip_enrichment: bool
+    create_in_crm: bool
+    dry_run: bool
+```
+
+### API Schemas
+```python
+class PipelineTestRequest(BaseModel):
+    lead: Dict[str, Any]
+    options: PipelineTestOptions = PipelineTestOptions()
+
+class PipelineTestResponse(BaseModel):
+    success: bool
+    total_latency_ms: int
+    total_cost_usd: float
+    lead_name: str
+    stages: Dict[str, PipelineStageResult]
+    error_stage: Optional[str]
+    timeline: Optional[List[Dict]]
+
+class CSVLeadImportRequest(BaseModel):
+    csv_path: str
+    lead_index: int  # 0-199 for dealer-scraper dataset
+    options: PipelineTestOptions
+```
+
+### Components
+- **LeadCSVImporter**: Loads dealer-scraper CSV, maps fields to pipeline format
+- **PipelineOrchestrator**: Coordinates 4-stage execution with timing/cost tracking
+- **Test API Endpoints**: `/api/leads/test-pipeline`, `/api/leads/test-pipeline/quick`
+
+$2
 
 ### AI/ML Dependencies
 ```python

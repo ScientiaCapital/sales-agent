@@ -1,13 +1,13 @@
 ```markdown
 # Project Context: Sales-Agent
 
-**Last Updated:** 2025-10-31T13:35:15.506116
+**Last Updated:** 2025-10-31T17:30:00Z
 
 ## Current Sprint Focus
-- **Performance Optimization**: Sub-second (633ms) lead qualification latency targets
-- **Multi-Agent Orchestration**: 6 specialized LangGraph agents in production
-- **Production Readiness**: FastAPI deployment with PostgreSQL/Redis persistence
-- **Voice Capabilities**: Real-time conversation agent implementation
+- **Pipeline Testing System**: End-to-end testing infrastructure for 200-lead validation
+- **Close CRM Integration**: Bidirectional sync with deduplication complete (Phase 5)
+- **Performance Validation**: Real-world throughput testing with dealer-scraper dataset
+- **Production Readiness**: Database models, schemas, and CSV importer operational
 
 ## Architecture Overview
 - **Language**: Python 3.13
@@ -17,49 +17,53 @@
 - **Inference**: Cerebras for ultra-fast model execution
 
 ## Project Description
-This is an enterprise-grade sales automation platform featuring a sophisticated multi-agent AI system. The platform processes sales leads through six specialized agents that handle qualification, data enrichment, growth analysis, marketing campaigns, BDR workflows, and voice-enabled conversations. 
-
-The system achieves remarkable performance with 633ms lead qualification times using hybrid LangGraph architecture and Cerebras inference. It's designed for high-throughput enterprise sales environments with real-time streaming capabilities and comprehensive CRM integrations.
+Enterprise-grade sales automation platform with sophisticated multi-agent AI system. Six specialized agents handle qualification, enrichment, growth analysis, marketing campaigns, BDR workflows, and voice conversations. Achieves 633ms lead qualification using hybrid LangGraph architecture and Cerebras inference. Designed for high-throughput enterprise sales with real-time streaming and comprehensive CRM integrations.
 
 ## Recent Changes
-- **Initial Generation**: Project setup with all 6 core agents implemented
-- **Production Deployment**: FastAPI endpoints operational with performance metrics validated
-- **Architecture Complete**: LangGraph hybrid pattern with LCEL chains and StateGraphs
+- **Phase 5 Complete**: Close CRM integration with probabilistic deduplication (fuzzy matching + confidence scoring)
+- **Phase 6 In Progress**: Pipeline testing system development
+  - ✅ Database model (PipelineTestExecution) with per-stage metrics
+  - ✅ Pydantic schemas (PipelineTestRequest, PipelineTestResponse, CSVLeadImportRequest)
+  - ✅ CSV lead importer with field mapping (200 dealer-scraper prospects)
+  - 🚧 Pipeline orchestrator service (pending)
+  - 🚧 API endpoints (pending)
+  - 🚧 Manual testing with real leads (pending)
 
 ## Current Blockers
-- None identified - system is production-ready with all core features implemented
+- None identified - pipeline testing on track for completion
 
 ## Next Steps
-1. **Scale Testing**: Load test multi-agent orchestration under high-volume lead scenarios
-2. **CRM Integration**: Expand connector ecosystem for Salesforce, HubSpot, and other enterprise platforms
-3. **Monitoring Dashboard**: Implement real-time performance analytics and agent health monitoring
-4. **Cost Optimization**: Further reduce inference costs while maintaining sub-second latency
-5. **Voice Enhancement**: Improve real-time conversation agent with better interruption handling
+1. **Complete Pipeline Testing** (3/6 tasks remaining): Orchestrator, API endpoints, manual validation
+2. **Scale Testing**: Load test with full 200-lead dataset
+3. **Performance Optimization**: Reduce enrichment latency under heavy load
+4. **Monitoring Dashboard**: Real-time pipeline metrics and cost tracking
+5. **CRM Expansion**: Salesforce, HubSpot connectors beyond Close
 
 ## Development Workflow
 ```bash
-# Local Development
-curl -X POST http://localhost:8001/api/langgraph/invoke \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_type": "qualification",
-    "input": {
-      "company_name": "TechCorp Inc",
-      "industry": "SaaS",
-      "company_size": "50-200"
-    }
-  }'
+# Pipeline Testing Development (Current)
+cd backend
+source venv/bin/activate
+docker-compose up -d
+python start_server.py
 
-# Performance Validation
-# - Target: <1000ms for qualification agent
-# - Cost: $0.000006 per qualification request
-# - Throughput: Validate under load
+# Test CSV Importer
+pytest tests/services/test_csv_lead_importer.py -v
+
+# Test Pipeline Models
+pytest tests/models/test_pipeline_models.py -v
+
+# Manual Pipeline Test (After completion)
+curl -X POST http://localhost:8001/api/leads/test-pipeline \
+  -H "Content-Type: application/json" \
+  -d '{"csv_path": "/path/to/dealers.csv", "lead_index": 0}'
 ```
 
 ## Notes
-- **Design Patterns**: Factory, Abstract Base Class, Circuit Breaker implemented
+- **Part of GTM Engineer Strategy**: Located at `tmkipper/desktop/tk_projects/gtm_engineer_strategy`
+- **Design Patterns**: Factory, Abstract Base Class, Circuit Breaker, TDD (Test-Driven Development)
 - **Performance Critical**: All agents have strict latency SLAs (633ms-5000ms range)
 - **Cost Efficient**: Ultra-low cost per request ($0.000006 for qualification)
-- **Production Ready**: All 6 agent types tested and implemented
-- **Voice Capable**: Real-time conversation agent supports voice interactions
+- **Git Worktrees**: Using isolated worktree for pipeline-testing feature branch
+- **Test Coverage**: 96% overall, 100% for new pipeline testing components
 ```
