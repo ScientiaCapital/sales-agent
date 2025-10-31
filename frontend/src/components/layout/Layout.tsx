@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   BarChart3,
+  Database,
 } from 'lucide-react';
 
 interface NavItem {
@@ -35,6 +36,7 @@ const navigation: NavItem[] = [
   { name: 'Performance', path: '/performance', icon: BarChart3, category: 'Operations' },
   { name: 'Costs', path: '/costs', icon: DollarSign, category: 'Operations' },
   { name: 'CSV Import', path: '/csv-import', icon: Upload, category: 'Operations' },
+  { name: 'Enrichment', path: '/enrichment', icon: Database, category: 'Sales Operations' },
 ];
 
 export function Layout() {

@@ -111,3 +111,4 @@ test_*.csv
 # Coverage reports
 htmlcov/
 coverage.xml
+backend/.env.backup-*
