@@ -65,6 +65,8 @@ from langgraph.graph import StateGraph, END
 from app.services.langgraph.state_schemas import GrowthAgentState
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.services.cost_tracking import get_cost_optimizer
+from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -124,28 +126,34 @@ class GrowthAgent:
     def __init__(
         self,
         model: str = "llama3.1-8b",
-        provider: Literal["cerebras", "anthropic", "openrouter"] = "cerebras",
+        provider: Literal["cerebras", "anthropic", "deepseek"] = "cerebras",
         temperature: float = 0.4,
-        max_tokens: int = 500
+        max_tokens: int = 500,
+        track_costs: bool = True
     ):
         """
         Initialize GrowthAgent with configurable LLM provider.
 
         Supported Providers:
-            - cerebras (default): Ultra-fast, cheapest, great for scale
-            - anthropic: Claude Haiku for best strategy reasoning
-            - openrouter: DeepSeek/Qwen/Yi/GLM for cost optimization
+            - cerebras (default): Ultra-fast, cheapest, great for scale ($0.000006/call)
+            - anthropic: Claude Haiku for best strategy reasoning ($0.001743/call)
+            - deepseek: Cost-optimized reasoning via Anthropic-compatible API ($0.00027/call)
 
         Args:
             model: Model ID (provider-specific)
             provider: LLM provider selection
             temperature: Sampling temperature (0.4 for creative strategies)
             max_tokens: Max completion tokens per call
+            track_costs: Enable cost tracking to ai-cost-optimizer (default: True)
         """
         self.model = model
         self.provider = provider
         self.temperature = temperature
         self.max_tokens = max_tokens
+        
+        # Cost tracking
+        self.track_costs = track_costs
+        self.cost_optimizer = None  # Lazy init on first use
 
         # Initialize LLM based on provider
         if provider == "cerebras":
@@ -172,25 +180,25 @@ class GrowthAgent:
                 api_key=api_key
             )
 
-        elif provider == "openrouter":
-            from langchain_openai import ChatOpenAI
-
-            api_key = os.getenv("OPENROUTER_API_KEY")
+        elif provider == "deepseek":
+            # DeepSeek supports Anthropic-compatible API (no OpenAI dependency!)
+            # https://api-docs.deepseek.com/guides/anthropic_api
+            api_key = os.getenv("ANTHROPIC_API_KEY")
             if not api_key:
-                raise ValueError("OPENROUTER_API_KEY environment variable not set")
-
-            self.llm = ChatOpenAI(
-                model=self.model,  # e.g., "deepseek/deepseek-chat"
+                raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+            
+            self.llm = ChatAnthropic(
+                model=self.model if "deepseek" in self.model else "deepseek-chat",
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
-                openai_api_key=api_key,
-                openai_api_base="https://openrouter.ai/api/v1"
+                api_key=api_key,
+                base_url="https://api.deepseek.com"  # Anthropic-compatible endpoint
             )
 
         else:
             raise ValueError(
                 f"Unsupported provider: {provider}. "
-                f"Use 'cerebras', 'anthropic', or 'openrouter'"
+                f"Use 'cerebras', 'anthropic', or 'deepseek'"
             )
 
         # Build cyclic StateGraph
@@ -523,9 +531,10 @@ Confirm execution with a brief note about what was sent."""
             # Haiku: $0.25 input + $1.25 output
             cost = ((total_tokens * 0.7) / 1_000_000) * 0.25 + \
                    ((total_tokens * 0.3) / 1_000_000) * 1.25
-        elif self.provider == "openrouter":
-            # Conservative (DeepSeek pricing)
-            cost = (total_tokens / 1_000_000) * 0.27
+        elif self.provider == "deepseek":
+            # DeepSeek: $0.27 input + $1.10 output per 1M tokens
+            cost = ((total_tokens * 0.7) / 1_000_000) * 0.27 + \
+                   ((total_tokens * 0.3) / 1_000_000) * 1.10
         else:
             cost = (total_tokens / 1_000_000) * 0.30
 
@@ -622,6 +631,17 @@ Confirm execution with a brief note about what was sent."""
                 f"Campaign complete: lead_id={lead_id}, goal_met={result.goal_met}, "
                 f"cycles={result.cycle_count}, latency={latency_ms}ms"
             )
+            
+            # Log cost to ai-cost-optimizer
+            if self.track_costs:
+                await self._log_campaign_cost(
+                    lead_id=lead_id,
+                    goal=goal,
+                    cycle_count=result.cycle_count,
+                    goal_met=result.goal_met,
+                    latency_ms=latency_ms,
+                    total_cost_usd=result.total_cost_usd
+                )
 
             return result
 
@@ -638,6 +658,79 @@ Confirm execution with a brief note about what was sent."""
                 latency_ms=latency_ms,
                 errors=[str(e)]
             )
+
+    async def _log_campaign_cost(
+        self,
+        lead_id: int,
+        goal: str,
+        cycle_count: int,
+        goal_met: bool,
+        latency_ms: int,
+        total_cost_usd: float
+    ):
+        """
+        Log growth campaign cost to ai-cost-optimizer.
+
+        Args:
+            lead_id: Lead ID campaign was run for
+            goal: Campaign goal
+            cycle_count: Number of cycles executed
+            goal_met: Whether goal was achieved
+            latency_ms: Total execution time
+            total_cost_usd: Total cost of campaign
+        """
+        if self.cost_optimizer is None:
+            self.cost_optimizer = await get_cost_optimizer()
+
+        if self.cost_optimizer is None:
+            return  # Failed to initialize
+
+        # Build prompt summary
+        prompt = f"Growth campaign: lead_id={lead_id}, goal={goal}, max_cycles={cycle_count}"
+
+        # Build response summary
+        response = (
+            f"Executed {cycle_count} cycles | "
+            f"Goal: {goal} ({'✓ Met' if goal_met else '✗ Not met'}) | "
+            f"Provider: {self.provider}"
+        )
+
+        # Estimate token counts (4 LLM calls per cycle)
+        # ~500 input + ~200 output per call
+        estimated_input_tokens = 500 * 4 * cycle_count
+        estimated_output_tokens = 200 * 4 * cycle_count
+
+        await self.cost_optimizer.log_llm_call(
+            provider=self.provider,
+            model=self.model,
+            prompt=prompt,
+            response=response,
+            tokens_in=estimated_input_tokens,
+            tokens_out=estimated_output_tokens,
+            cost_usd=total_cost_usd,
+            agent_name="growth",
+            metadata={
+                "lead_id": lead_id,
+                "goal": goal,
+                "goal_met": goal_met,
+                "cycle_count": cycle_count,
+                "latency_ms": latency_ms
+            }
+        )
+
+        logger.debug(
+            f"💰 Logged growth campaign cost: ${total_cost_usd:.6f} "
+            f"({cycle_count} cycles, {latency_ms}ms)"
+        )
+
+    def get_transfer_tools(self):
+        """
+        Get agent transfer tools for growth workflows.
+
+        Returns:
+            List of transfer tools that growth agent can use
+        """
+        return get_transfer_tools("growth")
 
 
 # ========== Exports ==========

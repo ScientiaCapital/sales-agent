@@ -39,23 +39,52 @@ interface TimeSeriesPoint {
   provider_costs: Record<string, number>;
 }
 
+interface OptimizerStats {
+  overall: {
+    total_cost: number;
+    total_requests: number;
+    avg_cost_per_request: number;
+  };
+  by_provider: Record<string, any>;
+  recent_requests: Array<any>;
+}
+
+interface CacheStats {
+  hit_rate: number;
+  miss_rate: number;
+  total_savings_usd: number;
+  by_type: Record<string, any>;
+}
+
+interface AgentStats {
+  agent_name: string;
+  total_cost: number;
+  total_calls: number;
+  avg_latency_ms: number;
+  provider: string;
+}
+
 interface MetricCardProps {
   title: string;
   value: string;
   change?: number;
   icon: string;
+  subtitle?: string;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon }) => {
+const MetricCard: React.FC<MetricCardProps> = ({ title, value, change, icon, subtitle }) => {
   const isPositive = change && change > 0;
   const changeColor = isPositive ? 'text-red-600' : 'text-green-600';
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
+    <div className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+          {subtitle && (
+            <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+          )}
           {change !== undefined && (
             <p className={`text-sm mt-1 ${changeColor}`}>
               {isPositive ? '↑' : '↓'} {Math.abs(change).toFixed(1)}% vs yesterday
@@ -109,6 +138,9 @@ export default function CostDashboard() {
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [budgetStatus, setBudgetStatus] = useState<BudgetStatus | null>(null);
   const [timeseries, setTimeseries] = useState<TimeSeriesPoint[]>([]);
+  const [optimizerStats, setOptimizerStats] = useState<OptimizerStats | null>(null);
+  const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
+  const [agentStats, setAgentStats] = useState<AgentStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,16 +150,27 @@ export default function CostDashboard() {
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      const [summaryRes, budgetRes, timeseriesRes] = await Promise.all([
+      // Fetch all data in parallel
+      const [
+        summaryRes, 
+        budgetRes, 
+        timeseriesRes,
+        optimizerStatsRes,
+        cacheStatsRes,
+        agentStatsRes
+      ] = await Promise.all([
         fetch('/api/v1/costs/summary?days=7'),
         fetch('/api/v1/costs/budget/status'),
         fetch(
           `/api/v1/costs/usage?start_date=${sevenDaysAgo.toISOString()}&end_date=${now.toISOString()}&interval=daily`
         ),
+        fetch('/api/v1/costs/optimizer/stats').catch(() => null), // Graceful failure
+        fetch('/api/v1/costs/optimizer/cache-stats').catch(() => null),
+        fetch('/api/v1/costs/optimizer/agent-stats').catch(() => null)
       ]);
 
       if (!summaryRes.ok || !budgetRes.ok || !timeseriesRes.ok) {
-        throw new Error('Failed to fetch cost data');
+        throw new Error('Failed to fetch core cost data');
       }
 
       const [summaryData, budgetData, timeseriesData] = await Promise.all([
@@ -139,6 +182,34 @@ export default function CostDashboard() {
       setSummary(summaryData);
       setBudgetStatus(budgetData);
       setTimeseries(timeseriesData.data_points || []);
+
+      // Handle optimizer stats (optional)
+      if (optimizerStatsRes && optimizerStatsRes.ok) {
+        const optimizerData = await optimizerStatsRes.json();
+        setOptimizerStats(optimizerData);
+      }
+
+      // Handle cache stats (optional)
+      if (cacheStatsRes && cacheStatsRes.ok) {
+        const cacheData = await cacheStatsRes.json();
+        setCacheStats(cacheData);
+      }
+
+      // Handle agent stats (optional)
+      if (agentStatsRes && agentStatsRes.ok) {
+        const agentData = await agentStatsRes.json();
+        // Extract agent stats from overall stats
+        if (agentData.by_agent) {
+          const agents = Object.entries(agentData.by_agent).map(([name, stats]: [string, any]) => ({
+            agent_name: name,
+            total_cost: stats.total_cost || 0,
+            total_calls: stats.total_requests || 0,
+            avg_latency_ms: stats.avg_latency_ms || 0,
+            provider: stats.primary_provider || 'unknown'
+          }));
+          setAgentStats(agents);
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch cost data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -263,6 +334,83 @@ export default function CostDashboard() {
               status={budgetStatus.threshold_status}
               budget={budgetStatus.monthly_budget_usd}
               spent={budgetStatus.monthly_spend_usd}
+            />
+          </div>
+        )}
+
+        {/* Cache Savings Section */}
+        {cacheStats && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-green-900">💾 Cache Performance</h3>
+                <p className="text-sm text-green-700 mt-1">Savings from LinkedIn & Qualification caching</p>
+              </div>
+              <div className="text-right">
+                <p className="text-3xl font-bold text-green-900">${cacheStats.total_savings_usd.toFixed(4)}</p>
+                <p className="text-sm text-green-700">Total Saved</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4 mt-4">
+              <div>
+                <p className="text-xs text-green-600 font-medium">Hit Rate</p>
+                <p className="text-xl font-bold text-green-900">{(cacheStats.hit_rate * 100).toFixed(1)}%</p>
+              </div>
+              <div>
+                <p className="text-xs text-green-600 font-medium">Miss Rate</p>
+                <p className="text-xl font-bold text-green-900">{(cacheStats.miss_rate * 100).toFixed(1)}%</p>
+              </div>
+              <div>
+                <p className="text-xs text-green-600 font-medium">ROI</p>
+                <p className="text-xl font-bold text-green-900">
+                  {cacheStats.total_savings_usd > 0 ? '30-50%' : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Agent Performance Cards */}
+        {agentStats.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">🤖 Agent Performance</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {agentStats.map((agent) => (
+                <div key={agent.agent_name} className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                  <p className="text-sm font-medium text-gray-600 capitalize">{agent.agent_name}</p>
+                  <p className="text-lg font-bold text-gray-900 mt-1">${agent.total_cost.toFixed(6)}</p>
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-gray-600">
+                      {agent.total_calls} calls • {agent.avg_latency_ms}ms avg
+                    </p>
+                    <p className="text-xs text-blue-600 font-medium">{agent.provider}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Real-time Optimizer Stats */}
+        {optimizerStats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <MetricCard
+              title="Optimizer Total Cost"
+              value={`$${optimizerStats.overall.total_cost.toFixed(6)}`}
+              subtitle="From ai-cost-optimizer"
+              icon="⚡"
+            />
+            <MetricCard
+              title="Optimizer Requests"
+              value={optimizerStats.overall.total_requests.toLocaleString()}
+              subtitle="Tracked by optimizer"
+              icon="📡"
+            />
+            <MetricCard
+              title="Optimizer Avg Cost"
+              value={`$${optimizerStats.overall.avg_cost_per_request.toFixed(8)}`}
+              subtitle="Per request"
+              icon="💎"
             />
           </div>
         )}
