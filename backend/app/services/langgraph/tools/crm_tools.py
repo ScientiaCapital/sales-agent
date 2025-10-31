@@ -35,6 +35,7 @@ from app.services.crm.base import (
     CRMValidationError,
     CRMNetworkError,
 )
+from app.services.crm.deduplication import get_deduplication_engine
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +223,67 @@ async def create_lead_tool(
                 "CLOSE_API_KEY not found in environment. "
                 "Please configure Close CRM credentials."
             )
+
+        # ========== DEDUPLICATION CHECK ==========
+        # Check for duplicates BEFORE creating lead
+        dedup_engine = get_deduplication_engine(db, threshold=85.0)
+        dedup_result = await dedup_engine.find_duplicates(
+            email=contact_email,
+            company=company_name,
+            phone=contact_phone
+        )
+
+        if dedup_result.is_duplicate:
+            best_match = dedup_result.get_best_match()
+            if best_match:
+                # Found duplicate - return warning instead of creating
+                duplicate_info = (
+                    f"⚠️  DUPLICATE DETECTED (confidence: {best_match.confidence:.1f}%)\n\n"
+                    f"Cannot create lead for '{company_name}' ({contact_email}) - "
+                    f"a similar contact already exists:\n\n"
+                    f"  • Email: {best_match.contact.email}\n"
+                    f"  • Company: {best_match.contact.company}\n"
+                    f"  • Phone: {best_match.contact.phone or 'N/A'}\n"
+                    f"  • LinkedIn: {best_match.contact.linkedin_url or 'N/A'}\n\n"
+                    f"Match reasons:\n"
+                )
+                for detail in best_match.match_details:
+                    duplicate_info += f"  • {detail.reason} ({detail.confidence:.0f}%)\n"
+
+                duplicate_info += (
+                    f"\n💡 Suggestion: Use update_contact_tool to update the existing contact instead.\n"
+                    f"   Contact ID: {best_match.contact.external_ids.get('close', 'N/A')}"
+                )
+
+                logger.warning(
+                    f"Duplicate lead prevented: {contact_email} matches existing contact "
+                    f"with {best_match.confidence:.1f}% confidence"
+                )
+
+                # Return as artifact for downstream processing
+                artifact = {
+                    "duplicate_detected": True,
+                    "confidence": best_match.confidence,
+                    "existing_contact_id": best_match.contact.id,
+                    "existing_contact": {
+                        "email": best_match.contact.email,
+                        "company": best_match.contact.company,
+                        "external_ids": best_match.contact.external_ids
+                    },
+                    "match_details": [
+                        {
+                            "field": d.field_name,
+                            "confidence": d.confidence,
+                            "reason": d.reason
+                        }
+                        for d in best_match.match_details
+                    ]
+                }
+
+                return duplicate_info, artifact
+
+        # No duplicates found - proceed with creation
+        logger.info(f"No duplicates found for {contact_email}, proceeding with lead creation")
 
         # Initialize Redis and Close provider
         redis_client = await get_redis_client()
@@ -690,6 +752,147 @@ async def get_lead_tool(
         db.close()
 
 
+class CheckDuplicateLeadsInput(BaseModel):
+    """Input schema for checking duplicate leads"""
+
+    email: Optional[str] = Field(
+        default=None,
+        description="Email address to check for duplicates"
+    )
+    company: Optional[str] = Field(
+        default=None,
+        description="Company name to check for duplicates"
+    )
+    phone: Optional[str] = Field(
+        default=None,
+        description="Phone number to check for duplicates"
+    )
+    linkedin_url: Optional[str] = Field(
+        default=None,
+        description="LinkedIn URL to check for duplicates"
+    )
+    threshold: float = Field(
+        default=85.0,
+        description="Confidence threshold for duplicate detection (0-100, default: 85)"
+    )
+
+
+@tool(
+    args_schema=CheckDuplicateLeadsInput,
+    parse_docstring=True
+)
+async def check_duplicate_leads_tool(
+    email: Optional[str] = None,
+    company: Optional[str] = None,
+    phone: Optional[str] = None,
+    linkedin_url: Optional[str] = None,
+    threshold: float = 85.0
+) -> str:
+    """Check if a lead already exists in the database (deduplication check).
+
+    This tool searches for potential duplicate leads across multiple fields
+    using multi-field matching (email, domain, company name, phone, LinkedIn).
+    Returns duplicate matches with confidence scores.
+
+    Use this tool when you need to:
+    - Check for duplicates before creating a new lead
+    - Verify if a contact already exists in the system
+    - Find similar contacts based on partial information
+
+    Args:
+        email: Email address to check for duplicates
+        company: Company name to check for duplicates
+        phone: Phone number to check for duplicates
+        linkedin_url: LinkedIn URL to check for duplicates
+        threshold: Confidence threshold for duplicate detection (0-100, default: 85)
+
+    Returns:
+        Formatted string with duplicate check results
+
+    Raises:
+        ToolException: If duplicate check fails
+
+    Example:
+        ```python
+        # Check for duplicates before creating lead
+        result = await check_duplicate_leads_tool.ainvoke({
+            "email": "john@acme.com",
+            "company": "Acme Corporation",
+            "threshold": 85
+        })
+        ```
+    """
+    db = SessionLocal()
+
+    try:
+        if not any([email, company, phone, linkedin_url]):
+            raise ToolException(
+                "At least one field (email, company, phone, or linkedin_url) must be provided"
+            )
+
+        # Run deduplication check
+        dedup_engine = get_deduplication_engine(db, threshold=threshold)
+        dedup_result = await dedup_engine.find_duplicates(
+            email=email,
+            company=company,
+            phone=phone,
+            linkedin_url=linkedin_url
+        )
+
+        if not dedup_result.matches:
+            return (
+                f"✅ No duplicates found!\n\n"
+                f"Checked fields: {', '.join(dedup_result.checked_fields)}\n"
+                f"Threshold: {threshold}%\n\n"
+                f"Safe to create new lead."
+            )
+
+        # Found potential duplicates
+        result_text = f"⚠️  Found {len(dedup_result.matches)} potential duplicate(s):\n\n"
+
+        for i, match in enumerate(dedup_result.matches[:5], 1):  # Show top 5
+            result_text += f"{i}. {match.contact.email} @ {match.contact.company}\n"
+            result_text += f"   Confidence: {match.confidence:.1f}%\n"
+            result_text += f"   Phone: {match.contact.phone or 'N/A'}\n"
+            result_text += f"   LinkedIn: {match.contact.linkedin_url or 'N/A'}\n"
+            result_text += f"   Match reasons:\n"
+
+            for detail in match.match_details:
+                result_text += f"     • {detail.reason} ({detail.confidence:.0f}%)\n"
+
+            result_text += "\n"
+
+        if dedup_result.is_duplicate:
+            best_match = dedup_result.get_best_match()
+            result_text += (
+                f"🚫 DUPLICATE DETECTED (confidence >= {threshold}%)\n"
+                f"Cannot create lead - update existing contact instead.\n"
+                f"Contact ID: {best_match.contact.external_ids.get('close', 'N/A')}"
+            )
+        else:
+            result_text += (
+                f"ℹ️  Potential matches found but confidence < {threshold}%.\n"
+                f"Safe to create new lead, but review matches first."
+            )
+
+        logger.info(
+            f"Duplicate check complete: {len(dedup_result.matches)} matches, "
+            f"highest confidence: {dedup_result.confidence:.1f}%"
+        )
+
+        return result_text
+
+    except ToolException:
+        raise
+
+    except Exception as e:
+        logger.error(f"Unexpected error checking duplicates: {e}", exc_info=True)
+        raise ToolException(f"Failed to check for duplicates: {str(e)}")
+
+    finally:
+        db.close()
+
+
 # ========== Exports ==========
 
 __all__ = [
@@ -697,4 +900,5 @@ __all__ = [
     "update_contact_tool",
     "search_leads_tool",
     "get_lead_tool",
+    "check_duplicate_leads_tool",
 ]

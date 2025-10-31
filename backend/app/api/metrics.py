@@ -280,3 +280,88 @@ async def track_metric(
             status_code=500,
             detail="Failed to track metric"
         )
+
+
+@router.get("/cache", status_code=200)
+async def get_cache_metrics():
+    """
+    Get Redis cache performance metrics and ROI calculations.
+
+    Returns detailed statistics for all cache types:
+    - **EnrichmentCache**: LinkedIn profile caching (saves $0.10 + 3s per hit)
+    - **QualificationCache**: Company qualification caching (saves $0.000006 + 633ms per hit)
+
+    Metrics include:
+    - Hit/miss counts and hit rate percentage
+    - Estimated cost savings in USD
+    - Time saved in seconds
+    - Number of cached items
+
+    **Use Case**: Monitor cache effectiveness and validate ROI from caching strategy.
+    With typical duplicate rates (20-50%), caching can save $30-50 per 1000 leads.
+
+    **Example**:
+    ```
+    GET /api/v1/metrics/cache
+    ```
+
+    **Response**:
+    ```json
+    {
+      "enrichment_cache": {
+        "cached_items": 150,
+        "hits": 45,
+        "misses": 105,
+        "hit_rate_pct": 30.0,
+        "estimated_savings_usd": 4.50,
+        "time_saved_seconds": 135.0
+      },
+      "qualification_cache": {
+        "cached_items": 200,
+        "hits": 80,
+        "misses": 120,
+        "hit_rate_pct": 40.0,
+        "estimated_savings_usd": 0.00048,
+        "time_saved_seconds": 50.64
+      },
+      "total_savings_usd": 4.50048,
+      "total_time_saved_seconds": 185.64
+    }
+    ```
+    """
+    try:
+        from app.services.cache.enrichment_cache import get_enrichment_cache
+        from app.services.cache.qualification_cache import get_qualification_cache
+
+        # Get both cache instances
+        enrichment_cache = await get_enrichment_cache()
+        qualification_cache = await get_qualification_cache()
+
+        # Fetch stats from both caches
+        enrichment_stats = await enrichment_cache.get_enrichment_stats()
+        qualification_stats = await qualification_cache.get_qualification_stats()
+
+        # Calculate totals
+        total_savings_usd = (
+            enrichment_stats["estimated_savings_usd"] +
+            qualification_stats["estimated_savings_usd"]
+        )
+        total_time_saved_seconds = (
+            enrichment_stats["time_saved_seconds"] +
+            qualification_stats["time_saved_seconds"]
+        )
+
+        return {
+            "enrichment_cache": enrichment_stats,
+            "qualification_cache": qualification_stats,
+            "total_savings_usd": round(total_savings_usd, 5),
+            "total_time_saved_seconds": round(total_time_saved_seconds, 2),
+            "cache_enabled": True
+        }
+
+    except Exception as e:
+        logger.error(f"Error fetching cache metrics: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve cache metrics: {str(e)}"
+        )

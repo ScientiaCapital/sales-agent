@@ -1,26 +1,19 @@
 {
   "mcpServers": {
-    "taskmaster-ai": {
+    "serena": {
       "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "--package=task-master-ai",
-        "task-master-ai"
-      ],
-      "env": {
-        "ANTHROPIC_API_KEY": "your_anthropic_key_here",
-        "DEEPSEEK_API_KEY": "your_openrouter_key_here",
-        "OLLAMA_API_KEY": "ollama"
-      }
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/oraios/serena", "serena-mcp-server"],
+      "env": {}
     },
-    "memory": {
+    "context7": {
       "type": "stdio",
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ]
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "UPSTASH_VECTOR_REST_URL": "${UPSTASH_VECTOR_REST_URL}",
+        "UPSTASH_VECTOR_REST_TOKEN": "${UPSTASH_VECTOR_REST_TOKEN}"
+      }
     }
   }
 }
