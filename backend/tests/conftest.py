@@ -5,6 +5,14 @@ This module provides shared fixtures, test configuration, and utilities
 for the entire test suite.
 """
 
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables BEFORE importing app modules
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
 import asyncio
 import pytest
 import pytest_asyncio
@@ -18,7 +26,6 @@ from httpx import AsyncClient
 # Import application components
 from app.main import app
 from app.models.database import Base, get_db
-from app.core.config import get_settings
 from app.services.routing.unified_router import UnifiedRouter
 from app.services.routing.base_router import ProviderConfig, ProviderType
 
