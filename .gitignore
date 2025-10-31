@@ -112,3 +112,4 @@ test_*.csv
 htmlcov/
 coverage.xml
 backend/.env.backup-*
+.worktrees/
