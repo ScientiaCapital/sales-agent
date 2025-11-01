@@ -23,6 +23,8 @@ eggs/
 .eggs/
 lib/
 lib64/
+!backend/lib/
+!backend/lib/ai-cost-optimizer/
 parts/
 sdist/
 var/

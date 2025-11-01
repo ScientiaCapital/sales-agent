@@ -40,8 +40,10 @@ Usage:
 
 import os
 import time
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Union
 from dataclasses import dataclass, field
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_anthropic import ChatAnthropic
@@ -55,8 +57,10 @@ from app.services.langgraph.tools import (
 from app.services.cache.enrichment_cache import get_enrichment_cache
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 from app.services.review_scraper import get_review_scraper
 
 # New services for company-based enrichment
@@ -126,7 +130,8 @@ class EnrichmentAgent:
         max_iterations: int = 25,
         provider: str = "anthropic",
         use_cache: bool = True,
-        track_costs: bool = True
+        track_costs: bool = True,
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize EnrichmentAgent with configurable LLM provider and caching.
@@ -141,6 +146,8 @@ class EnrichmentAgent:
             max_iterations: Max ReAct loop iterations (prevents infinite loops)
             provider: LLM provider ("anthropic" or "openrouter")
             use_cache: Enable LinkedIn profile caching (default: True, saves $0.10/profile)
+            track_costs: Enable cost tracking to ai_cost_tracking table
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.model = model
         self.temperature = temperature
@@ -148,10 +155,22 @@ class EnrichmentAgent:
         self.provider = provider
         self.use_cache = use_cache
         self.cache = None  # Initialize on first use
-        
+
         # Cost tracking
         self.track_costs = track_costs
         self.cost_optimizer = None  # Lazy init on first use
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("EnrichmentAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
 
         # Initialize LLM based on provider
         if provider == "anthropic":
@@ -1110,6 +1129,8 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
         Returns:
             List of transfer tools that enrichment agent can use
         """
+        # Lazy import to avoid circular dependency
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("enrichment")
 
 
