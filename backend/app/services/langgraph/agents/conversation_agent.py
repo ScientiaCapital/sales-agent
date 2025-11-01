@@ -67,9 +67,11 @@ Usage:
 import os
 import time
 import uuid
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass
 from datetime import datetime
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
@@ -81,6 +83,7 @@ from app.services.langgraph.llm_selector import get_llm_for_capability
 from app.services.cartesia_service import CartesiaService, VoiceConfig, VoiceSpeed, VoiceEmotion
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 
 logger = setup_logging(__name__)
 
@@ -157,7 +160,9 @@ class ConversationAgent:
         llm_provider: Optional[str] = None,
         # LLM parameters
         temperature: float = 0.7,
-        max_tokens: int = 200  # Short responses for voice
+        max_tokens: int = 200,  # Short responses for voice
+        # Cost tracking
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize ConversationAgent with ultra-fast voice stack.
@@ -166,9 +171,22 @@ class ConversationAgent:
             llm_provider: Override LLM (default: auto-select for voice = Cerebras)
             temperature: Sampling temperature (0.7 for natural conversation)
             max_tokens: Max completion tokens (200 for concise voice responses)
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("ConversationAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
 
         logger.info("Initializing ConversationAgent with voice capabilities")
 

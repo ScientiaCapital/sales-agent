@@ -71,9 +71,11 @@ Usage:
 import os
 import time
 import uuid
-from typing import Dict, Any, Optional, Literal
+from typing import Dict, Any, Optional, Literal, Union
 from dataclasses import dataclass
 from datetime import datetime
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
@@ -84,6 +86,7 @@ from typing_extensions import TypedDict
 from app.services.langgraph.llm_selector import get_llm_for_capability
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 
 logger = setup_logging(__name__)
 
@@ -175,7 +178,9 @@ class BDRAgent:
         draft_provider: Optional[str] = None,
         # LLM parameters
         temperature: float = 0.7,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        # Cost tracking
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize BDRAgent with cost-optimized LLMs and checkpointer.
@@ -185,9 +190,22 @@ class BDRAgent:
             draft_provider: Override draft LLM (default: Claude for quality)
             temperature: Sampling temperature (0.7 for personalization)
             max_tokens: Max completion tokens
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("BDRAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
 
         logger.info("Initializing BDRAgent with human-in-loop pattern")
 

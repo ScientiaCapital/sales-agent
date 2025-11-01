@@ -54,8 +54,10 @@ Usage:
 
 import os
 import time
-from typing import Dict, Any, List, Literal
+from typing import Dict, Any, List, Literal, Optional, Union
 from dataclasses import dataclass, field
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_anthropic import ChatAnthropic
@@ -65,6 +67,7 @@ from langgraph.graph import StateGraph, END
 from app.services.langgraph.state_schemas import GrowthAgentState
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
 
@@ -129,7 +132,8 @@ class GrowthAgent:
         provider: Literal["cerebras", "anthropic", "deepseek"] = "cerebras",
         temperature: float = 0.4,
         max_tokens: int = 500,
-        track_costs: bool = True
+        track_costs: bool = True,
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize GrowthAgent with configurable LLM provider.
@@ -145,15 +149,28 @@ class GrowthAgent:
             temperature: Sampling temperature (0.4 for creative strategies)
             max_tokens: Max completion tokens per call
             track_costs: Enable cost tracking to ai-cost-optimizer (default: True)
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.model = model
         self.provider = provider
         self.temperature = temperature
         self.max_tokens = max_tokens
-        
+
         # Cost tracking
         self.track_costs = track_costs
         self.cost_optimizer = None  # Lazy init on first use
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("GrowthAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
 
         # Initialize LLM based on provider
         if provider == "cerebras":
