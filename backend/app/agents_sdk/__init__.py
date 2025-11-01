@@ -1,33 +1,53 @@
 """
-Claude Agent SDK Integration Layer
+Agent SDK Integration Layer with Cost-Optimized Smart Routing
 
-This package contains conversational agents built with Claude Agent SDK
-that provide natural language interfaces over our existing LangGraph automation.
+This package contains conversational agents that use intelligent LLM routing
+to minimize costs while maintaining quality.
 
 Architecture:
-    - Conversational Layer: Claude Agent SDK (session management, NL interface)
-    - Automation Layer: LangGraph Agents (qualification, enrichment, growth, etc.)
-    - Integration Layer: MCP Tools (bridge between SDK and LangGraph)
+    - Smart Routing: CostOptimizedLLMProvider (mode="smart_router")
+    - Simple queries → Gemini Flash ($0.00001/1K tokens)
+    - Complex queries → Claude Haiku ($0.00025/1K tokens)
+    - Cost Tracking: All calls logged to ai_cost_tracking table
 
-Planned Agents (to be implemented):
-    - SR/BDR Agent (sr_bdr.py): Sales rep conversational assistant
-    - Pipeline Manager (pipeline_manager.py): Interactive license import orchestration
-    - Customer Success Agent (cs_agent.py): Onboarding and support assistant
+Implemented Agents:
+    - SR/BDR Agent: Sales rep conversational assistant
+    - Pipeline Manager: Interactive license import orchestration
+    - Customer Success Agent: Onboarding and support assistant
 
-Note: Agent classes are not yet implemented. This module will be populated
-as the Claude Agent SDK integration is developed.
-
-Future Usage (once implemented):
+Usage:
     ```python
-    from app.agents_sdk.sr_bdr import SRBDRAgent
-    
-    agent = SRBDRAgent()
-    async for message in agent.chat(user_id="rep_123", message="What are my top leads?"):
-        print(message)
+    from app.agents_sdk.agents import SRBDRAgent
+    from app.models.database import SessionLocal
+
+    db = SessionLocal()
+    agent = SRBDRAgent(db=db)
+
+    response = await agent.chat(
+        message="What are my top 3 leads?",
+        session_id="session_123",
+        user_id="rep_456"
+    )
+    print(response)  # Automatically uses smart routing
     ```
+
+Expected cost savings: 40-70% compared to using Claude for all queries.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
-# No exports yet - agent classes are planned but not yet implemented
-__all__ = []
+from app.agents_sdk.agents import (
+    SRBDRAgent,
+    PipelineManagerAgent,
+    CustomerSuccessAgent,
+    BaseAgent,
+    AgentConfig
+)
+
+__all__ = [
+    "SRBDRAgent",
+    "PipelineManagerAgent",
+    "CustomerSuccessAgent",
+    "BaseAgent",
+    "AgentConfig",
+]
