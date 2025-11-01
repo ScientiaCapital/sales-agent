@@ -64,6 +64,7 @@ from app.core.exceptions import CerebrasAPIError
 from app.services.cache.qualification_cache import get_qualification_cache
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
+from app.services.website_validator import get_website_validator
 
 logger = setup_logging(__name__)
 
@@ -416,6 +417,43 @@ Respond with JSON only."""
         if not company_name:
             raise ValueError("company_name is required")
 
+        # ===== WEBSITE VALIDATION (ICP Qualifier) =====
+        # If no website or website is down, lead is not ICP
+        if company_website:
+            validator = await get_website_validator()
+            website_result = await validator.validate(company_website)
+
+            if not website_result.is_valid:
+                # Website check failed - DISQUALIFY immediately
+                logger.warning(
+                    f"Website validation failed for {company_name}: {website_result.error_message}"
+                )
+                return (
+                    LeadQualificationResult(
+                        qualification_score=0.0,
+                        qualification_reasoning=f"Company website is not accessible ({website_result.error_message}). This indicates the company may not be operational or lacks digital presence, making them not fit for our ICP.",
+                        tier="unqualified",
+                        fit_assessment="No digital presence - website not accessible",
+                        contact_quality="Cannot assess - no website",
+                        sales_potential="Zero - company appears non-operational"
+                    ),
+                    int((time.time() - time.time()) * 1000),  # Minimal latency
+                    {
+                        "provider": "website_validator",
+                        "model": "http_check",
+                        "disqualified_reason": "website_not_accessible",
+                        "website_status_code": website_result.status_code,
+                        "website_error": website_result.error_message
+                    }
+                )
+
+            # Website is valid - log additional context for scoring
+            logger.info(
+                f"Website validated for {company_name}: "
+                f"team_page={website_result.has_team_page}, "
+                f"atl_contacts={len(website_result.atl_contacts)}"
+            )
+
         # Initialize cache on first use
         if self.use_cache and self.cache is None:
             self.cache = await get_qualification_cache()
@@ -436,12 +474,12 @@ Respond with JSON only."""
                 
                 if self.cost_optimizer:
                     # Calculate savings
-                    cost_per_m = self.PROVIDER_PRICING.get(self.provider, {}).get(
+                    cost_per_m_tokens = self.PROVIDER_PRICING.get(self.provider, {}).get(
                         self.model,
-                        self.PROVIDER_PRICING.get(self.provider, {}).get("*", {"per_m_tokens": 0})
-                    )["per_m_tokens"]
+                        self.PROVIDER_PRICING.get(self.provider, {}).get("*", 0)
+                    )
                     estimated_tokens = 100  # Rough estimate for qualification
-                    savings_usd = (estimated_tokens / 1_000_000) * cost_per_m
+                    savings_usd = (estimated_tokens / 1_000_000) * cost_per_m_tokens
                     
                     await self.cost_optimizer.log_cache_hit(
                         cache_type="qualification",
