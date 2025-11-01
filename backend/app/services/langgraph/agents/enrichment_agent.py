@@ -48,7 +48,7 @@ from langchain_anthropic import ChatAnthropic
 from langgraph.prebuilt import create_react_agent
 
 from app.services.langgraph.tools import (
-    enrich_contact_tool,
+    # enrich_contact_tool,  # Apollo.io - commented out (no API key)
     get_linkedin_profile_tool,
     get_lead_tool
 )
@@ -180,7 +180,7 @@ class EnrichmentAgent:
 
         # Build ReAct agent with tools
         self.tools = [
-            enrich_contact_tool,
+            # enrich_contact_tool,  # Apollo.io - commented out (no API key)
             get_linkedin_profile_tool,
             get_lead_tool
         ]

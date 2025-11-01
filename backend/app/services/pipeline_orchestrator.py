@@ -20,8 +20,8 @@ def _lazy_import_agents():
     if QualificationAgent is None:
         from app.services.langgraph.agents.qualification_agent import QualificationAgent as QA
         from app.services.langgraph.agents.enrichment_agent import EnrichmentAgent as EA
-        from app.services.crm.deduplication_service import DeduplicationService as DS
-        from app.services.crm.close_service import CloseService as CS
+        from app.services.crm.deduplication import DeduplicationEngine as DS
+        from app.services.crm.close import CloseProvider as CS
 
         QualificationAgent = QA
         EnrichmentAgent = EA
@@ -49,13 +49,26 @@ class PipelineOrchestrator:
     Tracks latency and cost per stage for observability.
     """
 
-    def __init__(self):
-        """Initialize orchestrator with all required services"""
+    def __init__(self, db=None):
+        """Initialize orchestrator with all required services
+
+        Args:
+            db: SQLAlchemy database session for CRM services
+        """
         _lazy_import_agents()  # Import agents only when needed
         self.qualification_agent = QualificationAgent()
         self.enrichment_agent = EnrichmentAgent()
-        self.deduplication_service = DeduplicationService()
-        self.close_service = CloseService()
+
+        # Only create CRM services if database session is provided
+        if db:
+            self.deduplication_service = DeduplicationService(db=db)
+            # TODO: Close service requires credentials - skip for testing
+            self.close_service = None
+        else:
+            self.deduplication_service = None
+            self.close_service = None
+
+        self.db = db
 
     async def execute(self, request: PipelineTestRequest) -> PipelineTestResponse:
         """
@@ -164,14 +177,67 @@ class PipelineOrchestrator:
         """Run qualification agent and track metrics"""
         start = time.time()
         try:
-            result = await self.qualification_agent.qualify(lead)
-            latency_ms = int((time.time() - start) * 1000)
+            # Map lead dict fields to agent parameters
+            result = await self.qualification_agent.qualify(
+                company_name=lead.get("name") or lead.get("company_name"),
+                company_website=lead.get("website"),
+                company_size=lead.get("company_size"),
+                industry=lead.get("industry"),
+                contact_name=lead.get("contact_name"),
+                contact_title=lead.get("contact_title"),
+                notes=lead.get("notes")
+            )
+
+            # DEBUG: Log the raw return value
+            logger.info(f"DEBUG: qualify() result type: {type(result)}")
+            logger.info(f"DEBUG: qualify() result value: {result}")
+            logger.info(f"DEBUG: is tuple: {isinstance(result, tuple)}")
+            if isinstance(result, tuple):
+                logger.info(f"DEBUG: tuple length: {len(result)}")
+                for i, item in enumerate(result):
+                    logger.info(f"DEBUG: result[{i}] type: {type(item)}, value: {item}")
+
+            # Handle different return formats
+            if isinstance(result, tuple):
+                if len(result) == 3:
+                    # Format: (LeadQualificationResult, latency_ms, metadata)
+                    qualification_result, agent_latency_ms, metadata = result
+
+                    # Extract score - could be object or float
+                    if hasattr(qualification_result, 'qualification_score'):
+                        output = {
+                            "qualification_score": qualification_result.qualification_score,
+                            "tier": getattr(qualification_result, 'tier', None),
+                            "qualification_reasoning": getattr(qualification_result, 'qualification_reasoning', None),
+                            "fit_assessment": getattr(qualification_result, 'fit_assessment', None),
+                            "contact_quality": getattr(qualification_result, 'contact_quality', None),
+                            "sales_potential": getattr(qualification_result, 'sales_potential', None)
+                        }
+                    else:
+                        # qualification_result is the score itself
+                        output = {"qualification_score": float(qualification_result)}
+
+                    # Extract cost - could be dict or float
+                    if isinstance(metadata, dict):
+                        cost = metadata.get("estimated_cost_usd", 0.000006)
+                    else:
+                        cost = float(metadata) if isinstance(metadata, (int, float)) else 0.000006
+                else:
+                    # Unknown tuple format
+                    agent_latency_ms = int((time.time() - start) * 1000)
+                    output = {"result": str(result)}
+                    cost = 0.000006
+            else:
+                # Unknown format - return as-is
+                agent_latency_ms = int((time.time() - start) * 1000)
+                output = {"result": str(result)}
+                cost = 0.000006
 
             return PipelineStageResult(
                 status="success",
-                latency_ms=latency_ms,
-                cost_usd=0.000006,  # Cerebras cost per request
-                output=result
+                latency_ms=agent_latency_ms,
+                cost_usd=cost,
+                output=output
             )
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
@@ -187,14 +253,28 @@ class PipelineOrchestrator:
         """Run enrichment agent and track metrics"""
         start = time.time()
         try:
-            result = await self.enrichment_agent.enrich(lead)
+            # Map lead dict fields to agent parameters
+            result = await self.enrichment_agent.enrich(
+                email=lead.get("email"),
+                linkedin_url=lead.get("linkedin_url"),
+                lead_id=lead.get("id")
+            )
             latency_ms = int((time.time() - start) * 1000)
+
+            # Convert result to dict if it's a Pydantic model
+            if hasattr(result, 'model_dump'):
+                output = result.model_dump()
+            elif isinstance(result, dict):
+                output = result
+            else:
+                # Fallback: convert to string representation
+                output = {"result": str(result)}
 
             return PipelineStageResult(
                 status="success",
                 latency_ms=latency_ms,
                 cost_usd=0.0001,  # Estimated Apollo/LinkedIn cost
-                output=result
+                output=output
             )
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
@@ -209,22 +289,58 @@ class PipelineOrchestrator:
     async def _run_deduplication(self, lead: Dict[str, Any]) -> PipelineStageResult:
         """Run deduplication check and track metrics"""
         start = time.time()
+
+        # Skip if no database session (testing mode)
+        if not self.deduplication_service:
+            return PipelineStageResult(
+                status="skipped",
+                latency_ms=0,
+                cost_usd=0.0,
+                output={"is_duplicate": False, "reason": "No database session available"}
+            )
+
         try:
-            result = await self.deduplication_service.check_duplicate(lead)
+            result = await self.deduplication_service.find_duplicates(
+                email=lead.get("email"),
+                company=lead.get("name") or lead.get("company_name"),
+                linkedin_url=lead.get("linkedin_url"),
+                phone=lead.get("phone"),
+                company_website=lead.get("website")
+            )
             latency_ms = int((time.time() - start) * 1000)
 
-            is_duplicate = result.get("is_duplicate", False)
-            confidence = result.get("confidence", 0.0)
+            # Convert DeduplicationResult dataclass to dict
+            output = {
+                "is_duplicate": result.is_duplicate,
+                "confidence": result.confidence,
+                "threshold": result.threshold,
+                "checked_fields": result.checked_fields,
+                "match_count": len(result.matches)
+            }
 
             return PipelineStageResult(
-                status="duplicate" if is_duplicate else "no_duplicate",
+                status="duplicate" if result.is_duplicate else "no_duplicate",
                 latency_ms=latency_ms,
                 cost_usd=0.0,  # Deduplication is local/free
-                confidence=confidence,
-                output=result
+                confidence=result.confidence,
+                output=output
             )
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
+
+            # Check if CRM tables don't exist (testing environment)
+            if "does not exist" in str(e).lower() or "relation" in str(e).lower():
+                logger.warning(f"Deduplication skipped - CRM tables not available: {e}")
+                # Rollback transaction to clear failed state
+                if self.db:
+                    self.db.rollback()
+                return PipelineStageResult(
+                    status="skipped",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,
+                    output={"is_duplicate": False, "reason": "CRM tables not available"}
+                )
+
             logger.error(f"Deduplication failed: {e}")
             return PipelineStageResult(
                 status="failed",
@@ -236,6 +352,16 @@ class PipelineOrchestrator:
     async def _run_close_crm(self, lead: Dict[str, Any]) -> PipelineStageResult:
         """Create lead in Close CRM and track metrics"""
         start = time.time()
+
+        # Skip if no CRM service (testing mode)
+        if not self.close_service:
+            return PipelineStageResult(
+                status="skipped",
+                latency_ms=0,
+                cost_usd=0.0,
+                output={"message": "CRM service not available"}
+            )
+
         try:
             result = await self.close_service.create_lead(lead)
             latency_ms = int((time.time() - start) * 1000)
