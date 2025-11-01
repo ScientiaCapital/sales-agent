@@ -83,6 +83,11 @@ from .agent_transfer_tools import (
     DEFAULT_TRANSFER_TOOLS,
 )
 
+from .qualification_tools import (
+    qualify_lead_tool,
+    get_qualification_tools as _get_qualification_tools_impl,
+)
+
 
 # ========== Convenience Functions ==========
 
@@ -288,6 +293,32 @@ def get_cartesia_tools():
     return _get_cartesia_tools_impl()
 
 
+def get_qualification_tools():
+    """
+    Get all qualification tools for lead scoring.
+
+    Returns:
+        List of qualification tools: [qualify_lead_tool]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_qualification_tools
+        from langgraph.prebuilt import create_react_agent
+
+        qualification_tools = get_qualification_tools()
+        agent = create_react_agent(llm, qualification_tools)
+
+        # Agent can now qualify leads with ICP criteria
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Qualify Acme Corp, industry SaaS"
+            )]
+        })
+        ```
+    """
+    return _get_qualification_tools_impl()
+
+
 def get_all_integration_tools():
     """
     Get all CRM integration tools (CRM + Apollo + LinkedIn).
@@ -353,6 +384,9 @@ __all__ = [
     # Apollo Tools
     "enrich_contact_tool",
 
+    # Qualification Tools
+    "qualify_lead_tool",
+
     # LinkedIn Tools
     "get_linkedin_profile_tool",
 
@@ -374,6 +408,7 @@ __all__ = [
     # Convenience Functions
     "get_crm_tools",
     "get_apollo_tools",
+    "get_qualification_tools",
     "get_linkedin_tools",
     "get_cartesia_tools",
     "get_transfer_tools",
