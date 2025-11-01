@@ -139,19 +139,19 @@ async def sr_bdr_chat(request: ChatRequest, user: User = Depends(get_current_use
     """SR/BDR agent chat endpoint with streaming"""
 
 @router.post("/chat/pipeline-manager")
-async def pipeline_manager_chat(request: ChatRequest):
+async def pipeline_manager_chat(request: ChatRequest, user: User = Depends(get_current_user)):
     """Pipeline manager agent endpoint"""
 
 @router.post("/chat/customer-success")
-async def customer_success_chat(request: ChatRequest):
+async def customer_success_chat(request: ChatRequest, user: User = Depends(get_current_user)):
     """Customer success agent endpoint"""
 
 @router.get("/chat/sessions/{session_id}")
-async def get_session(session_id: str):
+async def get_session(session_id: str, user: User = Depends(get_current_user)):
     """Retrieve session history"""
 
 @router.delete("/chat/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, user: User = Depends(get_current_user)):
     """Delete/archive session"""
 ```
 
@@ -203,20 +203,26 @@ async def chat(self, session_id: str, message: str):
     # 2. Add user message to conversation history
     session.add_message("user", message)
     
-    # 3. Claude Agent SDK processes with tools
+    # 3. Persist updated session to Redis (CRITICAL: prevents data loss)
+    await self.session_manager.update_session(session)
+    
+    # 4. Claude Agent SDK processes with tools
     async with ClaudeSDKClient(options=self.options) as client:
         await client.query(message)
         
-        # 4. Stream responses as they arrive
+        # 5. Stream responses as they arrive
         async for chunk in client.receive_messages():
             yield format_sse(chunk)  # Send to frontend
             
-            # 5. If Claude calls a tool...
+            # 6. If Claude calls a tool...
             if chunk.type == "tool_call":
                 # Execute MCP tool (e.g., qualify_lead_tool)
                 result = await self.execute_tool(chunk.tool_name, chunk.args)
                 # Tool result goes back to Claude
                 await client.send_tool_result(result)
+    
+    # 7. Persist final session state with assistant response
+    await self.session_manager.update_session(session)
 
 ┌──────────────────────────────────────────────────────────────┐
 │ STEP 4: MCP Tool calls LangGraph Agent                       │
@@ -566,16 +572,25 @@ async def qualify_lead_tool(args: dict):
         result = await agent.qualify(**args)
         return {"status": "success", "data": result}
         
-    except CerebrasAPIError:
-        # Fallback to Claude
-        logger.warning("Cerebras unavailable, using Claude fallback")
-        agent = QualificationAgent(provider="claude")
-        result = await agent.qualify(**args)
-        return {"status": "success_fallback", "data": result}
+    except CerebrasAPIError as e:
+        # Fallback to Claude - use nested try-except to catch fallback failures
+        logger.warning(f"Cerebras unavailable ({e}), using Claude fallback")
+        try:
+            agent = QualificationAgent(provider="claude")
+            result = await agent.qualify(**args)
+            return {"status": "success_fallback", "data": result}
+        except Exception as fallback_error:
+            # Both providers failed - log and return graceful error
+            logger.error(f"Both Cerebras and Claude failed. Cerebras: {e}, Claude: {fallback_error}")
+            return {
+                "status": "error",
+                "message": f"Unable to qualify lead: both providers unavailable",
+                "suggestion": "Try enrichment tool to gather more data first"
+            }
         
     except Exception as e:
-        # Complete failure - return graceful error
-        logger.error(f"Qualification failed: {e}")
+        # Other unexpected errors (not CerebrasAPIError)
+        logger.error(f"Qualification failed with unexpected error: {e}")
         return {
             "status": "error",
             "message": f"Unable to qualify lead: {str(e)}",
