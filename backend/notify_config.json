@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "sounds": {
+    "success": "Glass",
+    "error": "Basso",
+    "warning": "Funk",
+    "info": "Pop",
+    "start": "Ping",
+    "stop": "Purr"
+  },
+  "icons": {
+    "success": "\u2705",
+    "error": "\u274c",
+    "warning": "\u26a0\ufe0f",
+    "info": "\u2139\ufe0f",
+    "start": "\ud83d\ude80",
+    "stop": "\ud83d\uded1"
+  },
+  "log_notifications": true,
+  "deduplicate_window_seconds": 5,
+  "disabled_projects": []
+}

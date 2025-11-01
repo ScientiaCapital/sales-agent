@@ -60,6 +60,7 @@ from .langgraph_models import (
     LangGraphCheckpoint,
     LangGraphToolCall
 )
+from .pipeline_models import PipelineTestExecution
 
 __all__ = [
     "Base",
@@ -107,5 +108,6 @@ __all__ = [
     "BattleCardType",
     "LangGraphExecution",
     "LangGraphCheckpoint",
-    "LangGraphToolCall"
+    "LangGraphToolCall",
+    "PipelineTestExecution"
 ]
