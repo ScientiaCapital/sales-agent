@@ -61,6 +61,7 @@ from .langgraph_models import (
     LangGraphToolCall
 )
 from .pipeline_models import PipelineTestExecution
+from .agent_conversations import AgentConversation
 
 __all__ = [
     "Base",
@@ -109,5 +110,6 @@ __all__ = [
     "LangGraphExecution",
     "LangGraphCheckpoint",
     "LangGraphToolCall",
-    "PipelineTestExecution"
+    "PipelineTestExecution",
+    "AgentConversation"
 ]
