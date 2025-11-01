@@ -65,6 +65,7 @@ from app.services.cache.qualification_cache import get_qualification_cache
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
 from app.services.website_validator import get_website_validator
+from app.services.review_scraper import get_review_scraper
 
 logger = setup_logging(__name__)
 
@@ -453,6 +454,36 @@ Respond with JSON only."""
                 f"team_page={website_result.has_team_page}, "
                 f"atl_contacts={len(website_result.atl_contacts)}"
             )
+
+            # ===== REVIEW SCRAPING (Reputation Data) =====
+            # Scrape reviews from multiple platforms for reputation scoring
+            try:
+                review_scraper = await get_review_scraper()
+                review_result = await review_scraper.get_reviews(company_name, company_website)
+
+                # Add review data to context for scoring
+                notes = notes or ""
+                notes += f"\n\nREPUTATION DATA:\n"
+                notes += f"- Overall Reputation Score: {review_result.overall_reputation_score}/100\n"
+                notes += f"- Average Rating: {review_result.average_rating}/5.0\n"
+                notes += f"- Total Reviews: {review_result.total_reviews}\n"
+                notes += f"- Review Data Quality: {review_result.data_quality}\n"
+                notes += f"- Negative Signals: {'Yes' if review_result.has_negative_signals else 'No'}\n"
+
+                # Platform breakdown
+                successful_platforms = [r for r in review_result.platform_results if r.status == "success"]
+                if successful_platforms:
+                    notes += f"- Platforms Found: {', '.join([p.platform for p in successful_platforms])}\n"
+
+                logger.info(
+                    f"Reviews scraped for {company_name}: "
+                    f"reputation_score={review_result.overall_reputation_score}, "
+                    f"platforms={len(successful_platforms)}"
+                )
+            except Exception as e:
+                logger.warning(f"Review scraping failed for {company_name}: {e}")
+                # Don't fail qualification if review scraping fails
+                pass
 
         # Initialize cache on first use
         if self.use_cache and self.cache is None:
