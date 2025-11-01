@@ -9,8 +9,8 @@ from app.models.ai_cost_tracking import AICostTracking
 async def test_qualification_agent_tracks_costs(db_session):
     """Test that QualificationAgent saves cost tracking to database."""
 
-    # Create agent with db_session
-    agent = QualificationAgent(db_session=db_session)
+    # Create agent with db
+    agent = QualificationAgent(db=db_session)
 
     # Qualify lead
     result, latency_ms, metadata = await agent.qualify(
@@ -48,7 +48,7 @@ async def test_qualification_agent_tracks_costs(db_session):
 async def test_qualification_agent_performance_with_tracking(db_session):
     """Test that cost tracking doesn't degrade performance."""
 
-    agent = QualificationAgent(db_session=db_session)
+    agent = QualificationAgent(db=db_session)
 
     start = time.time()
     result, latency_ms, metadata = await agent.qualify(
@@ -74,9 +74,9 @@ async def test_qualification_agent_performance_with_tracking(db_session):
 
 @pytest.mark.asyncio
 async def test_qualification_agent_backward_compatible_without_db(db_session):
-    """Test that QualificationAgent still works without db_session (backward compatibility)."""
+    """Test that QualificationAgent still works without db (backward compatibility)."""
 
-    # Create agent WITHOUT db_session
+    # Create agent WITHOUT db
     agent = QualificationAgent()
 
     # Qualify lead - should still work, just no tracking
@@ -90,13 +90,12 @@ async def test_qualification_agent_backward_compatible_without_db(db_session):
     assert result.qualification_score is not None
     assert 0 <= result.qualification_score <= 100
 
-    # Verify NO tracking was saved (since no db_session provided)
+    # Verify NO tracking was saved (since no db provided)
     tracking = db_session.query(AICostTracking).filter(
         AICostTracking.prompt_text.like("%Backward Compat Test%")
     ).first()
 
-    # Should be None because agent was created without db_session
-    # Note: the agent might still log via old cost tracking, but not to AICostTracking table
+    # Should be None because agent was created without db
 
     print(f"✅ Backward compatibility maintained: {latency_ms}ms without cost tracking")
 
@@ -105,7 +104,7 @@ async def test_qualification_agent_backward_compatible_without_db(db_session):
 async def test_qualification_agent_metadata_enrichment(db_session):
     """Test that cost tracking captures rich metadata."""
 
-    agent = QualificationAgent(db_session=db_session)
+    agent = QualificationAgent(db=db_session)
 
     result, latency_ms, metadata = await agent.qualify(
         company_name="Metadata Test Corp",
@@ -138,3 +137,31 @@ async def test_qualification_agent_metadata_enrichment(db_session):
     assert tracking.timestamp is not None
 
     print(f"✅ Metadata enrichment verified: {tracking.agent_type}/{tracking.provider}")
+
+
+@pytest.mark.asyncio
+async def test_qualification_agent_lead_id_tracking(db_session):
+    """Test that cost tracking captures lead_id when provided."""
+
+    agent = QualificationAgent(db=db_session)
+
+    # Qualify with lead_id
+    result, latency_ms, metadata = await agent.qualify(
+        company_name="Lead ID Test Corp",
+        lead_id=12345,
+        industry="HVAC",
+        company_size="100-500"
+    )
+
+    # Verify qualification worked
+    assert result.qualification_score is not None
+
+    # Verify tracking captured lead_id
+    tracking = db_session.query(AICostTracking).filter_by(lead_id=12345).first()
+
+    assert tracking is not None, "Cost tracking record should be saved with lead_id"
+    assert tracking.lead_id == 12345
+    assert tracking.agent_type == "qualification"
+    assert "Lead ID Test Corp" in tracking.prompt_text
+
+    print(f"✅ Lead ID tracking verified: lead_id={tracking.lead_id}")
