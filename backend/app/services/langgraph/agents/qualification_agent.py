@@ -51,6 +51,7 @@ import json
 import re
 from typing import Optional, List, Dict, Any, Literal
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_cerebras import ChatCerebras
@@ -61,6 +62,7 @@ from langchain_core.language_models import BaseChatModel
 
 from app.core.logging import setup_logging
 from app.core.exceptions import CerebrasAPIError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cache.qualification_cache import get_qualification_cache
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
@@ -153,10 +155,11 @@ class QualificationAgent:
         temperature: float = 0.2,
         max_tokens: int = 500,
         use_cache: bool = True,
-        track_costs: bool = True
+        track_costs: bool = True,
+        db_session: Optional[Session] = None
     ):
         """
-        Initialize QualificationAgent with specified provider.
+        Initialize QualificationAgent with specified provider and optional cost tracking.
 
         Args:
             provider: LLM provider (cerebras/claude/deepseek/ollama)
@@ -164,14 +167,28 @@ class QualificationAgent:
             temperature: Sampling temperature (0.2 for consistent scoring)
             max_tokens: Max completion tokens (500 for free-form JSON)
             use_cache: Enable qualification caching (default: True, saves $0.000006/call + 633ms)
+            track_costs: Enable legacy cost tracking via get_cost_optimizer()
+            db_session: Database session for new cost tracking (optional, enables CostOptimizedLLMProvider)
         """
         self.provider = provider
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.use_cache = use_cache
         self.cache = None  # Initialize on first use
-        self.cost_optimizer = None  # Lazy init for cost tracking
+        self.cost_optimizer = None  # Lazy init for legacy cost tracking
         self.track_costs = track_costs
+        self.db_session = db_session
+
+        # Initialize cost-optimized provider if db_session provided
+        if db_session:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db_session)
+                logger.info("✅ CostOptimizedLLMProvider initialized for QualificationAgent")
+            except Exception as e:
+                logger.warning(f"Failed to initialize CostOptimizedLLMProvider: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
 
         # Auto-select model if not provided
         if model is None:
@@ -536,20 +553,90 @@ Respond with JSON only."""
         start_time = time.time()
 
         try:
-            # Invoke LCEL chain (async) - returns AIMessage
-            response = await self.chain.ainvoke({
-                "company_name": company_name,
-                "optional_fields": optional_fields
-            })
+            # Use cost-optimized provider if available (new path with tracking)
+            if self.cost_provider:
+                # Build full prompt text for CostOptimizedLLMProvider
+                full_prompt = f"""You are an AI sales assistant specializing in B2B lead qualification.
 
-            # Extract text content from AIMessage
-            response_text = response.content if hasattr(response, 'content') else str(response)
+Analyze the provided lead information and assign a qualification score from 0-100 based on:
 
-            # Parse free-form JSON response
+1. **Company Fit** (40 points)
+   - Company size matches ICP (Ideal Customer Profile)
+   - Industry alignment with product offerings
+   - Market presence and growth indicators
+
+2. **Contact Quality** (30 points)
+   - Decision-maker level (C-suite, VP, Director)
+   - Relevant title for the purchase decision
+   - Accessibility and responsiveness signals
+
+3. **Sales Potential** (30 points)
+   - Buying signals (recent funding, expansion, hiring)
+   - Urgency indicators (pain points, deadlines)
+   - Budget/readiness signals
+
+Scoring Tiers:
+- Hot (80-100): High fit, decision-maker, strong buying signals → immediate outreach
+- Warm (60-79): Good fit, relevant contact, some signals → nurture campaign
+- Cold (40-59): Moderate fit, lower contact quality → long-term nurture
+- Unqualified (0-39): Poor fit or missing critical info → deprioritize
+
+**IMPORTANT**: Respond ONLY with valid JSON in this exact format:
+{{
+  "qualification_score": <number 0-100>,
+  "qualification_reasoning": "<2-3 sentence explanation>",
+  "tier": "<hot|warm|cold|unqualified>",
+  "fit_assessment": "<company fit evaluation>",
+  "contact_quality": "<contact level assessment>",
+  "sales_potential": "<buying signals and readiness>",
+  "recommendations": ["<action 1>", "<action 2>", "<action 3>"]
+}}
+
+Do not include any text before or after the JSON object.
+
+Qualify this lead:
+
+Company: {company_name}
+{optional_fields}
+
+Respond with JSON only."""
+
+                # Create config for cost tracking
+                config = LLMConfig(
+                    agent_type="qualification",
+                    lead_id=None,  # Will be added if available
+                    mode="passthrough",  # Keep existing Cerebras behavior
+                    provider=self.provider,
+                    model=self.model
+                )
+
+                # Call cost-optimized provider
+                cost_result = await self.cost_provider.complete(
+                    prompt=full_prompt,
+                    config=config,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature
+                )
+
+                response_text = cost_result["response"]
+                latency_ms = cost_result.get("latency_ms", 0)
+
+            else:
+                # Fallback to direct LCEL chain (existing path, no new tracking)
+                # Invoke LCEL chain (async) - returns AIMessage
+                response = await self.chain.ainvoke({
+                    "company_name": company_name,
+                    "optional_fields": optional_fields
+                })
+
+                # Extract text content from AIMessage
+                response_text = response.content if hasattr(response, 'content') else str(response)
+
+                end_time = time.time()
+                latency_ms = int((end_time - start_time) * 1000)
+
+            # Parse free-form JSON response (same for both paths)
             result: LeadQualificationResult = self._parse_json_response(response_text)
-
-            end_time = time.time()
-            latency_ms = int((end_time - start_time) * 1000)
 
             # Calculate cost based on provider and model
             estimated_tokens = len(company_name) * 4 + len(optional_fields) * 2 + 300  # Rough estimate
@@ -588,8 +675,9 @@ Respond with JSON only."""
                 await self.cache.set_qualification(company_name, industry, cache_data)
                 logger.info(f"💾 Cached qualification for future use")
 
-            # Log cost to ai-cost-optimizer
-            if self.track_costs:
+            # Log cost to ai-cost-optimizer (only if NOT using CostOptimizedLLMProvider)
+            # CostOptimizedLLMProvider already tracks to AICostTracking table
+            if self.track_costs and not self.cost_provider:
                 await self._log_qualification_cost(
                     company_name=company_name,
                     response_text=response_text,

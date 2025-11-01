@@ -1,9 +1,18 @@
 """Cost-optimized LLM provider with unified tracking."""
-from typing import Optional, Dict, Any, Literal
+from typing import Optional, Dict, Any, Literal, Union
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 import time
 import logging
+import os
+
+# LangChain imports for real provider calls
+from langchain_core.messages import HumanMessage
+from langchain_cerebras import ChatCerebras
+from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 logger = logging.getLogger(__name__)
 
@@ -42,30 +51,57 @@ class CostOptimizedLLMProvider:
     All calls tracked in ai_cost_tracking table with rich context.
     """
 
-    def __init__(self, db_session: AsyncSession):
+    def __init__(self, db_session: Union[Session, AsyncSession]):
         """
         Initialize provider.
 
         Args:
-            db_session: SQLAlchemy async session for cost tracking
+            db_session: SQLAlchemy session (sync or async) for cost tracking
         """
         self.db = db_session
-        # Initialize router (will be configured from ai-cost-optimizer)
-        # For now, create a minimal router instance
+        self.is_async = isinstance(db_session, AsyncSession)
+
+        # Initialize router from ai-cost-optimizer
         try:
-            # Import from the app directory in ai-cost-optimizer
-            import sys
-            import os
-            ai_cost_opt_path = os.path.join(os.path.dirname(__file__), '../../lib/ai-cost-optimizer')
-            if ai_cost_opt_path not in sys.path:
-                sys.path.insert(0, ai_cost_opt_path)
-            from app.router import Router
-            self.router = Router(providers={})
+            # Import Router and complexity scorer from ai-cost-optimizer package
+            from ai_cost_optimizer.app.router import Router
+            from ai_cost_optimizer.app.complexity import score_complexity
+            from ai_cost_optimizer.app.providers import (
+                CerebrasProvider, ClaudeProvider, GeminiProvider
+            )
+
+            # Initialize providers for the router
+            providers = {}
+
+            # Add Cerebras if API key available
+            cerebras_key = os.getenv("CEREBRAS_API_KEY")
+            if cerebras_key:
+                providers["cerebras"] = CerebrasProvider(cerebras_key)
+
+            # Add Claude if API key available
+            claude_key = os.getenv("ANTHROPIC_API_KEY")
+            if claude_key:
+                providers["claude"] = ClaudeProvider(claude_key)
+
+            # Add Gemini if API key available
+            gemini_key = os.getenv("GOOGLE_API_KEY")
+            if gemini_key:
+                providers["gemini"] = GeminiProvider(gemini_key)
+
+            # Initialize router with available providers
+            self.router = Router(providers=providers, enable_learning=False)
+            self.score_complexity = score_complexity
+
+            logger.info(f"Initialized Router with providers: {list(providers.keys())}")
+
+        except ImportError as e:
+            logger.error(f"Failed to import ai-cost-optimizer: {e}")
+            raise RuntimeError(
+                "ai-cost-optimizer not installed. Run: pip install -e ./lib/ai-cost-optimizer"
+            ) from e
         except Exception as e:
-            # Fallback if ai-cost-optimizer not available
-            import warnings
-            warnings.warn(f"Router initialization failed: {e}. Using fallback.")
-            self.router = object()  # Placeholder object
+            logger.error(f"Router initialization failed: {e}")
+            raise
 
     async def complete(
         self,
@@ -96,7 +132,13 @@ class CostOptimizedLLMProvider:
         """
         start_time = time.time()
 
+        # Validate passthrough mode has required parameters
         if config.mode == "passthrough":
+            if not config.provider or not config.model:
+                raise ValueError(
+                    f"Passthrough mode requires provider and model. "
+                    f"Got provider={config.provider}, model={config.model}"
+                )
             # Task 6: Passthrough mode - use agent's specified provider
             result = await self._passthrough_call(
                 prompt=prompt,
@@ -129,26 +171,99 @@ class CostOptimizedLLMProvider:
         temperature: float
     ) -> Dict[str, Any]:
         """Execute call using specified provider (Task 6)."""
-        # Simplified implementation - in production this would call actual providers
-        # For now, return mock data with correct structure
         logger.info(f"Passthrough call to {provider}/{model}")
 
-        # Estimate tokens (rough approximation: 1 token ~ 4 characters)
-        tokens_in = len(prompt) // 4
-        tokens_out = min(max_tokens, 100)  # Simplified
+        try:
+            # Instantiate correct LangChain provider
+            if provider == "cerebras":
+                api_key = os.getenv("CEREBRAS_API_KEY")
+                if not api_key:
+                    raise ValueError("CEREBRAS_API_KEY not set")
+                llm = ChatCerebras(
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    api_key=api_key
+                )
 
-        # Calculate cost based on provider
-        cost_usd = self._calculate_cost(provider, model, tokens_in, tokens_out)
+            elif provider == "claude":
+                api_key = os.getenv("ANTHROPIC_API_KEY")
+                if not api_key:
+                    raise ValueError("ANTHROPIC_API_KEY not set")
+                llm = ChatAnthropic(
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    api_key=api_key
+                )
 
-        return {
-            "response": f"Mock response from {provider}",
-            "provider": provider,
-            "model": model,
-            "tokens_in": tokens_in,
-            "tokens_out": tokens_out,
-            "cost_usd": cost_usd,
-            "cache_hit": False
-        }
+            elif provider == "deepseek":
+                # DeepSeek via OpenRouter
+                api_key = os.getenv("OPENROUTER_API_KEY")
+                if not api_key:
+                    raise ValueError("OPENROUTER_API_KEY not set")
+                llm = ChatOpenAI(
+                    model=model if "/" in model else "deepseek/deepseek-chat",
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    openai_api_key=api_key,
+                    openai_api_base="https://openrouter.ai/api/v1"
+                )
+
+            elif provider == "gemini":
+                api_key = os.getenv("GOOGLE_API_KEY")
+                if not api_key:
+                    raise ValueError("GOOGLE_API_KEY not set")
+                llm = ChatGoogleGenerativeAI(
+                    model=model,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    google_api_key=api_key
+                )
+
+            else:
+                raise ValueError(
+                    f"Unknown provider: {provider}. "
+                    f"Supported: cerebras, claude, deepseek, gemini"
+                )
+
+            # Execute actual API call
+            response = await llm.ainvoke([HumanMessage(content=prompt)])
+
+            # Extract real token usage from response metadata
+            usage = response.response_metadata.get("usage", {})
+
+            # Different providers use different keys for token counts
+            if provider == "cerebras":
+                tokens_in = usage.get("prompt_tokens", 0)
+                tokens_out = usage.get("completion_tokens", 0)
+            elif provider == "claude":
+                tokens_in = usage.get("input_tokens", 0)
+                tokens_out = usage.get("output_tokens", 0)
+            elif provider == "gemini":
+                tokens_in = usage.get("prompt_token_count", 0) or usage.get("promptTokenCount", 0)
+                tokens_out = usage.get("candidates_token_count", 0) or usage.get("candidatesTokenCount", 0)
+            else:
+                # OpenRouter/DeepSeek
+                tokens_in = usage.get("prompt_tokens", 0)
+                tokens_out = usage.get("completion_tokens", 0)
+
+            # Calculate cost based on actual token usage
+            cost_usd = self._calculate_cost(provider, model, tokens_in, tokens_out)
+
+            return {
+                "response": response.content,
+                "provider": provider,
+                "model": model,
+                "tokens_in": tokens_in,
+                "tokens_out": tokens_out,
+                "cost_usd": cost_usd,
+                "cache_hit": False
+            }
+
+        except Exception as e:
+            logger.error(f"Error in passthrough call to {provider}/{model}: {e}")
+            raise
 
     async def _smart_router_call(
         self,
@@ -159,23 +274,41 @@ class CostOptimizedLLMProvider:
         """Execute call using smart router (Task 7)."""
         logger.info("Smart router call")
 
-        # Simplified complexity analysis
-        complexity = "simple" if len(prompt) < 100 else "complex"
+        try:
+            # Calculate actual complexity score using ai-cost-optimizer
+            complexity = self.score_complexity(prompt)
+            logger.info(f"Complexity scored as: {complexity}")
 
-        # Route based on complexity
-        if complexity == "simple":
-            provider, model = "gemini", "gemini-1.5-flash"
-        else:
-            provider, model = "claude", "claude-3-haiku-20240307"
+            # Use Router to route and execute the completion
+            result = await self.router.route_and_complete(
+                prompt=prompt,
+                complexity=complexity,
+                max_tokens=max_tokens
+            )
 
-        # Use passthrough for actual call
-        return await self._passthrough_call(
-            prompt=prompt,
-            provider=provider,
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature
-        )
+            # Router returns: response, provider, model, complexity, tokens_in, tokens_out, cost
+            # Convert to our expected format
+            return {
+                "response": result["response"],
+                "provider": result["provider"],
+                "model": result["model"],
+                "tokens_in": result["tokens_in"],
+                "tokens_out": result["tokens_out"],
+                "cost_usd": result["cost"],
+                "complexity": result["complexity"],
+                "cache_hit": False
+            }
+
+        except Exception as e:
+            logger.error(f"Smart router failed: {e}, falling back to Claude Haiku")
+            # Fallback to Claude Haiku if router fails
+            return await self._passthrough_call(
+                prompt=prompt,
+                provider="claude",
+                model="claude-3-haiku-20240307",
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
 
     def _calculate_cost(self, provider: str, model: str, tokens_in: int, tokens_out: int) -> float:
         """Calculate cost based on provider pricing."""
@@ -232,7 +365,23 @@ class CostOptimizedLLMProvider:
             cache_hit=result.get("cache_hit", False)
         )
 
-        self.db.add(tracking)
-        await self.db.commit()
+        try:
+            self.db.add(tracking)
 
-        logger.info(f"Tracked cost: ${result['cost_usd']:.6f} for {config.agent_type}")
+            # Handle both sync and async sessions
+            if self.is_async:
+                await self.db.commit()
+            else:
+                self.db.commit()
+
+            logger.info(f"Tracked cost: ${result['cost_usd']:.6f} for {config.agent_type}")
+        except Exception as e:
+            logger.error(f"Failed to save cost tracking: {e}")
+
+            # Rollback based on session type
+            if self.is_async:
+                await self.db.rollback()
+            else:
+                self.db.rollback()
+
+            # Don't raise - tracking failure shouldn't break LLM calls
