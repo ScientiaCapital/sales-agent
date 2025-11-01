@@ -142,11 +142,17 @@ class PostgreSQLSessionStore:
             user_id: User ID
             agent_type: Optional agent type filter
             limit: Maximum conversations to return
-            db: Database session
+            db: Database session (required)
 
         Returns:
             List of conversation summaries
+
+        Raises:
+            ValueError: If db is None
         """
+        if db is None:
+            raise ValueError("Database session (db) is required for get_user_conversations")
+
         conditions = [AgentConversation.user_id == user_id]
         if agent_type:
             conditions.append(AgentConversation.agent_type == agent_type)
@@ -186,11 +192,17 @@ class PostgreSQLSessionStore:
         Args:
             agent_type: Optional agent type filter
             days: Number of days to analyze
-            db: Database session
+            db: Database session (required)
 
         Returns:
             Analytics dict with metrics
+
+        Raises:
+            ValueError: If db is None
         """
+        if db is None:
+            raise ValueError("Database session (db) is required for get_analytics")
+
         from sqlalchemy import func
 
         # Build base query
