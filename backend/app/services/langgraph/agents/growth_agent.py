@@ -69,7 +69,8 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -747,6 +748,7 @@ Confirm execution with a brief note about what was sent."""
         Returns:
             List of transfer tools that growth agent can use
         """
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("growth")
 
 

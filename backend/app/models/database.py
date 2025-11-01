@@ -55,8 +55,9 @@ Base = declarative_base()
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models.lead import Lead
 from app.models.api_call import CerebrasAPICall
+from app.models.ai_cost_tracking import AICostTracking
 from app.models.agent_models import (
-    AgentExecution, AgentWorkflow, EnrichedLead, 
+    AgentExecution, AgentWorkflow, EnrichedLead,
     MarketingCampaign, BookedMeeting
 )
 from app.models.campaign import Campaign, CampaignMessage

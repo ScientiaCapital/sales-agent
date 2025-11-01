@@ -59,7 +59,8 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 from app.services.review_scraper import get_review_scraper
 
 # New services for company-based enrichment
@@ -1128,6 +1129,8 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
         Returns:
             List of transfer tools that enrichment agent can use
         """
+        # Lazy import to avoid circular dependency
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("enrichment")
 
 
