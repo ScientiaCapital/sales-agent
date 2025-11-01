@@ -57,6 +57,7 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
+from app.services.review_scraper import get_review_scraper
 
 # New services for company-based enrichment
 from app.services.hunter_email_service import get_hunter_service, HunterResult
@@ -521,6 +522,48 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
 
             # Merge tool results into enriched_data
             enriched_data = self._merge_enriched_data(tool_results)
+
+            # Add review scraping for reputation data
+            company_name = enriched_data.get("company")
+            company_website = enriched_data.get("website") or enriched_data.get("company_website")
+            
+            if company_name:
+                try:
+                    review_scraper = await get_review_scraper()
+                    review_result = await review_scraper.get_reviews(company_name, company_website)
+                    
+                    # Add review data to enriched_data
+                    enriched_data["reputation_score"] = review_result.overall_reputation_score
+                    enriched_data["average_rating"] = review_result.average_rating
+                    enriched_data["total_reviews"] = review_result.total_reviews
+                    enriched_data["has_negative_signals"] = review_result.has_negative_signals
+                    enriched_data["review_data_quality"] = review_result.data_quality
+                    enriched_data["platform_reviews"] = [
+                        {
+                            "platform": r.platform,
+                            "rating": r.rating,
+                            "review_count": r.review_count,
+                            "status": r.status
+                        }
+                        for r in review_result.platform_results
+                    ]
+                    
+                    # Add review sources to data_sources
+                    successful_platforms = [
+                        r.platform for r in review_result.platform_results 
+                        if r.status == "success"
+                    ]
+                    if successful_platforms:
+                        data_sources.extend([f"{p}_reviews" for p in successful_platforms])
+                    
+                    logger.info(
+                        f"Review enrichment complete: score={review_result.overall_reputation_score}, "
+                        f"platforms={len(successful_platforms)}"
+                    )
+                except Exception as e:
+                    logger.warning(f"Review scraping failed: {e}")
+                    # Don't fail entire enrichment if reviews fail - just log and continue
+                    errors.append(f"Review scraping failed: {str(e)}")
 
             # Calculate confidence score
             confidence_score = self._calculate_confidence_score(
