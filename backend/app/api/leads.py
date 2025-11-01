@@ -209,18 +209,19 @@ async def qualify_lead_lcel(
     db: Session = Depends(get_db)
 ):
     """
-    Qualify a lead using LangChain LCEL chain with Cerebras (Phase 2.1)
+    Qualify a lead using LangChain LCEL chain with Cerebras + cost tracking (Phase 2.1)
 
-    **Architecture**: LCEL chain with structured output
+    **Architecture**: LCEL chain with structured output + CostOptimizedLLMProvider
     - Pattern: ChatPromptTemplate | ChatCerebras.with_structured_output()
     - Guaranteed schema compliance via Pydantic
     - Built-in LangSmith tracing for observability
+    - Cost tracking to ai_cost_tracking table
     - No manual JSON parsing required
 
     **Performance Target**: <500ms end-to-end (improved from 633ms baseline)
     - Model: llama3.1-8b via Cerebras Cloud SDK
     - Temperature: 0.2 (consistent scoring)
-    - Max tokens: 250 (sufficient for structured output)
+    - Max tokens: 500 (sufficient for structured output)
 
     **Advantages over /qualify**:
     - Structured output eliminates parsing errors
@@ -228,6 +229,7 @@ async def qualify_lead_lcel(
     - Type-safe Pydantic validation
     - LangSmith observability
     - Cleaner codebase (LCEL composition)
+    - Unified cost tracking via ai-cost-optimizer
 
     **Returns**: Lead with detailed qualification including:
     - qualification_score (0-100)
@@ -238,8 +240,11 @@ async def qualify_lead_lcel(
     logger.info(f"LCEL qualification: company={request.company_name}, industry={request.industry}")
 
     try:
+        # Create qualification agent with db_session for cost tracking
+        agent = QualificationAgent(db_session=db)
+
         # Call LCEL qualification agent
-        result, latency_ms, metadata = await qualification_agent.qualify(
+        result, latency_ms, metadata = await agent.qualify(
             company_name=request.company_name,
             company_website=request.company_website,
             company_size=request.company_size,
