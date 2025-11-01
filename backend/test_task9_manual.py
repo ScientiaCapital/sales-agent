@@ -22,8 +22,8 @@ async def test_qualification_with_cost_tracking():
     db = SessionLocal()
 
     try:
-        print("\n1. Creating QualificationAgent with db_session...")
-        agent = QualificationAgent(db_session=db)
+        print("\n1. Creating QualificationAgent with db...")
+        agent = QualificationAgent(db=db)
         print("   ✅ Agent created successfully")
 
         print("\n2. Qualifying test lead...")
@@ -88,7 +88,7 @@ async def test_qualification_with_cost_tracking():
         else:
             print("   ❌ No cost tracking record found in database")
 
-        print("\n5. Testing backward compatibility (agent without db_session)...")
+        print("\n5. Testing backward compatibility (agent without db)...")
         agent_no_db = QualificationAgent()
         result2, latency2, metadata2 = await agent_no_db.qualify(
             company_name="Backward Compat Test",
@@ -96,6 +96,21 @@ async def test_qualification_with_cost_tracking():
             company_size="50-200"
         )
         print(f"   ✅ Backward compatibility works: {latency2}ms")
+
+        print("\n6. Testing lead_id tracking...")
+        result3, latency3, metadata3 = await agent.qualify(
+            company_name="Lead ID Test Corp",
+            lead_id=12345,  # Pass a lead_id
+            industry="HVAC"
+        )
+        print(f"   Qualification complete: {latency3}ms")
+
+        # Check database for lead_id
+        tracking_with_lead = db.query(AICostTracking).filter_by(lead_id=12345).first()
+        if tracking_with_lead:
+            print(f"   ✅ lead_id captured: {tracking_with_lead.lead_id}")
+        else:
+            print("   ❌ lead_id NOT captured")
 
         print("\n" + "=" * 80)
         print("✅ Task 9 Manual Test Complete!")

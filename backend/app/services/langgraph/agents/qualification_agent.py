@@ -49,9 +49,10 @@ import os
 import time
 import json
 import re
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_cerebras import ChatCerebras
@@ -156,7 +157,7 @@ class QualificationAgent:
         max_tokens: int = 500,
         use_cache: bool = True,
         track_costs: bool = True,
-        db_session: Optional[Session] = None
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize QualificationAgent with specified provider and optional cost tracking.
@@ -167,8 +168,8 @@ class QualificationAgent:
             temperature: Sampling temperature (0.2 for consistent scoring)
             max_tokens: Max completion tokens (500 for free-form JSON)
             use_cache: Enable qualification caching (default: True, saves $0.000006/call + 633ms)
-            track_costs: Enable legacy cost tracking via get_cost_optimizer()
-            db_session: Database session for new cost tracking (optional, enables CostOptimizedLLMProvider)
+            track_costs: Enable cost tracking to ai_cost_tracking table
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.provider = provider
         self.temperature = temperature
@@ -177,18 +178,20 @@ class QualificationAgent:
         self.cache = None  # Initialize on first use
         self.cost_optimizer = None  # Lazy init for legacy cost tracking
         self.track_costs = track_costs
-        self.db_session = db_session
+        self.db = db
 
-        # Initialize cost-optimized provider if db_session provided
-        if db_session:
+        # Initialize cost-optimized provider if db provided
+        if db:
             try:
-                self.cost_provider = CostOptimizedLLMProvider(db_session)
-                logger.info("✅ CostOptimizedLLMProvider initialized for QualificationAgent")
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("QualificationAgent initialized with cost tracking enabled")
             except Exception as e:
-                logger.warning(f"Failed to initialize CostOptimizedLLMProvider: {e}")
+                logger.error(f"Failed to initialize cost tracking: {e}")
                 self.cost_provider = None
         else:
             self.cost_provider = None
+            if track_costs:
+                logger.warning("Cost tracking requested but no database session provided")
 
         # Auto-select model if not provided
         if model is None:
@@ -394,6 +397,7 @@ Respond with JSON only."""
     async def qualify(
         self,
         company_name: str,
+        lead_id: Optional[int] = None,
         company_website: Optional[str] = None,
         company_size: Optional[str] = None,
         industry: Optional[str] = None,
@@ -406,6 +410,7 @@ Respond with JSON only."""
 
         Args:
             company_name: Company name (required)
+            lead_id: Lead ID for cost tracking (optional)
             company_website: Company website URL
             company_size: Company size (e.g., "50-200 employees")
             industry: Industry sector
@@ -427,6 +432,7 @@ Respond with JSON only."""
             >>> agent = QualificationAgent()
             >>> result, latency, meta = await agent.qualify(
             ...     company_name="Acme Corp",
+            ...     lead_id=123,
             ...     industry="SaaS",
             ...     company_size="100-500"
             ... )
@@ -604,7 +610,7 @@ Respond with JSON only."""
                 # Create config for cost tracking
                 config = LLMConfig(
                     agent_type="qualification",
-                    lead_id=None,  # Will be added if available
+                    lead_id=lead_id,  # Pass lead_id for per-lead tracking
                     mode="passthrough",  # Keep existing Cerebras behavior
                     provider=self.provider,
                     model=self.model
@@ -675,16 +681,8 @@ Respond with JSON only."""
                 await self.cache.set_qualification(company_name, industry, cache_data)
                 logger.info(f"💾 Cached qualification for future use")
 
-            # Log cost to ai-cost-optimizer (only if NOT using CostOptimizedLLMProvider)
-            # CostOptimizedLLMProvider already tracks to AICostTracking table
-            if self.track_costs and not self.cost_provider:
-                await self._log_qualification_cost(
-                    company_name=company_name,
-                    response_text=response_text,
-                    estimated_tokens=estimated_tokens,
-                    estimated_cost_usd=estimated_cost_usd,
-                    latency_ms=latency_ms
-                )
+            # Cost tracking is now handled by CostOptimizedLLMProvider
+            # No legacy tracking needed
 
             return result, latency_ms, metadata
 
@@ -708,54 +706,6 @@ Respond with JSON only."""
                     "error": str(e)
                 }
             )
-
-    async def _log_qualification_cost(
-        self,
-        company_name: str,
-        response_text: str,
-        estimated_tokens: int,
-        estimated_cost_usd: float,
-        latency_ms: int
-    ):
-        """
-        Log qualification cost to ai-cost-optimizer.
-
-        Args:
-            company_name: Company being qualified
-            response_text: LLM response
-            estimated_tokens: Estimated token count
-            estimated_cost_usd: Estimated cost
-            latency_ms: Execution latency
-        """
-        # Initialize cost optimizer if needed
-        if self.cost_optimizer is None:
-            try:
-                self.cost_optimizer = await get_cost_optimizer()
-            except Exception as e:
-                logger.warning(f"Failed to init cost optimizer: {e}")
-                return
-
-        # Log to ai-cost-optimizer
-        try:
-            await self.cost_optimizer.log_llm_call(
-                provider=self.provider,
-                model=self.model,
-                prompt=f"Qualify company: {company_name}",
-                response=response_text[:200],  # Truncate for logging
-                tokens_in=estimated_tokens // 2,  # Rough split
-                tokens_out=estimated_tokens // 2,
-                cost_usd=estimated_cost_usd,
-                agent_name="qualification",
-                metadata={
-                    "company_name": company_name,
-                    "latency_ms": latency_ms,
-                    "provider": self.provider,
-                    "model": self.model
-                }
-            )
-            logger.debug(f"💰 Logged qualification cost: ${estimated_cost_usd:.6f}")
-        except Exception as e:
-            logger.error(f"Failed to log qualification cost: {e}")
 
     def get_transfer_tools(self):
         """

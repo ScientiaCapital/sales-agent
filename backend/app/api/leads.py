@@ -240,8 +240,8 @@ async def qualify_lead_lcel(
     logger.info(f"LCEL qualification: company={request.company_name}, industry={request.industry}")
 
     try:
-        # Create qualification agent with db_session for cost tracking
-        agent = QualificationAgent(db_session=db)
+        # Create qualification agent with db for cost tracking
+        agent = QualificationAgent(db=db)
 
         # Call LCEL qualification agent
         result, latency_ms, metadata = await agent.qualify(
