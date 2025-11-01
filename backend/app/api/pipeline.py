@@ -100,7 +100,7 @@ async def test_pipeline(
     **Returns**: Complete pipeline results with per-stage metrics
     """
     try:
-        orchestrator = PipelineOrchestrator()
+        orchestrator = PipelineOrchestrator(db=db)
         response = await orchestrator.execute(request)
 
         # Save execution to database
@@ -148,7 +148,7 @@ async def test_pipeline_with_csv(
             options=request.options
         )
 
-        orchestrator = PipelineOrchestrator()
+        orchestrator = PipelineOrchestrator(db=db)
         response = await orchestrator.execute(pipeline_request)
 
         # Save execution with CSV index
@@ -211,7 +211,7 @@ async def quick_pipeline_test(db: Session = Depends(get_db)) -> PipelineTestResp
             }
         )
 
-        orchestrator = PipelineOrchestrator()
+        orchestrator = PipelineOrchestrator(db=db)
         response = await orchestrator.execute(request)
 
         # Save execution
