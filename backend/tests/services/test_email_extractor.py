@@ -1,5 +1,7 @@
 """Tests for email extraction service."""
 import pytest
+import httpx
+import pytest_httpx
 from app.services.email_extractor import EmailExtractor
 
 
@@ -119,3 +121,64 @@ async def test_prioritize_business_emails_second(extractor):
     assert prioritized[0] in ['sales@example.com', 'ceo@example.com']
     # Other last
     assert prioritized[-1] == 'other@example.com'
+
+
+@pytest.mark.asyncio
+async def test_extract_from_main_page(extractor, httpx_mock):
+    """Test extraction from main website page."""
+    httpx_mock.add_response(
+        url="https://example.com",
+        html='''
+        <html>
+            <body>
+                <a href="mailto:contact@example.com">Contact Us</a>
+                <p>Sales: sales@example.com</p>
+            </body>
+        </html>
+        '''
+    )
+
+    emails = await extractor.extract_emails("https://example.com", max_pages=0)
+
+    assert len(emails) >= 1
+    assert "contact@example.com" in emails or "sales@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_extract_from_contact_page(extractor, httpx_mock):
+    """Test extraction from contact page."""
+    # Mock main page (no emails)
+    httpx_mock.add_response(
+        url="https://example.com",
+        html='<html><body>Welcome</body></html>'
+    )
+
+    # Mock contact page (has emails)
+    httpx_mock.add_response(
+        url="https://example.com/contact",
+        html='<html><body><a href="mailto:john.doe@example.com">Contact</a></body></html>'
+    )
+
+    emails = await extractor.extract_emails("https://example.com", max_pages=1)
+
+    assert "john.doe@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_handle_404_gracefully(extractor, httpx_mock):
+    """Test graceful handling of 404 errors."""
+    httpx_mock.add_response(url="https://example.com", status_code=404)
+
+    emails = await extractor.extract_emails("https://example.com", max_pages=0)
+
+    assert emails == []  # Should return empty list, not crash
+
+
+@pytest.mark.asyncio
+async def test_handle_timeout_gracefully(extractor, httpx_mock):
+    """Test graceful handling of timeouts."""
+    httpx_mock.add_exception(httpx.TimeoutException("Request timeout"))
+
+    emails = await extractor.extract_emails("https://example.com", max_pages=0)
+
+    assert emails == []  # Should return empty list, not crash
