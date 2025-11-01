@@ -134,6 +134,11 @@ curl -X POST http://localhost:8001/api/langgraph/invoke \
 ### 📈 Data Enrichment
 - Company profile enhancement
 - Contact discovery and validation
+- **Email Discovery** (NEW ✅): Automatic email extraction from company websites
+  - Multi-pattern detection with smart prioritization
+  - Non-blocking web scraping (free)
+  - Hunter.io API fallback (coming in Sub-Phase 2B)
+  - ~80% success rate for contractor/SMB leads
 - Technographic analysis
 - Competitive intelligence
 
@@ -195,19 +200,22 @@ alembic upgrade head
 
 ## Project Status
 
-**Current Phase**: Phase 6 - Pipeline Testing System
+**Current Phase**: Phase 6 - Pipeline Testing System + Email Discovery Feature
 
 **Recent Milestones**:
 - ✅ Phase 1-4: Core agent implementation
 - ✅ Phase 5: Close CRM integration with deduplication
+- ✅ Email Discovery Sub-Phase 2A: Website email extraction (509 lines, 100% test coverage)
+- 🚧 Email Discovery Sub-Phase 2B: Hunter.io API fallback (5 tasks remaining)
 - 🚧 Phase 6: End-to-end pipeline testing (50% complete)
 
 **Roadmap**:
-1. Complete pipeline testing infrastructure
-2. Load testing with 200-lead dataset
-3. Performance optimization
-4. Monitoring dashboard
-5. Additional CRM connectors (Salesforce, HubSpot)
+1. Complete Email Discovery Sub-Phase 2B (Hunter.io fallback)
+2. Complete pipeline testing infrastructure
+3. Load testing with 200-lead dataset
+4. Performance optimization
+5. Monitoring dashboard
+6. Additional CRM connectors (Salesforce, HubSpot)
 
 ---
 
