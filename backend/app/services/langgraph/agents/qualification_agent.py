@@ -690,7 +690,8 @@ Respond with JSON only."""
                 "lcel_chain": True,
                 "free_form_json": True,
                 "estimated_tokens": estimated_tokens,
-                "estimated_cost_usd": round(estimated_cost_usd, 6)
+                "estimated_cost_usd": round(estimated_cost_usd, 6),
+                "extracted_email": contact_email  # Include extracted/provided email for downstream use
             }
 
             logger.info(
