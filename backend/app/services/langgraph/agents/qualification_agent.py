@@ -66,7 +66,8 @@ from app.core.exceptions import CerebrasAPIError
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cache.qualification_cache import get_qualification_cache
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 from app.services.website_validator import get_website_validator
 from app.services.review_scraper import get_review_scraper
 
@@ -714,6 +715,8 @@ Respond with JSON only."""
         Returns:
             List of transfer tools allowing handoff to enrichment/growth agents
         """
+        # Lazy import to avoid circular dependency
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("qualification")
 
     async def qualify_batch(
