@@ -1,0 +1,1221 @@
+phone_normalized,Contractor Name,Phone,Domain,City,State,OEM Sources,OEM Count,ICP Fit Score,ICP Tier,Resimercial Score,O&M Score,Multi-OEM Score,MEP+R Score,is_multi_oem,oem_count_verified,state_count,is_multi_state,multi_state_bonus
+2012654822,CASCOL LLC,(201) 265-4822,,,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2012657700,BP ELECTRICAL CONTRACTING CO INC,(201) 265-7700,,wood,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2013855000,"GROUNDED ELECTRIC SERVICES, LLC",(201) 385-5000,,bergenfield,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2013877007,ALL-WEATHER INC,(201) 387-7007,all-weathergenerators.com,bergenfield,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2013904376,"JMR ELECTRICAL CONTRACTING, LLC",(201) 390-4376,,maywood,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2013941813,R & R ELECTRICAL,(201) 394-1813,randrgenerators.net,,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2014216038,VACCARELLA ELECTRICAL SERVICES LLC,(201) 421-6038,vaccnj.com,paramus,NJ,Generac,1,31.0,BRONZE,0.0,60.0,25,25.0,False,1,1,False,0
+2014450200,BENSON VER HAGE ELECTRIC CO,(201) 445-0200,bvhgenerators.com,wyckoff,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2014465241,BUILT RIGHT GENERATORS LLC,(201) 446-5241,builtrightgenerators.com,haworth,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2014896233,GRC MECHANICAL SERVICES,(201) 489-6233,,reet south hackensack,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2016007121,MALFETTONE ELECTRIC LLC,(201) 600-7121,malfettoneelectric.com,jersey city,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2016341957,RHINO ELECTRIC LLC,(201) 634-1957,,ive paramus,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2016440838,"K. HANRAHAN ENTERPRISES, INC",(201) 644-0838,855fixlight.com,fair lawn,NJ,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+2017079001,A TEAM ELECTRICAL CONTRACTORS CORP,(201) 707-9001,,saddle brook,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+2018484808,JC ELECTRIC INC,(201) 848-4808,jcelectric.com,mahwah,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2018914444,M.F. ELECTRIC,(201) 891-4444,mfelectric.com,wyckoff,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2019237655,POWER MAC LLC,(201) 923-7655,,clifton,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102012193,BEYER AIR CONDITIONING & HEATING,(210) 201-2193,,selma,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102013088,SATX ELECTRIC LLC,(210) 201-3088,satxelectric.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102014001,SEVEN PETAL ELECTRIC,(210) 201-4001,,en ridge,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102022380,TRUE EXCELLENCE GROUP,(210) 202-2380,trueexcellencegroup.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102316060,NATIVE POWER SYSTEMS INC,(210) 231-6060,nativepowersystems.com,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2102498685,OLYMPUS ELECTRIC & SOLAR LLC,(210) 249-8685,olympuselectric210.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102782572,YUKER ELECTRIC LLC,(210) 278-2572,yukerelectricllc.com,silverwings spring branch,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102871627,ADVANCED SOLAR AND ELECTRIC LLC,(210) 287-1627,advancedsolar.com,cibolo,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2102892482,"GREEN & HANSEN, LLC",(210) 289-2482,,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2103186169,CASANOVA ELECTRIC CORP,(210) 318-6169,,powell san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2103694313,ELMER'S HOME SERVICES LLC,(210) 369-4313,elmershomeservices.com,san antonio,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+2103877949,DIETRICH ELECTRICAL SERVICES LLC,(210) 387-7949,dietrichelectricalservices.com,helotes,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2103968756,"TRISTAR SERVICES, LLC",(210) 396-8756,tristarservicesllc.net,san antonio,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2104097271,"DIAMONDBACK ELECTRICAL SERIVCES, LL",(210) 409-7271,diamondbackelectrical.com,la vernia,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2104161820,THE QUORUM GROUP INC.,(210) 416-1820,,santa helena san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2104175319,"SYMCY SERVICES, LLC",(210) 417-5319,,e,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2104460200,1ST CALL PLUMBING HTG & AIR LTD,(210) 446-0200,1stcallsa.com,er san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2104521415,GENERATOR SERVICE SOLUTIONS LLC,(210) 452-1415,,red buckeye loop liberty hill,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2104941691,"PRIMO PLUMBING, INC.",(210) 494-1691,primoplumbinginc.com,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2105093009,ELECTRIC UNLIMITED,(210) 509-3009,,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2105484151,"SOJI POWER SOLUTIONS, LLC",(210) 548-4151,sojipowersolutions.com,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2105847567,NOAHS ARC ELECTRIC,(210) 584-7567,,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2105961140,R&D CUSTOM BUILDERS LLC,(210) 596-1140,rdbuilders.org,la vernia,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2106095909,5G ELECTRIC LLC,(210) 609-5909,,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2106473138,ABSOLUTE PWR ELECTRIC CONTRACTORS,(210) 647-3138,absolute-pwr.com,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2106679657,"MURRAY AIR CONDITIONING, INC.",(210) 667-9657,murray-ac.com,la vernia,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2106779818,210 ELECTRICAL LLC,(210) 677-9818,,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2107010192,HUNTER SERVICE GROUP,(210) 701-0192,hunterservicegroup.com,san antonio,TX,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+2107083954,ESQUIVEL ELECTRICAL & LIGHTING LLC,(210) 708-3954,esquivelelectric.com,espada bnd san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2107100518,TRAVIS ELECTRIC COMPANY,(210) 710-0518,,an antonio,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2107450282,"SOLARATOR ELECTRIC, LLC",(210) 745-0282,generatorssouthtexas.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2107574541,I.S.I. AUTOMATION INT'L INC,(210) 757-4541,,san antonio,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2107895368,SYNERGY STANDBY SOLUTIONS LLC,(210) 789-5368,synergystandby.com,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2107960926,THE PROBLEM SOLVERS LLC,(210) 796-0926,txproblemsolvers.com,university oak san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2108570899,"CITYWIDE ELECTRIC, LLC",(210) 857-0899,citywideelectric.net,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2108578453,BLACKMON ELECTRIC LLC,(210) 857-8453,,y san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2108629189,BLACKBELT COMPANY,(210) 862-9189,,w ansley san antonio,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2108674735,"ALAMO LIGHTING & ELECTRIC, INC.",(210) 867-4735,alamolightingelectric.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2108889506,CHAMPION AC LLC,(210) 888-9506,championac.com,university oak san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2108976527,ENGEL ELECTRIC,(210) 897-6527,,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2109092152,PABLO CONSTRUCTION & SERVICES LLC,(210) 909-2152,,adkins,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2109243434,POWER SOURCE ELECTRIC,(210) 924-3434,powersourcetx.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2109341314,"CURRENT POWER TECH- HOUSTON, LLC",(210) 934-1314,currentpowertechnologies.com,on,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2109850150,GENERATOR SUPER CENTER-SAN ANTONIO,(210) 985-0150,generatorsupercenter.com,san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2109973023,SOUTHTEX PROPANE,(210) 997-3023,southtexpropane.net,w la vernia,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2142074227,"SIBLEY CONSTRUCTION, INC.",(214) 207-4227,sibleydallas.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2142321424,HOFFMAN REFRIGERATION & A/C,(214) 232-1424,,reet irving,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2142335159,GUARDIAN HOME GENERATORS LLC,(214) 233-5159,guardianhomegenerators.com,grapevine,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2142520692,MARTIN & MARTIN DESIGN ELECTRIC LLC,(214) 252-0692,,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2142586898,"IDEAL ELECTRIC SUPPLY, LLC",(214) 258-6898,,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2142849700,ON POINT ELECTRIC INC.,(214) 284-9700,onpointelectrictx.com,argyle,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143196900,"ZUBRAS ELECTRIC, INC.",(214) 319-6900,zubraselectric.com,ive dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143248811,BAKER BROTHERS PLUMB AIR & ELEC LLC,(214) 324-8811,bakerbrothersplumbing.com,mesquite,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143288797,"SMITH ELECTRIC & SIGNS, LLC",(214) 328-8797,smithelectricsigns.com,garland,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143411448,THE O'BRIEN GROUP INC.,(214) 341-1448,obriengroupinc.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143877878,RESILIENT POWER,(214) 387-7878,friscoelectric.com,frisco,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2143910040,EXCELL ELECTRIC,(214) 391-0040,excellelectric.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2144025454,"TRIBECA PLUMBING, INC.",(214) 402-5454,tribecaplumbinginc.com,dallas,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2144444379,BRIGHT LIGHT ELECT CONTRACTOR LLC,(214) 444-4379,brightlightec.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2144489812,ELMER'S HOME SERVICES LLC,(214) 448-9812,elmershomeservices.com,hwy grapevine,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+2145519484,TREMMEL ELECTRIC,(214) 551-9484,tremmelelectric.com,ano,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2146127292,PUBLIC SVC PLUMBERS & A/C LLC,(214) 612-7292,publicserviceplumbers.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2146131000,ADIS ELECTRIC LLC,(214) 613-1000,,ano,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2146314820,"CSG COMPANIES, LLC",(214) 631-4820,wadeelect.com,seagoville,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2146685616,"THE GALL GROUP, INC.",(214) 668-5616,,ano,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2146795458,ELECTRIC DISTRIBUTION & DESIGN SYST,(214) 679-5458,,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2146798287,HOME DESIGN AND RENOVATIONS,(214) 679-8287,,n edgewood terrace fort worth,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2146813515,"ALLIANCE ELECTRICAL SERVICES, LLC",(214) 681-3515,,mesquite,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2146814761,MIDWAY ELECTRICAL GROUP LLC,(214) 681-4761,midwayelectricalgroup.com,dallas,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2147254109,TEXAGEN LLC,(214) 725-4109,texagen.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2147767066,"PRIMETIME ELECTRICAL CONTRACTORS, LLC",(214) 776-7066,myprimetimeelectrical.com,allen,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+2148037207,R SQUARED ELECTRIC LLC,(214) 803-7207,rsquaredelectric.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2148387157,ALTERNATIVE HOME ENERGY/MAINT LLC,(214) 838-7157,althomeenergy.com,son,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2148848227,G. O. ELECTRICAL LLC,(214) 884-8227,goelectricalllc.com,,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2148849407,"TEXAS IND INFRASTRUCTURE SRVCS, LLC",(214) 884-9407,texasiis.com,w grapevine mills cir grapevine,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2149081129,PREMIER POWER AND LIGHTING LLC,(214) 908-1129,,paige bend hutto,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2149081605,LUX ELECTRIC LLC,(214) 908-1605,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2149450790,TRUSERV ENERGY SOLUTIONS,(214) 945-0790,truservenergy.com,plano,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+2149452525,PREMIER GENERATORS OF TEXAS LLC,(214) 945-2525,premiergeneratorstx.com,ano,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2149565820,"TEXADIA HOME TECHNOLOGIES, LLC",(214) 956-5820,texadiasystems.com,addison,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2152363663,AM ELECTRIC INC,(215) 236-3663,amelectricservice.com,philadelphia,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2152566276,"HI-TECH ELECTRIC, LLC",(215) 256-6276,,unit b lansdale,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2153575530,ELISIO ELECTRIC INC.,(215) 357-5530,elisioelec.com,own,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2153645686,HIGHTOWER ELECTRIC,(215) 364-5686,hightowerelectrical.com,ive holland,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2153661336,GREENHAWK SERVICES LLC,(215) 366-1336,greenhawkservices.com,rtown,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2153681815,"WILLIAMSON ELECTRIC, INC.",(215) 368-1815,williamsonelectric.com,lansdale,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2154439777,RENK ELECTRIC INC,(215) 443-9777,renkelectric.com,er,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2155474566,DAYTON & SONS ELECTRIC LLC,(215) 547-4566,daytonandsonselectric.com,levittown,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2155477010,SCARBOROUGH ELECTRIC,(215) 547-7010,scarboroughelectric.com,croydon,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2156519920,DIVERSIFIED ELECTRIC LLC,(215) 651-9920,diversifiedelectricllc.com,green lane,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2156750152,POWELL'S ELECTRIC SERVICE INC,(215) 675-0152,powellselectric.com,hatboro,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2156813610,POLE AND LINE INC,(215) 681-3610,,springfield,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2156948459,QUANTUM TECHNOLOGY,(215) 694-8459,quantumtechnology.net,bala cynwyd,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2157211786,"R. HUBER ELECTRIC, LLC",(215) 721-1786,,,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2157222988,"BRANDON ELECTRIC, INC.",(215) 722-2988,brandonelectricpa.com,southampton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2157235018,TRINITY GENERATORS & ELECTRICAL INC,(215) 723-5018,,,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2157832353,MURRAY BROTHERS ELECTRIC INC,(215) 783-2353,murraybrotherselectric.com,erville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2158175030,TRIANGLE ELECTRIC DESIGN & CONSTRUC,(215) 817-5030,tripointelectric.com,rtown,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2158396076,A-PRO ELECTRIC INC.,(215) 839-6076,aproelectricinc.com,perkasie,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2158525332,MNS ELECTRIC & GENERATORS LLC,(215) 852-5332,,hickory ridge chalfont,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2158722004,CG WIRING LLC,(215) 872-2004,,glenside,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2159434400,"ARMOUR & SONS ELECTRIC, INC.",(215) 943-4400,armourandsons.com,langhorne,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2159494626,LACARRUBBA ELECTRIC INC,(215) 949-4626,lacarrubbaelectric.com,fairless hills,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2159560988,"BRUDER ELECTRIC, INC.",(215) 956-0988,,own,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2159571188,TRAIL ELECTRICAL SERVICE INC,(215) 957-1188,trailelectric.net,er,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2159687477,HARRIS COMFORT,(215) 968-7477,,newtown,PA,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+2388215277,XL ELECTRIC SERVICES INC,(238) 821-5277,xlelectricservices.com,es,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2392274904,MY AV-TECH LLC,(239) 227-4904,myav-tech.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392372915,"VP GAS COMPANY, LLC.",(239) 237-2915,vpgasfl.com,fort myers,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2392387568,"ONE SOURCE ELECTRIC OF SWFL, LLC",(239) 238-7568,onesourceelectricofswfl.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392437329,PLUG IN SERVICES LLC,(239) 243-7329,,es,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2392448640,FRANCO'S ELECTRIC LLC,(239) 244-8640,francoselectric.com,ero,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392501539,BLACK DIAMOND DESIGN AND DELIVERED,(239) 250-1539,blackdiamondnd.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392598215,SOUTH FL ELECTRIC CONNECTION INC,(239) 259-8215,southflelectric.com,marco island,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392624420,DAN HOUSE ELECTRIC,(239) 262-4420,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392754502,BO'S ELECTRIC & GAS,(239) 275-4502,boselectric.com,fort myers,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392808736,VOLTS ELECTRICAL SERVICES LLC,(239) 280-8736,volts-electric.com,bonita springs,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2392882911,HOME WORKS NOW LLC,(239) 288-2911,generac.homeworksnow.com,es,FL,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+2392891315,JVA ELECTRIC INC.,(239) 289-1315,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2392896850,GULF COAST ELECTRICAL SERVICES LLC,(239) 289-6850,gces.biz,es,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2392901057,GEN SERVICE,(239) 290-1057,,es,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2393304171,"MONROY ELECTRIC, LLC",(239) 330-4171,monroyec.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393447925,INTEGRITY ELECTRICAL SERVICES INC,(239) 344-7925,,fort myers,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2393483719,CV ELECTRIC LLC,(239) 348-3719,cv-electric.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393516739,HOHM ELECTRIC LLC,(239) 351-6739,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393533700,FORBIS LLC,(239) 353-3700,forbisllc.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393760287,"RACK ELECTRIC, LLC",(239) 376-0287,rackelectric.com,es,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2393841147,MACHER INTEGRATED TECHNOLOGIES,(239) 384-1147,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393944700,SAN MARCO ELECTRIC,(239) 394-4700,,marco island,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393945121,CONDEE COOLING & ELECTRIC INC.,(239) 394-5121,condee.com,reet marco island,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2393945985,CASAGRANDE ELECTRIC INC,(239) 394-5985,casagrandeelectric.com,e elkcam circle marco island,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2394043997,"LINK33, LLC",(239) 404-3997,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2394045195,"GENTECH & HOME WATCH SERVICES, LLC",(239) 404-5195,,es,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+2394046729,TRIPLE A ELECTRIC,(239) 404-6729,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2394207707,S.E. BATES ELECTRIC INC.,(239) 420-7707,se.bates-electric.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2394944881,FUSION ELECTRIC & ENGINEERING LLC,(239) 494-4881,fusionelectricfl.com,es,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2394948108,AQUA CUSTOM HOMES LLC,(239) 494-8108,aquacustomhomes.com,w elkcam cir marco island,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2394955988,"STILWELL SOLAR,  LLC",(239) 495-5988,stilwellsolar.com,ero,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2394983131,AFC ELECTRIC INC,(239) 498-3131,afcelectric.com,bonita springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2395661769,WEST COAST GENERATORS,(239) 566-1769,westcoastgenerators.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2395949871,COOL TODAY,(239) 594-9871,cooltoday.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2395952809,GENERATOR SERVICE OF SWFL LLC,(239) 595-2809,,fort myers,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2395982000,PREMIER ELECTRIC,(239) 598-2000,premierelectric.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2396430923,"JACKSON TOTAL SERVICE, INC.",(239) 643-0923,jacksontotal.com,es,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2396436165,"EXCEL ELECTRIC OF NAPLES, INC.",(239) 643-6165,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2397473399,J.& J DODDATO UNLIMITED LLC,(239) 747-3399,,saint cloud,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2397851610,"NAPLES GENERATOR, INC.",(239) 785-1610,naplesgenerator.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2397892633,GENERX GENERATORS LLC,(239) 789-2633,fixmygen.com,es,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2398252540,GEM REMOTES SERVICES LLC,(239) 825-2540,,es,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2398777552,"BADGER ELECTRIC, LLC",(239) 877-7552,,bonita springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2398966327,POWERHOUSE HOME SERVICES,(239) 896-6327,powerhouseswfl.com,fort myers,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+2398988638,SWFL ELECTRIC LLC.,(239) 898-8638,swflelec.com,fort myers,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2399196776,AMP GENERATORS INC.,(239) 919-6776,,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2399201054,BEST HOME SERVICES,(239) 920-1054,getbest.com,es,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+2399397093,ALL PHASE ELECTRIC,(239) 939-7093,,fort myers,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2399472375,EMPOWERED GLOBAL INC.,(239) 947-2375,empoweredglobalinc.com,bonita springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2625444811,OFFERING,1-262-544-4811,generacpowerproducts.com,n amphlett blvd san mateo,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2672491642,PONE ELECTRIC INC,(267) 249-1642,,levittown,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2672556804,GAROFALO ELECTRIC LLC,(267) 255-6804,garofaloelectricllc.com,collegeville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2674243228,STURGEON SERVICES LLC,(267) 424-3228,,green lane,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+2674443912,KB ELECTRIC LLC,(267) 444-3912,kbelectricpa.com,own,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2674551716,SDP ELECTRIC LLC,(267) 455-1716,,elverson,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2675668625,WEISS ELECTRIC,(267) 566-8625,,levittown,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2675847041,"DANZOT ELECTRIC, LLC",(267) 584-7041,,exton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2676402861,"REVELATION ELECTRIC, LLC",(267) 640-2861,,green lane,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2677180925,"MARK TOBEY ELECTRIC, LLC",(267) 718-0925,mrtelectric.com,sellersville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2677880171,PSM ELECTRICAL CONTRACTING,(267) 788-0171,psmelectric.us,fairless hills,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2812142830,SAFE HAVEN POWER LLC,(281) 214-2830,safehavenpower.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2812422471,ASPIRE SALES & ELECTRICAL SERV. LLC,(281) 242-2471,aspiresales.net,,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2812455970,"TIPCO A/C & ELECTRICAL, LLC",(281) 245-5970,,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2812516100,"GENERATOR SUPERCENTER, INC",(281) 251-6100,generatorsupercenter.com,tomball,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2812715952,B4 ELECTRICAL SERVICES LLC,(281) 271-5952,b4-electrical.com,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+2813327561,"PANTHER ELECTRIC, INC.",(281) 332-7561,pantherelectric.net,w league city pkwy league city,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2813329555,WEEKS SERVICE CO,(281) 332-9555,weeksservicecompany.com,s league city,TX,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+2813580980,KENTECH INC.,(281) 358-0980,kentechpower.com,porter,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2814001131,BIOS POWER SYSTEMS,(281) 400-1131,,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2814148416,RELIABLE ELECTRIC,(281) 414-8416,reliableelectrictx.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2814461597,CGC GENERATORS,(281) 446-1597,cgcgenerators.com,e humble,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2814663691,ELECTRICAL WORX,(281) 466-3691,electricalworxtx.com,league city,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2814669302,"POOLS, DECKS AND MORE, INC.",(281) 466-9302,poolsdecksandmore.com,spring,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2814995333,"A. FULLER ELECTRIC, INC",(281) 499-5333,afullerelectric.com,,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2815155131,GENTEK USA LLC,(281) 515-5131,gentekusa.com,n la porte,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2816073157,ORGANIC NATURAL ENERGY LLC,(281) 607-3157,organicnaturalenergyllc.com,alvin,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2816482177,STORM GUARDIAN GENERATORS,(281) 648-2177,stormgg.com,in,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+2817971997,PCI ELECTRICAL,(281) 797-1997,pcielectricalservices.com,humble,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2818548714,TEX-PRO ELECTRICAL LLC,(281) 854-8714,,missouri city,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+2818808805,ROBERT MONROE INTERESTS LLC.,(281) 880-8805,,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2818853300,ACS COMMERCIAL SERVICES LLC,(281) 885-3300,acsfixit.com,on,TX,Generac,1,47.0,SILVER,60.0,60.0,25,0.0,False,1,1,False,0
+2818953685,DOB ELECTRIC LLC,(281) 895-3685,dobelectric.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2819558789,"FREEDOM COMMERCIAL & HOME SERVICES,",(281) 955-8789,freedomchs.com,oak hollow cir cypress,TX,Generac,1,47.0,SILVER,60.0,60.0,25,0.0,False,1,1,False,0
+2819824932,STORM GUARDIAN GENERATORS,(281) 982-4932,stormgg.com,alvin,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2819972512,ASSURANCE ELECTRIC LLC,(281) 997-2512,,pearland,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+2819979110,GENERATOR INDUSTRIES LLC,(281) 997-9110,generatorind.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3022935424,PAUL A COULSTON,(302) 293-5424,,wilmington,DE,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3023756145,MID ATLANTIC GENERATORS LLC,(302) 375-6145,,boothwyn,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3026470806,"AM ELECTRICAL SOLUTIONS, LLC",(302) 647-0806,amelectricalsolutionsde.com,wilmington,DE,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+3052045605,"RACK ELECTRIC, LLC",(305) 204-5605,rackelectric.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052052233,CAPITAL POWER LLC.,(305) 205-2233,thecapitalpower.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052055419,LE JOHNSON ELECTRIC LLC.,(305) 205-5419,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052152204,PIONEER CONSTRUCTION OF FLORIDA INC,(305) 215-2204,,hialeah,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052274222,CAYAMAS ELECTRIC CORP.,(305) 227-4222,,ter miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052560241,FLORIDA POWER HOUSE INC.,(305) 256-0241,floridapowerhouse.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052664240,CIMAS TECHNOLOGIES,(305) 266-4240,cimasus.com,reet miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3052972669,"CORAL ELECTRIC, LLC",(305) 297-2669,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3053325987,INNOVATIONS &RENOVATIONS BY REY INC,(305) 332-5987,,miami springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3054092112,ZMARTTEK CORP,(305) 409-2112,ztkcorp.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3054508787,"DION GENERATOR SOLUTIONS, INC.",(305) 450-8787,,miami,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3054719010,ADVANCED GAS & GENERATOR CONTRACTOR,(305) 471-9010,totalpowergenerators.com,miami,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+3055421070,EZGEN POWER,(305) 542-1070,simonelect.com,th ter miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3055842274,CRUZ'S CONSTRUCTION & PROF GRP LLC,(305) 584-2274,ccpg.llc,miami lakes,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3056076305,ROVY REPAIR SERVICE LLC,(305) 607-6305,,terrace miami,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+3056972520,"DADE POWER SYSTEMS, INC.",(305) 697-2520,dadeps.com,miami,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3057581211,LONGMAN ELECTRIC INC,(305) 758-1211,longmanelectric.com,miami shores,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3057677118,GENERAL POWER LIMITED INC.,(305) 767-7118,genpowerusa.com,doral,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3057905899,RLV CORP,(305) 790-5899,rlvcorp.net,miami shores,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3057965562,BROWARD & DADE ELECTRIC CORP.,(305) 796-5562,,terrace miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3058242858,"NOVOA ELECTRICAL CONTRACTORS, INC.",(305) 824-2858,,ter medley,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+3058870780,KW POWER SYSTEMS CORP,(305) 887-0780,,miami,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3059005055,GENERATOR SUPERCENTER OF BROWARD,(305) 900-5055,generatorsupercenter.com,hollywood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3059655330,E & E POWER CORP,(305) 965-5330,e-epowercorp.com,opa locka,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3102598087,SOTRES ELECTRIC LLC,(310) 259-8087,,downey,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3103212698,BY THE BOOK ELECTRIC INC.,(310) 321-2698,,manhattan beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3103268500,RICO'S ELECTRIC INC,(310) 326-8500,ricoselectricinc.com,lomita,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3104579348,PEAK POWER ELECTRIC INC.,(310) 457-9348,peakpowerelectric.com,malibu,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3104863042,DAVENPORT ELECTRIC,(310) 486-3042,,torrance,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3105602937,ECLECTIC ELECTRIC,(310) 560-2937,socalelectrichub.com,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3105718334,LYFE POWER LLC,(310) 571-8334,,los angeles,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3106511608,GENESIS ELECTRICAL,(310) 651-1608,,e fernock carson,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3106997164,D SQUARE CONSTRUCTION SERVICES INC.,(310) 699-7164,,malibu,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+3107927454,ELECTRICAL DESIGN SYSTEMS LLC,(310) 792-7454,,torrance,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+3108456523,ZUMA ENTERTAINMENT INC,(310) 845-6523,zumaentertainment.com,agoura hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3108492856,U2 SOLUTIONS INC,(310) 849-2856,,beverly hills,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3108649728,277 ELECTRIC,(310) 864-9728,,long beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3108670132,"MAGNETTA ELECTRIC, INC",(310) 867-0132,,a cir s los angeles,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3109261742,PROPERTY POWER BACKUP,(310) 926-1742,,van nuys,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3212199486,HELP MY EQUIPMENT LLC,(321) 219-9486,,ocoee,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3213681168,COMFORT POWER SYSTEMS LLC,(321) 368-1168,,championsgate,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+3213706898,"SUPER FAST ELECTRIC, LLC",(321) 370-6898,superfastelectric.com,longwood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3214249320,ENERGY MANAGEMENT SPECIALISTS LLC,(321) 424-9320,,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3215431835,BROCK'S ELECTRICAL SERVICES INC,(321) 543-1835,brockselectrical.com,orlando,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+3232276777,RADCOM,(323) 227-6777,,los angeles,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+3234336046,"ENERGEN ELECTRIC, LLC",(323) 433-6046,getenergen.com,lynwood,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3236204244,NEW ERA ELECTRICAL INC.,(323) 620-4244,,los angeles,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3238426507,JGA ELECTRIC,(323) 842-6507,jgaelectric.com,north hollywood,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3239346104,ARIE PLUMBING,(323) 934-6104,arieplumbing.com,los angeles,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3252489091,LAVALLEY HOME SERVICES LLC,(325) 248-9091,lavalleyservices.com,kingwood,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+3364484000,"CANTER POWER SYSTEMS, LLC",(336) 448-4000,canterpowersystems.com,on,TX,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+3463452122,"MSF ELECTRIC, INC.",(346) 345-2122,msfelectric.com,humble,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3464206341,RELIABLE PROPERTY SOLUTIONS 4,(346) 420-6341,,richmond,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3464250650,NIVO SOLAR LLC,(346) 425-0650,mynivohome.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3464431681,PARTICLE PRO ELECTRIC LLC,(346) 443-1681,particleproelectric.com,spring,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3466784422,GENERATORS OF TEXAS LLC,(346) 678-4422,generatorsoftx.com,g tomball,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3467734920,DM ELECTRICAL AND CONSTRUCTION LLC,(346) 773-4920,dmelectricalinc.com,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3468057525,ELECTRICAL RENEWABLE SERVICES LLC,(346) 805-7525,,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+3468889393,PSL TECHNOLOGY LLC,(346) 888-9393,psltechnology.com,tomball,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+3472853197,NICK'S ELECTRICAL CONTRACTING INC,(347) 285-3197,,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+3522437099,KALOS SERVICES INC.,(352) 243-7099,kalosflorida.com,clermont,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+3523297162,"EMERALD ISLE ELECTRIC, LLC",(352) 329-7162,isleelectric.com,ive land o lakes,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3523942874,ADVANCE ELECTRIC,(352) 394-2874,advanceelectric1952.com,clermont,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3525447058,CAFRA ELECTRIC LLC,(352) 544-7058,,s lansdale cir tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3605685985,EPIC ELECTRIC INC,(360) 568-5985,epicelectricinc.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+3615484997,TRUE TX ELECTRIC LLC,(361) 548-4997,truetxelectric.com,helotes,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4072432278,"DOC WATTS ELECTRIC, INC",(407) 243-2278,docwattselectric.com,venture circle orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4072503015,POWER DIRECT LLC,(407) 250-3015,,lazy breeze loop clermont,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4072673049,HALL ELECTRICAL SYSTEMS INC,(407) 267-3049,hallelectricalsystems.com,nw madison cir n saint petersburg,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4072706898,"GALVIS ELECTRIC, LLC",(407) 270-6898,galviselectric.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4072750705,RINALDI'S HEATING & A/C SERVICE,(407) 275-0705,rinaldis.com,orlando,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4072911644,PRO-TECH A/C & PLUMBING SERVICE,(407) 291-1644,protechac.com,winter park,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4072981412,A PLUS GENERATORS LLC,(407) 298-1412,aplusgenerators.net,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4073356777,POWERLINK ELECTRIC CORP,(407) 335-6777,powerlinkfl.com,kissimmee,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4073507933,"INCA ELECTRIC, LLC",(407) 350-7933,incaelectric.com,altamonte springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4073570833,SUPER BRIGHT SERVICES LLC,(407) 357-0833,superbrightservices.com,clermont,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4073735617,CASTAWAYS ENERGY LLC,(407) 373-5617,castawaysenergy.com,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4074175553,GENSTAR SERVICE,(407) 417-5553,genstarservice.com,,FL,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+4074227657,"BOB HEINMILLER AIR CONDITIONING,",(407) 422-7657,bobheinmiller.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4074487955,HOME MANAGEMENT SYSTEMS LLC,(407) 448-7955,,apopka,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4074535598,AIS CONNECTED,(407) 453-5598,,en,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4074628377,"SYNERGY ELECTRICAL SYSTEMS, INC.",(407) 462-8377,,cooper palms pkwy apopka,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4075040922,EMERALD SUN ENERGY LLC,(407) 504-0922,emeraldsunenergy.com,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4075368213,PREMIUM ELECTRIC LLC,(407) 536-8213,,reet orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4075745177,"C.D. WILLIAMS GROUP, LLC",(407) 574-5177,pesiec.com,apopka,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4075778488,ILLUMINA ELECTRIC LLC,(407) 577-8488,illuminaelectrical.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4076028823,AUSTEN ELECTRICAL SOLUTIONS LLC,(407) 602-8823,austenelectricalsolutions.com,apopka,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4076131092,"CH ELECTRIC SOLUTIONS, LLC",(407) 613-1092,chelectricsolutions.com,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4076251521,"AC DC STATEWIDE ELECTRIC, INC.",(407) 625-1521,acdcstatewide.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4076468700,PALMER ELECTRIC COMPANY,(407) 646-8700,palmer-electric.com,winter park,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4076930479,COOL TODAY,(407) 693-0479,cooltoday.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4077392779,NAVTEK ELECTRICAL CORP,(407) 739-2779,navtekgenerators.com,celebration,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4077855661,ACE SOLVES IT ALL,(407) 785-5661,acesolvesitall.com,kissimmee,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4078121822,MILLER ELECTRICAL SERVICES INC.,(407) 812-1822,,premier row orlando,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4078169000,"MARCOPE, LLC",(407) 816-9000,marcope.com,oviedo,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4078317770,Y2K ELECTRICAL SYSTEMS INC.,(407) 831-7770,,altamonte springs,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4078321818,"BLEDSOE SERVICES, LLC",(407) 832-1818,bledsoeservices.com,orlando,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4078567770,"FIREPLACE & GAS SERVICES , INC.",(407) 856-7770,fireplaceandgas.com,orlando,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4078577879,"ALTECH ELECTRIC OF CNTRL FL, INC.",(407) 857-7879,altechelectric.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4078721102,INTEGRATED MAINTENANCE SOLUTIONS,(407) 872-1102,chooseintegrated.com,altamonte springs,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4078778090,ARMSTRONG AIR & HEATING,(407) 877-8090,armstrongairinc.com,en,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4078832588,SMARTRON ELECTRIC LLC,(407) 883-2588,smartronelectric.com,maitland,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4078840844,BRITE ELECTRIC A/C & HEATING,(407) 884-0844,,apopka,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4079050058,"H&S ELECTRICAL, INC.",(407) 905-0058,,ocoee,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4079253462,TECH SERVICES,(407) 925-3462,techservicesspecialties.com,casselberry,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4079478575,MR. ELECTRIC OF LAKE COUNTY,(407) 947-8575,,clermont,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4079485403,JFC ELECTRIC LLC,(407) 948-5403,jfcelectricllc.com,suite b orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4079845000,GENERATOR SUPERCENTER OF ORLANDO,(407) 984-5000,generatorsupercenter.com,altamonte springs,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4082140775,BINGO ELECTRIC,(408) 214-0775,bingoelectric.com,navajo trl los gatos,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4082178621,ANTHONY LEWIS INC,(408) 217-8621,anthonylewisinc.com,san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4082788888,TAYLOR ELECTRICAL CONSTRUCTION INC,(408) 278-8888,,san jose,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4083046044,HAWKS VIEW STRUCTURES,(408) 304-6044,,santa clara,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4083905494,IN & OUT ELECTRIC INC.,(408) 390-5494,inoutelectric.com,ive union city,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4084128165,PRO CIRCUIT ELECTRIC,(408) 412-8165,procircuit.generacdealers.com,campbell,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4084464141,"ANYS, INC",(408) 446-4141,,santa clara,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4084558142,"GREEN STATE ELECTRIC, LLC",(408) 455-8142,greenstateelectric.com,scotts valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4084992740,STALLINGS ELECTRIC LLC,(408) 499-2740,,felton,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4085086372,PACIFIC COAST ELECTRIC HEAT & AIR,(408) 508-6372,pc-homeservices.com,suite a san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4085927238,BLUECON,(408) 592-7238,,san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4086053084,ALTERNATIVE POWER AND ELECTRIC,(408) 605-3084,,boulder creek,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4086144375,WOLFE ELECTRIC CO.,(408) 614-4375,,campbell,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4086881546,AVANT ELECTRIC INC,(408) 688-1546,,san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4087489663,WOODING ELECTRIC,(408) 748-9663,woodlingelectric.com,e n santa clara,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4087962537,UNIQUE POWER ELECTRIC,(408) 796-2537,,san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4088922453,RISSAKHANI,(408) 892-2453,rissakhani.com,san jose,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4089340730,"A PLUS GENERAL CONTRACTORS, INC",(408) 934-0730,aplusheatingandair.com,milpitas,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4097393891,THE SHOCK DOC ELECTRICAL SRVCS LLC,(409) 739-3891,shockdocelectrical.com,unit a league city,TX,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+4122288223,GENERATOR SUPERCENTER OF PITTSBURGH,(412) 228-8223,generatorsupercenter.com,pittsburgh,PA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+4122574257,JM GENERAL MAINTENANCE SERVICES LLC,(412) 257-4257,247backuppower.com,n bridgeville,PA,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+4122875259,THREE RIVERS REPAIR & PROTECT LLC,(412) 287-5259,threeriversrepair.com,bethel park,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4125061087,"GROUND UP CONTRACTING, LLC",(412) 506-1087,groundup-usa.com,sewickley,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4125217376,LEVENREICH ELECTRIC,(412) 521-7376,,reet pittsburgh,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4125370687,SOUTH HILLS ELECTRIC LLC,(412) 537-0687,southhillselectric.com,pittsburgh,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4126672921,"BEST ELECTRICAL SERVICES, LLC",(412) 667-2921,,irwin,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4126807661,MURRAY ELECTRICAL CONTRACTORS LLC,(412) 680-7661,murrayelectricalcontractors.com,pittsburgh,PA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4127159774,PITTSBURGH ELECTRIC & MAINTENANCE LLC,(412) 715-9774,,um,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4127418525,APEX ASSOCIATES ELECTRIC INC.,(412) 741-8525,,sewickley,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4127714100,"TUDI MECHANICAL SYSTEMS, INC.",(412) 771-4100,tudi.com,mckees rocks,PA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+4127730945,B N ELECTRIC & COMMS,(412) 773-0945,,pittsburgh,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4128351010,J&A HTG COOL PLUMB & ELECTRICAL LLC,(412) 835-1010,jandahvac.com,mifflin,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4128511000,BEVERLY SERVICES,(412) 851-1000,beverlyservices.com,bethel park,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4128540883,"R.G. BEHERS ELECTRICAL SERVICE, INC",(412) 854-0883,rgbeherselectric.com,pittsburgh,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4128632536,JH ELECTRIAL CONTRACTING,(412) 863-2536,jhelectricalcontracting.com,greensburg,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4129012098,MJM ELECTRICAL CONTRACTING LLC,(412) 901-2098,mjmelco.com,avosburg,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4129963866,DYNAMIC HEATING & COOLING SYSTEMS,(412) 996-3866,dynamicheatingandcoolingsystems.com,allison park,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4152557831,"WELLS ELECTRICAL, INC.",(415) 255-7831,wellselectricalinc.com,san francisco,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4152990381,DIVINE ELECTRIC INC,(415) 299-0381,divineelectricandplumbing.com,suite e san rafael,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4154601264,"BELLOWS PLUMBING, HEATING & AIR INC",(415) 460-1264,bellowsservice.com,san rafael,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4154898013,HINES CUSTOM REMODELING,(415) 489-8013,,mill valley,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4157224353,"TOWERY ELECTRIC, INC.",(415) 722-4353,toweryelectric.com,kerner suite n san rafael,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4157260809,MARIN ELECTRIC INC,(415) 726-0809,marinelectricians.com,corte madera,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4158231121,MASON HEATING AND AIR,(415) 823-1121,,south san francisco,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4244367709,ALL POWER SOLUTION,(424) 436-7709,,rancho dominguez,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4692337216,OMNI HOLDING CO.,(469) 233-7216,omniholding.biz,grapevine,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4694040899,GOOD LIFE ELECTRICAL SERVICES LLC,(469) 404-0899,,carrollton,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4694045675,SAE NTX 1 21ST CENTURY MECHANICAL,(469) 404-5675,,lewisville,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4694121923,GONELECTRICAL L.L.C.,(469) 412-1923,,mesquite,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4694310570,"LOCAL POWER USA, LLC",(469) 431-0570,localpowerusa.com,dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4697344744,"JH ELECTRIC, LLC",(469) 734-4744,jhelectricdallas.com,frisco,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4697787800,MAC SERVICE GROUP LLC,(469) 778-7800,macservicesgroup.com,,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4698405998,CUSTOM PRO ROOFING & SOLAR,(469) 840-5998,custompro.us,dallas,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4842615590,MERRY BROTHERS ELECTRICAL SERVICES,(484) 261-5590,,barto,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+4844296786,CHELSVIG ELECTRIC INC,(484) 429-6786,chelsvigelectric.com,narberth,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4844713981,"MUSCATELLO ELECTRICAL, INC.",(484) 471-3981,muscatelloelectrical.com,rtown,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+4844868021,WM HENDERSON PLUMBING HVAC SERVICES,(484) 486-8021,wmhendersoninc.com,broomall,PA,Generac,1,26.0,BRONZE,0.0,40.0,25,50.0,False,1,1,False,0
+4845245265,"MARRIED 2 ELECTRIC, LLC",(484) 524-5265,married2electric.com,farmington ave ste a pottstown,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4846241562,OSE SERVICES,(484) 624-1562,oseservicespa.com,barto,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+4846857999,"COLONIAL E.P., LLC",(484) 685-7999,colonialgenerators.com,king of prussia,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+4847977064,MD HOME ELECTRICAL SOLUTIONS LLC,(484) 797-7064,,media,PA,Generac,1,26.0,BRONZE,0.0,40.0,25,50.0,False,1,1,False,0
+4848860341,GELET ELECTRICAL LLC,(484) 886-0341,geletelectricalllc.com,,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5037588088,HILLSIDE ELECTRIC LLC,(503) 758-8088,,e,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5082080175,MARK FRANZONI ELECTRICIAN,(508) 208-0175,,on,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5082123011,CHAMPION ELECTRICAL SERVICES INC,(508) 212-3011,callthechamp.com,cumberland,RI,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5082302199,"CROUCH ELECTRICAL CONTRACTING, LLC",(508) 230-2199,,on,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5082311400,"JAMIE OIL COMPANY, INC.",(508) 231-1400,jamieoil.com,ashland,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5082389922,DAVID ANDERSON ELECTRIC CO INC,(508) 238-9922,,on,MA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+5083090542,MENINNO ELECTRIC LLC,(508) 309-0542,meninnoelectric.com,on,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5083843973,LAVALLEE ELECTRIC,(508) 384-3973,lavalleeelectric.com,wrentham,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5084002067,CHARLES BUENO ELECTRICAL SERVICES,(508) 400-2067,,reviews  framingham,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5084005571,PHILIP M. BRUNELLI JR. ELEC. CORP,(508) 400-5571,,reet franklin,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5084735833,"PRECISION ELECTRIC, INC.",(508) 473-5833,,mendon,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5085201638,O'KOREN ELECTRICAL,(508) 520-1638,okorenelectrical.com,franklin,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5085368138,SUMMIT ELECTRIC CORP.,(508) 536-8138,summitelectriccorp.com,wrentham,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5085842004,"BRAVA ELECTRIC & TELECOM, INC.",(508) 584-2004,bravaelectric.com,brockton,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5085866997,W.S. ANDERSON INC.,(508) 586-6997,,reet brockton,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5089427441,ANNESE EQUIPMENT SERVICES,(508) 942-7441,,whitman,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5089643532,BOOKER ELECTRICAL SERVICES INC.,(508) 964-3532,bookerelectric.com,mansfield,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5103757526,4 E TELLEZ ELECTRIC INC,(510) 375-7526,,vallejo,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5104512929,"GILL'S ELECTRIC CO, INC",(510) 451-2929,,oakland,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5106311724,ILLUMINATE ELECTRIC SF INC.,(510) 631-1724,illluminateelectric.net,el sobrante,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5107089703,MOFFITT ELECTRIC,(510) 708-9703,,,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5107594942,L H P ELECTRICAL COMPANY,(510) 759-4942,lhpelectrical.com,newark,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5107809489,"CENTURY ROOF AND SOLAR, INC.",(510) 780-9489,centuryroofandsolar.com,,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5108763522,"R PRO ELECTRIC, INC.",(510) 876-3522,rproelectric.com,fremont,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5108805829,HITEK ELECTRICAL,(510) 880-5829,ihiredhitek.com,,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5122063188,MEND SERVICES,(512) 206-3188,mendservices.com,in,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5122219272,"J & J POWER SOLUTIONS, INCORPORATED",(512) 221-9272,j-jpowersolutions.com,in,TX,Generac,1,25.0,BRONZE,60.0,0.0,25,25.0,False,1,1,False,0
+5122382058,HONEST PLUMBING AND AIR,(512) 238-2058,honestairconditioning.biz,hutto,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5122386699,SOS MECHANICAL LLC,(512) 238-6699,sosmechanical.net,suite b round rock,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5122512247,AUSTIN GENERATOR SERVICE,(512) 251-2247,austingenerator.net,in,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5122520040,"IES RESIDENTIAL, INC.",(512) 252-0040,iesresidentialatx.generacdealers.com,pflugerville,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5122560751,SALT LIGHT AND ELECTRIC,(512) 256-0751,saltle.com,hutto,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5122671188,"LANTZ HOME SERVICES, INC.",(512) 267-1188,lantzhomeservices.com,a,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+5123019111,MALLORY ENTERPRISES INC,(512) 301-9111,malcoelectric.com,in,TX,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+5123331045,AMERICAN RESIDENTIAL SERVICES LLC,(512) 333-1045,ars.com,in,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5123711888,BLUE DIAMOND M.E.P.,(512) 371-1888,bluediamondmep.com,hutto,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5123874232,NOMIC POWER SOLUTIONS,(512) 387-4232,nomicpower.com,in,TX,Generac,1,35.0,BRONZE,40.0,40.0,25,25.0,False,1,1,False,0
+5124027096,BLACK CAT SR LLC,(512) 402-7096,bctoolsusa.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5124229027,"IN CHARGE ELECTRICAL SERVICES, LLC",(512) 422-9027,inchargeelectricalservices.com,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5124237074,JULIO FLORES PEREZ JR,(512) 423-7074,,round rock,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5124449700,A.C. ELECTRIC LLC,(512) 444-9700,acelectricaustin.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5124489292,FOX SERVICE COMPANY,(512) 448-9292,foxservice.com,in,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+5124612077,"GENTEX GENERATORS, LLC",(512) 461-2077,,spicewood,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5124972680,SPARK ELECTRICAL SERVICES LLC,(512) 497-2680,sparkelectricalservices.com,del valle,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5125183791,"AMPOLOGY ELECTRICAL SERVICES, LLC",(512) 518-3791,,in,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5125214679,SOLAR FIX ELECTRICAL SERVICES,(512) 521-4679,solarfixtx.com,in,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5125486635,HOLESHOT ELECTRIC LLC,(512) 548-6635,holeshotelec.com,liberty hill,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5125730777,AC DC ELECTRICAL SERVICES INC,(512) 573-0777,,liberty hill,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5125866753,"JOHN PENNEY II ELECTRICAL, INC.",(512) 586-6753,penneyelectrical.com,ipping springs,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5125994061,"DUVALL ELECTRIC, INC.",(512) 599-4061,duvallelectric.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5126140226,"JM ENGINEERING, LLC",(512) 614-0226,jm-engineer.com,round rock,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5126239280,"GHK ONE SOURCE BUILDING CARE, LLC",(512) 623-9280,,in,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5126373162,SENDERO HOMES,(512) 637-3162,,in,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5126528463,"RPE ENTERPRISES, LLC",(512) 652-8463,,kyle,TX,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+5126637134,JTX ELECTRICAL LLC,(512) 663-7134,,leander,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5126664656,ATX ELECTRICAL LLC,(512) 666-4656,,pflugerville,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5126670299,RHINO ELECTRIC,(512) 667-0299,,wimberly,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5126729632,AUSTIN RELIANCE HEATING & AC INC,(512) 672-9632,austinreliance.com,del valle,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5126982404,BEAR ELECTRIC LLC,(512) 698-2404,,leander,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5127223255,WIMBERLEY ELECTRIC LLC,(512) 722-3255,wimberleyelectric.com,wimberley,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5127455409,"ABACUS PLUMBING, AC & ELECTRICAL",(512) 745-5409,abacusplumbing.com,in,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+5127635994,WATERLOO POWER LLC,(512) 763-5994,waterloopower.com,kyle,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5127654101,GENERATOR SUPERCENTER OF AUSTIN,(512) 765-4101,generatorsupercenter.com,e cedar park,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5127664556,DKD ENERGY,(512) 766-4556,dkdenergy.com,in,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5127695005,"JAMES BLEND SERVICES, LLC",(512) 769-5005,jamesblendservices.com,loch linnhe loop pflugerville,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5127786240,IN CHARGE ELECTRICAL SERVICES LLC,(512) 778-6240,inchargeelectricalservices.com,round rock,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5127879660,HILL COUNTRY ENERGY SOLUTIONS,(512) 787-9660,,ipping springs,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+5127883646,"THIRD AND MODERN, LLC",(512) 788-3646,,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5128298219,"PURCELL ELECTRIC, INC.",(512) 829-8219,purcelltx.generacdealers.com,ipping springs,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5128339101,"ALPHA MECHANICAL SERVICES, CORP.",(512) 833-9101,alphamechanicalservices.com,pflugerville,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5128379500,"ABC HOME & COMMERCIAL SERVICES, INC",(512) 837-9500,abchomeandcommercial.com,in,TX,Generac,1,47.0,SILVER,60.0,60.0,25,0.0,False,1,1,False,0
+5128427787,WHITEHART ELECTRIC,(512) 842-7787,whitehartenergy.com,wimberley,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5128444835,"TEJAS ELECTRIC, LLC",(512) 844-4835,tejaselectric.com,ipping springs,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5128699978,"ARMOR UTILITIES, LLC",(512) 869-9978,armorutilities.com,georgetown,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5128974216,CAPITAL POWER SYSTEMS,(512) 897-4216,capitalpowersystems.com,in,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5129059727,HUTTO ELECTRICAL SERVICES LLC,(512) 905-9727,huttoelectricalservices.com,reet hutto,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5129239354,LT ELECTRIC,(512) 923-9354,,pinseeker selma,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5129300767,"ALLIED ELECTRIC SERVICES, INC.",(512) 930-0767,alliedelectric.us,georgetown,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5129399485,"MCF TEKS, INC",(512) 939-9485,maxpowersolutions.net,cedar park,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5129490173,"WESTCO ELECTRICAL SERVICES, LLC",(512) 949-0173,,georgetown,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5129936584,DYKES ELECTRIC,(512) 993-6584,dykeselectricco.com,leander,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5303064452,BEARDSLEE ELECTRICAL CONCEPTS INC,(530) 306-4452,,rocklin,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5303083274,SWIHART ENTERPRISES & ELECTRICAL,(530) 308-3274,swihartelectrical.com,loomis,CA,Generac,1,25.0,BRONZE,60.0,0.0,25,25.0,False,1,1,False,0
+5304021182,WOODLAND ELECTRICAL INC.,(530) 402-1182,woodlandelectrical.com,woodland,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5304920033,NORTHWEST ENTERPRISES INC,(530) 492-0033,,suite l sacramento,CA,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+5304923025,PEG CONSTRUCTION INC,(530) 492-3025,,rocklin,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5307184731,GENERATOR GUARD LLC,(530) 718-4731,,penryn,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5612025114,ROLAND ELECTRIC INC,(561) 202-5114,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5612391146,PHOENIX ELECTRIC CO. LLC,(561) 239-1146,justcallphoenix.com,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5612827549,"PURSUIT ELECTRICAL, INC.",(561) 282-7549,pursuit-electrical-inc.business.site,lake worth beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5612858939,"RACK ELECTRIC, LLC",(561) 285-8939,rackelectric.com,boca raton,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5612873748,"RACK ELECTRIC, LLC",(561) 287-3748,rackelectric.com,riviera beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5613525555,RAJ ELECTRIC INC.,(561) 352-5555,rajelectric.com,n old dixie hwy jupiter,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+5613593491,GRILLTANKSPLUS LLC,(561) 359-3491,grilltanksplus.com,e k delray beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5613602882,PROSTAR ELECTRIC LLC,(561) 360-2882,prostarelectricfl.com,riviera beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5613624484,RELIABLE POWER SYSTEMS,(561) 362-4484,myreliablepower.com,petersburg,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5613835654,SAFARI ELECTRIC INC.,(561) 383-5654,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614003836,"RED LINE ELECTRICAL SERVICES, LLC",(561) 400-3836,,jensen beach,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5614080722,EXCEL ELECTRIC LLC,(561) 408-0722,excelelectricsouthflorida.com,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614093991,"B & B POWER SOLUTIONS, INC.",(561) 409-3991,generac.bandbpowersolutions.com,boca raton,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5614199449,GOLD STANDARD INTEGRATION LLC,(561) 419-9449,,e b jupiter,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614270324,BILL GILBERT ELECTRIC INC,(561) 427-0324,billgilbertelectricfl.com,a,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614339074,JMS ELECTRIC LLC,(561) 433-9074,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614368251,"DG ELECTRICAL, LLC",(561) 436-8251,,palm beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5614415017,ZEITZ ELECTRIC INC.,(561) 441-5017,,delray beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614464247,QUALITY DIESEL REPAIR INC,(561) 446-4247,qualitydieseltrucks.com,ens,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5614636955,ASSURANCE POWER SYSTEMS LLC,(561) 463-6955,assurancepower.com,nue delray beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5614674691,BO'S ELECTRIC & GAS,(561) 467-4691,boselectric.com,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614789234,"POWER GENERATION, INC.",(561) 478-9234,ww.powergenerationinc.com,lake worth,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5614980667,RCB ELECTRIC COMPANY,(561) 498-0667,rcbelectric.net,delray beach,FL,Generac,1,33.0,BRONZE,40.0,40.0,25,0.0,False,1,1,False,0
+5615779074,"DC FLORIDA SERVICE, L.L.C.",(561) 577-9074,,palm spring,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5615818499,"GENERX GENERATORS, LLC",(561) 581-8499,fixmygen.com,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5615822600,WALLY NASSIF ELECTRICAL CONT. SVC,(561) 582-2600,nassifelectric.com,palm beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5615848455,SOUTHERN COAST SERVICES INC,(561) 584-8455,southerncoastservices.com,boca raton,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5615899411,GTC ELECTRIC LLC,(561) 589-9411,,jupiter,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5616038170,GENERATOR WORKS LLC,(561) 603-8170,generatorwork.com,boynton beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5616378269,"J.D.L. ELECTRICAL & GEN SRVC, LLC",(561) 637-8269,jdlelectrical.com,aspen ridge circle delray beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5616624235,"CARPENTER ELECTRIC, INC.",(561) 662-4235,carpenter-electric.com,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5616841380,ANYTHING ELECTRIC INC.,(561) 684-1380,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5616846400,STAR GENERATION LLC,(561) 684-6400,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5616869776,JEF & KEV ELECTRICAL COMPANY,(561) 686-9776,,palm beach,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5616998898,SUNCOAST CONTRACTORS EMERG SVCS INC,(561) 699-8898,24x7elecricians.com,boynton beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5617177070,RFI COMPANIES INC,(561) 717-7070,rficompanies.com,w jupiter,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5617462470,NORTH ATLANTIC ELECTRIC INC,(561) 746-2470,,jupiter,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617470833,"DCS ELECTRIC, INC.",(561) 747-0833,dcselectric.com,ens,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617472862,COMPLETE ENVIRONMENTAL SOLUTION LLC,(561) 747-2862,completeenvirosolutions.com,jupiter,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5617475740,XTRA MILE COOL PLUMBING & ELECT LLC,(561) 747-5740,xtramilefl.com,riviera beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5617675629,RAZORBACK ELECTRIC INC.,(561) 767-5629,razorbackelectric.com,delray beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617747714,GENERATOR SUPERCENTER PALM BEACHES,(561) 774-7714,generatorsupercenter.com,w palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617841171,BRITE IDEAS OF SOUTH FLORIDA INC,(561) 784-1171,briteideasofsouthflorida.com,wellington,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617901830,ALBERT ELECTRIC INC,(561) 790-1830,,west palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5617933415,LOXAHATCHEE ELECTRICAL SERVICES LLC,(561) 793-3415,,riviera beach,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+5618018881,ESKEW ELECTRIC LLC,(561) 801-8881,eskewelectric.net,whippoorwill trl jupiter,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5618337591,MARINE ENGINE EQUIPMENT,(561) 833-7591,,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5618447004,SAFETOUCH LLC,(561) 844-7004,safetouch.com,lake park,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5618450406,COMPLETE POWER RESOURCES,(561) 845-0406,,n militany trail riviera beach,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5618476258,URBAN HVACR & PLUMBING LLC,(561) 847-6258,,palm beach,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+5618768081,DIVISION 16 ELECTRIC COMPANY LLC,(561) 876-8081,,delray beach,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5618955146,SANSONE AIR CONDITIONING,(561) 895-5146,,rhill,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5618997697,TOTAL POWER GENERATION LLC,(561) 899-7697,,boynton beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5619104512,COMPLETE INTEGRATED TECHNOLOGY,(561) 910-4512,completeintegratedtech.com,wellington,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+5619358450,"THIRD DAY ELECTRIC, LLC",(561) 935-8450,,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5619619515,"MICROFIX GROUP, LLC.",(561) 961-9515,,wellington,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5624144425,"BYLTUP, INC.",(562) 414-4425,byltup.com,long beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5625955053,RONALD ELECTRIC & CONSTRUCTION INC.,(562) 595-5053,,long beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5626321311,"DES ELECTRICAL, INC",(562) 632-1311,deselectrical.net,whittier,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+5627955754,"LEONE ELECTRIC, INC.",(562) 795-5754,leoneelectric.com,los alamitos,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+5868502533,MODERN EDISON INC,(586) 850-2533,modernedisonelectric.com,sacramento,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6092081330,"INDOOR AIR TECHNOLOGIES, INC.",(609) 208-1330,indoorairtech.com,n robbinsville,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6092174580,JSR GENERATOR SERVICES,(609) 217-4580,,haddon heights,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6092205335,RONALDSON ELECTRICAL CONST LLC,(609) 220-5335,ronaldsonelectrical.com,indian mills,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6092734700,GREEN LIGHT GENERATOR LLC,(609) 273-4700,greenlightgenerator.com,mercerville,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6093135403,JCON ELECTRIC LLC,(609) 313-5403,,hampton,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6093360400,GARDEN STATE POWER GENERATION CO,(609) 336-0400,,robbinsville,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6093972297,ALAN C. HORTON ELECT. CONTRACTOR,(609) 397-2297,,reet lambertville,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6095343143,CHESTERFIELD ELECTRIC & HVAC LLC,(609) 534-3143,chesterfieldelectricandhvac.com,own,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6095871195,BAUER GEN SYSTEMS LLC,(609) 587-1195,,ewing,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6096106809,VENOSE ELECTRIC LLC,(609) 610-6809,venoseelectricllc.com,trenton,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6096474986,PRINCETON ELECTRICAL MAKEOVER LLC,(609) 647-4986,,c princeton,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6097371850,THE SHUNT CORP. T/A HOLCOMBE ELECT.,(609) 737-1850,holcombeelectric.com,titusville,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6097379129,YEOMAN ELECTRIC INC,(609) 737-9129,,pennington,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6097581269,HAMMER ELECTRIC AND GENERATORS LLC,(609) 758-1269,hammerelectric.com,allentown,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6098012420,PARADISE SOLAR AND ELECTRICAL LLC,(609) 801-2420,paradisesolarllc.com,southampton,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6099211151,THE ICE-MAN,(609) 921-1151,the-ice-man.com,featherbed lane hopewell,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6102150252,GENERATOR SUPERCENTER OF MAINLINE,(610) 215-0252,generatorsupercenterofthemainline.com,king of prussia,PA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+6102202997,MY FAMILY ELECTRIC LLC,(610) 220-2997,,coatesville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6102226525,SUNRISE COMFORT SOLUTIONS LLC,(610) 222-6525,sunrisecomfort.com,er,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6102275121,BACCARO ELECT & PLUMBING CONTR INC,(610) 227-5121,,collegeville,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6102577726,POWER WATCH SYSTEMS,(610) 257-7726,powerwatchsystems.com,ridge pike eagleville,PA,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+6102949604,CAMPBELL REFRIGERATION & ELECT LLC,(610) 294-9604,,pipersville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6103632006,CTS ELECTRIC,(610) 363-2006,ctselectric.com,cobbleskill lane exton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6103679720,DAVIDSON KEEN ELECTRICAL CONTR INC,(610) 367-9720,davidsonkeen.com,own,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6104160942,DORR ELECTRIC LLC,(610) 416-0942,dorrelectric.com,elverson,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6104494902,ALL PHASE ELECTRIC CO,(610) 449-4902,allphaseelectrico.com,er pike upper darby,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6104919400,"SILA SERVICES, LLC",(610) 491-9400,philadelphia.sila.com,king of prussia,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6104919409,"SILA SERVICES, LLC",(610) 491-9409,,king of prussia,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6105043900,O'MAC ELECTRIC LLC,(610) 504-3900,,gilbertsville,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6105392920,M.T. RUHL ELECTRICAL CONTR. INC.,(610) 539-2920,mtruhl.com,e b phoenixville,PA,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+6105442488,MARDINLY INDUSTRIAL POWER,(610) 544-2488,mardinlypower.com,broomall,PA,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+6105535318,"J.M. OLIVER, INC.",(610) 553-5318,oliverheatcool.com,morton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6105661972,ZIP ELECTRIC INC,(610) 566-1972,zip-electric.com,media,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6105843190,MARHSALL SERVICES,(610) 584-3190,marshallservice.com,schwenksville,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6105874196,"WEAVER ELECTRIC, INC.",(610) 587-4196,,kennett square,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6106157300,LIGHTNING TECHNOLOGIES LLC,(610) 615-7300,lightning-technologies.com,er springs,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6106600340,BLESSING ELECTRIC COMPANY,(610) 660-0340,blessingelectric.com,reet landsdowne,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+6106884900,MAIN LINE ELECTRICAL COMPANY,(610) 688-4900,,ne,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6108277324,"CHICO ELECTRIC, LLC",(610) 827-7324,chicoelectricllc.com,er springs,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6108340403,"A.F.L. ELECTRIC, LLC",(610) 834-0403,,ymouth meeting,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6108730612,"JAMAC, INC.",(610) 873-0612,,downingtown,PA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+6108816757,HAWKE ELECTRICAL,(610) 881-6757,horizonservices.com,audubon,PA,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+6108887262,HK ELECTRIC LLC,(610) 888-7262,,er,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6109554397,COUNTYWIDE GENERATORS LLC,(610) 955-4397,countywidegenerators.com,broomall,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6175007060,FB GENERATORS,(617) 500-7060,fbis360.com,needham,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6175530005,TSD ELECTRIC LLC,(617) 553-0005,,wood,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6175900558,PENNEY ELECTRICAL CORP.,(617) 590-0558,,oneham,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6175948467,"BEACON MECHANICAL SERVICE, LLC",(617) 594-8467,beaconmechanicalservice.com,oughton,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6176451348,"EMCO ELECTRIC, INC.",(617) 645-1348,emcoelectricma.com,norfolk,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6177802012,CONWAY ELECTRICAL SERVICES INC,(617) 780-2012,,framingham,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6177913256,MICHAEL DIMARE LIC ELECTRICIAN LLC,(617) 791-3256,,wilmington,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6178757931,TOM DUNPHY ELECTRICAL LLC,(617) 875-7931,,reet quincy,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6193688185,"OFFGRID SYSTEMS, INC.",(619) 368-8185,offgridsys.com,santee,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6194429595,THE WATCHLIGHT CORPORATION,(619) 442-9595,watchlight.com,el cajon,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6194450500,CREST UTILITIES INC,(619) 445-0500,crestelectricinc.com,alpine,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6194481488,TRIPLE S ELECTRIC,(619) 448-1488,,santee,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6195839545,MAUZY PLUMBING HVAC & ELECTRIC,(619) 583-9545,mauzy.com,escondido,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+6197606260,VETERAN ELECTRICAL LLC,(619) 760-6260,,ive heath,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6199172080,"ROMA ENGINEERING & CONSTRUCT, INC.",(619) 917-2080,,el cajon,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6199388200,BAY CITY EQUIPMENT INDUSTRIES INC,(619) 938-8200,bcew.com,lakeside,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6199921632,O'COYNE ELECTRIC INC.,(619) 992-1632,ocoyneelectric.com,alpine,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6236986304,"ALTUREX, LLC",(623) 698-6304,alturex.com,midlothian,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6262551206,CROWN ELECTRIC,(626) 255-1206,crown-electrics.com,pasadena,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6263008887,WYREDREAMS,(626) 300-8887,wyredreams.com,san marino,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6265604173,SMART ELECTRICAL SOLUTIONS INC,(626) 560-4173,,glendora,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+6266210701,ZERO ELECTRIC,(626) 621-0701,zeroelectricinc.com,duarte,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6268086654,PRECISION ELECTRICAL SYSTEMS INC,(626) 808-6654,,duarte,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+6269221964,IMC ELECTRIC CO.,(626) 922-1964,,unit g glendora,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6317084225,ASSURANCE POWER SYSTEMS,(631) 708-4225,,lucie,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+6502220417,"J & J OWENS ELECTRIC, INC.",(650) 222-0417,owenselectricinc.com,san mateo,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6504498088,NORCAL GENERATOR,(650) 449-8088,,suite b belmont,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6504682419,KEPLER ELECTRIC LLC,(650) 468-2419,keplerelectric.com,south san francisco,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6505766357,BENNETT ELECTRIC LLC,(650) 576-6357,,pescadero,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6505871698,PREMIER ELECTRICAL COMPANY,(650) 587-1698,premierelectricalcompany.com,ramos cir sacramento,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+6507134684,ELECTRIC MD,(650) 713-4684,electricmdinc.com,la honda,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6507661000,CHARLES ELECTRIC,(650) 766-1000,charleselectrichmb.com,half moon bay,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6616184918,OLI ELECTRIC INC.,(661) 618-4918,olielectric.com,los angeles,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6693001333,WILSON ELECTRIC,(669) 300-1333,wilsonelectric.works,boulder creek,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6822294590,FLYIN R ELECTRIC,(682) 229-4590,flyinrelectric.com,aledo,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6823097375,ENERGIZER BILL'Z,(682) 309-7375,,euless,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6823334372,GENSOLAR LLC,(682) 333-4372,gensolar.net,,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6824507478,NTX POWER,(682) 450-7478,ntx-power.com,brock,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6824786088,EPIC INDUSTRIES,(682) 478-6088,epicelectrical.com,north richland hills,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6826265311,"CANO ELECTRIC, INC.",(682) 626-5311,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6827184741,SOLARUGREEN CORPORATION,(682) 718-4741,,,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+6892457333,"FRANK GAY SERVICES, LLC",(689) 245-7333,frankgayservices.com,winter park,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7076781784,GREINER HEATING-AIR-SOLAR ENERGY INC,(707) 678-1784,ghac.com,dixon,IL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7132613036,KNIGHT INDUSTRIES LLC,(713) 261-3036,knightfsp.com,e humble,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7132942151,TMCO/TEMPERATURE MAINTENANCE CO INC,(713) 294-2151,,on,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7133557816,VOLTEX ELECTRIC AND GENERATOR LLC,(713) 355-7816,,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7134199939,STARK POWER,(713) 419-9939,starkimprovements.com,cypress,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7134667426,MORGAN AIR SERVICES LLC MORGAN PRO SERVI,(713) 466-7426,morganproservices.com,on,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7134671125,GENERATORS BY WIRED,(713) 467-1125,generatorsbywired.com,tomball,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7135261491,"VILLAGE PLUMBING, AIR AND ELECTRIC",(713) 526-1491,villageplumbing.com,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7135689437,BAYOU CITY AIRE LLC,(713) 568-9437,bayoucityac.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7135747524,INFINITE POWER ELECTRICAL SERVICES,(713) 574-7524,infinitepowerelectrical.com,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7135941967,VENARI ELECTRIC LLC,(713) 594-1967,venarielectric.com,la porte,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7136476767,"FACILITIES ELECTRIC, INC",(713) 647-6767,facilitieselectric.com,on,TX,Generac,1,25.0,BRONZE,60.0,0.0,25,25.0,False,1,1,False,0
+7136990623,AIR TECHS OF HOUSTON LLC,(713) 699-0623,airtechofhouston.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7137056402,BELMAN GRAND ELECTRIC INC,(713) 705-6402,,yaupon trl humble,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7137214669,TEXAS ELECTRICAL RESI CONTRS LLC,(713) 721-4669,texelectrical.com,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7137228757,STAR LIGHTING LED,(713) 722-8757,starlightingled.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7137302525,"JOHN MOORE, LLC",(713) 730-2525,johnmooreservices.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7137777777,ARS OF HOUSTON,(713) 777-7777,ars.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7138127070,ABACUS PLUMBING A/C & ELECTRICAL,(713) 812-7070,abacusplubming.net,on,TX,Generac,1,30.0,BRONZE,40.0,20.0,25,50.0,False,1,1,False,0
+7138127285,GENERATORS OF HOUSTON,(713) 812-7285,generatorsofhouston.generacdealers.com,on,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7138289657,ESA SYSTEMS LLC,(713) 828-9657,esas-llc.com,ribbon creek san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7138303280,A & A GENPRO INC.,(713) 830-3280,aagenpro.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7138494427,COLWELL ELECTRIC,(713) 849-4427,colwellelectric.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7138959606,PRINCIPAL ELECTRICAL CONTRACTOR LLC,(713) 895-9606,,on,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7139009140,"PATRIOT SERVICES ELECTRIC, LLC",(713) 900-9140,,katy,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7139133030,ELMER'S HOME SERVICES LLC,(713) 913-3030,elmershomerservices.com,on,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+7139279475,STONECREST CONSTRUCTION INC.,(713) 927-9475,stonecrestcorp.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7139299454,STARLIGHT SOLAR,(713) 929-9454,starlightsolartexas.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7139991890,UNITY ELECTRICAL SERVICES LLC,(713) 999-1890,unityservices.team,cypress,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7142064757,PHILLIP JASON BROWING,(714) 206-4757,,huntington beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7146502445,TOTAL POWER SOLUTIONS LLC.,(714) 650-2445,totalpwrsolutions.com,buena park,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7147256751,DESIGN CRAFT LLC,(714) 725-6751,designcraftfab.com,unit l huntington beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7147461131,CONSTANT POWER CORPORATION,(714) 746-1131,constantpowercorporation.com,via del prado yorba linda,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7148523700,MAX BOOST POWER SOLUTIONS,(714) 852-3700,,santa ana,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7148901602,"BEC ELECTRIC, INC.",(714) 890-1602,callexcalibur.com,brea,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7149010500,A PLUS GENERAL CONTRACTORS INC,(714) 901-0500,aplusgc.com,en grove,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7149843941,MR. ELECTRIC OF ORANGE,(714) 984-3941,,laguna hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7149908133,A WIRING MAN,(714) 990-8133,awiringman.com,fullerton,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7242428493,MR. ELECTRIC OF NORTH HILLS,(724) 242-8493,mrelectric.com,pittsburgh,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7243524844,MAGNUM ELECTRIC INC,(724) 352-4844,,saxonburg,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7243554905,MCGREGOR EXCAVATING,(724) 355-4905,,fenelton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7244482960,POLLINO ELECTRIC AND MAINTENANCE LLC,(724) 448-2960,comcast.net,lower burrell,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7244878105,"GENESIS GENERATORS, LLC",(724) 487-8105,,valencia,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7244938198,CAV ELECTRIC LLC,(724) 493-8198,,irwin,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7245043524,VECTOR TECHNICAL SERVICES LLC,(724) 504-3524,,e butler,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7245182311,ROOTED AND ROGUE LLC,(724) 518-2311,,venetia,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7246019075,BOSLAND ELECTRIC LLC,(724) 601-9075,boslandelectric.com,,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7246251515,"WOODHYRST, INC",(724) 625-1515,woodhyrst.com,butler,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7246393977,SHIRLEY HTG & AIR CONDITIONING INC,(724) 639-3977,,ive saltsburg,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7246404848,"PELLEGRINI ELECTRIC, INC.",(724) 640-4848,,elrama,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7246791652,THE BRIGHTER SIDE,(724) 679-1652,,butler,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7247771194,MR. ELECTRIC PANEL,(724) 777-1194,,pittsburgh,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7248223001,"J&J TECHNICAL ELECTRIC CONTR, INC.",(724) 822-3001,,reet butler,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7248451515,VOYTEX ELECTRICAL,(724) 845-1515,,leechburg,PA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7248649288,RC WATT,(724) 864-9288,pittgenerators.com,irwin,PA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7249140703,STONEKING ELECTRIC,(724) 914-0703,,mc donald,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7249911636,EDGAR ELECTRIC,(724) 991-1636,edgarelectric.com,e fenelton,PA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7272223769,"BLUE COLLAR ELECTRIC, LLC",(727) 222-3769,bluecollar-electric.com,palm harbor,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7272637592,"PERFORMANCE AC, ELECTRIC & PLUMBING",(727) 263-7592,,largo,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7272660308,SAFECIRCUIT ELECTRIC & LIGHTING LLC,(727) 266-0308,safecircuitelectric.com,palm harbor,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7272667588,LPFP GAS LLC,(727) 266-7588,,south pasadena,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7273310386,PINELLAS GENERATOR & ELECTRIC LLC,(727) 331-0386,pinellasgeneratorandelectric.com,n clearwater,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7273470202,"AIR QUALITY CONTROL, INC",(727) 347-0202,aqc-fl.com,petersburg,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7273501252,ELITE CRAFT PRO SERVICES LLC,(727) 350-1252,,clearwater,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7274104604,"AFJ ELECTRIC, LLC",(727) 410-4604,,ruskin,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7274476100,JACK JOYNER HEATING & A/C,(727) 447-6100,jackjoyner.com,clearwater,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7278534271,GUARDIAN GENERATOR LLC,(727) 853-4271,,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7279387224,AT YOUR SERVICE ELECTRIC LLC,(727) 938-7224,,holiday,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7279454584,H&L ELECTRICAL CONTRACTORS LLC,(727) 945-4584,,e regnas tampa,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7322128107,NAVESINK ELECTRICAL CONTRACTING INC,(732) 212-8107,navesinkelectric.com,sink maintenance little silver,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7322139509,ASSURED GNERATOR SYSTEMS LLC,(732) 213-9509,,rolling hills freehold,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7322223828,COASTAL REFRIGERATION CORP,(732) 222-3828,njrefrigeration.com,freehold,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7322367071,"ELECTRIC POWER NJ, LLC",(732) 236-7071,,keyport,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7322404199,ASTERAL ELECTRIC LLC,(732) 240-4199,asteralelectric.com,toms river,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7322491359,FRANKLIN ELECTRIC MAIN CO INC,(732) 249-1359,,somerset,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7322511111,"ARCTIC AIR CONDITIONING, INC.",(732) 251-1111,,old bridge,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7323321100,"JLC ELECTRICAL CONTRACTORS, LLC",(732) 332-1100,jlcelectricalcontractors.com,wall township,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7323346362,MR SPARKY,(732) 334-6362,,manalapan,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7323609050,LUNAR ELECTRICAL CONTRACTOR,(732) 360-9050,lunarelectric.com,old bridge,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7323662218,"SIRIGNANO ELECTRIC, L.L.C.",(732) 366-2218,,south amboy,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7323678324,"FOR-TECH ELECTRIC, LLC",(732) 367-8324,fortechelectric.com,lakewood,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7323690400,"BINSKY & SNYDER, LLC",(732) 369-0400,binskyhome.com,e e somerset,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7323804392,WAVE ELECTRIC COMPANY LLC,(732) 380-4392,,ive tinton falls,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7323912600,LIGHTING MECH & ELECTRIC SERV LLC,(732) 391-2600,lightingmechanical.com,c red bank,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7324096734,F S PLUMBING HEAT AND GEN CONT CORP,(732) 409-6734,fsplumbingandheating.com,freehold,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7324107818,GREEN SUN ENERGY SERVICES,(732) 410-7818,greensunnj.com,middletown,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7324142610,JOAN OF ARC ELECTRIC LLC,(732) 414-2610,,freehold,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7324158010,ALL TRADES MECHANICAL CONTRACTING,(732) 415-8010,,lakewood,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7324167719,AK AIRE LLC,(732) 416-7719,,north brunswick,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7324320164,DANLEY 911 HVAC PLUMBING & ELECT,(732) 432-0164,danley911.com,monroe,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7324469000,ASTEROID OPERATING COMPANY INC,(732) 446-9000,asteroidhvac.com,hamilton,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7324497117,ZEPHYR ELECTRIC & ELECTRICAL CONST,(732) 449-7117,zephyrelectric.org,wall township,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7324747760,R K ELECTRIC  CO,(732) 474-7760,,matawan,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7324960806,"ALLAIRE ELECTRICAL CONTRACTORS, INC",(732) 496-0806,,d wall township,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7325170400,MONMOUTH CUSTOM BUILDERS,(732) 517-0400,monmouthcustombuilders.com,deal,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7325529045,INTEGRITY ELECTRICAL CONTRG. INC,(732) 552-9045,integrityelectrical.us,wall twp,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7325692197,PRO ENERGY SOLUTIONS INC.,(732) 569-2197,proenergysolution.com,e j morganville,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7325752241,PG GENERATOR AND POWER CONSULTANTS,(732) 575-2241,pgpowergenerators.com,little silver,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7325798185,GENTECHPRO GENERATOR SPECIALISTS,(732) 579-8185,gentechpro.com,ainfield,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7325804763,AFFILIATED ELECT & GEN SYSTEMS LLC,(732) 580-4763,,freehold,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7326002927,CME ELECTRIC LLC,(732) 600-2927,cme-electric.com,ive toms river,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7326144036,POWER READY N.J.,(732) 614-4036,,wall township,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7327416300,LAWES COAL COMPANY INC,(732) 741-6300,lawescompany.com,nue shrewsbury,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7327493596,MM ELECTRIC LLC,(732) 749-3596,mmelectricnewjersey.com,neptune city,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7327650849,AMERICAN EAGLE HEAT & AC OF NJ INC,(732) 765-0849,americaneaglehvac.com,matawan,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7327668033,JAC ELECTRICAL SUPPLIES LLC,(732) 766-8033,,ace lakewood,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7327701437,CLASSIC ELECTRIC LLC,(732) 770-1437,classicelectriconline.com,easant,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7327754030,ALL SEASONS SERVICE,(732) 775-4030,allseasonsgenerator.com,asbury park,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7327803131,PRECISION TECH HOME SERVICES INC,(732) 780-3131,getprecisiontoday.com,ikes lane manalapan,NJ,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+7327846447,GUARANTEED SERVICE.COM LLC,(732) 784-6447,guaranteedservice.com,manasquan,NJ,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+7327861800,JANCO ELECTRIC LLC,(732) 786-1800,jancoelectric.com,manalapan,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7327872756,STARK ELECTRIC CORP.,(732) 787-2756,,,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7328340445,"SURE ELECTRIC, LLC",(732) 834-0445,sureelectricllc.com,marlboro,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7328352325,REVOLUTION ELECTRIC LLC,(732) 835-2325,,a neptune,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7328496552,SCOTT'S ELECTRICAL SERVICE LLC,(732) 849-6552,ses-power.com,er,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7328518487,"SUPERPOWER ELECTRIC, INC.",(732) 851-8487,superpowerelectricnj.com,red bank,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7328643779,P&L ELECTRICAL CONTRACTORS LLC,(732) 864-3779,,reet wall,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7328654453,CENTRAL JERSEY GENERATORS LLC,(732) 865-4453,,farmingdale,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7328656115,REDS GENERATOR SERVICE LLC,(732) 865-6115,reds911.com,port monmouth,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7328924957,ITAK HEATING & COOLING,(732) 892-4957,itakhvac.com,wall township,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7329281630,TROLLER ELECTRIC LLC,(732) 928-1630,trollerelectric.com,ocean,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7329381105,NJR HOME SERVICES COMPANY,(732) 938-1105,njliving.com,wall,NJ,Generac,1,41.0,SILVER,40.0,60.0,25,0.0,False,1,1,False,0
+7329462555,"A K ELECTRIC, INC",(732) 946-2555,,matawan,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7329880151,HOME COMFORT SOL. HTG & COOLING INC,(732) 988-0151,homecsinc.com,bradley beach,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7329916937,"GOLD MEDAL SERVICE, LLC",(732) 991-6937,goldmedalservice.com,tinton falls,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7372403344,EPX GROUP LLC,(737) 240-3344,,georgetown,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7372584766,LONGHORN SOLAR CORPORATION,(737) 258-4766,,pflugerville,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7372635823,POWERMEANS ELECT CONTRACTING INC,(737) 263-5823,powermeanstx.com,ipping springs,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7379002402,PRECISION HOME PROS LLC,(737) 900-2402,,cedar park,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7472847791,VITALI BAHDANAU,(747) 284-7791,,whittier,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7478001133,"ELECTRICITY, INC.",(747) 800-1133,,sun valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7479003573,BC ELECTRIC,(747) 900-3573,,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7479996090,"EXPERT ELECTRIC GROUP, INC",(747) 999-6090,,woodland hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7576219952,"GO ELECTRIC SERVICES, LLC",(757) 621-9952,goelectricservices.com,palm beach,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7602074414,VISTA ELECTRIC,(760) 207-4414,vistaelec.com,valley center,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7602961397,DAVE WILLIAMS PLUMB & ELECTRIC INC.,(760) 296-1397,dwpeinc.com,san diego,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7603049070,ELECTRICAL INSIGHT INC.,(760) 304-9070,electricalinsight.com,suite f escondido,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7604804400,SKELLY ELECTRIC INC.,(760) 480-4400,skellyelectric.com,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7604856464,BRI ELECTRIC,(760) 485-6464,bri-electric.com,san diego,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7604895850,"SUNDANCER POOLS, INC.",(760) 489-5850,sundancerpools.com,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7606411624,JOVIC CONSTRUCTION INC,(760) 641-1624,,pomona,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7606442550,"ADVANCED MEDIA INTEGRATION, INC.",(760) 644-2550,,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7607377650,SUN RAY ELECTRIC,(760) 737-7650,sunraygenerators.com,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7609999990,"PLUMB365, INC.",(760) 999-9990,plumb365inc.com,nue san marcos,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7722106100,THE ELECTRICAL EXPERTS LLC,(772) 210-6100,theexperts.biz,uart,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7722193389,STRYKER ELECTRICAL CONTRACTING INC,(772) 219-3389,,palm city,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7722238865,ALWAYS READY GENERATORS,(772) 223-8865,alwaysreadygen.com,uart,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+7722370318,IMPERIUM ELECTRIC LLC,(772) 237-0318,imperiumelectricllc.com,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7722375254,AMTEK AIR CONDITIONING INC,(772) 237-5254,amtekair.com,port saint lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7723029616,IN TOUCH ELECTRIC LLC,(772) 302-9616,,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7723338691,INTRACOASTAL GENERATORS INC,(772) 333-8691,intracoastalgenerators.com,uart,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7723403797,"ELITE ELECTRIC & AIR, INC.",(772) 340-3797,eliteelectricandair.com,port saint lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7723706095,VETERANS AIR & ELECTRIC,(772) 370-6095,veteransairandelectric.com,port saint lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7723805913,"GOLDSTAR ELECTRIC, INC.",(772) 380-5913,goldstar-electric.com,port saint lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7724084911,STOTT BROTHERS ELECTRIC,(772) 408-4911,,lucie,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7725198646,"EHMAN ELECTRICAL CONTRACTOR, LLC",(772) 519-8646,ehmanelectric.com,lucie,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7725216836,GENERATOR GENERATOR GENERATOR LLC.,(772) 521-6836,,ter jensen beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7725626666,COMO OIL COMPANY OF FLORIDA,(772) 562-6666,comoflorida.com,uart,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7725970233,TRAVMO ELECTRIC LLC,(772) 597-0233,,uart,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7726219494,BELLWETHER ELECTRIC COMPANY,(772) 621-9494,bellwetherelectric.com,port saint lucie,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7727859010,"COMFORT CONTROL SERVICES, INC",(772) 785-9010,,port saint lucie,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+7728826520,"TREASURE COAST GENERATORS, LLC",(772) 882-6520,treasurecoastgenerator.com,uart,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7729321225,JAMESON ELECTRIC LLC,(772) 932-1225,jamesonelectric.com,uart,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7742178986,"RODENHISER HOME SERVICES, INC.",(774) 217-8986,,on,MA,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+7742666439,RAY ELECTRIC LLC,(774) 266-6439,rayelectricma.com,norton,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7743158239,JOSEPH EDMUND JANUS ELECTRICIAN,(774) 315-8239,,reet norfolk,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7812173351,"SCHIPILLITI ELECTRIC, LLC",(781) 217-3351,schipillitielectricllc.com,peabody,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7812867777,INELLO ELECTRIC LLC,(781) 286-7777,inelloelectric.com,revere beach pkwy revere,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7813213041,"CAPPY'S ELECTRICAL CO., INC.",(781) 321-3041,,malden,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7813300295,"PRO ELECTRICAL SERVICES, INC.",(781) 330-0295,proelectricalservicesinc.com,billerica,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7813400008,MCDONALD ELECTRICAL CORPORATION,(781) 340-0008,,hingham,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7813405700,"MASS GENERATORS, LLC.",(781) 340-5700,massgeneratorsllc.com,weymouth,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7814384114,"SILA SERVICES, LLC",(781) 438-4114,sila.com,oneham,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7815127272,KUHLMAN ELECTRIC,(781) 512-7272,kuhlmanelectricalservices.com,north billerica,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7815593238,AV ELECTRICAL SYSTEMS LLC,(781) 559-3238,,needham,MA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+7815618550,"POWER NOW SOLUTIONS, INC",(781) 561-8550,powernowgenerator.com,hull,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7816643215,MARK A FLORES ELECTRIC INC,(781) 664-3215,mafelectrician.com,south weymouth,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7817066908,WILLIAM T WHALEN LICEN. ELECTRICIAN,(781) 706-6908,,weymouth,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7817184018,DAVID MACMILLAN ELECTRIC LLC,(781) 718-4018,,lynn,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7817629891,"CASTLE ELECTRIC, INC.",(781) 762-9891,castleelectric.biz,norwood,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7817892213,DANIEL MACKEY,(781) 789-2213,,holbrook,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7818280026,F.M. GENERATOR INC,(781) 828-0026,fmgenerator.com,canton,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7818378303,NEW ENGLAND GENERATOR CORP,(781) 837-8303,negenerator.com,pembroke,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7818441116,AZAR ELECTRIC,(781) 844-1116,,norfolk,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7819352727,NARDONE ELECTRICAL CORPORATION,(781) 935-2727,nardoneelectric.com,woburn,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7819642045,"KEY ELECTRIC COMPANY, INC.",(781) 964-2045,,norwell,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7862361473,"PAREX GENERATORS, CORP",(786) 236-1473,parexgenerators.com,ead,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7862478745,HANS GO ELECTRIC CORP,(786) 247-8745,,reet hialeah,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7862689590,"PWRPROS, INC.",(786) 268-9590,,ead,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7862714405,DANVILLE CONSTRUCTION CORP,(786) 271-4405,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7862767554,LTC POWER SOLUTIONS LLC,(786) 276-7554,,north miami beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7862916686,"ABLE BUSINESS SERVICES, INC.",(786) 291-6686,ablebusinessservices.com,reet miami,FL,Generac,1,39.0,BRONZE,60.0,40.0,25,0.0,False,1,1,False,0
+7863029069,"PEAL DEVELOPMENT GROUP, INC",(786) 302-9069,generac.pealdevelopment.com,doral,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7863042328,S.E. BATES ELECTRIC INC.,(786) 304-2328,se.bates-electric.com,ens,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7863268340,SAGABAY ENGINEERING CONTRACTING LLC,(786) 326-8340,,miami,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7863370751,DMC ELECTRICAL LLC,(786) 337-0751,,hialeah,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7863448053,FLORIDA GAS SERVICES CORP.,(786) 344-8053,floridagascorp.com,hialeah,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7863448755,MY ELECTRICAL CONTRACTOR INC.,(786) 344-8755,,pembroke pines,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+7863702104,REY JESUS CORP,(786) 370-2104,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7864190613,"STANDBY ELECTRIC, LLC",(786) 419-0613,,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7864598042,"ELECTRICAL SERVICE USA, LLC",(786) 459-8042,,ens,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+7864866112,"L.S CUSTOM ELECTRIC, INC.",(786) 486-6112,lscustomelectric.com,ead,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+7864868260,"PREMIER ELECTRIC, LLC",(786) 486-8260,premierelectricllc.negocio.site,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7864983739,"FIGMA GROUP, CORP.",(786) 498-3739,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7865359710,"ALL POWER GROUP, INC.",(786) 535-9710,allpowergroup.com,es,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7865413133,RONMICH ELECTRIC INC,(786) 541-3133,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7865588033,SOLCAR ELECTRIC INC,(786) 558-8033,solcarelectric.com,a miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7865921149,"AAA GENERATOR, INC.",(786) 592-1149,aaagenerator.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7867047177,ROCTEK ELECTRIC LLC,(786) 704-7177,roctekelectric.com,pembroke pines,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7868538065,MIAMI BEST ELECTRIC INC.,(786) 853-8065,miamibestelectric.com,hialeah,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7868706507,AMPOWER INC.,(786) 870-6507,,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+7868734244,D&D INDUSTRIAL SOLUTIONS LLC,(786) 873-4244,,cutler bay,FL,Generac,1,25.0,BRONZE,60.0,0.0,25,25.0,False,1,1,False,0
+7872318134,CJ DEVELOPMENT GROUP LLC,(787) 231-8134,cjdevelopgroup.com,hollywood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8003806800,THOMAS EDISON ELECTRIC INC,(800) 380-6800,thomasedisonelectric.com,penns trl newtown,PA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8004212665,"AMERICAN AIR, PLUMBING & ELECTRICAL",(800) 421-2665,americanairandheat.com,,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8005451020,AIR GROUP LLC,(800) 545-1020,airgroupllc.com,whippany,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8005513040,SIERRA PACIFIC HOME & COMFORT INC.,(800) 551-3040,sierrapacifichome.com,ova,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8005597000,CRANNEY COMPANIES,(800) 559-7000,,danvers,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8005859473,"G.H. ELECTRICAL SERVICE CO., INC.",(800) 585-9473,ghelectrical.com,attleboro,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8008017780,RESIDENTIAL GENERATOR SERVICE LLC,(800) 801-7780,rgs-llc.com,mt laurel,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8008719590,MONSEN COLLINS BUILDERS,(800) 871-9590,monsencollins.com,saratoga,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8018379098,"PREPPER RESOURCE TX, LLC",(801) 837-9098,prepperresourcellc.com,ive san antonio,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8047279687,"SHORTT GENERATORS, LLC",(804) 727-9687,shorttgenerators.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8052217846,CONEJO VALLEY HEATING & AIR CONDITIONING,(805) 221-7846,conejoservices.com,azurite circle thousand oaks,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8053805245,"CONTEMPORARY ELECTRICAL DESIGN, INC",(805) 380-5245,cedelectric.com,lake village,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8054164470,"ECONO ELECTRIC SERVICES, INC.",(805) 416-4470,,simi valley,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8054323650,FRED'S HVAC INC.,(805) 432-3650,,newbury park,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8054448069,GEN TECHS INC,(805) 444-8069,,thousand oaks,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8055221268,RR ELECTRIC HEATING & AIR,(805) 522-1268,rrelectrichvac.com,moorpark,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8056247522,GENSTAR POWER SYSTEMS,(805) 624-7522,genstarpowersystems.com,simi valley,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8057323374,"C1 ELECTRIC, INC.",(805) 732-3374,c1electric.com,calle la sombra camarillo,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8057502711,HOMECRAFTERS,(805) 750-2711,homecrafters.com,simi valley,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8057958447,"TECHNICAL BUSINESS SOLUTIONS, INC.",(805) 795-8447,solarserviceprovider.com,newbury park,CA,Generac,1,25.0,BRONZE,60.0,0.0,25,25.0,False,1,1,False,0
+8058070878,DRNRGY LLC,(805) 807-0878,solarsolutionscompany.com,p simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8058131472,"THOR ELECTRIC, INC.",(805) 813-1472,thor-electric.net,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8058233232,AETERNA ENERGY LLC,(805) 823-3232,,nutmeg circle simi valley,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8058576226,SANCTUARY POWER SOLUTIONS INC.,(805) 857-6226,,burbank,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8058763190,AFC PLUMBING & SOLAR,(805) 876-3190,afcplumbingandsolar.com,camarillo,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8059157609,"A.L.M. ELECTRIC, LLC",(805) 915-7609,almelectriccompany.com,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8082250973,ILGEN ELECTRICAL SERVICES,(808) 225-0973,ilgenelectric.com,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8088545335,PURE SINE ELECTRICAL SERVICES LLC,(808) 854-5335,puresineelectric.com,glenmoore,PA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8132485200,"PEAK POWER SERVICES, INC",(813) 248-5200,peakpowerservices.com,ace tampa,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8132491020,BCI INTERGRATED SOLUTIONS,(813) 249-1020,bcifl.net,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8132947420,IERNA’S HEATING & COOLING,(813) 294-7420,iernaair.com,lutz,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8132957775,IMPACT HOME SERVICES OF FLORIDA LLC,(813) 295-7775,mrelectric.com,tampa,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+8132983278,HOFFMAN ELECTRICAL LLC,(813) 298-3278,,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8133247134,"STARLIGHT ELECTRIC FLA, LLC",(813) 324-7134,starlightelec.com,valrico,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8133689323,"AGUILA ELECTRICAL SERVICES, INC.",(813) 368-9323,,tampa,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8134228023,"SOUTHERN INTEGRATED SYSTEMS, LLC",(813) 422-8023,,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8134288178,24 ELECTRIC SERVICE INC,(813) 428-8178,24electricservice.com,orlando,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8134430859,"PRECISION POWER SYSTEMS, INC",(813) 443-0859,,ware circle tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8134444445,EXODUS ELECTRIC CORPORATION,(813) 444-4445,needanelectrician.pro,brandon,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8134496151,BATES ELECTRIC INC.,(813) 449-6151,bateselectric.com,ace tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8134519817,"ON-LINE ELECTRIC SERVICE, LLC",(813) 451-9817,,e g brandon,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8134803050,"MCS OF TAMPA,  INC.",(813) 480-3050,missioncriticalsolutions.net,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8134886030,GENERATOR SUPERCENTER OF TAMPA BAY,(813) 488-6030,generatorsupercenter.com,gunn hwy tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8134970029,CRAWFORD ELECTRIC SERVICES LLC,(813) 497-0029,,tampa,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8135087585,LEADING CHOICE ELECTRIC LLC,(813) 508-7585,,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8135148250,I&C ELECTRICAL CONTRACTING SRV LLC,(813) 514-8250,,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8135638820,"POWERBAY ELECTRIC, INC",(813) 563-8820,,riverview,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8135907928,INTEGRITY HOME SOLUTIONS,(813) 590-7928,homeofintegrity.com,hampton oaks pkwy tampa,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8136185631,ACS HOME SERVICES,(813) 618-5631,acshomeservices.com,tampa,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+8136201666,ACREE PLUMBING AIR & ELECTRIC,(813) 620-1666,trustacree.com,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8136264111,COOL TODAY,(813) 626-4111,cooltoday.com,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8136302698,LEEDY ELECTRIC WEST LLC,(813) 630-2698,,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8136618818,"TOTAL BUILDING SOLUTIONS, INC",(813) 661-8818,,ive tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8136811600,"UPLIFTING AIR, LLC",(813) 681-1600,upliftingair.com,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8136902730,DECORT ELECTRICAL SOLUTIONS INC,(813) 690-2730,decortelectric.com,brandon,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8136908735,ALL FLORIDA POWER & AIR SERVICE INC,(813) 690-8735,,riverview,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8137166020,SECOND OPINION,(813) 716-6020,secondopinionelectric.com,w tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8137671416,FLORIDA STANDBY POWER SYSTEMS LLC,(813) 767-1416,,ant city,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8137987374,"RED CAP PLUMBING, AIR AND ELECTRIC",(813) 798-7374,redcapnow.com,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8138145900,GENERX GENERATORS LLC,(813) 814-5900,generxgenerators.com,oldsmar,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8138290037,SUNCOST POWER SOLUTIONS,(813) 829-0037,generatorsoftampa.com,tampa,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8138716610,"HAWKINS SERVICE COMPANY, LLC",(813) 871-6610,hawkinsserviceco.com,riverview,FL,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+8138782263,"ACME ELECTRICAL SERVICES, INC",(813) 878-2263,acmeelectricalservices.com,tampa,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8138924582,"MORNINGSTAR ELECTRIC, LLC",(813) 892-4582,brandonelectrician.com,lithia,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8138972665,LIGHTNING BAY ELECTRIC,(813) 897-2665,lightningbayelectric.com,riverview,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8139449400,"CHARTER ELECTRICAL EXPERTS, LLC",(813) 944-9400,choosecharterelectric.com,f apollo beach,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8139494445,CORNERSTONE PROS,(813) 949-4445,cornerstonepros.com,land o lakes,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8139678277,COMFORT ALL STARS,(813) 967-8277,,tampa,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8139917569,AFFINITY CONTRACTING CO.,(813) 991-7569,affinitycontracting.build,tampa,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8172018921,"CIRCLE J CONTRACTORS, INC.",(817) 201-8921,circle-j-electric.com,,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8172662146,SAVIOR ELECTRIC  LLC,(817) 266-2146,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8173082002,HARWAY ELECTRIC,(817) 308-2002,harway-electric.com,burleson,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8173196103,THE OSCAR W. LARSON COMPANY,(817) 319-6103,jbielectric.com,fort worth,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8173672473,AIRE SERV OF FORT WORTH,(817) 367-2473,aireserv.com,e b lake worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8173767369,RESI & COMM POWERPROGEN,(817) 376-7369,,arlington,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8173808887,"ARC ANGEL ELECTRICAL SOLUTIONS, LLC",(817) 380-8887,arcangelelectrical.com,fort worth,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8174399811,"FIX MY AIR DFW, LLC",(817) 439-9811,hvacrepairfortworth.com,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8174788869,PRUITT ELECTRIC CO OF ARLINGTON INC,(817) 478-8869,pruittelectric.net,kennedale,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8174815869,BERKEYS A/C PLUMBING & ELECTRICAL,(817) 481-5869,berkeys.com,southlake,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8175104545,TEXAS PRIDE HEATING AND AIR,(817) 510-4545,texasprideheatingandair.com,keller,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8175235353,WILLIAMS ELECTRIC & HVAC,(817) 523-5353,williamselectrichvac.com,springtown,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8175239939,"GEN SUPERCENTER OF FORT WORTH, LLC",(817) 523-9939,generatorsupercenter.com,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8175501192,CHANDLER INSTALLATION CORPORATION,(817) 550-1192,,azle,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8175720182,THE STOVALL CORPORATION,(817) 572-0182,stovallcorp.net,kennedale,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8176250880,CIRCLE A ELECTRIC INC.,(817) 625-0880,,saginaw,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8176611500,GENERATOR SUPERCENTER WEATHERFORD,(817) 661-1500,generatorsupercenterofweatherford.com,,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+8176823455,DODSON ELECTRIC & CONSTRUCTION LLC,(817) 682-3455,dodsonelectric.com,haslet,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8176884954,BROWN HEATING AND AIR CONDITIONING,(817) 688-4954,,,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8177312841,"CANTWELL POWER SOLUTIONS, LLC",(817) 731-2841,cantwellpower.com,haltom city,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8177500207,"ON-SITE POWER SYSTEMS, INC.",(817) 750-0207,on-sitepowersystems.com,roanoke,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8177735693,"CRAMER GENERATOR SYSTEMS, LLC",(817) 773-5693,,,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8178034444,CLEMENTS ELECTRIC TEXAS LLC,(817) 803-4444,clementselectric.com,mansfield,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178229180,"HOBBS HEATING & AIR, INC.",(817) 822-9180,hobbsacrepairs.com,,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178312531,HARTER ELECTRIC SERVICE INC,(817) 831-2531,,haltom city,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8178388787,GELDARD TECHNOLOGIES LLC,(817) 838-8787,,haltom city,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178452247,EVANS ELECTRIC LLC,(817) 845-2247,,arlington,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178477111,CROSS ELECTRIC LLC,(817) 847-7111,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178492104,NTEX ELECTRIC INC,(817) 849-2104,ntexelectric.com,a cir fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178629856,BREEZE MECHANICAL LLC,(817) 862-9856,breezeairandheat.com,fort worth,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8178738778,PATRIOT POWER TEXAS,(817) 873-8778,patriotroofingtexas.com,keller,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178740795,"IWIRE, LLC",(817) 874-0795,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8178888880,TEAM ENOCH,(817) 888-8880,,fort worth,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8179002714,NORTH TEXAS GENERATORS LLC,(817) 900-2714,northtxgen.com,haslet,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8179032482,"ECHO ELECTRICAL SERVICES, INC",(817) 903-2482,echoelectricalservices.com,e d pantego,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8179078797,INLAND MARINE ELECTRICAL SERVICES,(817) 907-8797,inlandmarineelectricalservices.com,joshua,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8179755773,TEXXAS POWER HOME SERVICES LLC,(817) 975-5773,,fort worth,TX,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+8179843600,GENERATOR AUTHORITY,(817) 984-3600,,azle,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8179949936,"TURNER BUILDERS, INC.",(817) 994-9936,,w fort worth,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8182139067,"POWER FUSION, INC",(818) 213-9067,powerfusioninc.com,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8182238344,PACIFICSKY SOLAR LLC,(818) 223-8344,pacificskysolar.com,unit b chatsworth,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8182699266,POWER HOUSE ELECTRICAL LLC,(818) 269-9266,,nue woodland hills,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8182723926,AC ELECTRIC CONTRACTORS INC,(818) 272-3926,acelectriccontractors.com,san fernando,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8182921271,HOLLAND ELECTRICAL,(818) 292-1271,myquiethome.health,topanga canyon,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8183404767,ALL AMERICAN GENERATOR SERVICES,(818) 340-4767,allamericangenerator.com,chatsworth,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8183438402,EAGLE ELECTRIC CONSTRUCTION INC,(818) 343-8402,eagleelectricllc.com,reet tarzana,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8183530850,BOSMAN ELECTRICAL CONSTRUCTION INC,(818) 353-0850,,montrose,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8183701456,MCS ELECTRIC INC.,(818) 370-1456,,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8183786810,"SRF ELECTRIC, INC.",(818) 378-6810,srfelectricinc.com,grenada hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8183881441,A S A P CONSTRUCTION SERVICES,(818) 388-1441,,tujunga,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8183886446,SMART HOME POWER ELECTRIC INC.,(818) 388-6446,smarthomepowerinc.com,sunland,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8184339709,"DELTA QUALITY ELECTRIC, INC.",(818) 433-9709,,south gate,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8185090000,THE ELECTRIC TOUCH INC,(818) 509-0000,theelectrictouchco.com,newbury park,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8185177554,RAYMOND ELECTRICAL SERVICES INC.,(818) 517-7554,raymond-electric.com,la crescenta,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8185881787,POWER NET ELECTRIC INC.,(818) 588-1787,,udio city,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8186064924,"SID'S ELECTRIC, INC.",(818) 606-4924,sidselectric.net,northridge,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8186256267,VOLTAIC ELECTRIC INC,(818) 625-6267,,canoga park,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8187180200,ELITE GENERATORS INC,(818) 718-0200,elitegeneratorsinc.com,e g canoga park,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8187492217,"EG & DA CONSTRUCTION CO., INC.",(818) 749-2217,,burbank,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8187871470,LT GENERATORS,(818) 787-1470,ltgenerators.com,reet van nuys,CA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+8187906268,"INTEK DEVELOPMENT ENTERPRISES, INC.",(818) 790-6268,,la canada flintridge,CA,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+8187959645,DAVID PERETZ,(818) 795-9645,,valley village,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8188256303,AAA SOLAR WORKS LLC,(818) 825-6303,,simi valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8188615644,SAN MARINO SOLAR ELECTRIC INC,(818) 861-5644,sanmarinosolar.com,pasadena,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8188841414,MEDITERRANEAN HEATING & AIR INC,(818) 884-1414,medheatair.com,canoga park,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8188885467,TJ ELECTRIC AND A/C SERVICE,(818) 888-5467,,chatsworth,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8188890440,MULICK CONSTRUCTION AND DESIGN INC,(818) 889-0440,mulickconstruction.com,thousand oaks,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8188891229,TOTALLY WIRED ELECTRIC,(818) 889-1229,totallywiredelectric.com,lake village,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8189846835,CALIBAY CONSTRUCTION INC,(818) 984-6835,calibayconstruction.com,woodland hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8312003496,THE KGB DIGITAL SYSTEM SERVICES LLC,(831) 200-3496,thekgbdss.com,san jose,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8312121603,FLAUTT ELECTRIC INC,(831) 212-1603,,los gatos,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8312343193,TOM MCCLELLAN ELECTRIC,(831) 234-3193,,santa cruz,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8312348553,ALWAYS CURRENT ELECTRIC,(831) 234-8553,,boulder creek,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8312396635,SHANE ELLETT ELECTRIC LLC,(831) 239-6635,seelectric.net,bouler creek,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8312471700,ROEMKE ELECTRIC INC.,(831) 247-1700,roemkeelectric.com,heights santa cruz,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8312520987,JAMES ECKERMAN CONSTRUCTION,(831) 252-0987,,scotts valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8313359193,KOJAK INC,(831) 335-9193,,felton,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8313457463,FISHER ELECTRIC INC.,(831) 345-7463,fisherelectricinc.com,buttermilk lane scotts valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8314573911,STATE ELECTRIC GENERATOR,(831) 457-3911,,scotts valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8314698888,SANDBAR,(831) 469-8888,sandbarsolar.com,santa cruz,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8315294869,THE GENERATOR GUY LLC,(831) 529-4869,thegeneratorguy.net,scotts valley,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8322179126,ICON POWER SOLUTIONS LLC,(832) 217-9126,iconpowersolutionsllc.com,katy,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8322319731,GENERATORSTX LLC,(832) 231-9731,,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8322369969,"J.M. HERNANDEZ REMODELING, L.L.C.",(832) 236-9969,,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8322561570,O T ELECTRIC LLC,(832) 256-1570,otelectric-htx.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8322571977,ZAPDADDY ELECTRIC LLC,(832) 257-1977,zapdaddyelectric.com,tomball,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8322835354,AL GENERATORS POWER LLC,(832) 283-5354,algeneratorspower.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8323092398,TEXAS ELITE GENERATORS,(832) 309-2398,texaselitegenerators.com,hutto,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8323155772,TRICOAST ELECTRICAL SERVICES LLC,(832) 315-5772,tricoastes.com,league city,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8323728903,JJ SERVICES AC AND ELECTRIC LLC,(832) 372-8903,jjacandelectric.com,fresno,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8323890711,ASSURED POWER LLC,(832) 389-0711,,bellaire,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8324091030,"BLUE ION ELECTRIC, LLC",(832) 409-1030,blueionelectric.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8324283522,JLK PROGRESSIVE GROUP LLC,(832) 428-3522,,cypress,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8324480478,"POWER SOLUTIONS SPECIALIST, LLC",(832) 448-0478,psstx.com,tomball,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8324554648,"VIKTA ENERGY TECHNOLOGIES, LLC",(832) 455-4648,viktaenergy.com,in,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8324678800,EXTREME POWER SERVICES,(832) 467-8800,extremepowerservices.com,on,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8324703507,RUIZ ELECTRICAL SERVICES LLC,(832) 470-3507,,spring,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8324925685,QUICK CONNECT ELECTRICAL SOLUTIONS,(832) 492-5685,,on,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8324991866,"AMERICAN GENERATOR SERVICES NA, LLC",(832) 499-1866,ags-na.com,katy,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8325034301,REYES ELECTRIC AND CONTROLS LLC,(832) 503-4301,,tracy lane highlands,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8325267900,ALL-BRITE INDUSTRIES,(832) 526-7900,,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8325809613,DEFINITE ELECTRIC LLC,(832) 580-9613,definiteelectric.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8326236965,LINC ELECTRIC INC,(832) 623-6965,linc-htx.com,on,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+8326500601,"BIG STAR ELECTRICAL, LLC",(832) 650-0601,bigstarenergy.com,friendswood,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8326896047,"TAS AUTOMATION, LLC",(832) 689-6047,tasautomation.com,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8326984262,"MR CHILL HEATING AND AIR, INC.",(832) 698-4262,mrchillac.com,commercial lane tomball,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8327204790,STEADFAST POWER SYSTEMS,(832) 720-4790,makemesteadfast.com,katy,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8327257846,BENISON ENERGY SERVICES INC,(832) 725-7846,,katy,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8328083922,PRODIGY ELECTRICAL SERVICES LLC,(832) 808-3922,,on,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8328163061,SIVLEY AND SON'S ELECTRIC,(832) 816-3061,,katy,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8328315925,A1 PLUS ELECTRICAL LLC,(832) 831-5925,,on,TX,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+8329004761,CHAMPIONS REMODELING,(832) 900-4761,championsremodeling.com,cypress,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8329139261,CARRIERE HVAC-ELECTRIC INC,(832) 913-9261,,katy,TX,Generac,1,27.0,BRONZE,40.0,20.0,25,25.0,False,1,1,False,0
+8332364377,ADM INFINITE ENERGY,(833) 236-4377,,elk grove,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8333148881,"BELLOWS PLUMBING, HEATING & AIR INC",(833) 314-8881,bellowsservice.com,g campbell,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8334263987,AMERICAN HANDY PAINT & CLEAN CO.,(833) 426-3987,americanhandypaintandclean.com,reet coral gables,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8337596275,SKYMARK SOLAR LLC,(833) 759-6275,skymarksolarpower.com,a mount dora,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8443505552,VALENCIA ELECT & SOLAR SERVICES,(844) 350-5552,valenciaess.com,reseda,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8452905800,GENFORCE POWER INC.,(845) 290-5800,genforcepower.com,ramsey,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8473726140,ELITE GENERATORS AUSTIN,(847) 372-6140,elitegeneratorsaustin.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8484598082,ILLUMALITE INDUSTRIES LLC,(848) 459-8082,illumaliteled.com,englishtown,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8553727652,"FLORIDA SOLAR CONTRACTING, LLC",(855) 372-7652,floridasolarcontracting.com,orlando,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8554108007,NEXGEN AIR CONDITION & HEATING LLC,(855) 410-8007,nexgenairandplumbing.com,anaheim,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8554695467,ELIOS ELECTRIC LLC,(855) 469-5467,letsgoelios.com,on,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8554744822,GRILLE BROS MECH CONTRACTORS LLC,(855) 474-4822,mcgrilleconstruction.com,marco island,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8557473769,RISE POWER LLC,(855) 747-3769,risepower.energy,son,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8563463388,GIBSON ELECTRICAL & GENERAL CONTRAC,(856) 346-3388,,sicklerville,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8564429558,VELOCITY ENERGY & HOME SOLUTIONS INC.,(856) 442-9558,,woodbury,NJ,Generac,1,26.0,BRONZE,0.0,40.0,25,50.0,False,1,1,False,0
+8564642101,"QUALITY POWER SYSTEMS, INC",(856) 464-2101,,mantua pike mantua,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8565520946,SOVEREIGN ELECTRIC LLC,(856) 552-0946,sovereignelectric.net,palmyra,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8566784300,WYSOCKI ELECTRIC INC,(856) 678-4300,,icktown,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8567670767,POPS ELECTRIC LLC,(856) 767-0767,popselectric.com,marlton,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8567686663,GENPOWER,(856) 768-6663,,voorhees,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+8568161140,GEKCO LLC,(856) 816-1140,,clementon,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8568540800,URBANO ELECTRIC,(856) 854-0800,urbanoelectric.com,mont,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8568586017,ADVANCED ELECTRICAL INC.,(856) 858-6017,,oaklyn,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8584308303,ACTION AIR CON HEATING AND SOLAR,(858) 430-8303,actionac.net,san marcos,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8586885500,"APEX LIGHTING AND ELECTRIC, INC.",(858) 688-5500,apex-le.com,suite a el cajon,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8587319337,SUNSPIRED BUILDERS,(858) 731-9337,sunspiredsolar.com,san diego,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8587690333,PROCUREBAY LLC,(858) 769-0333,procurebay.net,san diego,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8663304277,COMPLETE POWER RESOURCES,(866) 330-4277,,en,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8665576937,GOLD RUSH ENERGY SOLUTIONS,(866) 557-6937,,el dorado hills,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8665617545,"ADI ELECTRICAL SERVICES, INC.",(866) 561-7545,adi-electric.com,woodland hills,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8667223010,MOXIE SOLAR INC,(866) 722-3010,moxiesolar.com,in,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8772542010,"US HOME COMFORT, LLC",(877) 254-2010,ushomecomfort.com,dallas,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8773017693,"TRI-STATE WATER, POWER AND AIR",(877) 301-7693,tristatewhywait.com,excel pkwy addison,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8774877674,METROWEST POWER LLC,(877) 487-7674,metrowestpower.com,marlborough,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+8775788080,BAKER HOME ENERGY,(877) 578-8080,bakerhomeenergy.com,escondido,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+8884006418,SOUTHERN SECURITY SYSTEMS,(888) 400-6418,southernsecurity.us,san antonio,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8886010100,UNITED ELECTRICAL CONTRACTORS LLC,(888) 601-0100,gounitedec.com,manville,RI,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8886480060,ION ELECTRICAL CONTRACTORS LLC,(888) 648-0060,,e tampa,FL,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+8886642436,AAAA GENERATOR SERVICES,(888) 664-2436,aaaagen.com,,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+8887667693,"SONPOWER ENERGY, INC.",(888) 766-7693,sonpowerenergy.com,thousand oaks,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+8888830292,HMTPR LLC,(888) 883-0292,hmtcorporate.com,doral,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9034402302,CALLAHAN ELECTRIC LLC,(903) 440-2302,callahanelectric.us,elgin,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9036476869,COLLABORATIVE GENERATOR & POWER SOL,(903) 647-6869,collaborativegenerators.com,grand prairie,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9042345011,GENERATOR TECH,(904) 234-5011,,oviedo,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9042527109,"POWER DESIGN, INC.",(904) 252-7109,powerdesigninc.us,n saint petersburg,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9057617647,"GENERATOR GIANTZ, INC.",(905) 761-7647,,hallandale beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9082161238,OHMEGA ELECTRICAL CONTRACTORS LLC,(908) 216-1238,ohmegaelectricalcontractors.com,farmingdale,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9082171356,"ENERGY SMARTS MECHANICAL, LLC",(908) 217-1356,energysmartsmechanical.com,ockton,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9082322525,ACTIVE CONTRACTING INC,(908) 232-2525,activecontractinginc.com,keyport,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9082468169,GOOD WITH TOOLS LLC,(908) 246-8169,good-with-tools.com,own,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9082724941,A-Z ELECTRIC CORP,(908) 272-4941,a-zelectric.biz,,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9082776200,"STASHLUK PLUMBING, HEATING & AC INC",(908) 277-6200,stashluk.com,summit,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9082817399,"PEZZ ELECTRICAL SERVICES, LLC",(908) 281-7399,pezzelectric.com,hillsborough,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9082968962,FUTURE ELECTRIC LLC,(908) 296-8962,,holmdel,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9083127002,NORTHEAST GENERATORS LLC,(908) 312-7002,,ains,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9083286490,"MCCORMACK ELECTRIC, LLC",(908) 328-6490,,long valley,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9083337532,SA ELECTRICAL CONSTRUCTION LLC,(908) 333-7532,,basking ridge,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9084007826,PROGENERATORS,(908) 400-7826,pro-generators.com,mallet lane far hills,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9084219157,BOLD ELECTRIC LLC,(908) 421-9157,boldgenerators.com,ainfield,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9084420300,HOPE ELECTRIC LLC,(908) 442-0300,hopeelectricnj.com,ner,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9084481463,GIOVANNUCCI ELECTRIC,(908) 448-1463,411generators.com,hillsborough,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9085470534,PLESH ELECTRIC LLC,(908) 547-0534,,ation,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9085745641,REVELATIONS ELECTRIC LLC,(908) 574-5641,,e a hampton,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9085759200,SPERA ELECTRICAL CONTRACTING LLC,(908) 575-9200,,hillsborough,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9086353331,ALAN'S GENERATOR SERVICES LLC,(908) 635-3331,,manville,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9086874300,RYAN INC.,(908) 687-4300,ryanbuilds.com,nue union,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9086894525,"OAK RIDGE ELECTRIC & CONTROL, LLC",(908) 689-4525,,tamzen terrace washington,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9087225673,"KOPE ELECTRIC, LLC",(908) 722-5673,kopeelectric.com,lebanon,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9087356126,MT SALEM ELECTRIC,(908) 735-6126,mtsalemgenerators.com,lebanon,NJ,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+9088329050,RJT YETKA CORPORATION,(908) 832-9050,rjtyetkacorp.com,w califon,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9088764510,"VALLEY CONSULTING, LLC",(908) 876-4510,valleygenerators.net,er,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9088797078,INNOVATIVE ELECTRICAL CONTRACTING,(908) 879-7078,innovativeelectricinc.net,south flanders,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9088925436,GET WIRED 2,(908) 892-5436,getwired2.com,own,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9089480206,WATTS GOOD ELECTRICAL SERVICES,(908) 948-0206,wattsgoodelectricalservices.biz,hillsborough,NJ,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9089967437,"CAPPIELLO CONSTRUCTION, INC",(908) 996-7437,,p ewing,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9092611207,"BHELECTRIC, INC.",(909) 261-1207,bheinc.com,corona,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9092656523,UNIVERSAL POWER SYSTEMS INC.,(909) 265-6523,universalpowersystems.us,ramona,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9093141993,HENLEY'S PLUMBING & AIR,(909) 314-1993,,corona,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9099125000,"BRIGHT BULBS ELECTRIC CO, INC.",(909) 912-5000,brightbulbselectric.com,and,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9152274240,FRANCIS ELECTRIC,(915) 227-4240,,pickrell loop liberty hill,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9162407858,CMCONTROLS,(916) 240-7858,cmcontrolsinc.com,sacramento,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9162732300,ROOSTER ELECTRIC,(916) 273-2300,,citrus heights,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9162836966,ALESSANDRO ELECTRIC INC.,(916) 283-6966,alessandroelectric.com,ova,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9162935900,MODERNIZE POWER,(916) 293-5900,modernizepower.com,folsom,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9163433031,CENTURY SUN AND SOLAR,(916) 343-3031,centurysunandsolar.com,escondido,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9165970325,BODIE ELECTRIC INC,(916) 597-0325,,el dorado hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9166240808,BROWER MECHANICAL INC,(916) 624-0808,browermechanical.com,rocklin,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9166353120,SIERRA VALLEY MECHANICAL,(916) 635-3120,sierravalleymechanical.com,ova,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9166557743,MAVERICK ELECTRICAL SERVICES LLC,(916) 655-7743,maverickelectricalservices.com,roseville,CA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9166700908,HIGH TECH POWER SOLUTIONS LLC,(916) 670-0908,,elk grove,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9167087445,NATIONWIDE ENVIRONMENTAL,(916) 708-7445,,rocklin,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9167912426,"SUNRISE ENERGY SOLUTIONS, INC.",(916) 791-2426,ses-solar.com,roseville,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9167940448,"MAGIC SUN ELECTRIC, INC.",(916) 794-0448,magicsunelectric.com,loomis,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9167989079,TYLER PARRISH LLC,(916) 798-9079,,sacramento,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9168042243,"EFFICIENT ENERGY SOLUTIONS, INC.",(916) 804-2243,,sacramento,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9168139140,STANDARD & KINGS,(916) 813-9140,,kahlia crt sacramento,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9168521505,HOLLEY GENERATOR & EQUIPMENT,(916) 852-1505,holleygenerator.com,ova,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9169182480,JWL ELECTRIC INC.,(916) 918-2480,jwlelectric.us,ive roseville,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9169332683,PERFORMANCE HEATING & A/C,(916) 933-2683,performanceheatingandairconditioning.com,b el dorado hill,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9169333066,WECKWORTH ELECTRIC GROUP,(916) 933-3066,weckworthgroup.com,e a el dorado hills,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9169551529,COX ELECTRIC,(916) 955-1529,,elk grove,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9169959655,WILD PEAK ENERGY,(916) 995-9655,wildpeakenergy.com,el dorado hills,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9174269445,"APOLLO ELECTRIC FLC, LLC",(917) 426-9445,apollonyc.com,miami,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9252838470,"FOCUS REALTY SERVICES, INC",(925) 283-8470,,lafayette,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9253878076,"QPS, INC GENERAL CONTRACTORS",(925) 387-8076,qps.contractors,ut creek,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9255233060,"DEGRYSE ELECTRIC, INCORPORATED",(925) 523-3060,degryseelectric.com,easanton,CA,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+9255583886,ALMIGHTY ELECTRIC CONTRACTORS,(925) 558-3886,,easenton,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9256848932,FITCH ELECTRIC INC,(925) 684-8932,fitchelectric.com,easanton,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9257665334,BOCCE BUILDERS OF AMERICA,(925) 766-5334,,pacheco,CA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9257854415,"COLEVAN ELECTRIC, INC.",(925) 785-4415,,easanton,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9258205268,"SNELL ELECTRIC, INC.",(925) 820-5268,snellelectric.com,san ramon,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9259449600,"BRAZIL ELECTRIC, INC",(925) 944-9600,brazilelectricinc.com,ut creek,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9362007165,LIMITLESS ELECTRIC LLC,(936) 200-7165,limitlesselectric.online,humble,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9367564971,QUALITY GENERATORS LLC,(936) 756-4971,qualitytx.com,on,TX,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+9369007031,TOP TIER ELECTRICAL SERVICES LLC,(936) 900-7031,toptierelectricaltx.com,humble,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9369337144,AL'S A.S.A.P. ELECTRIC COMPANY LLC,(936) 933-7144,alsasapelectric.com,porter,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9417495307,"ANTHONY'S COOL-HEAT-REFRIG, INC.",(941) 749-5307,anthonysairconditioning.com,e palmetto,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9492268800,GENERATOR SUPERCENTER GREATER OC,(949) 226-8800,generatorsupercenteroforangecounty.com,irvine,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9492347744,FIXACAL ELECTRIC,(949) 234-7744,fixacal.com,irvine,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9492361557,NEW DAY CONSULTING,(949) 236-1557,,sacramento,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9492872740,"Z ELECTRIC AND LIGHTING, LLC",(949) 287-2740,,huntington beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9493384558,JAM INTERNATIONAL INC.,(949) 338-4558,,dana point,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9493504607,LAGUNA ELECTRIC INC,(949) 350-4607,lagunaelectricinc.com,unit b laguna beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9495890609,"LEWIS AIR SERVICES, INC.",(949) 589-0609,lewisair.com,ntura suite a rancho santa margarita,CA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9496107707,"VICK HOUSTON'S CONSTRUCTION, INC",(949) 610-7707,vickhouston.com,newport beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9497064957,PELICAN COAST ELECTRIC,(949) 706-4957,pelicancoastelectric.com,newport beach,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9499238797,GREAT WHITE ELECTRICAL SYSTEMS,(949) 923-8797,,antibes laguna niguel,CA,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9512792812,ACE ELECTRIC,(951) 279-2812,aceelectricusa.com,reviews  corona,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9518085402,A.E.F. ELECTRIC INC.,(951) 808-5402,,corona,CA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9542147908,BRITE ELECTRIC,(954) 214-7908,generatorssouthflorida.com,pembroke pines,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9543915778,BHT PROPERTIES GROUP LLC,(954) 391-5778,,hollywood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9544676755,DON HILLMAN INC,(954) 467-6755,donhillmangenerator.com,ale,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9544953006,PREMIER ELECTRICAL SERVICES,(954) 495-3006,premierelectricalservs.com,ranches,FL,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9545251100,AIR SOURCE HVACR,(954) 525-1100,,orlando,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9545913351,BENSON & SONS INC,(954) 591-3351,,ive unit a delray beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9546392281,QUALITY POWER SERVICES LLC,(954) 639-2281,,hialeah,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9546577777,BRAGS & HAYES INC,(954) 657-7777,bnhgenerators.com,hallandale beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9546634310,J.Q. LIGHTING & ELECTRIC LLC,(954) 663-4310,,boca raton,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9547161600,BULLDOG DESIGN CONSTRUCTION LLC,(954) 716-1600,bulldogdesignconstruction.com,pembroke pines,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9547678331,CIRCLE GENERATOR SERVICE INC,(954) 767-8331,circlegenerators.biz,ale,FL,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9548153404,SUSTAINABLE HOUSING INC.,(954) 815-3404,sustainablehousinginc.com,pembroke pines,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9548189800,"AJ POWER GENERATORS, INC.",(954) 818-9800,,hollywood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9548407770,"ALLIANCE VERDI USA, LLC",(954) 840-7770,allianceverdiusa.com,palm beach,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9549223800,EMPOWER GENERATORS INC.,(954) 922-3800,empowergenerators.com,dania,FL,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+9549650445,"JEMS ELECTRIC, CORP.",(954) 965-0445,jemselectric.com,hollywood,FL,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9549993637,MASTER ELECTRICAL CONTRACTOR LLC,(954) 999-3637,masterelectricalcontractor.com,pembroke pines,FL,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9722331646,TEXAS WATER HOUSE,(972) 233-1646,txwaterhouse.com,carrollton,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9722410622,"THE LENTZ COMPANIES, INC.",(972) 241-0622,lentzservices.com,indian trail dallas,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9722424800,"A#1 AIR, PLUMBING & ELECTRICAL LLC",(972) 242-4800,anumber1air.com,lewisville,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9722889778,SHEARER ELECTRIC COMPANY,(972) 288-9778,,mesquite,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9723133885,HERNANDEZ ELECTRICAL SERVICES INC,(972) 313-3885,hernandezelectrical.com,irby lane irving,TX,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9723665200,RCR TELECON LLC,(972) 366-5200,rcrtelecon.com,c carrollton,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9724025442,TEXAS EMERGENCY POWER GENERATION,(972) 402-5442,texasgeneration.com,dallas,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9724881084,"MULTIMEDIA SOLUTIONS, INC.",(972) 488-1084,multimediasolutionsgroup.com,farmers branch,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9725216014,DYNAMIC SLR INC,(972) 521-6014,dynamicslr.com,son,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9725265910,"MILESTONE ELECTRIC, INC.",(972) 526-5910,,garland,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9725633800,GENERATOR SUPERCENTER,(972) 563-3800,generatorsupercenter.com,rockwall,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9725649785,"WILLARD HEATING & COOLING, LLC",(972) 564-9785,willardac.com,forney,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9726179977,"WILLARD AC, PLUMBING & ELECTRICAL",(972) 617-9977,,kennedale,TX,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9727094999,"OLSON ELECTRIC SERVICE, INC.",(972) 709-4999,olsonelectricservice.com,suite e duncanville,TX,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9727279902,ARI-TEX ELECTRIC INC,(972) 727-9902,,allen,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9727509445,OZONO GROUP INCORPORATED,(972) 750-9445,,garland,TX,Generac,1,23.0,BRONZE,60.0,0.0,25,0.0,False,1,1,False,0
+9728200800,"GOLDSMITH SOLUTIONS, LLC",(972) 820-0800,,in,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9728900702,NORTEX PLUMBING LLC,(972) 890-0702,nortexplumbing.com,dallas,TX,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9729788116,NORTH TEXAS GENERATOR,(972) 978-8116,,cliffwood circle duncanville,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9732370505,"BLOOMFIELD COOLING, HEATING, & ELEC",(973) 237-0505,bloomfieldcooling.com,nue little falls,NJ,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9733009706,EM ELECTRICAL CONTRACTORS LLC,(973) 300-9706,emelectric.biz,unit a sparta,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9733476937,BYRNES ELECTRIC INC,(973) 347-6937,byrneselectricinc.com,budd lake,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9733496405,PRESTIGE ELECTRICAL CONTRACTORS LLC,(973) 349-6405,,randolph,NJ,Generac,1,10.0,BRONZE,0.0,0.0,25,50.0,False,1,1,False,0
+9733669902,ESPOSITO'S GENERATOR SOLUTIONS,(973) 366-9902,espositogenerator.com,denville,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9734647059,ALL STATE GENERATOR LLC,(973) 464-7059,allstategenerator.com,whippany,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9735331578,PARIS & SONS ELECTRIC LLC,(973) 533-1578,pariselectricnj.com,on,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9735341310,RCI SOLUTIONS LLC,(973) 534-1310,,ive oak ridge,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9735452188,GENERATOR MAN,(973) 545-2188,generatormannj.com,review  newfoundland,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9735671199,PRO VOLT ELECTRICAL LLC,(973) 567-1199,provoltelectrical.com,hawthorne,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9735672236,RELIABLE ENERGY OF NEW JERSEY LLC,(973) 567-2236,reliableenergynj.com,roseland,NJ,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9735791202,"R. POUST HEATING AND AC, LLC",(973) 579-1202,rpoustinc.com,unit f sparta,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9736253000,"SPEER AIR CONDITIONING, INC.",(973) 625-3000,speerair.com,denville,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9736631587,JOSEPH HOWARD,(973) 663-1587,,lake hopatcong,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9737011198,"FERRARA WIZARD ELECTRIC, INC",(973) 701-1198,ferrarawizardelectric.com,chatham,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9737072079,ALL PHASE ELECTRIC,(973) 707-2079,,randolph,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9737145503,GUARDIAN ELECTRIC LLC,(973) 714-5503,guardianelectricnj.com,randolph,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9738097245,PINEY POWER ELECTRIC LLC,(973) 809-7245,,atco,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9738574333,ANDERSON ELECTRIC CORP.,(973) 857-4333,andersonelectric.com,verona,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9739964696,TOTH ELECTRIC LLC,(973) 996-4696,,mountainside,NJ,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9782129591,CUNNIFF BROTHERS SERVICES LLC,(978) 212-9591,,tewksbury,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9782514433,B.P. LOGUE & CO. INC,(978) 251-4433,bplogue.com,wilmington,MA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+9782561660,"R. M. DIBACCO, INC.",(978) 256-1660,dibaccoplumbing.com,lowell,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9782564845,VILLAGE ELECTRIC,(978) 256-4845,villageelectric.com,,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9783476062,FERNANDO LOPES LICENSED ELECTRICIAN,(978) 347-6062,gmail.com,wenham,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9783754016,ANDREW F SHEEHAN ELECTRICAL SERVICE,(978) 375-4016,,,MA,Generac,1,23.0,BRONZE,0.0,40.0,25,25.0,False,1,1,False,0
+9784596852,CASON'S EQUIPMENT,(978) 459-6852,casonpowersolutions.com,reet lowell,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9784873111,"HERITAGE HOME SERVICE, LLC",(978) 487-3111,justcallheritage.com,tewksbury,MA,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+9785012460,OPTIELECTRIC INC.,(978) 501-2460,spauldingelectric.com,littleton,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9785261194,MANCHESTER ELECTRIC LLC,(978) 526-1194,,er,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9785873541,GENERATOR SUPERCENTER OF MA,(978) 587-3541,,peabody,MA,Generac,1,25.0,BRONZE,40.0,20.0,25,0.0,False,1,1,False,0
+9786543480,INTEGRITY POWER SOLUTIONS LLC,(978) 654-3480,,lowell,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9786835821,SKAFF REFRIGERATION SERVICE INC,(978) 683-5821,,reet methuen,MA,Generac,1,21.0,BRONZE,0.0,40.0,25,0.0,False,1,1,False,0
+9787373333,HOOVER ELECTRICAL LLC,(978) 737-3333,,wilmington,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9788088992,"BAGNI ELECTRIC, L.L.C.",(978) 808-8992,,bennett circle billerica,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9788156608,"ARGENTO ELECTRIC, LLC",(978) 815-6608,argentoelectric.com,boxborough,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9788876500,"POWER OUTAGE SERVICES COMPANY, LLC",(978) 887-6500,powerout.us,topsfield,MA,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+9788885974,DYLAN T MALONE ELECTRIC LLC,(978) 888-5974,,,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9788971701,PAPALIA HOME SERVICES,(978) 897-1701,papaliaservices.com,boxborough,MA,Generac,1,29.0,BRONZE,0.0,60.0,25,0.0,False,1,1,False,0
+9789215267,CNE ELECTRICAL,(978) 921-5267,cneelectrical.com,peabody,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9789832111,DOUG ANDERSON PLUMBING AND HEATING,(978) 983-2111,dougandersonplumbingandheating.com,north billerica,MA,Generac,1,7.0,BRONZE,0.0,0.0,25,25.0,False,1,1,False,0
+9789943596,BRYAN BOYLE ELECTRIC LLC,(978) 994-3596,bboyleelectric.com,,MA,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
+9799669159,HOWARD ELECTRIC,(979) 966-9159,,reet dallas,TX,Generac,1,5.0,BRONZE,0.0,0.0,25,0.0,False,1,1,False,0
