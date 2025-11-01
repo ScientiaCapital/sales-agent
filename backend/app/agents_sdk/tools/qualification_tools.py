@@ -1,8 +1,9 @@
-"""MCP tools for lead qualification."""
+"""MCP tools for lead qualification with circuit breaker protection."""
 from typing import Dict, Any
 from langchain_core.tools import tool
 
 from app.core.logging import setup_logging
+from app.core.circuit_breaker import qualification_breaker, CircuitBreakerOpenError
 
 logger = setup_logging(__name__)
 
@@ -36,12 +37,10 @@ async def qualify_lead_tool(args: Dict[str, Any]) -> Dict[str, Any]:
     from app.services.langgraph.agents.qualification_agent import QualificationAgent
     from app.core.exceptions import CerebrasAPIError
 
-    try:
-        # Try primary provider (Cerebras - ultra-fast)
-        logger.info(f"Qualifying lead: {args.get('company_name')}")
-
+    async def _qualify_with_cerebras():
+        """Execute qualification with Cerebras (circuit breaker protected)."""
         agent = QualificationAgent(provider="cerebras", model="llama3.1-8b")
-        result, latency, metadata = await agent.qualify(
+        return await agent.qualify(
             company_name=args["company_name"],
             company_website=args.get("company_website"),
             company_size=args.get("company_size"),
@@ -49,6 +48,14 @@ async def qualify_lead_tool(args: Dict[str, Any]) -> Dict[str, Any]:
             contact_name=args.get("contact_name"),
             contact_title=args.get("contact_title"),
             notes=args.get("notes")
+        )
+
+    try:
+        # Try primary provider (Cerebras - ultra-fast) with circuit breaker
+        logger.info(f"Qualifying lead: {args.get('company_name')} (using Cerebras with circuit breaker)")
+
+        result, latency, metadata = await qualification_breaker.call(
+            _qualify_with_cerebras
         )
 
         return {
@@ -66,9 +73,12 @@ async def qualify_lead_tool(args: Dict[str, Any]) -> Dict[str, Any]:
             "provider": "cerebras"
         }
 
-    except CerebrasAPIError as e:
-        # Fallback to Claude if Cerebras unavailable
-        logger.warning(f"Cerebras unavailable, falling back to Claude: {e}")
+    except (CerebrasAPIError, CircuitBreakerOpenError) as e:
+        # Fallback to Claude if Cerebras unavailable or circuit open
+        if isinstance(e, CircuitBreakerOpenError):
+            logger.warning(f"Cerebras circuit breaker OPEN, using Claude fallback")
+        else:
+            logger.warning(f"Cerebras unavailable, falling back to Claude: {e}")
 
         try:
             agent = QualificationAgent(provider="claude", model="claude-3-haiku-20240307")
