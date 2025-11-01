@@ -1,6 +1,7 @@
 """Tests for CostOptimizedLLMProvider."""
 import pytest
-from app.core.cost_optimized_llm import LLMConfig
+from unittest.mock import AsyncMock, MagicMock
+from app.core.cost_optimized_llm import LLMConfig, CostOptimizedLLMProvider
 
 
 def test_llm_config_defaults():
@@ -42,3 +43,22 @@ def test_llm_config_smart_router():
     assert config.mode == "smart_router"
     assert config.provider is None  # Router decides
     assert config.model is None
+
+
+@pytest.fixture
+def mock_db_session():
+    """Mock database session."""
+    session = AsyncMock()
+    session.add = MagicMock()
+    session.commit = AsyncMock()
+    session.refresh = AsyncMock()
+    return session
+
+
+@pytest.mark.asyncio
+async def test_provider_initialization(mock_db_session):
+    """Test CostOptimizedLLMProvider initialization."""
+    provider = CostOptimizedLLMProvider(mock_db_session)
+
+    assert provider.db == mock_db_session
+    assert provider.router is not None
