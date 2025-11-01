@@ -1,6 +1,6 @@
 """Chat-related Pydantic schemas for Agent SDK."""
 from typing import Optional, Dict, Any, Literal
-from datetime import datetime
+from datetime import datetime, UTC
 from pydantic import BaseModel, Field
 import json
 
@@ -10,7 +10,7 @@ class ChatMessage(BaseModel):
 
     role: Literal["user", "assistant", "system"]
     content: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: Optional[Dict[str, Any]] = None
 
 
@@ -30,7 +30,7 @@ class ChatResponse(BaseModel):
     session_id: str
     message: str
     agent_type: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: Optional[Dict[str, Any]] = None
 
 

@@ -1,6 +1,6 @@
 """Test chat schemas."""
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 def test_chat_message_creation():
@@ -10,7 +10,7 @@ def test_chat_message_creation():
     msg = ChatMessage(
         role="user",
         content="Test message",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(UTC)
     )
 
     assert msg.role == "user"
