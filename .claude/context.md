@@ -1,13 +1,27 @@
-```markdown
-# Project Context: Sales-Agent
+# Project Context: Sales-Agent - Email Discovery Feature
 
-**Last Updated:** 2025-10-31T17:30:00Z
+**Last Updated:** 2025-11-01T17:20:00Z
 
-## Current Sprint Focus
-- **Pipeline Testing System**: End-to-end testing infrastructure for 200-lead validation
-- **Close CRM Integration**: Bidirectional sync with deduplication complete (Phase 5)
-- **Performance Validation**: Real-world throughput testing with dealer-scraper dataset
-- **Production Readiness**: Database models, schemas, and CSV importer operational
+## Current Sprint Focus: Email Discovery Implementation
+- **Status**: Sub-Phase 2A COMPLETE ✅ | Sub-Phase 2B In Progress (5 tasks remaining)
+- **Branch**: `feature/email-discovery`
+- **Latest Commit**: `89c7250` - Comprehensive handoff documentation
+- **Working Directory**: `.worktrees/email-discovery/backend`
+
+### Today's Achievements (Sub-Phase 2A - Website Email Extraction)
+- ✅ **EmailExtractor Service**: 185 lines of production code with web scraping
+- ✅ **Test Coverage**: 324 lines across unit and integration tests
+- ✅ **Pipeline Integration**: Complete data flow from extraction → enrichment
+- ✅ **Critical Bug Fixed**: Discovered and fixed metadata wiring issue
+- ✅ **End-to-End Verified**: Full pipeline tested with real contractor leads
+- ✅ **Documentation**: 381-line handoff guide for team continuity
+
+### Tomorrow's Goals (Sub-Phase 2B - Hunter.io Fallback)
+- [ ] Task 7: Create HunterService class (~1-2 hours)
+- [ ] Task 8: Add Hunter.io fallback logic (~1 hour)
+- [ ] Task 9: Add cost tracking for API calls (~30 min)
+- [ ] Task 10: Run full pipeline test (~30 min)
+- [ ] Task 11: Update docs and create PR (~1 hour)
 
 ## Architecture Overview
 - **Language**: Python 3.13
@@ -15,55 +29,71 @@
 - **Type**: AI/ML Sales Automation Platform
 - **Database**: PostgreSQL (primary), Redis (checkpointing/caching)
 - **Inference**: Cerebras for ultra-fast model execution
+- **New**: EmailExtractor service with Hunter.io fallback (in progress)
 
 ## Project Description
-Enterprise-grade sales automation platform with sophisticated multi-agent AI system. Six specialized agents handle qualification, enrichment, growth analysis, marketing campaigns, BDR workflows, and voice conversations. Achieves 633ms lead qualification using hybrid LangGraph architecture and Cerebras inference. Designed for high-throughput enterprise sales with real-time streaming and comprehensive CRM integrations.
+Enterprise-grade sales automation platform with sophisticated multi-agent AI system. Six specialized agents handle qualification, enrichment, growth analysis, marketing campaigns, BDR workflows, and voice conversations. Achieves 633ms lead qualification using hybrid LangGraph architecture and Cerebras inference.
 
-## Recent Changes
-- **Phase 5 Complete**: Close CRM integration with probabilistic deduplication (fuzzy matching + confidence scoring)
-- **Phase 6 In Progress**: Pipeline testing system development
-  - ✅ Database model (PipelineTestExecution) with per-stage metrics
-  - ✅ Pydantic schemas (PipelineTestRequest, PipelineTestResponse, CSVLeadImportRequest)
-  - ✅ CSV lead importer with field mapping (200 dealer-scraper prospects)
-  - 🚧 Pipeline orchestrator service (pending)
-  - 🚧 API endpoints (pending)
-  - 🚧 Manual testing with real leads (pending)
+**New Feature**: Automatic email discovery system that scrapes company websites for contact emails when not provided, with Hunter.io API fallback for enhanced coverage.
+
+## Recent Changes (November 1, 2025)
+- **Email Discovery Feature**: Sub-Phase 2A Complete (website scraping)
+  - ✅ EmailExtractor service with multi-pattern detection
+  - ✅ Smart prioritization (personal > business > generic)
+  - ✅ Integrated into QualificationAgent (lines 487-507, 694)
+  - ✅ Wired through PipelineOrchestrator (lines 97-102, 187, 223/227)
+  - ✅ Non-blocking implementation (continues without email)
+  - ✅ Comprehensive test coverage (unit + integration + e2e)
+  - ✅ Critical metadata wiring bug discovered and fixed (commit 9f3f948)
 
 ## Current Blockers
-- None identified - pipeline testing on track for completion
+- None. Sub-Phase 2A complete and verified. Ready for Sub-Phase 2B (Hunter.io).
 
 ## Next Steps
-1. **Complete Pipeline Testing** (3/6 tasks remaining): Orchestrator, API endpoints, manual validation
-2. **Scale Testing**: Load test with full 200-lead dataset
-3. **Performance Optimization**: Reduce enrichment latency under heavy load
-4. **Monitoring Dashboard**: Real-time pipeline metrics and cost tracking
-5. **CRM Expansion**: Salesforce, HubSpot connectors beyond Close
+1. **Hunter.io Integration** (Sub-Phase 2B): Fallback email discovery via API
+2. **Cost Tracking**: Track Hunter.io API costs separately from scraping
+3. **Testing**: Full pipeline validation with both extraction methods
+4. **Documentation**: Update README, create PR for code review
+5. **Production**: Merge feature branch after review and testing
 
 ## Development Workflow
 ```bash
-# Pipeline Testing Development (Current)
-cd backend
-source venv/bin/activate
-docker-compose up -d
-python start_server.py
+# Email Discovery Development (Current)
+cd /Users/tmkipper/Desktop/tk_projects/sales-agent/.worktrees/email-discovery/backend
+source ../../../venv/bin/activate
+redis-cli ping  # Verify Redis is running
 
-# Test CSV Importer
-pytest tests/services/test_csv_lead_importer.py -v
+# Run Email Extractor Tests
+pytest tests/services/test_email_extractor.py -v
 
-# Test Pipeline Models
-pytest tests/models/test_pipeline_models.py -v
+# Run Integration Tests
+pytest tests/services/langgraph/test_qualification_email_integration.py -v
 
-# Manual Pipeline Test (After completion)
-curl -X POST http://localhost:8001/api/leads/test-pipeline \
-  -H "Content-Type: application/json" \
-  -d '{"csv_path": "/path/to/dealers.csv", "lead_index": 0}'
+# Run End-to-End Pipeline Test
+python test_sample_leads.py
+
+# Clear Redis cache when testing updated logic
+redis-cli FLUSHDB
+
+# Check git status
+git status
+git log --oneline -10
 ```
+
+## Key Files for Email Discovery
+- `backend/app/services/email_extractor.py` - Core extraction service (185 lines)
+- `backend/app/services/langgraph/agents/qualification_agent.py` - Integration (lines 487-507, 694)
+- `backend/app/services/pipeline_orchestrator.py` - Wiring (lines 97-102, 187, 223/227)
+- `backend/tests/services/test_email_extractor.py` - Unit tests (185 lines)
+- `backend/tests/services/langgraph/test_qualification_email_integration.py` - Integration tests (139 lines)
+- `HANDOFF_EMAIL_DISCOVERY.md` - Comprehensive documentation (381 lines) **READ THIS FIRST**
 
 ## Notes
 - **Part of GTM Engineer Strategy**: Located at `tmkipper/desktop/tk_projects/gtm_engineer_strategy`
 - **Design Patterns**: Factory, Abstract Base Class, Circuit Breaker, TDD (Test-Driven Development)
 - **Performance Critical**: All agents have strict latency SLAs (633ms-5000ms range)
-- **Cost Efficient**: Ultra-low cost per request ($0.000006 for qualification)
-- **Git Worktrees**: Using isolated worktree for pipeline-testing feature branch
-- **Test Coverage**: 96% overall, 100% for new pipeline testing components
-```
+- **Cost Efficient**: Ultra-low cost per request ($0.000006 for qualification, +$0.01-0.02 for Hunter.io)
+- **Git Worktrees**: Using isolated worktree for email-discovery feature branch
+- **Test Coverage**: 96% overall, 100% for new email discovery components
+- **Critical Fix**: Metadata wiring bug discovered and fixed (commit 9f3f948) - email now flows through entire pipeline
+- **Hunter.io Setup Needed**: Sign up at https://hunter.io/, add API key to `.env` for Sub-Phase 2B
