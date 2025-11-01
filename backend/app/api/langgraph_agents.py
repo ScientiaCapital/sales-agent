@@ -225,10 +225,11 @@ async def invoke_agent(
         try:
             # Invoke appropriate agent
             if request.agent_type == "qualification":
-                # Multi-provider support with configurable provider and model
+                # Multi-provider support with configurable provider and model + cost tracking
                 agent = QualificationAgent(
                     provider=request.provider or "cerebras",
-                    model=request.model  # None = auto-select
+                    model=request.model,  # None = auto-select
+                    db=db  # Enable cost tracking
                 )
                 result, latency_ms, metadata = await agent.qualify(**request.input)
                 output_data = {
@@ -524,7 +525,7 @@ async def stream_agent(
                     # Invoke appropriate agent
                     if request.agent_type == "qualification":
                         yield f"data: {json.dumps({'type': 'message', 'content': 'Qualifying lead with Cerebras AI...'})}\n\n"
-                        agent = QualificationAgent()
+                        agent = QualificationAgent(db=db)  # Enable cost tracking
                         result = await agent.qualify(**request.input)
                         output_data = {
                             "score": result.qualification_score,

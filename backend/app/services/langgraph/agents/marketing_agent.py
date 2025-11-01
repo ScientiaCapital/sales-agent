@@ -59,9 +59,11 @@ Usage:
 import os
 import time
 import operator
-from typing import Dict, Any, List, Optional, Annotated
+from typing import Dict, Any, List, Optional, Annotated, Union
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
@@ -70,8 +72,10 @@ from typing_extensions import TypedDict
 from app.services.langgraph.llm_selector import get_llm_for_capability, get_best_provider_for_capability
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 
 logger = setup_logging(__name__)
 
@@ -159,7 +163,8 @@ class MarketingAgent:
         temperature: float = 0.7,  # Higher for creative content
         max_tokens: int = 1000,
         # Cost tracking
-        track_costs: bool = True
+        track_costs: bool = True,
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
         Initialize MarketingAgent with cost-optimized LLM providers.
@@ -172,13 +177,26 @@ class MarketingAgent:
             temperature: Sampling temperature (0.7 for creative content)
             max_tokens: Max completion tokens per generation
             track_costs: Enable cost tracking to ai-cost-optimizer (default: True)
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.temperature = temperature
         self.max_tokens = max_tokens
-        
+
         # Cost tracking
         self.track_costs = track_costs
         self.cost_optimizer = None  # Lazy init on first use
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("MarketingAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
         
         # Initialize cost-optimized LLMs per channel
         logger.info("Initializing MarketingAgent with cost-optimized LLM providers")
@@ -696,6 +714,7 @@ Write in a clear, professional, engaging tone."""
         Returns:
             List of transfer tools that marketing agent can use
         """
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("marketing")
 
 

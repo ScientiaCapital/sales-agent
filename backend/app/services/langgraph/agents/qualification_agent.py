@@ -49,8 +49,10 @@ import os
 import time
 import json
 import re
-from typing import Optional, List, Dict, Any, Literal
+from typing import Optional, List, Dict, Any, Literal, Union
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_cerebras import ChatCerebras
@@ -61,9 +63,11 @@ from langchain_core.language_models import BaseChatModel
 
 from app.core.logging import setup_logging
 from app.core.exceptions import CerebrasAPIError
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
 from app.services.cache.qualification_cache import get_qualification_cache
 from app.services.cost_tracking import get_cost_optimizer
-from app.services.langgraph.tools import get_transfer_tools
+# Lazy import to avoid circular dependency
+# from app.services.langgraph.tools import get_transfer_tools
 from app.services.website_validator import get_website_validator
 from app.services.review_scraper import get_review_scraper
 
@@ -153,10 +157,11 @@ class QualificationAgent:
         temperature: float = 0.2,
         max_tokens: int = 500,
         use_cache: bool = True,
-        track_costs: bool = True
+        track_costs: bool = True,
+        db: Optional[Union[Session, AsyncSession]] = None
     ):
         """
-        Initialize QualificationAgent with specified provider.
+        Initialize QualificationAgent with specified provider and optional cost tracking.
 
         Args:
             provider: LLM provider (cerebras/claude/deepseek/ollama)
@@ -164,14 +169,30 @@ class QualificationAgent:
             temperature: Sampling temperature (0.2 for consistent scoring)
             max_tokens: Max completion tokens (500 for free-form JSON)
             use_cache: Enable qualification caching (default: True, saves $0.000006/call + 633ms)
+            track_costs: Enable cost tracking to ai_cost_tracking table
+            db: Database session for cost tracking (optional, supports Session or AsyncSession)
         """
         self.provider = provider
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.use_cache = use_cache
         self.cache = None  # Initialize on first use
-        self.cost_optimizer = None  # Lazy init for cost tracking
+        self.cost_optimizer = None  # Lazy init for legacy cost tracking
         self.track_costs = track_costs
+        self.db = db
+
+        # Initialize cost-optimized provider if db provided
+        if db:
+            try:
+                self.cost_provider = CostOptimizedLLMProvider(db)
+                logger.info("QualificationAgent initialized with cost tracking enabled")
+            except Exception as e:
+                logger.error(f"Failed to initialize cost tracking: {e}")
+                self.cost_provider = None
+        else:
+            self.cost_provider = None
+            if track_costs:
+                logger.warning("Cost tracking requested but no database session provided")
 
         # Auto-select model if not provided
         if model is None:
@@ -377,6 +398,7 @@ Respond with JSON only."""
     async def qualify(
         self,
         company_name: str,
+        lead_id: Optional[int] = None,
         company_website: Optional[str] = None,
         company_size: Optional[str] = None,
         industry: Optional[str] = None,
@@ -389,6 +411,7 @@ Respond with JSON only."""
 
         Args:
             company_name: Company name (required)
+            lead_id: Lead ID for cost tracking (optional)
             company_website: Company website URL
             company_size: Company size (e.g., "50-200 employees")
             industry: Industry sector
@@ -410,6 +433,7 @@ Respond with JSON only."""
             >>> agent = QualificationAgent()
             >>> result, latency, meta = await agent.qualify(
             ...     company_name="Acme Corp",
+            ...     lead_id=123,
             ...     industry="SaaS",
             ...     company_size="100-500"
             ... )
@@ -536,20 +560,90 @@ Respond with JSON only."""
         start_time = time.time()
 
         try:
-            # Invoke LCEL chain (async) - returns AIMessage
-            response = await self.chain.ainvoke({
-                "company_name": company_name,
-                "optional_fields": optional_fields
-            })
+            # Use cost-optimized provider if available (new path with tracking)
+            if self.cost_provider:
+                # Build full prompt text for CostOptimizedLLMProvider
+                full_prompt = f"""You are an AI sales assistant specializing in B2B lead qualification.
 
-            # Extract text content from AIMessage
-            response_text = response.content if hasattr(response, 'content') else str(response)
+Analyze the provided lead information and assign a qualification score from 0-100 based on:
 
-            # Parse free-form JSON response
+1. **Company Fit** (40 points)
+   - Company size matches ICP (Ideal Customer Profile)
+   - Industry alignment with product offerings
+   - Market presence and growth indicators
+
+2. **Contact Quality** (30 points)
+   - Decision-maker level (C-suite, VP, Director)
+   - Relevant title for the purchase decision
+   - Accessibility and responsiveness signals
+
+3. **Sales Potential** (30 points)
+   - Buying signals (recent funding, expansion, hiring)
+   - Urgency indicators (pain points, deadlines)
+   - Budget/readiness signals
+
+Scoring Tiers:
+- Hot (80-100): High fit, decision-maker, strong buying signals → immediate outreach
+- Warm (60-79): Good fit, relevant contact, some signals → nurture campaign
+- Cold (40-59): Moderate fit, lower contact quality → long-term nurture
+- Unqualified (0-39): Poor fit or missing critical info → deprioritize
+
+**IMPORTANT**: Respond ONLY with valid JSON in this exact format:
+{{
+  "qualification_score": <number 0-100>,
+  "qualification_reasoning": "<2-3 sentence explanation>",
+  "tier": "<hot|warm|cold|unqualified>",
+  "fit_assessment": "<company fit evaluation>",
+  "contact_quality": "<contact level assessment>",
+  "sales_potential": "<buying signals and readiness>",
+  "recommendations": ["<action 1>", "<action 2>", "<action 3>"]
+}}
+
+Do not include any text before or after the JSON object.
+
+Qualify this lead:
+
+Company: {company_name}
+{optional_fields}
+
+Respond with JSON only."""
+
+                # Create config for cost tracking
+                config = LLMConfig(
+                    agent_type="qualification",
+                    lead_id=lead_id,  # Pass lead_id for per-lead tracking
+                    mode="passthrough",  # Keep existing Cerebras behavior
+                    provider=self.provider,
+                    model=self.model
+                )
+
+                # Call cost-optimized provider
+                cost_result = await self.cost_provider.complete(
+                    prompt=full_prompt,
+                    config=config,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature
+                )
+
+                response_text = cost_result["response"]
+                latency_ms = cost_result.get("latency_ms", 0)
+
+            else:
+                # Fallback to direct LCEL chain (existing path, no new tracking)
+                # Invoke LCEL chain (async) - returns AIMessage
+                response = await self.chain.ainvoke({
+                    "company_name": company_name,
+                    "optional_fields": optional_fields
+                })
+
+                # Extract text content from AIMessage
+                response_text = response.content if hasattr(response, 'content') else str(response)
+
+                end_time = time.time()
+                latency_ms = int((end_time - start_time) * 1000)
+
+            # Parse free-form JSON response (same for both paths)
             result: LeadQualificationResult = self._parse_json_response(response_text)
-
-            end_time = time.time()
-            latency_ms = int((end_time - start_time) * 1000)
 
             # Calculate cost based on provider and model
             estimated_tokens = len(company_name) * 4 + len(optional_fields) * 2 + 300  # Rough estimate
@@ -588,15 +682,8 @@ Respond with JSON only."""
                 await self.cache.set_qualification(company_name, industry, cache_data)
                 logger.info(f"💾 Cached qualification for future use")
 
-            # Log cost to ai-cost-optimizer
-            if self.track_costs:
-                await self._log_qualification_cost(
-                    company_name=company_name,
-                    response_text=response_text,
-                    estimated_tokens=estimated_tokens,
-                    estimated_cost_usd=estimated_cost_usd,
-                    latency_ms=latency_ms
-                )
+            # Cost tracking is now handled by CostOptimizedLLMProvider
+            # No legacy tracking needed
 
             return result, latency_ms, metadata
 
@@ -621,54 +708,6 @@ Respond with JSON only."""
                 }
             )
 
-    async def _log_qualification_cost(
-        self,
-        company_name: str,
-        response_text: str,
-        estimated_tokens: int,
-        estimated_cost_usd: float,
-        latency_ms: int
-    ):
-        """
-        Log qualification cost to ai-cost-optimizer.
-
-        Args:
-            company_name: Company being qualified
-            response_text: LLM response
-            estimated_tokens: Estimated token count
-            estimated_cost_usd: Estimated cost
-            latency_ms: Execution latency
-        """
-        # Initialize cost optimizer if needed
-        if self.cost_optimizer is None:
-            try:
-                self.cost_optimizer = await get_cost_optimizer()
-            except Exception as e:
-                logger.warning(f"Failed to init cost optimizer: {e}")
-                return
-
-        # Log to ai-cost-optimizer
-        try:
-            await self.cost_optimizer.log_llm_call(
-                provider=self.provider,
-                model=self.model,
-                prompt=f"Qualify company: {company_name}",
-                response=response_text[:200],  # Truncate for logging
-                tokens_in=estimated_tokens // 2,  # Rough split
-                tokens_out=estimated_tokens // 2,
-                cost_usd=estimated_cost_usd,
-                agent_name="qualification",
-                metadata={
-                    "company_name": company_name,
-                    "latency_ms": latency_ms,
-                    "provider": self.provider,
-                    "model": self.model
-                }
-            )
-            logger.debug(f"💰 Logged qualification cost: ${estimated_cost_usd:.6f}")
-        except Exception as e:
-            logger.error(f"Failed to log qualification cost: {e}")
-
     def get_transfer_tools(self):
         """
         Get agent transfer tools for qualification workflows.
@@ -676,6 +715,8 @@ Respond with JSON only."""
         Returns:
             List of transfer tools allowing handoff to enrichment/growth agents
         """
+        # Lazy import to avoid circular dependency
+        from app.services.langgraph.tools import get_transfer_tools
         return get_transfer_tools("qualification")
 
     async def qualify_batch(

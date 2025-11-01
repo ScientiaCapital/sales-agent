@@ -24,11 +24,15 @@ def db_session():
     engine = create_engine(database_url)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-    # Import model after Base is loaded
+    # Import models after Base is loaded
     from app.models.pipeline_models import PipelineTestExecution
+    from app.models.ai_cost_tracking import AICostTracking
+    from app.models.lead import Lead
 
-    # Create only pipeline_test_executions table (avoid pgvector dependency)
+    # Create tables (avoid pgvector dependency)
+    Lead.__table__.create(bind=engine, checkfirst=True)
     PipelineTestExecution.__table__.create(bind=engine, checkfirst=True)
+    AICostTracking.__table__.create(bind=engine, checkfirst=True)
 
     # Create session
     session = TestingSessionLocal()
@@ -38,4 +42,6 @@ def db_session():
     # Cleanup
     session.rollback()
     session.close()
+    AICostTracking.__table__.drop(bind=engine, checkfirst=True)
     PipelineTestExecution.__table__.drop(bind=engine, checkfirst=True)
+    Lead.__table__.drop(bind=engine, checkfirst=True)
