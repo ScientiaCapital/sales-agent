@@ -99,7 +99,11 @@ async def qualify_lead_tool(args: Dict[str, Any]) -> Dict[str, Any]:
 
         except Exception as fallback_error:
             logger.error(f"Claude fallback also failed: {fallback_error}")
-            raise
+            return {
+                "status": "error",
+                "message": f"Unable to qualify lead: {str(fallback_error)}",
+                "suggestion": "Try enrichment tool to gather more data first"
+            }
 
     except Exception as e:
         # Complete failure
