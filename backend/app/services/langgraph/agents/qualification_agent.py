@@ -70,6 +70,7 @@ from app.services.cost_tracking import get_cost_optimizer
 # from app.services.langgraph.tools import get_transfer_tools
 from app.services.website_validator import get_website_validator
 from app.services.review_scraper import get_review_scraper
+from app.services.email_extractor import EmailExtractor
 
 logger = setup_logging(__name__)
 
@@ -212,9 +213,12 @@ class QualificationAgent:
         # Build LCEL chain with free-form output
         self.chain = self._build_chain()
 
+        # Initialize email extractor
+        self.email_extractor = EmailExtractor()
+
         logger.info(
             f"QualificationAgent initialized: provider={provider}, model={model}, "
-            f"temperature={temperature}, max_tokens={max_tokens}"
+            f"temperature={temperature}, max_tokens={max_tokens}, email_extraction=enabled"
         )
 
     def _initialize_llm(self) -> BaseChatModel:
@@ -404,6 +408,7 @@ Respond with JSON only."""
         industry: Optional[str] = None,
         contact_name: Optional[str] = None,
         contact_title: Optional[str] = None,
+        contact_email: Optional[str] = None,
         notes: Optional[str] = None
     ) -> tuple[LeadQualificationResult, int, Dict[str, Any]]:
         """
@@ -478,6 +483,28 @@ Respond with JSON only."""
                 f"team_page={website_result.has_team_page}, "
                 f"atl_contacts={len(website_result.atl_contacts)}"
             )
+
+            # ===== EMAIL EXTRACTION =====
+            # Extract email if not provided and website is available
+            if not contact_email:
+                logger.info(f"Attempting email extraction for {company_name}")
+                try:
+                    extracted_emails = await self.email_extractor.extract_emails(company_website)
+
+                    if extracted_emails:
+                        contact_email = extracted_emails[0]  # Use top-priority email
+                        logger.info(f"Extracted {len(extracted_emails)} emails, using: {contact_email}")
+
+                        # Add to qualification notes
+                        if notes:
+                            notes += f"\nEmails found: {', '.join(extracted_emails[:3])}"
+                        else:
+                            notes = f"Emails found: {', '.join(extracted_emails[:3])}"
+                    else:
+                        logger.warning(f"No emails extracted from {company_website}")
+                except Exception as e:
+                    logger.error(f"Email extraction failed for {company_website}: {e}")
+                    # Continue without email (non-blocking)
 
             # ===== REVIEW SCRAPING (Reputation Data) =====
             # Scrape reviews from multiple platforms for reputation scoring
