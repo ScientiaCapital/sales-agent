@@ -17,6 +17,16 @@ sys.modules['openai'] = mock_openai
 mock_cerebras = MagicMock()
 sys.modules['cerebras_cloud_sdk'] = mock_cerebras
 
+# Mock tenacity
+mock_tenacity = MagicMock()
+sys.modules['tenacity'] = mock_tenacity
+
+# Mock MCP and Claude Agent SDK (for base_agent.py)
+mock_mcp = MagicMock()
+sys.modules['mcp'] = mock_mcp
+mock_claude_sdk = MagicMock()
+sys.modules['claude_agent_sdk'] = mock_claude_sdk
+
 # Add backend to path AFTER mocking
 backend_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_path))
