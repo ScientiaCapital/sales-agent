@@ -48,7 +48,7 @@ from langchain_anthropic import ChatAnthropic
 from langgraph.prebuilt import create_react_agent
 
 from app.services.langgraph.tools import (
-    enrich_contact_tool,
+    # enrich_contact_tool,  # Apollo.io - commented out (no API key)
     get_linkedin_profile_tool,
     get_lead_tool
 )
@@ -57,6 +57,13 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.services.cost_tracking import get_cost_optimizer
 from app.services.langgraph.tools import get_transfer_tools
+
+# New services for company-based enrichment
+from app.services.hunter_email_service import get_hunter_service, HunterResult
+from app.services.linkedin_company_service import get_linkedin_company_service, LinkedInCompanyResult
+from app.services.linkedin_people_service import get_linkedin_people_service, LinkedInPeopleResult
+from app.services.website_validator import get_website_validator
+import asyncio
 
 logger = setup_logging(__name__)
 
@@ -180,7 +187,7 @@ class EnrichmentAgent:
 
         # Build ReAct agent with tools
         self.tools = [
-            enrich_contact_tool,
+            # enrich_contact_tool,  # Apollo.io - commented out (no API key)
             get_linkedin_profile_tool,
             get_lead_tool
         ]
@@ -622,6 +629,322 @@ Be strategic about tool use - don't call the same tool twice unless explicitly n
             output_cost = (total_output / 1_000_000) * 1.25
 
         return round(input_cost + output_cost, 4)
+
+    async def enrich_from_company(
+        self,
+        company_name: str,
+        website: str
+    ) -> EnrichmentResult:
+        """
+        Enrich contacts at a company using parallel multi-source discovery.
+
+        NO EMAIL REQUIRED - Discovers ATL contacts from:
+        - Hunter.io (email discovery by domain)
+        - LinkedIn Company Search → LinkedIn People Search
+        - Website Scraping (existing about/team pages)
+
+        Performance: <3000ms total (parallel execution)
+
+        Args:
+            company_name: Company name (e.g., "ACS Commercial Services")
+            website: Company website URL (e.g., "https://acsfixit.com")
+
+        Returns:
+            EnrichmentResult with:
+                - enriched_data["atl_contacts"]: List of discovered contacts
+                - enriched_data["linkedin_company"]: Company LinkedIn profile
+                - data_sources: ["hunter", "linkedin", "website"]
+                - confidence_score: Based on contact quality
+
+        Example:
+            >>> agent = EnrichmentAgent()
+            >>> result = await agent.enrich_from_company(
+            ...     company_name="ACS Commercial Services",
+            ...     website="https://acsfixit.com"
+            ... )
+            >>> print(f"Found {len(result.enriched_data['atl_contacts'])} contacts")
+        """
+        start_time = time.time()
+
+        logger.info(f"Starting company enrichment for: {company_name}")
+
+        try:
+            # ===== PHASE 1: Parallel Data Gathering =====
+            logger.info("Phase 1: Launching parallel data sources")
+
+            hunter_task = self._get_hunter_emails(website)
+            linkedin_company_task = self._get_linkedin_company(company_name, website)
+            website_atl_task = self._get_website_atl(website)
+
+            # Execute in parallel
+            results = await asyncio.gather(
+                hunter_task,
+                linkedin_company_task,
+                website_atl_task,
+                return_exceptions=True
+            )
+
+            hunter_result, linkedin_company_result, website_atl_contacts = results
+
+            # ===== PHASE 2: LinkedIn People Search =====
+            linkedin_people = []
+            if (linkedin_company_result
+                and linkedin_company_result.status == "success"
+                and linkedin_company_result.company):
+
+                logger.info(f"Phase 2: Searching LinkedIn for ATL contacts at {company_name}")
+                linkedin_people_result = await self._get_linkedin_people(
+                    linkedin_company_result.company.linkedin_url,
+                    company_name
+                )
+                if linkedin_people_result.status == "success":
+                    linkedin_people = linkedin_people_result.people
+
+            # ===== PHASE 3: Merge & Deduplicate =====
+            logger.info("Phase 3: Merging and deduplicating contacts")
+
+            hunter_contacts = (hunter_result.contacts
+                             if hunter_result and hunter_result.status == "success"
+                             else [])
+            website_contacts = website_atl_contacts if website_atl_contacts else []
+
+            merged_contacts = self._merge_atl_contacts(
+                hunter_emails=hunter_contacts,
+                linkedin_people=linkedin_people,
+                website_atl=website_contacts
+            )
+
+            # Track successful sources
+            data_sources = []
+            if hunter_contacts:
+                data_sources.append("hunter")
+            if linkedin_people:
+                data_sources.append("linkedin")
+            if website_contacts:
+                data_sources.append("website")
+
+            # Build enriched_data
+            enriched_data = {
+                "company_name": company_name,
+                "website": website,
+                "atl_contacts": merged_contacts,
+                "total_contacts_found": len(merged_contacts),
+                "data_sources": data_sources
+            }
+
+            # Add LinkedIn company data if found
+            if linkedin_company_result and linkedin_company_result.company:
+                enriched_data["linkedin_company"] = {
+                    "name": linkedin_company_result.company.name,
+                    "linkedin_url": linkedin_company_result.company.linkedin_url,
+                    "company_id": linkedin_company_result.company.company_id
+                }
+
+            # Calculate confidence based on contact count and source diversity
+            confidence_score = self._calculate_company_confidence(
+                merged_contacts,
+                data_sources
+            )
+
+            latency_ms = int((time.time() - start_time) * 1000)
+
+            logger.info(
+                f"Company enrichment complete: {len(merged_contacts)} contacts found, "
+                f"{len(data_sources)} sources, {latency_ms}ms"
+            )
+
+            return EnrichmentResult(
+                enriched_data=enriched_data,
+                data_sources=data_sources,
+                confidence_score=confidence_score,
+                tools_called=[],  # Direct service calls, not tool-based
+                tool_results={},
+                latency_ms=latency_ms,
+                iterations_used=0,
+                total_cost_usd=0.0,  # Hunter.io API cost negligible
+                errors=[]
+            )
+
+        except Exception as e:
+            latency_ms = int((time.time() - start_time) * 1000)
+            logger.error(f"Company enrichment failed: {e}")
+
+            return EnrichmentResult(
+                enriched_data={},
+                data_sources=[],
+                confidence_score=0.0,
+                tools_called=[],
+                tool_results={},
+                latency_ms=latency_ms,
+                iterations_used=0,
+                total_cost_usd=0.0,
+                errors=[str(e)]
+            )
+
+    async def _get_hunter_emails(self, website: str) -> HunterResult:
+        """Get emails from Hunter.io by domain"""
+        try:
+            hunter = await get_hunter_service()
+            return await hunter.find_emails(website, atl_only=True)
+        except Exception as e:
+            logger.error(f"Hunter.io error: {e}")
+            return HunterResult(
+                domain=website,
+                contacts=[],
+                total_emails=0,
+                status="error",
+                error_message=str(e)
+            )
+
+    async def _get_linkedin_company(
+        self,
+        company_name: str,
+        website: str
+    ) -> LinkedInCompanyResult:
+        """Find LinkedIn company profile"""
+        try:
+            linkedin_company = await get_linkedin_company_service()
+            return await linkedin_company.find_company(company_name, website)
+        except Exception as e:
+            logger.error(f"LinkedIn company search error: {e}")
+            return LinkedInCompanyResult(
+                company=None,
+                status="error",
+                error_message=str(e)
+            )
+
+    async def _get_linkedin_people(
+        self,
+        company_linkedin_url: str,
+        company_name: str
+    ) -> LinkedInPeopleResult:
+        """Search for ATL contacts at LinkedIn company"""
+        try:
+            linkedin_people = await get_linkedin_people_service()
+            return await linkedin_people.find_atl_contacts(
+                company_linkedin_url,
+                company_name,
+                limit=10
+            )
+        except Exception as e:
+            logger.error(f"LinkedIn people search error: {e}")
+            return LinkedInPeopleResult(
+                people=[],
+                company_name=company_name,
+                total_found=0,
+                status="error",
+                error_message=str(e)
+            )
+
+    async def _get_website_atl(self, website: str) -> List[Dict[str, Any]]:
+        """Scrape ATL contacts from website (existing service)"""
+        try:
+            validator = await get_website_validator()
+            # Website validator returns validation result with atl_contacts
+            result = await validator.validate_website(website)
+            return result.get("atl_contacts", []) if result else []
+        except Exception as e:
+            logger.error(f"Website ATL scraping error: {e}")
+            return []
+
+    def _merge_atl_contacts(
+        self,
+        hunter_emails: List,
+        linkedin_people: List,
+        website_atl: List
+    ) -> List[Dict[str, Any]]:
+        """
+        Merge and deduplicate ATL contacts from multiple sources.
+
+        Priority: LinkedIn (95) > Hunter.io (50-100) > Website (50)
+
+        Returns:
+            List of deduplicated contacts sorted by confidence
+        """
+        contacts_map = {}  # key -> contact data
+
+        # Add LinkedIn people first (highest priority)
+        for person in linkedin_people:
+            key = person.email if person.email else person.linkedin_url
+            contacts_map[key] = {
+                "name": person.name,
+                "email": person.email,
+                "linkedin_url": str(person.linkedin_url),
+                "title": person.title,
+                "company": person.company,
+                "source": "linkedin",
+                "confidence": 95
+            }
+
+        # Add Hunter.io emails (don't overwrite LinkedIn)
+        for contact in hunter_emails:
+            key = contact.email
+            if key not in contacts_map:
+                full_name = f"{contact.first_name or ''} {contact.last_name or ''}".strip()
+                contacts_map[key] = {
+                    "name": full_name or None,
+                    "email": contact.email,
+                    "linkedin_url": None,
+                    "title": contact.position,
+                    "company": None,
+                    "source": "hunter",
+                    "confidence": contact.confidence
+                }
+
+        # Add website ATL contacts (lowest priority)
+        for atl in website_atl:
+            key = atl.get("email") or atl.get("name")
+            if key and key not in contacts_map:
+                contacts_map[key] = {
+                    "name": atl.get("name"),
+                    "email": atl.get("email"),
+                    "linkedin_url": atl.get("linkedin_url"),
+                    "title": atl.get("title"),
+                    "company": None,
+                    "source": "website_scraping",
+                    "confidence": 50
+                }
+
+        # Convert to list and sort by confidence
+        contacts = list(contacts_map.values())
+        contacts.sort(key=lambda x: x["confidence"], reverse=True)
+
+        return contacts
+
+    def _calculate_company_confidence(
+        self,
+        contacts: List[Dict],
+        data_sources: List[str]
+    ) -> float:
+        """
+        Calculate confidence score for company enrichment.
+
+        Formula:
+        - Contact count (40%): More contacts = higher confidence
+        - Source diversity (30%): More sources = higher confidence
+        - Contact quality (30%): LinkedIn > Hunter > Website
+        """
+        # Contact count score (0-1)
+        contact_score = min(len(contacts) / 5.0, 1.0)  # Max at 5 contacts
+
+        # Source diversity score (0-1)
+        source_score = len(data_sources) / 3.0  # Max 3 sources
+
+        # Contact quality score (0-1)
+        if contacts:
+            avg_confidence = sum(c["confidence"] for c in contacts) / len(contacts)
+            quality_score = avg_confidence / 100.0
+        else:
+            quality_score = 0.0
+
+        # Weighted average
+        confidence = (
+            contact_score * 0.4 +
+            source_score * 0.3 +
+            quality_score * 0.3
+        )
+
+        return round(confidence, 2)
 
     async def enrich_batch(
         self,
