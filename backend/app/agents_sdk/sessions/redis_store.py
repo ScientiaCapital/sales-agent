@@ -1,8 +1,8 @@
 """Redis-based session storage for hot sessions."""
 import json
 import uuid
-from typing import Optional, Dict, Any, List
-from datetime import datetime
+from typing import Optional, Dict, Any
+from datetime import datetime, UTC
 
 from app.services.cache.base import get_redis_client
 from app.agents_sdk.schemas.chat import ChatMessage
@@ -50,8 +50,8 @@ class RedisSessionStore:
             "session_id": session_id,
             "user_id": user_id,
             "agent_type": agent_type,
-            "created_at": datetime.utcnow().isoformat(),
-            "last_activity_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "last_activity_at": datetime.now(UTC).isoformat(),
             "messages": [],
             "tool_results_cache": {},
             "metadata": {
@@ -109,7 +109,7 @@ class RedisSessionStore:
 
         # Add message (serialize to dict with string timestamps)
         session["messages"].append(message.model_dump(mode='json'))
-        session["last_activity_at"] = datetime.utcnow().isoformat()
+        session["last_activity_at"] = datetime.now(UTC).isoformat()
         session["metadata"]["message_count"] += 1
 
         # Update Redis with extended TTL
@@ -149,7 +149,7 @@ class RedisSessionStore:
 
         session["tool_results_cache"][cache_key] = {
             "result": result,
-            "cached_at": datetime.utcnow().isoformat(),
+            "cached_at": datetime.now(UTC).isoformat(),
             "ttl": ttl or config.tool_result_cache_ttl
         }
 
@@ -194,7 +194,7 @@ class RedisSessionStore:
         cached_at = datetime.fromisoformat(cached["cached_at"])
         ttl_seconds = cached["ttl"]
 
-        if (datetime.utcnow() - cached_at).total_seconds() > ttl_seconds:
+        if (datetime.now(UTC) - cached_at).total_seconds() > ttl_seconds:
             logger.debug(f"Cached tool result expired for {tool_name}")
             return None
 
