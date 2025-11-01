@@ -4,6 +4,7 @@
 AI sales automation with production CRM integrations (Close, Apollo, LinkedIn), multi-agent architecture, voice capabilities, document processing, and knowledge base.
 
 **Status**: ✅ Phase 5 Complete - 6 LangGraph agents, CSV import, ATL discovery, server stability
+**Active Development**: ✅ Email Discovery Sub-Phase 2A Complete (worktree: `.worktrees/email-discovery`)
 
 ## Tech Stack
 ```
@@ -66,7 +67,63 @@ sales-agent/
 │   └── tests/              # Test suite
 ├── frontend/src/           # React app
 ├── .taskmaster/            # Task management
+├── .worktrees/             # Git worktrees for feature isolation
+│   └── email-discovery/    # Active: Email Discovery feature (Sub-Phase 2A complete)
 └── .env                    # API keys (never commit!)
+```
+
+## Git Worktrees for Feature Development
+
+### Active Worktrees
+**Email Discovery Feature** - `.worktrees/email-discovery` (branch: `feature/email-discovery`)
+- **Status**: Sub-Phase 2A Complete ✅ | Sub-Phase 2B In Progress
+- **Branch**: `feature/email-discovery`
+- **Latest Commit**: Comprehensive handoff documentation
+- **Working Directory**: `.worktrees/email-discovery/backend`
+
+**Feature Details**:
+- Automatic email extraction from company websites
+- 185 lines of production code + 324 lines of tests
+- Non-blocking web scraping with smart prioritization
+- Complete pipeline integration (qualification → enrichment)
+- Critical metadata wiring bug discovered and fixed
+- End-to-end verified with real contractor leads
+- Next: Hunter.io API fallback integration
+
+**Testing Commands**:
+```bash
+cd .worktrees/email-discovery/backend
+source ../../../venv/bin/activate
+
+# Unit tests
+pytest tests/services/test_email_extractor.py -v
+
+# Integration tests
+pytest tests/services/langgraph/test_qualification_email_integration.py -v
+
+# End-to-end pipeline test
+python test_sample_leads.py
+```
+
+**Documentation**:
+- `HANDOFF_EMAIL_DISCOVERY.md` - Complete 381-line implementation guide
+- `.claude/context.md` - Updated with Sub-Phase 2A achievements
+- `.claude/CLAUDE.md` - Project guide with email discovery section
+- `.claude/architecture.md` - Technical architecture documentation
+
+### Worktree Workflow
+```bash
+# List all worktrees
+git worktree list
+
+# Switch to feature worktree
+cd .worktrees/email-discovery
+
+# Create new worktree
+git worktree add .worktrees/feature-name -b feature/branch-name
+
+# Remove completed worktree (after merge)
+git worktree remove feature-name
 ```
 
 ## Key API Endpoints
