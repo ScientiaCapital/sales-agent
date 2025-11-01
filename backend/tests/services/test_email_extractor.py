@@ -23,3 +23,99 @@ async def test_extract_from_simple_html(extractor):
     emails = await extractor._extract_from_html(html, "https://example.com")
 
     assert "test@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_extract_standard_email(extractor):
+    """Test standard email format extraction."""
+    html = '<p>Email: john.smith@example.com</p>'
+    emails = await extractor._extract_from_html(html, "https://example.com")
+
+    assert "john.smith@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_extract_mailto_link(extractor):
+    """Test mailto: link extraction."""
+    html = '<a href="mailto:contact@example.com">Email Us</a>'
+    emails = await extractor._extract_from_html(html, "https://example.com")
+
+    assert "contact@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_extract_obfuscated_at(extractor):
+    """Test obfuscated (at) format."""
+    html = '<p>john.smith (at) example.com</p>'
+    emails = await extractor._extract_from_html(html, "https://example.com")
+
+    assert "john.smith@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_extract_multiple_emails(extractor):
+    """Test extracting multiple emails from same page."""
+    html = '''
+    <div>
+        <a href="mailto:sales@example.com">Sales</a>
+        <p>Support: support@example.com</p>
+        <span>CEO: john.doe@example.com</span>
+    </div>
+    '''
+    emails = await extractor._extract_from_html(html, "https://example.com")
+
+    assert len(emails) >= 3
+    assert "sales@example.com" in emails
+    assert "support@example.com" in emails
+    assert "john.doe@example.com" in emails
+
+
+@pytest.mark.asyncio
+async def test_filter_generic_emails(extractor):
+    """Test generic email filtering."""
+    emails = [
+        'john.smith@example.com',
+        'info@example.com',
+        'sales@example.com',
+        'noreply@example.com',
+        'admin@example.com'
+    ]
+    filtered = extractor._filter_generic(emails)
+
+    assert 'john.smith@example.com' in filtered
+    assert 'sales@example.com' in filtered
+    assert 'info@example.com' not in filtered
+    assert 'noreply@example.com' not in filtered
+    assert 'admin@example.com' not in filtered
+
+
+@pytest.mark.asyncio
+async def test_prioritize_personal_emails_first(extractor):
+    """Test personal emails prioritized first."""
+    emails = [
+        'contact@example.com',
+        'john.doe@example.com',
+        'sales@example.com',
+        'jane.smith@example.com'
+    ]
+    prioritized = extractor._prioritize_emails(emails, 'https://example.com')
+
+    # Personal names should be first
+    assert prioritized[0] in ['john.doe@example.com', 'jane.smith@example.com']
+    assert prioritized[1] in ['john.doe@example.com', 'jane.smith@example.com']
+    # Business-related third
+    assert prioritized[2] == 'sales@example.com'
+    # Other last
+    assert prioritized[3] == 'contact@example.com'
+
+
+@pytest.mark.asyncio
+async def test_prioritize_business_emails_second(extractor):
+    """Test business emails prioritized after personal."""
+    emails = ['other@example.com', 'sales@example.com', 'ceo@example.com']
+    prioritized = extractor._prioritize_emails(emails, 'https://example.com')
+
+    # Business-related first (no personal names)
+    assert prioritized[0] in ['sales@example.com', 'ceo@example.com']
+    # Other last
+    assert prioritized[-1] == 'other@example.com'
