@@ -1,0 +1,3 @@
+[submodule "backend/lib/ai-cost-optimizer"]
+	path = backend/lib/ai-cost-optimizer
+	url = https://github.com/ScientiaCapital/ai-cost-optimizer
