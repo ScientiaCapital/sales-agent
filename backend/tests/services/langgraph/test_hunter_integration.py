@@ -153,3 +153,78 @@ async def test_qualification_scraping_skips_hunter(mock_get_validator, mock_init
     assert metadata["extraction_method"] == "scraping"
     assert metadata["hunter_cost_usd"] == 0.0
     agent.hunter_service.find_email.assert_not_called()  # KEY: Hunter.io NOT called
+
+
+@pytest.mark.asyncio
+@patch('app.services.langgraph.agents.qualification_agent.QualificationAgent._initialize_llm')
+@patch('app.services.langgraph.agents.qualification_agent.get_website_validator')
+async def test_qualification_both_fail_gracefully(mock_get_validator, mock_init_llm):
+    """Verify qualification continues when both email discovery methods fail"""
+    # Mock LLM
+    mock_llm = MagicMock()
+    mock_init_llm.return_value = mock_llm
+
+    # Mock website validator
+    mock_validator = AsyncMock()
+    mock_validator.validate = AsyncMock(return_value=WebsiteValidationResult(
+        is_valid=True,
+        status_code=200,
+        response_time_ms=100,
+        has_team_page=False,
+        has_about_page=False,
+        has_contact_page=False,
+        team_page_url=None,
+        about_page_url=None,
+        contact_page_url=None,
+        atl_contacts=[]
+    ))
+    mock_get_validator.return_value = mock_validator
+
+    agent = QualificationAgent()
+
+    # Mock cache to prevent Redis connection
+    mock_cache = AsyncMock()
+    mock_cache.get_qualification = AsyncMock(return_value=None)  # No cached result
+    agent.cache = mock_cache
+
+    # Mock email extractor to fail (returns empty list)
+    agent.email_extractor.extract_emails = AsyncMock(return_value=[])
+
+    # Mock Hunter.io to fail (returns None)
+    agent.hunter_service.find_email = AsyncMock(return_value=None)
+
+    # Mock LLM chain
+    mock_chain_response = json.dumps({
+        "qualification_score": 75,
+        "qualification_reasoning": "Test qualification despite no email discovery",
+        "next_action": "Research contact information",
+        "tier": "Tier 2",
+        "fit_assessment": "Good fit",
+        "contact_quality": "Unknown",
+        "sales_potential": "Medium"
+    })
+    mock_chain = AsyncMock()
+    mock_chain.ainvoke = AsyncMock(return_value=mock_chain_response)
+    agent.chain = mock_chain
+
+    # Execute qualification - use unique company to avoid cache
+    result, latency_ms, metadata = await agent.qualify(
+        company_name="Failed Discovery Inc",
+        company_website="https://noemails.com",
+        contact_email=None  # No email provided
+    )
+
+    # Verify both methods were attempted
+    agent.email_extractor.extract_emails.assert_called_once()
+    agent.hunter_service.find_email.assert_called_once_with("noemails.com")
+
+    # Verify graceful failure handling
+    assert metadata["extracted_email"] is None
+    assert metadata["extraction_method"] == "none"
+    assert metadata["hunter_cost_usd"] == 0.0
+
+    # Verify qualification still completed successfully (non-blocking failure)
+    assert result.qualification_score == 75
+    assert result.qualification_score > 0
+    assert result.tier == "Tier 2"
+    assert latency_ms >= 0  # Mocked LLM doesn't measure latency, so >= 0 is expected
