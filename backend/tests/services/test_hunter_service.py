@@ -70,3 +70,65 @@ async def test_find_email_low_confidence():
 
     # Should filter out low confidence results
     assert result is None
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_find_email_api_404():
+    """Test handling 404 (domain not found)"""
+    respx.get("https://api.hunter.io/v2/email-finder").mock(
+        return_value=httpx.Response(404, json={"errors": [{"id": "not_found"}]})
+    )
+
+    os.environ["HUNTER_API_KEY"] = "test_key_123"
+    service = HunterService()
+
+    result = await service.find_email("nonexistent.com")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_find_email_api_429():
+    """Test handling 429 (rate limit exceeded)"""
+    respx.get("https://api.hunter.io/v2/email-finder").mock(
+        return_value=httpx.Response(429, json={"errors": [{"id": "rate_limit"}]})
+    )
+
+    os.environ["HUNTER_API_KEY"] = "test_key_123"
+    service = HunterService()
+
+    result = await service.find_email("example.com")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_find_email_timeout():
+    """Test handling connection timeout"""
+    respx.get("https://api.hunter.io/v2/email-finder").mock(
+        side_effect=httpx.TimeoutException("Request timeout")
+    )
+
+    os.environ["HUNTER_API_KEY"] = "test_key_123"
+    service = HunterService()
+
+    result = await service.find_email("example.com")
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_find_email_missing_api_key():
+    """Test handling missing API key"""
+    # Ensure HUNTER_API_KEY is not set
+    if "HUNTER_API_KEY" in os.environ:
+        del os.environ["HUNTER_API_KEY"]
+
+    service = HunterService()
+
+    result = await service.find_email("example.com")
+
+    assert result is None
