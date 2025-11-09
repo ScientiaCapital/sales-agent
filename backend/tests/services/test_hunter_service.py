@@ -2,7 +2,7 @@ import pytest
 import os
 import httpx
 import respx
-from app.services.hunter_service import HunterService
+from app.services.hunter_service import HunterService, extract_domain
 
 
 def test_hunter_service_initialization():
@@ -132,3 +132,28 @@ async def test_find_email_missing_api_key():
     result = await service.find_email("example.com")
 
     assert result is None
+
+
+def test_extract_domain_with_https():
+    """Test extracting domain from HTTPS URL"""
+    assert extract_domain("https://example.com") == "example.com"
+
+
+def test_extract_domain_with_http():
+    """Test extracting domain from HTTP URL"""
+    assert extract_domain("http://example.com") == "example.com"
+
+
+def test_extract_domain_with_path():
+    """Test extracting domain from URL with path"""
+    assert extract_domain("https://www.example.com/about") == "www.example.com"
+
+
+def test_extract_domain_with_subdomain():
+    """Test extracting domain with subdomain"""
+    assert extract_domain("https://blog.example.com") == "blog.example.com"
+
+
+def test_extract_domain_plain():
+    """Test extracting plain domain (no protocol)"""
+    assert extract_domain("example.com") == "example.com"
