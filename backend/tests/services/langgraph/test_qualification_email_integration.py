@@ -6,11 +6,13 @@ from app.services.langgraph.agents.qualification_agent import QualificationAgent
 
 
 @pytest.fixture(autouse=True)
-async def cleanup_redis():
-    """Cleanup Redis connections after each test to avoid event loop issues."""
-    yield
-    # Give time for async cleanup
-    await pytest.importorskip("asyncio").sleep(0.1)
+async def mock_redis_cache():
+    """Mock Redis cache to avoid event loop issues in tests."""
+    with patch('app.services.cache.qualification_cache.QualificationCache.get') as mock_get, \
+         patch('app.services.cache.qualification_cache.QualificationCache.set') as mock_set:
+        mock_get.return_value = None  # No cached results
+        mock_set.return_value = None
+        yield
 
 
 @pytest.mark.asyncio
