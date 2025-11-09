@@ -228,3 +228,80 @@ async def test_qualification_both_fail_gracefully(mock_get_validator, mock_init_
     assert result.qualification_score > 0
     assert result.tier == "Tier 2"
     assert latency_ms >= 0  # Mocked LLM doesn't measure latency, so >= 0 is expected
+
+
+@pytest.mark.asyncio
+@patch('app.services.langgraph.agents.qualification_agent.QualificationAgent._initialize_llm')
+@patch('app.services.langgraph.agents.qualification_agent.get_website_validator')
+async def test_qualification_email_provided_skips_discovery(mock_get_validator, mock_init_llm):
+    """Verify both discovery methods skipped when email already provided"""
+    # Mock LLM
+    mock_llm = MagicMock()
+    mock_init_llm.return_value = mock_llm
+
+    # Mock website validator
+    mock_validator = AsyncMock()
+    mock_validator.validate = AsyncMock(return_value=WebsiteValidationResult(
+        is_valid=True,
+        status_code=200,
+        response_time_ms=100,
+        has_team_page=False,
+        has_about_page=False,
+        has_contact_page=False,
+        team_page_url=None,
+        about_page_url=None,
+        contact_page_url=None,
+        atl_contacts=[]
+    ))
+    mock_get_validator.return_value = mock_validator
+
+    agent = QualificationAgent()
+
+    # Mock cache to prevent Redis connection
+    mock_cache = AsyncMock()
+    mock_cache.get_qualification = AsyncMock(return_value=None)  # No cached result
+    agent.cache = mock_cache
+
+    # Mock scraping (should NOT be called)
+    agent.email_extractor.extract_emails = AsyncMock(
+        return_value=["should-not@becalled.com"]
+    )
+
+    # Mock Hunter.io (should NOT be called)
+    agent.hunter_service.find_email = AsyncMock(
+        return_value={"email": "should-not@becalled.com", "score": 95, "sources": [], "cost": 0.01}
+    )
+
+    # Mock LLM chain
+    mock_chain_response = json.dumps({
+        "qualification_score": 88,
+        "qualification_reasoning": "Email already provided - no discovery needed",
+        "next_action": "Send outreach email",
+        "tier": "Tier 1",
+        "fit_assessment": "Strong fit",
+        "contact_quality": "High",
+        "sales_potential": "High"
+    })
+    mock_chain = AsyncMock()
+    mock_chain.ainvoke = AsyncMock(return_value=mock_chain_response)
+    agent.chain = mock_chain
+
+    # Execute qualification WITH email provided
+    result, latency_ms, metadata = await agent.qualify(
+        company_name="Email Provided Inc",
+        company_website="https://example.com",
+        contact_email="provided@email.com"  # Email already provided
+    )
+
+    # Assertions - verify provided email is used
+    assert metadata["extracted_email"] == "provided@email.com"
+    assert metadata["extraction_method"] == "provided"
+    assert metadata["hunter_cost_usd"] == 0.0
+
+    # KEY: Neither discovery method should be called (optimization)
+    agent.email_extractor.extract_emails.assert_not_called()
+    agent.hunter_service.find_email.assert_not_called()
+
+    # Verify qualification completed successfully
+    assert result.qualification_score == 88
+    assert result.tier == "Tier 1"
