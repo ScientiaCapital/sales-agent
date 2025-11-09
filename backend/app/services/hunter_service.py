@@ -64,10 +64,16 @@ class HunterService:
 
                 if response.status_code == 200:
                     data = response.json().get("data", {})
+                    score = data.get("score", 0)
+
+                    # Filter out low-confidence results
+                    if score <= 70:
+                        logger.info(f"Hunter.io returned low confidence email (score: {score})")
+                        return None
 
                     return {
                         "email": data.get("email"),
-                        "score": data.get("score", 0),
+                        "score": score,
                         "sources": data.get("sources", []),
                         "cost": 0.01  # Hunter.io cost per request
                     }
