@@ -169,11 +169,16 @@ async def invoke_agent(
             "input": {
               "company_name": "Acme Corp",
               "industry": "SaaS",
-              "company_size": "50-200"
+              "company_size": "50-200",
+              "company_website": "https://acme.com",
+              "contact_email": "john@acme.com"
             },
             "lead_id": 123
           }'
         ```
+
+        Note: If contact_email is not provided and company_website is available,
+        the qualification agent will automatically attempt to extract emails from the website.
     """
     try:
         # Validate agent type
