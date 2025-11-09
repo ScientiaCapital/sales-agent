@@ -3,8 +3,35 @@ import os
 import logging
 import httpx
 from typing import Optional, Dict
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
+
+
+def extract_domain(url: str) -> str:
+    """
+    Extract domain from URL.
+
+    Examples:
+        "https://example.com" -> "example.com"
+        "https://example.com/about" -> "example.com"
+        "example.com" -> "example.com"
+
+    Args:
+        url: URL or domain string
+
+    Returns:
+        Extracted domain
+    """
+    if not url:
+        return ""
+
+    # Add protocol if missing (urlparse needs it)
+    if not url.startswith(("http://", "https://")):
+        url = f"https://{url}"
+
+    parsed = urlparse(url)
+    return parsed.netloc or parsed.path
 
 
 class HunterService:
