@@ -102,7 +102,32 @@ LINKEDIN_CLIENT_SECRET=your_client_secret
 LINKEDIN_REDIRECT_URI=http://localhost:8001/api/linkedin/callback
 ```
 
-### 8. Browserbase (LinkedIn Scraping - Optional)
+### 8. Hunter.io (Email Discovery - Optional)
+**Purpose:** Email discovery fallback when website scraping fails
+**Get it:** https://hunter.io/api-keys
+**Cost:** Free tier (25 searches/month) | Starter tier (500 searches/month, $49/month)
+**Per-request cost:** $0.01-0.02 (Starter tier)
+
+```env
+HUNTER_API_KEY=your_hunter_api_key_here
+```
+
+**Steps:**
+1. Sign up at https://hunter.io
+2. Navigate to https://hunter.io/api-keys
+3. Copy your API key
+4. Add to `.env`: `HUNTER_API_KEY=your_key_here`
+
+**Usage:** Automatically called by QualificationAgent when website scraping returns no emails. This is a fallback mechanism to ensure comprehensive email discovery for lead enrichment.
+
+**Features:**
+- Domain-based email discovery
+- Email pattern detection
+- Confidence scores for each email
+- Non-blocking async integration
+- Automatic retry logic with exponential backoff
+
+### 9. Browserbase (LinkedIn Scraping - Optional)
 **Get it:** https://www.browserbase.com/
 
 ```env
@@ -112,7 +137,7 @@ BROWSERBASE_PROJECT_ID=your_project_id
 
 **Rate Limit:** 100 requests/day
 
-### 9. CRM Encryption Key (Required)
+### 10. CRM Encryption Key (Required)
 **Generate locally:**
 
 ```bash
@@ -250,6 +275,7 @@ REDIS_URL=redis://localhost:6379/0
 - Cartesia TTS (for voice agents)
 - Close CRM (for CRM sync)
 - Apollo.io (for enrichment)
+- Hunter.io (for email discovery fallback)
 
 ---
 
@@ -283,8 +309,9 @@ Based on 10,000 leads/month:
 | Cartesia TTS | 1k voice calls | Variable |
 | Close CRM | CRM operations | Free tier / plan |
 | Apollo.io | 5k enrichments | Plan dependent |
+| Hunter.io | 500 email searches (fallback only) | $49/month (Starter) or Free (25/month) |
 
-**Total:** ~$60-100/month for 10k leads
+**Total:** ~$60-150/month for 10k leads (depending on email discovery usage)
 
 ---
 
