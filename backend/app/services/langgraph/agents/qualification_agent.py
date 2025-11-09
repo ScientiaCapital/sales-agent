@@ -70,6 +70,8 @@ from app.services.cost_tracking import get_cost_optimizer
 # from app.services.langgraph.tools import get_transfer_tools
 from app.services.website_validator import get_website_validator
 from app.services.review_scraper import get_review_scraper
+from app.services.email_extractor import EmailExtractor
+from app.services.hunter_service import HunterService, extract_domain
 
 logger = setup_logging(__name__)
 
@@ -212,9 +214,15 @@ class QualificationAgent:
         # Build LCEL chain with free-form output
         self.chain = self._build_chain()
 
+        # Initialize email extractor
+        self.email_extractor = EmailExtractor()
+
+        # Initialize Hunter.io service
+        self.hunter_service = HunterService()
+
         logger.info(
             f"QualificationAgent initialized: provider={provider}, model={model}, "
-            f"temperature={temperature}, max_tokens={max_tokens}"
+            f"temperature={temperature}, max_tokens={max_tokens}, email_extraction=enabled"
         )
 
     def _initialize_llm(self) -> BaseChatModel:
@@ -404,6 +412,7 @@ Respond with JSON only."""
         industry: Optional[str] = None,
         contact_name: Optional[str] = None,
         contact_title: Optional[str] = None,
+        contact_email: Optional[str] = None,
         notes: Optional[str] = None
     ) -> tuple[LeadQualificationResult, int, Dict[str, Any]]:
         """
@@ -442,6 +451,10 @@ Respond with JSON only."""
         if not company_name:
             raise ValueError("company_name is required")
 
+        # Initialize email discovery tracking
+        extraction_method = "none"
+        hunter_cost = 0.0
+
         # ===== WEBSITE VALIDATION (ICP Qualifier) =====
         # If no website or website is down, lead is not ICP
         if company_website:
@@ -478,6 +491,53 @@ Respond with JSON only."""
                 f"team_page={website_result.has_team_page}, "
                 f"atl_contacts={len(website_result.atl_contacts)}"
             )
+
+            # ===== EMAIL EXTRACTION =====
+            # Two-tier email discovery: Tier 1 (scraping) → Tier 2 (Hunter.io)
+            # Extract email if not provided and website is available
+            if not contact_email:
+                logger.info(f"Attempting email extraction for {company_name}")
+
+                # Tier 1: Website scraping (free)
+                try:
+                    extracted_emails = await self.email_extractor.extract_emails(company_website)
+
+                    if extracted_emails:
+                        contact_email = extracted_emails[0]  # Use top-priority email
+                        extraction_method = "scraping"
+                        logger.info(f"Extracted {len(extracted_emails)} emails, using: {contact_email}")
+
+                        # Add to qualification notes
+                        if notes:
+                            notes += f"\nEmails found: {', '.join(extracted_emails[:3])}"
+                        else:
+                            notes = f"Emails found: {', '.join(extracted_emails[:3])}"
+                    else:
+                        logger.warning(f"No emails extracted from {company_website}")
+                except Exception as e:
+                    logger.error(f"Email extraction failed for {company_website}: {e}")
+                    # Continue to Tier 2
+
+                # Tier 2: Hunter.io fallback (paid, only if scraping failed)
+                if not contact_email and company_website:
+                    try:
+                        domain = extract_domain(company_website)
+                        hunter_result = await self.hunter_service.find_email(domain)
+
+                        if hunter_result and hunter_result.get("score", 0) > 70:
+                            contact_email = hunter_result["email"]
+                            extraction_method = "hunter"
+                            hunter_cost = hunter_result.get("cost", 0.01)
+                            if notes:
+                                notes += f"\nEmail found via Hunter.io: {contact_email} (confidence: {hunter_result['score']}%)"
+                            else:
+                                notes = f"Email found via Hunter.io: {contact_email} (confidence: {hunter_result['score']}%)"
+                            logger.info(f"Hunter.io found email for {company_name}: {contact_email} (score: {hunter_result['score']})")
+                    except Exception as e:
+                        logger.warning(f"Hunter.io fallback failed for {company_website}: {e}")
+            else:
+                # Email was provided upfront, no extraction needed
+                extraction_method = "provided"
 
             # ===== REVIEW SCRAPING (Reputation Data) =====
             # Scrape reviews from multiple platforms for reputation scoring
@@ -663,7 +723,10 @@ Respond with JSON only."""
                 "lcel_chain": True,
                 "free_form_json": True,
                 "estimated_tokens": estimated_tokens,
-                "estimated_cost_usd": round(estimated_cost_usd, 6)
+                "estimated_cost_usd": round(estimated_cost_usd, 6),
+                "extracted_email": contact_email,  # Include extracted/provided email for downstream use
+                "extraction_method": extraction_method,  # Track how email was discovered
+                "hunter_cost_usd": hunter_cost  # Track Hunter.io API costs
             }
 
             logger.info(

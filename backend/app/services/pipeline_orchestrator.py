@@ -94,6 +94,13 @@ class PipelineOrchestrator:
                     lead_name, stages, "qualification", qual_result.error
                 )
 
+            # Extract email from qualification metadata for enrichment
+            if qual_result.output and "metadata" in qual_result.output:
+                extracted_email = qual_result.output["metadata"].get("extracted_email")
+                if extracted_email and not request.lead.get("email"):
+                    request.lead["email"] = extracted_email
+                    logger.info(f"Using extracted email for enrichment: {extracted_email}")
+
             # Stage 2: Enrichment (skippable)
             if request.options.skip_enrichment:
                 stages["enrichment"] = PipelineStageResult(
@@ -184,6 +191,7 @@ class PipelineOrchestrator:
                 company_size=lead.get("company_size"),
                 industry=lead.get("industry"),
                 contact_name=lead.get("contact_name"),
+                contact_email=lead.get("email") or lead.get("contact_email"),
                 contact_title=lead.get("contact_title"),
                 notes=lead.get("notes")
             )
@@ -211,11 +219,12 @@ class PipelineOrchestrator:
                             "qualification_reasoning": getattr(qualification_result, 'qualification_reasoning', None),
                             "fit_assessment": getattr(qualification_result, 'fit_assessment', None),
                             "contact_quality": getattr(qualification_result, 'contact_quality', None),
-                            "sales_potential": getattr(qualification_result, 'sales_potential', None)
+                            "sales_potential": getattr(qualification_result, 'sales_potential', None),
+                            "metadata": metadata  # Include metadata for downstream use (extracted_email, etc.)
                         }
                     else:
                         # qualification_result is the score itself
-                        output = {"qualification_score": float(qualification_result)}
+                        output = {"qualification_score": float(qualification_result), "metadata": metadata}
 
                     # Extract cost - could be dict or float
                     if isinstance(metadata, dict):
