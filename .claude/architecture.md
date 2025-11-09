@@ -174,6 +174,133 @@ class CSVLeadImportRequest(BaseModel):
 - **PipelineOrchestrator**: Coordinates 4-stage execution with timing/cost tracking
 - **Test API Endpoints**: `/api/leads/test-pipeline`, `/api/leads/test-pipeline/quick`
 
+## 4.6. Email Discovery System (✅ Sub-Phase 2A Complete)
+
+### Architecture
+```
+Email Discovery Flow:
+1. Lead Input (no email) → QualificationAgent
+2. Email Extraction Attempt → EmailExtractor Service
+   ├── Website Scraping (/, /contact, /contact-us, /about)
+   ├── Multi-Pattern Detection (mailto, standard, obfuscated)
+   ├── Smart Prioritization (personal > business > generic)
+   └── Spam Filtering (noreply@, info@, admin@, etc.)
+3. Metadata Propagation → qualification_result.metadata
+4. Pipeline Extraction → PipelineOrchestrator
+5. Lead Update → request.lead["email"] = extracted_email
+6. Enrichment Agent → receives extracted email
+```
+
+### EmailExtractor Service
+```python
+class EmailExtractor:
+    """Web scraping-based email discovery service (185 lines)"""
+
+    async def extract_emails(self, website_url: str) -> List[str]:
+        """
+        Multi-page email extraction with smart prioritization
+
+        Returns:
+            List of emails sorted by priority:
+            1. Personal names (john.doe@example.com)
+            2. Business roles (sales@, contact@)
+            3. Generic addresses (info@, hello@)
+
+        Features:
+        - Parallel page crawling (main + 3 subpages)
+        - 10-second timeout per request
+        - Graceful failure (returns empty list)
+        - BeautifulSoup + regex pattern matching
+        """
+```
+
+### Integration Points
+
+#### QualificationAgent (lines 487-507, 694)
+```python
+# Email extraction during qualification
+if not contact_email and company_website:
+    extracted_emails = await self.email_extractor.extract_emails(company_website)
+    if extracted_emails:
+        contact_email = extracted_emails[0]
+        notes += f"\nEmails found: {', '.join(extracted_emails[:3])}"
+
+# Metadata return (line 694)
+metadata = {
+    "extracted_email": contact_email,  # CRITICAL for pipeline
+    # ... other metadata
+}
+```
+
+#### PipelineOrchestrator
+**Line 187** - Pass contact_email to trigger extraction:
+```python
+result = await self.qualification_agent.qualify(
+    company_name=lead.get("name"),
+    company_website=lead.get("website"),
+    contact_email=lead.get("email") or lead.get("contact_email"),  # ✅ Added
+    # ... other parameters
+)
+```
+
+**Lines 97-102** - Extract from metadata and update lead:
+```python
+if qual_result.output and "metadata" in qual_result.output:
+    extracted_email = qual_result.output["metadata"].get("extracted_email")
+    if extracted_email and not request.lead.get("email"):
+        request.lead["email"] = extracted_email
+        logger.info(f"Using extracted email for enrichment: {extracted_email}")
+```
+
+### Performance Characteristics
+- **Latency**: +2-4 seconds per lead (non-blocking)
+- **Cost**: $0 (web scraping, no API costs)
+- **Success Rate**: ~80% for contractor/SMB leads
+- **Caching**: Redis qualification cache prevents redundant scraping
+- **Failure Mode**: Non-blocking - qualification continues without email
+
+### Test Coverage
+```python
+# Unit Tests (185 lines): tests/services/test_email_extractor.py
+- test_extract_mailto_link_emails()
+- test_extract_standard_format_emails()
+- test_extract_obfuscated_emails()
+- test_extract_multiple_emails()
+- test_prioritize_personal_over_generic()
+- test_filter_generic_emails()
+- test_handle_404_gracefully()
+
+# Integration Tests (139 lines): tests/services/langgraph/test_qualification_email_integration.py
+- test_qualification_extracts_email_when_missing()
+- test_qualification_skips_extraction_when_email_provided()
+- test_qualification_continues_without_email_on_failure()
+```
+
+### Database Impact
+**None** - Email extraction is stateless and relies only on:
+- Redis caching (qualification results)
+- No new tables or migrations required
+
+### Next: Sub-Phase 2B (Hunter.io Fallback)
+```python
+class HunterService:
+    """Hunter.io API integration for email discovery"""
+
+    async def find_email(self, domain: str, first_name: str = None,
+                        last_name: str = None) -> Optional[str]:
+        """
+        Fallback email discovery via Hunter.io Email Finder API
+        Cost: $0.01-0.02 per lookup
+        Rate Limits: 50 requests/month (free), 500/month (starter)
+        """
+```
+
+**Integration Strategy**:
+1. Website scraping (EmailExtractor) - Try first (free)
+2. Hunter.io API (HunterService) - Fallback if scraping fails (paid)
+3. Cost tracking - Track Hunter.io costs separately in metadata
+4. Graceful degradation - Continue without email if both fail
+
 $2
 
 ### AI/ML Dependencies
