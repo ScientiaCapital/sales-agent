@@ -45,3 +45,28 @@ async def test_find_email_success():
     assert result["score"] == 95
     assert result["cost"] == 0.01
     assert len(result["sources"]) > 0
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_find_email_low_confidence():
+    """Test filtering out low-confidence results (score <= 70)"""
+    # Mock Hunter.io returning low confidence result
+    respx.get("https://api.hunter.io/v2/email-finder").mock(return_value=httpx.Response(
+        200,
+        json={
+            "data": {
+                "email": "generic@example.com",
+                "score": 50,  # Low confidence
+                "sources": []
+            }
+        }
+    ))
+
+    os.environ["HUNTER_API_KEY"] = "test_key_123"
+    service = HunterService()
+
+    result = await service.find_email("example.com")
+
+    # Should filter out low confidence results
+    assert result is None
