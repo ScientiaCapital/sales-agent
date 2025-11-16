@@ -135,6 +135,7 @@ FROM email_drafts ed
 WHERE
     ed.opens_count >= 3
     AND ed.sent_at > NOW() - INTERVAL '7 days'
+    AND ed.last_opened_at IS NOT NULL  -- Prevent NULL arithmetic
 ORDER BY ed.opens_count DESC, ed.last_opened_at DESC;
 
 COMMENT ON VIEW high_intent_contacts IS 'Contacts with 3+ email opens in last 7 days (high buying intent)';
