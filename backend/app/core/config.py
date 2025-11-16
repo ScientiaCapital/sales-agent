@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # Environment
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False  # Set DEBUG=true in .env for development
 
     class Config:
         env_file = "../.env"
