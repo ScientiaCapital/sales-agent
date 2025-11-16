@@ -1,0 +1,34 @@
+name: Build Social Intelligence Docker Image
+
+on:
+  push:
+    branches:
+      - feature/social-intelligence
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare Docker tags
+        id: docker_meta
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          echo "tags=ghcr.io/$(echo $REPO | tr '[:upper:]' '[:lower:]')/social-intel:latest" >> $GITHUB_OUTPUT
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.serverless
+          push: true
+          tags: ${{ steps.docker_meta.outputs.tags }}

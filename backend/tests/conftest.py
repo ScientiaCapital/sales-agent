@@ -1,344 +1,79 @@
 """
-Pytest configuration and fixtures for comprehensive testing.
-
-This module provides shared fixtures, test configuration, and utilities
-for the entire test suite.
+Pytest fixtures and configuration for social intelligence tests
 """
-
-import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-# Load environment variables BEFORE importing app modules
-env_path = Path(__file__).parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
 
 import asyncio
 import pytest
-import pytest_asyncio
-from typing import AsyncGenerator, Generator, Dict, Any
-from unittest.mock import Mock, AsyncMock, patch
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from unittest.mock import Mock, AsyncMock, MagicMock
+from datetime import datetime, timedelta
 
-# Import application components
-try:
-    from app.main import app
-except (ValueError, ImportError) as e:
-    # app.main may fail to import in integration tests due to missing env vars
-    # Integration tests don't need the full FastAPI app
-    app = None
 
-from app.models.database import Base, get_db
-
-try:
-    from app.services.routing.unified_router import UnifiedRouter
-    from app.services.routing.base_router import ProviderConfig, ProviderType
-except ImportError:
-    # Routing services may not be available in all test contexts
-    UnifiedRouter = None
-    ProviderConfig = None
-    ProviderType = None
-
-# Test database URL (in-memory SQLite for testing)
-TEST_DATABASE_URL = "sqlite:///./test.db"
-
-# Create test engine
-test_engine = create_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False}
-)
-
-# Create test session maker
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-
+# ==================== Pytest Configuration ====================
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Create an instance of the default event loop for the test session."""
+    """Create event loop for async tests."""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 
-@pytest.fixture(scope="function")
-def db_session() -> Generator:
-    """Create a fresh database session for each test."""
-    # Create tables
-    Base.metadata.create_all(bind=test_engine)
-    
-    # Create session
-    session = TestingSessionLocal()
-    
-    try:
-        yield session
-    finally:
-        session.close()
-        # Drop tables after test
-        Base.metadata.drop_all(bind=test_engine)
+# ==================== Database Fixtures ====================
 
-
-@pytest.fixture(scope="function")
-def client(db_session) -> Generator[TestClient, None, None]:
-    """Create a test client with database dependency override."""
-    if app is None:
-        pytest.skip("FastAPI app not available (missing env vars)")
-
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
-
-
-@pytest.fixture(scope="function")
-async def async_client(db_session) -> AsyncGenerator[AsyncClient, None]:
-    """Create an async test client."""
-    if app is None:
-        pytest.skip("FastAPI app not available (missing env vars)")
-
-    def override_get_db():
-        try:
-            yield db_session
-        finally:
-            pass
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
-
-    app.dependency_overrides.clear()
+@pytest.fixture
+def mock_database_url():
+    """Mock Supabase database URL."""
+    return "postgresql://test_user:test_pass@localhost:5432/test_db"
 
 
 @pytest.fixture
-def mock_providers() -> Dict:
-    """Create mock provider configurations for testing."""
-    if ProviderConfig is None or ProviderType is None:
-        pytest.skip("Routing services not available")
+def mock_db_connection():
+    """Mock async database connection."""
+    conn = AsyncMock()
+    cursor = AsyncMock()
 
+    # Mock cursor methods
+    cursor.execute = AsyncMock()
+    cursor.fetchone = AsyncMock(return_value={'count': 0})
+    cursor.fetchall = AsyncMock(return_value=[])
+
+    # Mock connection context manager
+    conn.__aenter__ = AsyncMock(return_value=conn)
+    conn.__aexit__ = AsyncMock()
+    conn.cursor = MagicMock(return_value=cursor)
+    cursor.__aenter__ = AsyncMock(return_value=cursor)
+    cursor.__aexit__ = AsyncMock()
+
+    return conn
+
+
+# ==================== API Key Fixtures ====================
+
+@pytest.fixture
+def mock_api_keys():
+    """Mock API keys for all services."""
     return {
-        ProviderType.CEREBRAS: ProviderConfig(
-            provider_type=ProviderType.CEREBRAS,
-            model="llama3.1-8b",
-            base_url="https://api.cerebras.ai/v1",
-            api_key="test-cerebras-key",
-            max_tokens=512,
-            temperature=0.7,
-            timeout_seconds=30,
-            cost_per_token=0.000006,
-            circuit_breaker_config={"failure_threshold": 5, "recovery_timeout": 60},
-            retry_config={"max_retries": 3, "base_delay": 1}
-        ),
-        ProviderType.CLAUDE: ProviderConfig(
-            provider_type=ProviderType.CLAUDE,
-            model="claude-3-5-sonnet-20241022",
-            base_url="https://api.anthropic.com",
-            api_key="test-claude-key",
-            max_tokens=4096,
-            temperature=0.7,
-            timeout_seconds=60,
-            cost_per_token=0.001743,
-            circuit_breaker_config={"failure_threshold": 5, "recovery_timeout": 60},
-            retry_config={"max_retries": 3, "base_delay": 1}
-        ),
-        ProviderType.DEEPSEEK: ProviderConfig(
-            provider_type=ProviderType.DEEPSEEK,
-            model="deepseek-chat",
-            base_url="https://api.deepseek.com/v1",
-            api_key="test-deepseek-key",
-            max_tokens=2048,
-            temperature=0.7,
-            timeout_seconds=45,
-            cost_per_token=0.00027,
-            circuit_breaker_config={"failure_threshold": 5, "recovery_timeout": 60},
-            retry_config={"max_retries": 3, "base_delay": 1}
-        ),
-        ProviderType.OLLAMA: ProviderConfig(
-            provider_type=ProviderType.OLLAMA,
-            model="llama3.1:8b",
-            base_url="http://localhost:11434/v1",
-            api_key="ollama",
-            max_tokens=1024,
-            temperature=0.7,
-            timeout_seconds=30,
-            cost_per_token=0.0,
-            circuit_breaker_config={"failure_threshold": 5, "recovery_timeout": 60},
-            retry_config={"max_retries": 3, "base_delay": 1}
-        )
+        'runpod': 'test_runpod_key',
+        'supabase': 'postgresql://test:test@localhost:5432/test',
+        'close': 'test_close_key',
+        'anthropic': 'test_anthropic_key',
+        'deepseek': 'test_deepseek_key',
+        'twitter': 'test_twitter_bearer_token'
     }
 
 
-@pytest.fixture
-def mock_router(mock_providers):
-    """Create a mock unified router for testing."""
-    if UnifiedRouter is None:
-        pytest.skip("Routing services not available")
-
-    return UnifiedRouter(mock_providers)
-
+# ==================== Sample Data Fixtures ====================
 
 @pytest.fixture
-def mock_lead_data() -> Dict[str, Any]:
-    """Create mock lead data for testing."""
-    return {
-        "company_name": "Test Company Inc.",
-        "email": "test@testcompany.com",
-        "phone": "+1-555-0123",
-        "website": "https://testcompany.com",
-        "industry": "Technology",
-        "company_size": "50-200",
-        "annual_revenue": "10M-50M",
-        "location": "San Francisco, CA",
-        "description": "A test company for automated testing"
-    }
-
-
-@pytest.fixture
-def mock_crm_contact() -> Dict[str, Any]:
-    """Create mock CRM contact data for testing."""
-    return {
-        "id": "test_contact_123",
-        "name": "John Doe",
-        "email": "john.doe@testcompany.com",
-        "phone": "+1-555-0123",
-        "company": "Test Company Inc.",
-        "title": "CTO",
-        "custom_fields": {
-            "industry": "Technology",
-            "company_size": "50-200",
-            "annual_revenue": "10M-50M"
+def sample_linkedin_posts():
+    """Sample LinkedIn posts for testing."""
+    return [
+        {
+            'contact_id': 'https://linkedin.com/in/test-user',
+            'platform': 'linkedin',
+            'post_text': 'Just launched our new AI product!',
+            'post_url': 'https://linkedin.com/posts/test-123',
+            'posted_at': datetime.now() - timedelta(days=2),
+            'scraped_at': datetime.now()
         }
-    }
-
-
-@pytest.fixture
-def mock_ai_response() -> Dict[str, Any]:
-    """Create mock AI response for testing."""
-    return {
-        "content": "This is a test AI response for automated testing.",
-        "model": "test-model",
-        "tokens_used": 25,
-        "cost_usd": 0.0001,
-        "latency_ms": 500,
-        "metadata": {
-            "provider": "test",
-            "timestamp": "2025-10-29T19:47:35Z"
-        }
-    }
-
-
-@pytest.fixture
-def mock_websocket():
-    """Create a mock WebSocket for testing."""
-    websocket = AsyncMock()
-    websocket.send_json = AsyncMock()
-    websocket.receive_json = AsyncMock()
-    websocket.close = AsyncMock()
-    return websocket
-
-
-@pytest.fixture
-def mock_redis():
-    """Create a mock Redis client for testing."""
-    redis_mock = Mock()
-    redis_mock.get = AsyncMock(return_value=None)
-    redis_mock.set = AsyncMock(return_value=True)
-    redis_mock.setex = AsyncMock(return_value=True)
-    redis_mock.delete = AsyncMock(return_value=1)
-    redis_mock.exists = AsyncMock(return_value=False)
-    redis_mock.incr = AsyncMock(return_value=1)
-    redis_mock.expire = AsyncMock(return_value=True)
-    return redis_mock
-
-
-@pytest.fixture
-def mock_celery():
-    """Create a mock Celery task for testing."""
-    task_mock = Mock()
-    task_mock.delay = Mock(return_value=Mock(id="test-task-123"))
-    task_mock.apply_async = Mock(return_value=Mock(id="test-task-123"))
-    return task_mock
-
-
-# Test utilities
-class TestUtils:
-    """Utility functions for testing."""
-    
-    @staticmethod
-    def assert_response_success(response, expected_status=200):
-        """Assert that a response is successful."""
-        assert response.status_code == expected_status
-        assert "error" not in response.json()
-    
-    @staticmethod
-    def assert_response_error(response, expected_status=400):
-        """Assert that a response contains an error."""
-        assert response.status_code == expected_status
-        assert "error" in response.json()
-    
-    @staticmethod
-    def assert_ai_response_structure(response_data):
-        """Assert that AI response has correct structure."""
-        required_fields = ["content", "model", "tokens_used", "cost_usd", "latency_ms"]
-        for field in required_fields:
-            assert field in response_data, f"Missing field: {field}"
-        
-        assert isinstance(response_data["content"], str)
-        assert isinstance(response_data["tokens_used"], int)
-        assert isinstance(response_data["cost_usd"], (int, float))
-        assert isinstance(response_data["latency_ms"], int)
-    
-    @staticmethod
-    def assert_lead_structure(lead_data):
-        """Assert that lead data has correct structure."""
-        required_fields = ["company_name", "email", "phone", "website"]
-        for field in required_fields:
-            assert field in lead_data, f"Missing field: {field}"
-        
-        assert isinstance(lead_data["company_name"], str)
-        assert "@" in lead_data["email"]
-        assert lead_data["phone"].startswith("+")
-        assert lead_data["website"].startswith("http")
-
-
-# Pytest configuration
-def pytest_configure(config):
-    """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "integration: mark test as an integration test"
-    )
-    config.addinivalue_line(
-        "markers", "performance: mark test as a performance test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "ai: mark test as requiring AI services"
-    )
-    config.addinivalue_line(
-        "markers", "database: mark test as requiring database"
-    )
-    config.addinivalue_line(
-        "markers", "external: mark test as requiring external services"
-    )
-
-
-# Test discovery configuration
-collect_ignore = [
-    "test_legacy.py",  # Ignore legacy test files
-    "test_old_*.py",   # Ignore old test files
-]
+    ]
