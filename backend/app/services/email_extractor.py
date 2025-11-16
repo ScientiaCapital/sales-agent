@@ -54,12 +54,16 @@ class EmailExtractor:
         Extract emails from website.
 
         Args:
-            website: Company website URL
+            website: Company website URL (with or without protocol)
             max_pages: Maximum pages to crawl
 
         Returns:
             List of emails, prioritized (decision-makers first)
         """
+        # Normalize URL - ensure it has protocol
+        if not website.startswith(('http://', 'https://')):
+            website = f"https://{website}"
+
         emails: Set[str] = set()
 
         # Try main page
