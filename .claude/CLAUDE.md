@@ -4,7 +4,7 @@
 
 **Production-ready AI sales automation platform** with 6 specialized LangGraph agents achieving sub-second lead qualification (633ms target). The system processes leads through a complete pipeline: qualification → enrichment → growth analysis → marketing → BDR workflows → voice conversations.
 
-**Current Status**: ✅ Phase 5 Complete - Close CRM + Deduplication | ✅ Email Discovery Sub-Phase 2A Complete | 🚧 Sub-Phase 2B In Progress - Hunter.io Fallback
+**Current Status**: ✅ Phase 5 Complete - Close CRM + Deduplication | ✅ Email Discovery Complete | 🚧 Phase 6 In Progress - Social Intelligence System (Week 1: 70% Complete)
 
 ## Technology Stack
 
@@ -306,6 +306,87 @@ python test_sample_leads.py
 - Task 11: Documentation and PR (~1 hour)
 
 See `HANDOFF_EMAIL_DISCOVERY.md` for complete implementation details.
+
+## Social Intelligence System (NEW 🚧 Phase 6)
+
+### LinkedIn/Twitter Monitoring → AI-Powered Email Drafts → High-Intent Tracking
+**Feature**: Automated social intelligence system that monitors LinkedIn and Twitter/X, generates personalized email drafts in Close CRM, and identifies hot prospects through engagement tracking.
+
+**Week 1 Infrastructure (70% Complete)**:
+1. **Supabase Database** (`supabase_schema.sql`) - 185 lines ✅
+   - `social_posts`: LinkedIn/Twitter posts with AI analysis
+   - `contact_monitoring`: Contact monitoring configuration
+   - `email_drafts`: AI-generated drafts + engagement tracking
+   - `email_engagement`: Detailed engagement events (opens, clicks)
+   - View: `high_intent_contacts` (3+ opens filter)
+
+2. **Close CRM Integration** ✅
+   - **Custom Field**: "High Intent Flag" (ID: cf_6lDArzDCbc6g92tqTPpcllDOptB8TbD6AcyCae6m2Gr)
+   - **Custom Activity Type**: "Social Intelligence" (ID: actitype_6MUhORyL0DrhjG9nmCekQx)
+   - **Smart View**: "🔥 High-Intent ATL Contacts (3+ Opens)" (ID: save_nDlCJyxbfAj9MNX4xhloQWuh0srWpBrzg0OUaNmdend)
+
+3. **Serverless Infrastructure** ✅
+   - `Dockerfile.serverless`: Multi-stage build with Playwright + Chrome
+   - `requirements-serverless.txt`: Dependencies (Playwright, httpx, anthropic, tweepy)
+   - `.github/workflows/build-docker.yml`: Automated Docker builds
+
+4. **Setup Scripts** ✅
+   - `setup_close_social_intelligence.py`: Automate Close CRM configuration
+   - `create_smart_view.py`: Create high-intent Smart View
+   - `cleanup_duplicate_smart_views.py`: Remove duplicate smart views
+   - `test_supabase_connection.py`: Database connection verification
+
+**Architecture**:
+- **Platform**: Serverless (RunPod + GitHub Actions cron)
+- **Cost**: $17/month (78% savings vs dedicated pod)
+- **Scraping**: Playwright (LinkedIn), Tweepy (Twitter/X)
+- **AI**: DeepSeek ($0.27/1M tokens) for simple analysis, Claude Sonnet 4 for complex
+- **Database**: Supabase PostgreSQL (500MB free tier)
+- **CRM**: Close CRM (draft emails, engagement tracking)
+
+**Workflow**:
+1. **Daily Scrape** (6 AM via GitHub Actions): Monitor LinkedIn + Twitter posts
+2. **AI Analysis**: Extract pain points, urgency signals, talking points
+3. **Draft Email**: Create personalized message in Close CRM (status='draft')
+4. **Manual Review**: User approves and sends via Close CRM
+5. **Engagement Tracking**: Track opens/clicks in Supabase
+6. **High-Intent Detection**: 3+ opens → Set "High Intent Flag = Yes"
+7. **Smart View Notification**: Contact appears in "🔥 High-Intent ATL Contacts"
+8. **User Action**: Call hot prospects immediately 📞🔥
+
+**Testing Commands**:
+```bash
+# Navigate to social intelligence worktree
+cd .worktrees/social-intelligence/backend
+source ../../../venv/bin/activate
+
+# Test Supabase connection
+python test_supabase_connection.py
+
+# Run Close CRM setup
+python setup_close_social_intelligence.py
+
+# Create Smart View
+python create_smart_view.py
+
+# Clean up duplicates (if needed)
+python cleanup_duplicate_smart_views.py
+```
+
+**Remaining Week 1 Tasks** (After Lunch):
+- [ ] Install RunPod CLI (~30 min)
+- [ ] Create RunPod serverless endpoint (~30 min)
+- [ ] Configure GitHub Secrets (RUNPOD_API_KEY, SUPABASE_DATABASE_URL, CLOSE_API_KEY) (~15 min)
+- [ ] Week 1 Infrastructure Review (~15 min)
+
+**Week 2 Goals** (Core Services Development):
+- [ ] LinkedIn scraper with Playwright (~4-6 hours)
+- [ ] Twitter/X monitor service (~3-4 hours)
+- [ ] AI analyzer with tiering (~4-6 hours)
+- [ ] Email draft generator (~3-4 hours)
+- [ ] Engagement tracker (~2-3 hours)
+
+See `.claude/context.md` in social-intelligence worktree for detailed progress tracking.
 
 ## Troubleshooting Tips
 

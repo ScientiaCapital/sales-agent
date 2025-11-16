@@ -1,99 +1,154 @@
-# Project Context: Sales-Agent - Email Discovery Feature
+# Project Context: Sales-Agent - Social Intelligence System
 
-**Last Updated:** 2025-11-01T17:20:00Z
+**Last Updated:** 2025-11-16T12:30:00Z
 
-## Current Sprint Focus: Email Discovery Implementation
-- **Status**: Sub-Phase 2A COMPLETE ✅ | Sub-Phase 2B In Progress (5 tasks remaining)
-- **Branch**: `feature/email-discovery`
-- **Latest Commit**: `89c7250` - Comprehensive handoff documentation
-- **Working Directory**: `.worktrees/email-discovery/backend`
+## Current Sprint Focus: Social Intelligence Infrastructure (Week 1)
+- **Status**: Week 1 Infrastructure 70% Complete ✅
+- **Branch**: `feature/social-intelligence`
+- **Latest Commit**: `98c19d8` - Smart View creation script
+- **Working Directory**: `.worktrees/social-intelligence/backend`
 
-### Today's Achievements (Sub-Phase 2A - Website Email Extraction)
-- ✅ **EmailExtractor Service**: 185 lines of production code with web scraping
-- ✅ **Test Coverage**: 324 lines across unit and integration tests
-- ✅ **Pipeline Integration**: Complete data flow from extraction → enrichment
-- ✅ **Critical Bug Fixed**: Discovered and fixed metadata wiring issue
-- ✅ **End-to-End Verified**: Full pipeline tested with real contractor leads
-- ✅ **Documentation**: 381-line handoff guide for team continuity
+### Today's Achievements (Week 1 - Infrastructure Setup)
+- ✅ **Supabase Database**: 4 tables (social_posts, contact_monitoring, email_drafts, email_engagement)
+- ✅ **Close CRM Integration**: Custom Activity Type "Social Intelligence" created
+- ✅ **Custom Field Created Manually**: "High Intent Flag" (cf_6lDArzDCbc6g92tqTPpcllDOptB8TbD6AcyCae6m2Gr)
+- ✅ **Smart View Created**: "🔥 High-Intent ATL Contacts (3+ Opens)" (save_nDlCJyxbfAj9MNX4xhloQWuh0srWpBrzg0OUaNmdend)
+- ✅ **Docker Infrastructure**: Dockerfile.serverless + requirements-serverless.txt
+- ✅ **GitHub Actions**: Automated Docker builds configured
+- ✅ **Cleanup Script**: Duplicate smart view remover
+- ✅ **Setup Scripts**: create_smart_view.py, setup_close_social_intelligence.py
 
-### Tomorrow's Goals (Sub-Phase 2B - Hunter.io Fallback)
-- [ ] Task 7: Create HunterService class (~1-2 hours)
-- [ ] Task 8: Add Hunter.io fallback logic (~1 hour)
-- [ ] Task 9: Add cost tracking for API calls (~30 min)
-- [ ] Task 10: Run full pipeline test (~30 min)
-- [ ] Task 11: Update docs and create PR (~1 hour)
+### Remaining Tasks (Week 1 - After Lunch)
+- [ ] Task 1.3: Install RunPod CLI (~30 min)
+- [ ] Task 1.3: Create RunPod serverless endpoint (~30 min)
+- [ ] Task 1.4: Add GitHub Secrets (RUNPOD_API_KEY, SUPABASE_DATABASE_URL, CLOSE_API_KEY) (~15 min)
+- [ ] Week 1 Infrastructure Review & Verification (~15 min)
+
+### Next Week Goals (Week 2 - Core Services)
+- [ ] LinkedIn scraper with Playwright (~4-6 hours)
+- [ ] Twitter/X monitor service (~3-4 hours)
+- [ ] AI analyzer (DeepSeek + Claude tiering) (~4-6 hours)
+- [ ] Email draft generator (~3-4 hours)
+- [ ] Email engagement tracker (~2-3 hours)
 
 ## Architecture Overview
-- **Language**: Python 3.13
-- **Framework**: FastAPI (web), LangGraph (agent orchestration)
-- **Type**: AI/ML Sales Automation Platform
-- **Database**: PostgreSQL (primary), Redis (checkpointing/caching)
-- **Inference**: Cerebras for ultra-fast model execution
-- **New**: EmailExtractor service with Hunter.io fallback (in progress)
+- **Platform**: Serverless (RunPod + GitHub Actions)
+- **Database**: Supabase PostgreSQL (500MB free tier)
+- **CRM**: Close CRM (bidirectional sync)
+- **Scraping**: Playwright (LinkedIn) + Tweepy (Twitter/X)
+- **AI**: DeepSeek (simple analysis), Claude Sonnet 4 (complex)
+- **Cost**: $17-19/month (78% savings vs dedicated pod)
 
 ## Project Description
-Enterprise-grade sales automation platform with sophisticated multi-agent AI system. Six specialized agents handle qualification, enrichment, growth analysis, marketing campaigns, BDR workflows, and voice conversations. Achieves 633ms lead qualification using hybrid LangGraph architecture and Cerebras inference.
+Social intelligence system that monitors LinkedIn and Twitter/X for ATL/BTL contact activity, generates AI-powered personalized email drafts in Close CRM, and tracks engagement to identify high-intent prospects (3+ opens = hot lead).
 
-**New Feature**: Automatic email discovery system that scrapes company websites for contact emails when not provided, with Hunter.io API fallback for enhanced coverage.
+**Workflow**:
+1. Daily scrape (6 AM): LinkedIn + Twitter posts from monitored contacts
+2. AI analyzes: Pain points, urgency signals, talking points
+3. Draft email: Personalized message created in Close CRM (status='draft')
+4. Manual review: User approves and sends
+5. Engagement tracking: 3+ opens → High Intent Flag = "Yes"
+6. Smart View notification: Contact appears in "🔥 High-Intent ATL Contacts"
+7. User calls immediately (hottest prospects)
 
-## Recent Changes (November 1, 2025)
-- **Email Discovery Feature**: Sub-Phase 2A Complete (website scraping)
-  - ✅ EmailExtractor service with multi-pattern detection
-  - ✅ Smart prioritization (personal > business > generic)
-  - ✅ Integrated into QualificationAgent (lines 487-507, 694)
-  - ✅ Wired through PipelineOrchestrator (lines 97-102, 187, 223/227)
-  - ✅ Non-blocking implementation (continues without email)
-  - ✅ Comprehensive test coverage (unit + integration + e2e)
-  - ✅ Critical metadata wiring bug discovered and fixed (commit 9f3f948)
+## Recent Changes (November 16, 2025)
+- **Social Intelligence Infrastructure**: Week 1 Setup (70% complete)
+  - ✅ Supabase database schema (185 lines SQL)
+  - ✅ Close CRM custom field + activity type + smart view
+  - ✅ Docker + GitHub Actions for serverless deployment
+  - ✅ Setup and cleanup scripts
+  - ⏸️ RunPod CLI installation (pending)
+  - ⏸️ GitHub Secrets configuration (pending)
 
 ## Current Blockers
-- None. Sub-Phase 2A complete and verified. Ready for Sub-Phase 2B (Hunter.io).
+- None. Infrastructure setup on track. Lunch break before completing RunPod deployment.
 
 ## Next Steps
-1. **Hunter.io Integration** (Sub-Phase 2B): Fallback email discovery via API
-2. **Cost Tracking**: Track Hunter.io API costs separately from scraping
-3. **Testing**: Full pipeline validation with both extraction methods
-4. **Documentation**: Update README, create PR for code review
-5. **Production**: Merge feature branch after review and testing
+1. **RunPod CLI Installation**: Install CLI tool and authenticate with API key
+2. **Serverless Endpoint Creation**: Deploy Docker image to RunPod
+3. **GitHub Secrets**: Configure RUNPOD_API_KEY, SUPABASE_DATABASE_URL, CLOSE_API_KEY
+4. **Week 1 Review**: Verify all infrastructure components working
+5. **Week 2 Start**: Begin LinkedIn scraper development
 
 ## Development Workflow
 ```bash
-# Email Discovery Development (Current)
-cd /Users/tmkipper/Desktop/tk_projects/sales-agent/.worktrees/email-discovery/backend
+# Social Intelligence Development (Current)
+cd /Users/tmkipper/Desktop/tk_projects/sales-agent/.worktrees/social-intelligence/backend
 source ../../../venv/bin/activate
-redis-cli ping  # Verify Redis is running
 
-# Run Email Extractor Tests
-pytest tests/services/test_email_extractor.py -v
+# Test Supabase connection
+python test_supabase_connection.py
 
-# Run Integration Tests
-pytest tests/services/langgraph/test_qualification_email_integration.py -v
+# Run Close CRM setup (if needed)
+python setup_close_social_intelligence.py
 
-# Run End-to-End Pipeline Test
-python test_sample_leads.py
+# Create Smart View (one-time, already done)
+python create_smart_view.py
 
-# Clear Redis cache when testing updated logic
-redis-cli FLUSHDB
+# Clean up duplicate smart views (if needed)
+python cleanup_duplicate_smart_views.py
 
 # Check git status
 git status
 git log --oneline -10
 ```
 
-## Key Files for Email Discovery
-- `backend/app/services/email_extractor.py` - Core extraction service (185 lines)
-- `backend/app/services/langgraph/agents/qualification_agent.py` - Integration (lines 487-507, 694)
-- `backend/app/services/pipeline_orchestrator.py` - Wiring (lines 97-102, 187, 223/227)
-- `backend/tests/services/test_email_extractor.py` - Unit tests (185 lines)
-- `backend/tests/services/langgraph/test_qualification_email_integration.py` - Integration tests (139 lines)
-- `HANDOFF_EMAIL_DISCOVERY.md` - Comprehensive documentation (381 lines) **READ THIS FIRST**
+## Key Files for Social Intelligence
+- `backend/supabase_schema.sql` - Database schema (4 tables, views, indexes)
+- `backend/test_supabase_connection.py` - Connection verification
+- `backend/setup_close_social_intelligence.py` - Close CRM configuration
+- `backend/create_smart_view.py` - Smart View creation with custom field
+- `backend/cleanup_duplicate_smart_views.py` - Utility to remove duplicates
+- `backend/Dockerfile.serverless` - RunPod container definition
+- `backend/requirements-serverless.txt` - Python dependencies
+- `.github/workflows/build-docker.yml` - Automated builds
+- `docs/plans/2025-11-16-social-intelligence-serverless.md` - Architecture design (500+ lines)
+- `IMPLEMENTATION_PLAN.md` - 4-week roadmap (30 tasks)
+- `SETUP_GUIDE.md` - Step-by-step setup instructions
+
+## Environment Variables (`.env`)
+```env
+# Supabase Database
+SUPABASE_DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-us-west-1.pooler.supabase.com:6543/postgres"
+
+# Close CRM
+CLOSE_API_KEY=api_***  # Located in .env file
+CLOSE_DEFAULT_OWNER_USER_ID=user_***  # Tim Kipper's user ID
+CLOSE_STATUS_HOT_ATL=stat_***  # Hot ATL status ID
+CLOSE_STATUS_VALIDATED_ATL=stat_***  # Validated ATL status ID
+
+# RunPod (to be added)
+RUNPOD_API_KEY=rpa_***  # Located in .env file
+
+# AI Providers
+ANTHROPIC_API_KEY=sk-ant-***  # Located in .env file
+DEEPSEEK_API_KEY=sk-***  # Located in .env file
+OPENROUTER_API_KEY=sk-or-***  # Located in .env file
+```
+
+**Note**: All actual API keys are stored in `.env` file (never committed to git).
+
+## Close CRM Configuration
+**Custom Field**: High Intent Flag
+- **ID**: `cf_6lDArzDCbc6g92tqTPpcllDOptB8TbD6AcyCae6m2Gr`
+- **Type**: Dropdown (Yes/No)
+- **Purpose**: Flag contacts who open emails 3+ times
+
+**Custom Activity Type**: Social Intelligence
+- **ID**: `actitype_6MUhORyL0DrhjG9nmCekQx`
+- **Purpose**: Store LinkedIn/Twitter research notes
+
+**Smart View**: 🔥 High-Intent ATL Contacts (3+ Opens)
+- **ID**: `save_nDlCJyxbfAj9MNX4xhloQWuh0srWpBrzg0OUaNmdend`
+- **Filters**: ATL status + High Intent Flag = Yes + Last 7 days
+- **Purpose**: Hottest prospects to call immediately
 
 ## Notes
 - **Part of GTM Engineer Strategy**: Located at `tmkipper/desktop/tk_projects/gtm_engineer_strategy`
-- **Design Patterns**: Factory, Abstract Base Class, Circuit Breaker, TDD (Test-Driven Development)
-- **Performance Critical**: All agents have strict latency SLAs (633ms-5000ms range)
-- **Cost Efficient**: Ultra-low cost per request ($0.000006 for qualification, +$0.01-0.02 for Hunter.io)
-- **Git Worktrees**: Using isolated worktree for email-discovery feature branch
-- **Test Coverage**: 96% overall, 100% for new email discovery components
-- **Critical Fix**: Metadata wiring bug discovered and fixed (commit 9f3f948) - email now flows through entire pipeline
-- **Hunter.io Setup Needed**: Sign up at https://hunter.io/, add API key to `.env` for Sub-Phase 2B
+- **Design Pattern**: Serverless event-driven architecture
+- **Cost Efficient**: $17/month vs $72/month dedicated pod (78% savings)
+- **Free Tier**: Supabase (500MB), GitHub Actions, Upstash Redis
+- **Git Worktrees**: Using isolated worktree for feature branch isolation
+- **Manual Steps**: Custom field creation required manual setup (API restrictions on Close CRM plan)
+- **Duplicate Smart Views**: Cleanup script created to handle accidental duplicates
+- **Next Deployment**: RunPod CLI + GitHub Secrets configuration
