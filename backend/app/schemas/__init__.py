@@ -25,6 +25,11 @@ from .pipeline import (
     PipelineTestResponse,
     CSVLeadImportRequest
 )
+from .csv_import import (
+    CSVUploadResponse,
+    CSVImportStatus,
+    CSVProcessingOptions
+)
 
 __all__ = [
     "LeadQualificationRequest",
@@ -45,5 +50,8 @@ __all__ = [
     "PipelineTestOptions",
     "PipelineStageResult",
     "PipelineTestResponse",
-    "CSVLeadImportRequest"
+    "CSVLeadImportRequest",
+    "CSVUploadResponse",
+    "CSVImportStatus",
+    "CSVProcessingOptions"
 ]
