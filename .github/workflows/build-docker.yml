@@ -19,9 +19,16 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare Docker tags
+        id: docker_meta
+        env:
+          REPO: ${{ github.repository }}
+        run: |
+          echo "tags=ghcr.io/$(echo $REPO | tr '[:upper:]' '[:lower:]')/social-intel:latest" >> $GITHUB_OUTPUT
+
       - uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile.serverless
           push: true
-          tags: ghcr.io/${{ github.repository }}/social-intel:latest
+          tags: ${{ steps.docker_meta.outputs.tags }}
