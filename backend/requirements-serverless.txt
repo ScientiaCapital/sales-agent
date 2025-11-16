@@ -12,7 +12,8 @@ httpx==0.25.1
 aiohttp==3.9.1
 
 # Database
-psycopg[binary]==3.1.13
+psycopg==3.2.3
+psycopg-binary==3.2.3
 sqlalchemy==2.0.23
 
 # Redis (optional - Upstash)
