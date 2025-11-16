@@ -167,8 +167,8 @@ async def search_social_media_tool(
         # Initialize social media scraper
         scraper = SocialMediaScraper()
         
-        # Perform multi-platform search
-        results = scraper.scrape_company_social(
+        # Perform multi-platform search (use async version to avoid blocking)
+        results = await scraper.scrape_company_social_async(
             company_name=company_name,
             platforms=platforms,
             max_results_per_platform=max_results_per_platform
