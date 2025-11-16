@@ -314,6 +314,46 @@ class CloseProvider(CRMProvider):
                 ]
             }
 
+            # Assign default owner (Tim Kipper) if configured
+            default_owner = os.getenv("CLOSE_DEFAULT_OWNER_USER_ID")
+            if default_owner:
+                lead_data["created_by"] = default_owner
+
+            # Set lead priority status based on enrichment data
+            enrichment = contact.enrichment_data or {}
+            is_atl = enrichment.get("is_atl", False)
+            qualification_score = enrichment.get("qualification_score", 0)
+            contact_level = enrichment.get("contact_level", "Unknown")
+
+            # Determine lead status based on ATL/BTL and score
+            if is_atl:
+                if qualification_score >= 70:
+                    status_id = os.getenv("CLOSE_STATUS_HOT_ATL")
+                    priority_label = "🔥 Hot ATL"
+                else:
+                    status_id = os.getenv("CLOSE_STATUS_VALIDATED_ATL")
+                    priority_label = "⭐ Validated ATL"
+            else:
+                status_id = os.getenv("CLOSE_STATUS_BTL")
+                priority_label = "📋 BTL"
+
+            if status_id:
+                lead_data["status_id"] = status_id
+
+            # Add enrichment metadata to description
+            description_parts = []
+            if qualification_score > 0:
+                description_parts.append(f"Qualification Score: {qualification_score}/100")
+            if contact_level and contact_level != "Unknown":
+                description_parts.append(f"Contact Level: {contact_level}")
+            if is_atl:
+                description_parts.append("Decision Maker (ATL)")
+            else:
+                description_parts.append("Individual Contributor (BTL)")
+
+            if description_parts:
+                lead_data["description"] = f"{priority_label}\n\n" + "\n".join(description_parts)
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.BASE_URL}/lead/",
@@ -347,6 +387,63 @@ class CloseProvider(CRMProvider):
         except httpx.HTTPError as e:
             logger.error(f"Network error creating contact: {e}")
             raise CRMNetworkError(f"Network error: {e}")
+
+    async def create_lead(self, lead: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a lead in Close CRM from pipeline lead data.
+
+        Converts lead dict to Contact object and creates in Close CRM with:
+        - Automatic ATL/BTL prioritization
+        - Lead status assignment (Hot ATL, Validated ATL, BTL)
+        - Qualification score in description
+        - Tim Kipper as owner
+
+        Args:
+            lead: Lead dict with email, company, qualification_score, is_atl, etc.
+
+        Returns:
+            Created lead/contact data
+
+        Raises:
+            CRMValidationError: If required fields missing
+        """
+        try:
+            # Extract lead data
+            email = lead.get("email") or lead.get("domain")  # fallback to domain if no email
+            if not email:
+                raise CRMValidationError("Lead must have email or domain")
+
+            # Build Contact object from lead dict
+            contact = Contact(
+                email=email,
+                first_name=lead.get("first_name"),
+                last_name=lead.get("last_name"),
+                company=lead.get("name") or lead.get("company"),
+                title=lead.get("title"),
+                phone=lead.get("phone"),
+                linkedin_url=lead.get("linkedin_url"),
+                enrichment_data={
+                    "is_atl": lead.get("is_atl", False),
+                    "qualification_score": lead.get("qualification_score", 0),
+                    "contact_level": lead.get("contact_level", "Unknown"),
+                    "discovered_contacts": lead.get("_discovered_contacts", [])
+                }
+            )
+
+            # Create in Close CRM (will auto-set status and owner)
+            created_contact = await self.create_contact(contact)
+
+            return {
+                "id": created_contact.external_ids.get("close"),
+                "email": created_contact.email,
+                "company": created_contact.company,
+                "name": f"{created_contact.first_name or ''} {created_contact.last_name or ''}".strip(),
+                "status": "created"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to create lead in Close CRM: {e}")
+            raise
 
     async def update_contact(self, contact_id: str, contact: Contact) -> Contact:
         """
