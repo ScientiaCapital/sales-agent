@@ -29,12 +29,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build Docker image (push disabled for testing)
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile.serverless
-          push: true
+          push: false
+          load: true
           tags: ghcr.io/scientiacapital/sales-agent:social-intelligence-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
