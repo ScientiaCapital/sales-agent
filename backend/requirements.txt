@@ -92,6 +92,10 @@ python-docx==1.1.2  # DOCX document parsing
 reportlab==4.2.5  # Professional PDF generation with charts and tables
 openpyxl==3.1.5  # Excel file generation (.xlsx) with multi-sheet support
 
+# Web Scraping
+beautifulsoup4==4.12.3  # HTML parsing for static websites
+playwright==1.48.0  # Browser automation for JavaScript-heavy sites (Browserbase integration)
+
 # Social Media Scraping
 tweepy==4.14.0  # Twitter API v2 client
 praw==7.7.1  # Reddit API wrapper
