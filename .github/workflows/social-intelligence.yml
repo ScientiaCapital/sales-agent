@@ -35,7 +35,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile.serverless
           push: true
-          tags: ghcr.io/tkipper/sales-agent-social-intelligence:latest
+          tags: ghcr.io/scientiacapital/sales-agent:social-intelligence-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
