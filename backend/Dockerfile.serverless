@@ -52,6 +52,7 @@ RUN playwright install chromium
 # Copy application code
 COPY app /app/app
 COPY handler.py /app/
+COPY healthcheck.py /app/
 COPY social_intelligence_runner.py /app/
 COPY check_email_engagement.py /app/
 
@@ -60,9 +61,9 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Health check endpoint (optional)
+# Health check endpoint - Verifies database, API keys, Playwright
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "print('healthy')" || exit 1
+    CMD python healthcheck.py || exit 1
 
 # RunPod serverless handler entry point
 # This will be called by RunPod with event data
