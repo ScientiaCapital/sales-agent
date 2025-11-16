@@ -31,6 +31,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     # For PostgreSQL
     libpq-dev \
+    # For XML parsing (lxml package)
+    libxml2-dev \
+    libxslt1-dev \
+    # Build essentials for Python packages
+    gcc \
     # Cleanup
     && rm -rf /var/lib/apt/lists/*
 
