@@ -202,8 +202,8 @@ async def scrape_social_media(
                 detail=f"Unsupported platforms: {', '.join(invalid_platforms)}. Supported: {', '.join(supported_platforms)}"
             )
 
-        # Scrape social media
-        result = social_scraper.scrape_company_social(
+        # Scrape social media (use async version to avoid blocking event loop)
+        result = await social_scraper.scrape_company_social_async(
             company_name=company_name,
             platforms=platforms,
             max_results_per_platform=max_results
