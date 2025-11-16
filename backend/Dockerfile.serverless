@@ -46,7 +46,8 @@ COPY requirements-serverless.txt .
 RUN pip install --no-cache-dir -r requirements-serverless.txt
 
 # Install Playwright browsers (Chromium only)
-RUN playwright install chromium --with-deps
+# Note: --with-deps removed because we manually installed dependencies above
+RUN playwright install chromium
 
 # Copy application code
 COPY app /app/app
