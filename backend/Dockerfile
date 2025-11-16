@@ -1,0 +1,62 @@
+# Social Intelligence - RunPod Serverless Dockerfile
+# Optimized for fast cold starts and low memory usage
+
+FROM python:3.13-slim
+
+# Set working directory
+WORKDIR /app
+
+# Prevent Python from writing pyc files and enable unbuffered output
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies (minimal)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # For Playwright/Chrome
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    # For PostgreSQL
+    libpq-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first (for Docker layer caching)
+COPY requirements-serverless.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements-serverless.txt
+
+# Install Playwright browsers (Chromium only)
+RUN playwright install chromium --with-deps
+
+# Copy application code
+COPY app /app/app
+COPY social_intelligence_runner.py /app/
+COPY check_email_engagement.py /app/
+
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser && \
+    chown -R appuser:appuser /app
+USER appuser
+
+# Health check endpoint (optional)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "print('healthy')" || exit 1
+
+# RunPod serverless handler entry point
+# This will be called by RunPod with event data
+CMD ["python", "-u", "social_intelligence_runner.py"]
