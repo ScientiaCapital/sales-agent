@@ -110,6 +110,9 @@ test_*.csv
 !CSV_TEMPLATE.csv
 !test_200_leads.csv
 
+# CSV Import Data Directory (runtime file storage)
+backend/data/
+
 # Coverage reports
 htmlcov/
 coverage.xml

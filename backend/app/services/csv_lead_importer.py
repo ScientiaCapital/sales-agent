@@ -36,6 +36,9 @@ class LeadCSVImporter:
         if self.df.empty:
             raise ValueError(f"CSV file is empty: {csv_path}")
 
+        # Normalize column names to lowercase for case-insensitive matching
+        self.df.columns = [col.lower() for col in self.df.columns]
+
     def get_lead(self, index: int) -> Dict[str, Any]:
         """
         Extract lead by index with field mapping.
@@ -56,19 +59,24 @@ class LeadCSVImporter:
 
         # Parse OEM certifications from comma-separated string
         oem_certs = []
-        if pd.notna(row.get('OEMs_Certified')):
-            oem_string = str(row['OEMs_Certified'])
+        oem_col = row.get('oems_certified') or row.get('oem_certifications')
+        if pd.notna(oem_col):
+            oem_string = str(oem_col)
             # Split by comma and strip whitespace
             oem_certs = [cert.strip() for cert in oem_string.split(',') if cert.strip()]
 
-        # Map CSV columns to pipeline format
+        # Map CSV columns to pipeline format with flexible field matching
+        # Handle various CSV formats: "Name"→"name", "Domain"→"website", etc.
+        company_name = row.get('name') or row.get('company') or row.get('organization')
+        website = row.get('website') or row.get('domain') or row.get('url')
+
         lead = {
-            "name": row.get('name'),
-            "phone": row.get('phone'),
-            "domain": row.get('domain'),
-            "website": row.get('website'),
-            "email": row.get('email'),
-            "icp_score": float(row['ICP_Score']) if pd.notna(row.get('ICP_Score')) else None,
+            "name": company_name,  # Company name (required)
+            "phone": row.get('phone') or row.get('phone_number'),
+            "domain": website,  # Domain/website
+            "website": website,  # Website (same as domain)
+            "email": row.get('email') or row.get('email_address'),
+            "icp_score": float(row.get('icp_score')) if pd.notna(row.get('icp_score')) else None,
             "oem_certifications": oem_certs,
             "city": row.get('city'),
             "state": row.get('state')

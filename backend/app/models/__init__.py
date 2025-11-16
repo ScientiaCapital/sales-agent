@@ -61,6 +61,7 @@ from .langgraph_models import (
     LangGraphToolCall
 )
 from .pipeline_models import PipelineTestExecution
+from .csv_import import CSVImport
 
 __all__ = [
     "Base",
@@ -109,5 +110,6 @@ __all__ = [
     "LangGraphExecution",
     "LangGraphCheckpoint",
     "LangGraphToolCall",
-    "PipelineTestExecution"
+    "PipelineTestExecution",
+    "CSVImport"
 ]

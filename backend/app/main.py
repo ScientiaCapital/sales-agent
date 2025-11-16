@@ -32,6 +32,7 @@ from app.api import ab_tests
 from app.api import report_templates
 from app.api import exports
 from app.api import pipeline  # Pipeline testing endpoints
+from app.api import csv_import  # CSV upload and processing
 # HubSpot removed - replaced with Close CRM
 from app.core.config import settings
 from app.core.logging import setup_logging
@@ -213,6 +214,7 @@ app.include_router(ab_tests.router, prefix=settings.API_V1_PREFIX)  # Task 11.3:
 app.include_router(report_templates.router, prefix=settings.API_V1_PREFIX)  # Task 11.4: Custom report templates with flexible queries
 app.include_router(exports.router, prefix=settings.API_V1_PREFIX)  # Task 11.5: Export functionality (CSV, PDF, Excel)
 app.include_router(pipeline.router, prefix=settings.API_V1_PREFIX)  # Phase 6: Pipeline testing system
+app.include_router(csv_import.router, prefix=settings.API_V1_PREFIX)  # CSV upload and lead enrichment
 
 
 @app.get("/")

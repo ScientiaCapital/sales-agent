@@ -75,7 +75,7 @@ langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
 # AI/ML - Model Providers
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
 openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras via OpenAI client)
-anthropic==0.41.0  # Claude streaming and batch API support
+anthropic==0.69.0  # Claude streaming and batch API support (aligned with venv_requirements.txt)
 
 # Cloud Infrastructure - RunPod
 # Note: Using RunPod for compute, not Firebase/GCP
@@ -91,6 +91,10 @@ python-docx==1.1.2  # DOCX document parsing
 # Export/Reporting (Task 11.5)
 reportlab==4.2.5  # Professional PDF generation with charts and tables
 openpyxl==3.1.5  # Excel file generation (.xlsx) with multi-sheet support
+
+# Web Scraping
+beautifulsoup4==4.12.3  # HTML parsing for static websites
+playwright==1.48.0  # Browser automation for JavaScript-heavy sites (Browserbase integration)
 
 # Social Media Scraping
 tweepy==4.14.0  # Twitter API v2 client

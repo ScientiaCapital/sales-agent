@@ -8,8 +8,10 @@ Platforms: Twitter/X, Reddit, Instagram, Facebook/Meta
 import logging
 import os
 import re
+import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 
 # Twitter/X API - using Tweepy (Context7 documented)
 try:
@@ -60,6 +62,9 @@ class SocialMediaScraper:
         
         # Initialize Reddit client
         self.reddit_client = self._init_reddit_client()
+        
+        # Thread pool executor for running synchronous API calls in async contexts
+        self.executor = ThreadPoolExecutor(max_workers=5, thread_name_prefix="social_scraper")
 
     def _init_twitter_client(self):
         """Initialize Twitter API v2 client with bearer token"""
@@ -109,25 +114,16 @@ class SocialMediaScraper:
             logger.error(f"Reddit client initialization failed: {e}")
             return None
 
-    def search_twitter_mentions(
+    def _search_twitter_mentions_sync(
         self,
         company_name: str,
         max_results: int = 100,
         days_back: int = 7
     ) -> List[Dict[str, Any]]:
         """
-        Search Twitter for company mentions
-
-        Args:
-            company_name: Company name to search for
-            max_results: Maximum tweets to return (10-100)
-            days_back: How many days back to search
-
-        Returns:
-            List of tweet data dictionaries
-
-        Raises:
-            HTTPException: If Twitter API unavailable or fails
+        Synchronous Twitter search method (runs in thread pool).
+        
+        This is the actual implementation that makes blocking tweepy calls.
         """
         if not self.twitter_client:
             raise HTTPException(
@@ -185,25 +181,67 @@ class SocialMediaScraper:
                 detail=f"Twitter search failed: {str(e)}"
             )
 
-    def search_reddit_mentions(
+    def search_twitter_mentions(
+        self,
+        company_name: str,
+        max_results: int = 100,
+        days_back: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        Search Twitter for company mentions (synchronous wrapper for backward compatibility).
+
+        Args:
+            company_name: Company name to search for
+            max_results: Maximum tweets to return (10-100)
+            days_back: How many days back to search
+
+        Returns:
+            List of tweet data dictionaries
+
+        Raises:
+            HTTPException: If Twitter API unavailable or fails
+        """
+        return self._search_twitter_mentions_sync(company_name, max_results, days_back)
+
+    async def search_twitter_mentions_async(
+        self,
+        company_name: str,
+        max_results: int = 100,
+        days_back: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        Async version of Twitter search (uses thread pool to avoid blocking event loop).
+
+        Args:
+            company_name: Company name to search for
+            max_results: Maximum tweets to return (10-100)
+            days_back: How many days back to search
+
+        Returns:
+            List of tweet data dictionaries
+
+        Raises:
+            HTTPException: If Twitter API unavailable or fails
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self.executor,
+            self._search_twitter_mentions_sync,
+            company_name,
+            max_results,
+            days_back
+        )
+
+    def _search_reddit_mentions_sync(
         self,
         company_name: str,
         max_results: int = 100,
         subreddits: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Search Reddit for company mentions
-
-        Args:
-            company_name: Company name to search for
-            max_results: Maximum posts to return
-            subreddits: Optional list of specific subreddits to search
-
-        Returns:
-            List of Reddit post/comment data
-
-        Raises:
-            HTTPException: If Reddit API unavailable or fails
+        Synchronous Reddit search method (runs in thread pool).
+        
+        This is the actual implementation that makes blocking praw calls.
         """
         if not self.reddit_client:
             raise HTTPException(
@@ -234,6 +272,57 @@ class SocialMediaScraper:
                 status_code=500,
                 detail=f"Reddit search failed: {str(e)}"
             )
+
+    def search_reddit_mentions(
+        self,
+        company_name: str,
+        max_results: int = 100,
+        subreddits: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Search Reddit for company mentions (synchronous wrapper for backward compatibility).
+
+        Args:
+            company_name: Company name to search for
+            max_results: Maximum posts to return
+            subreddits: Optional list of specific subreddits to search
+
+        Returns:
+            List of Reddit post/comment data
+
+        Raises:
+            HTTPException: If Reddit API unavailable or fails
+        """
+        return self._search_reddit_mentions_sync(company_name, max_results, subreddits)
+
+    async def search_reddit_mentions_async(
+        self,
+        company_name: str,
+        max_results: int = 100,
+        subreddits: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Async version of Reddit search (uses thread pool to avoid blocking event loop).
+
+        Args:
+            company_name: Company name to search for
+            max_results: Maximum posts to return
+            subreddits: Optional list of specific subreddits to search
+
+        Returns:
+            List of Reddit post/comment data
+
+        Raises:
+            HTTPException: If Reddit API unavailable or fails
+        """
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            self.executor,
+            self._search_reddit_mentions_sync,
+            company_name,
+            max_results,
+            subreddits
+        )
 
     def _format_reddit_post(self, submission) -> Dict[str, Any]:
         """Format Reddit submission data"""
@@ -314,7 +403,7 @@ class SocialMediaScraper:
         max_results_per_platform: int = 50
     ) -> Dict[str, Any]:
         """
-        Scrape multiple social media platforms for company mentions
+        Scrape multiple social media platforms for company mentions (synchronous).
 
         Args:
             company_name: Company name to search
@@ -367,6 +456,82 @@ class SocialMediaScraper:
                 }
 
         # Analyze sentiment
+        sentiment = self.analyze_sentiment(all_posts)
+
+        end_time = datetime.now()
+        duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        return {
+            "company_name": company_name,
+            "total_mentions": len(all_posts),
+            "platform_results": platform_results,
+            "sentiment_analysis": sentiment,
+            "posts": all_posts[:20],  # Return top 20 posts
+            "scraping_duration_ms": duration_ms
+        }
+
+    async def scrape_company_social_async(
+        self,
+        company_name: str,
+        platforms: List[str] = ["twitter", "reddit"],
+        max_results_per_platform: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Async version: Scrape multiple social media platforms for company mentions.
+
+        Uses thread pool to run blocking API calls without blocking the event loop.
+
+        Args:
+            company_name: Company name to search
+            platforms: List of platforms to scrape
+            max_results_per_platform: Max results per platform
+
+        Returns:
+            Aggregated social media data with sentiment analysis
+        """
+        start_time = datetime.now()
+        all_posts = []
+        platform_results = {}
+
+        # Twitter (async)
+        if "twitter" in platforms and self.twitter_client:
+            try:
+                twitter_posts = await self.search_twitter_mentions_async(
+                    company_name,
+                    max_results=max_results_per_platform
+                )
+                all_posts.extend(twitter_posts)
+                platform_results["twitter"] = {
+                    "count": len(twitter_posts),
+                    "status": "success"
+                }
+            except Exception as e:
+                platform_results["twitter"] = {
+                    "count": 0,
+                    "status": "failed",
+                    "error": str(e)
+                }
+
+        # Reddit (async)
+        if "reddit" in platforms and self.reddit_client:
+            try:
+                reddit_posts = await self.search_reddit_mentions_async(
+                    company_name,
+                    max_results=max_results_per_platform
+                )
+                all_posts.extend(reddit_posts)
+                platform_results["reddit"] = {
+                    "count": len(reddit_posts),
+                    "status": "success"
+                }
+            except Exception as e:
+                platform_results["reddit"] = {
+                    "count": 0,
+                    "status": "failed",
+                    "error": str(e)
+                }
+
+        # Analyze sentiment (synchronous, but fast)
         sentiment = self.analyze_sentiment(all_posts)
 
         end_time = datetime.now()
