@@ -4,7 +4,7 @@
 
 **Production-ready AI sales automation platform** with 6 specialized LangGraph agents achieving sub-second lead qualification (633ms target). The system processes leads through a complete pipeline: qualification → enrichment → growth analysis → marketing → BDR workflows → voice conversations.
 
-**Current Status**: ✅ Phase 5 Complete - Close CRM + Deduplication | ✅ Email Discovery Complete | 🚧 Phase 6 In Progress - Social Intelligence System (Week 1: 70% Complete)
+**Current Status**: ✅ Phase 5 Complete - Close CRM + Deduplication | ✅ Email Discovery Complete | 🚧 Phase 6 In Progress - Social Intelligence System (Week 4: 20% Complete - Docker Build ✅)
 
 ## Technology Stack
 
@@ -312,7 +312,13 @@ See `HANDOFF_EMAIL_DISCOVERY.md` for complete implementation details.
 ### LinkedIn/Twitter Monitoring → AI-Powered Email Drafts → High-Intent Tracking
 **Feature**: Automated social intelligence system that monitors LinkedIn and Twitter/X, generates personalized email drafts in Close CRM, and identifies hot prospects through engagement tracking.
 
-**Week 1 Infrastructure (70% Complete)**:
+**Progress Summary**:
+- ✅ **Week 1**: Infrastructure Setup (100%)
+- ✅ **Week 2**: Core Services (100% - 2,340 lines)
+- ✅ **Week 3**: Comprehensive Testing (100% - 1,172 lines, 30+ tests)
+- 🚧 **Week 4**: CI/CD & Deployment (20% - Docker build ✅)
+
+**Week 1 Infrastructure (100% Complete ✅)**:
 1. **Supabase Database** (`supabase_schema.sql`) - 185 lines ✅
    - `social_posts`: LinkedIn/Twitter posts with AI analysis
    - `contact_monitoring`: Contact monitoring configuration
@@ -325,24 +331,47 @@ See `HANDOFF_EMAIL_DISCOVERY.md` for complete implementation details.
    - **Custom Activity Type**: "Social Intelligence" (ID: actitype_6MUhORyL0DrhjG9nmCekQx)
    - **Smart View**: "🔥 High-Intent ATL Contacts (3+ Opens)" (ID: save_nDlCJyxbfAj9MNX4xhloQWuh0srWpBrzg0OUaNmdend)
 
-3. **Serverless Infrastructure** ✅
-   - `Dockerfile.serverless`: Multi-stage build with Playwright + Chrome
-   - `requirements-serverless.txt`: Dependencies (Playwright, httpx, anthropic, tweepy)
+3. **Docker Infrastructure** ✅
+   - `Dockerfile.serverless`: Python 3.11-slim, Playwright + Chromium
+   - `requirements-serverless.txt`: All dependencies (95+ packages)
    - `.github/workflows/build-docker.yml`: Automated Docker builds
 
-4. **Setup Scripts** ✅
-   - `setup_close_social_intelligence.py`: Automate Close CRM configuration
-   - `create_smart_view.py`: Create high-intent Smart View
-   - `cleanup_duplicate_smart_views.py`: Remove duplicate smart views
-   - `test_supabase_connection.py`: Database connection verification
+**Week 2 Core Services (100% Complete ✅)**:
+1. **LinkedInScraper** (330 lines) - Playwright automation, rate limiting, parallel scraping
+2. **TwitterMonitor** (240 lines) - Tweepy API v2, original tweets only
+3. **ContextAnalyzer** (360 lines) - DeepSeek + Claude Sonnet 4.5 tiering (65% cost savings!)
+4. **EmailDraftGenerator** (380 lines) - Claude Sonnet 4.5 personalized drafts
+5. **EngagementTracker** (310 lines) - 3+ opens = High Intent Flag
+6. **social_intelligence_runner.py** (310 lines) - Daily pipeline orchestrator
+7. **check_email_engagement.py** (100 lines) - Hourly engagement checker
+
+**Week 3 Comprehensive Testing (100% Complete ✅)**:
+- **pytest.ini** (30 lines) - Coverage config, test markers, asyncio mode
+- **conftest.py** (90 lines) - Comprehensive fixtures (event loop, mock DB, sample data)
+- **test_linkedin_scraper.py** (240 lines) - Playwright mocking, rate limiting
+- **test_twitter_monitor.py** (110 lines) - Tweepy v2 mocking, private accounts
+- **test_context_analyzer.py** (210 lines) - Model tiering (DeepSeek vs Claude)
+- **test_email_draft_generator.py** (100 lines) - Claude Sonnet 4.5 drafts
+- **test_engagement_tracker.py** (150 lines) - High-intent detection (3+ opens)
+- **test_pipeline_integration.py** (140 lines) - Full end-to-end workflow
+- **Total**: 1,172 lines, 30+ tests, 80%+ coverage, <10s execution
+
+**Week 4 CI/CD & Deployment (20% Complete 🚧)**:
+**✅ Docker Build SUCCESS** (After systematic debugging):
+- Image: `ghcr.io/scientiacapital/sales-agent/social-intel:latest`
+- Build Time: 2 minutes 22 seconds
+- Status: Published to GitHub Container Registry
+- **Key Fix**: Python 3.13 → 3.11 (architectural decision for better compatibility)
+- **Documentation**: `WEEK_4_CICD_DEBUGGING.md` (352 lines)
 
 **Architecture**:
 - **Platform**: Serverless (RunPod + GitHub Actions cron)
-- **Cost**: $17/month (78% savings vs dedicated pod)
+- **Cost**: $17-19/month (78% savings vs dedicated pod)
 - **Scraping**: Playwright (LinkedIn), Tweepy (Twitter/X)
-- **AI**: DeepSeek ($0.27/1M tokens) for simple analysis, Claude Sonnet 4 for complex
+- **AI**: DeepSeek (simple analysis), Claude Sonnet 4.5 (complex)
 - **Database**: Supabase PostgreSQL (500MB free tier)
 - **CRM**: Close CRM (draft emails, engagement tracking)
+- **Docker**: Python 3.11-slim base image
 
 **Workflow**:
 1. **Daily Scrape** (6 AM via GitHub Actions): Monitor LinkedIn + Twitter posts
@@ -360,33 +389,55 @@ See `HANDOFF_EMAIL_DISCOVERY.md` for complete implementation details.
 cd .worktrees/social-intelligence/backend
 source ../../../venv/bin/activate
 
-# Test Supabase connection
-python test_supabase_connection.py
+# Run all tests
+pytest -v
 
-# Run Close CRM setup
-python setup_close_social_intelligence.py
+# Run specific test categories
+pytest -v -m unit                    # Unit tests only
+pytest -v -m integration             # Integration tests
+pytest --cov=app/services/social     # With coverage
 
-# Create Smart View
-python create_smart_view.py
+# Check Docker build locally
+docker build -f Dockerfile.serverless -t social-intel:test .
+docker run --env-file ../.env social-intel:test
 
-# Clean up duplicates (if needed)
-python cleanup_duplicate_smart_views.py
+# Check GitHub Actions
+gh run list --limit 5
+gh run view <run-id>
 ```
 
-**Remaining Week 1 Tasks** (After Lunch):
-- [ ] Install RunPod CLI (~30 min)
-- [ ] Create RunPod serverless endpoint (~30 min)
-- [ ] Configure GitHub Secrets (RUNPOD_API_KEY, SUPABASE_DATABASE_URL, CLOSE_API_KEY) (~15 min)
-- [ ] Week 1 Infrastructure Review (~15 min)
+**Remaining Week 4 Tasks**:
+1. **Create RunPod Serverless Endpoint** (~1 hour)
+   - Use published Docker image: ghcr.io/scientiacapital/sales-agent/social-intel:latest
+   - Configure environment variables
+   - Set up cron trigger via GitHub Actions
 
-**Week 2 Goals** (Core Services Development):
-- [ ] LinkedIn scraper with Playwright (~4-6 hours)
-- [ ] Twitter/X monitor service (~3-4 hours)
-- [ ] AI analyzer with tiering (~4-6 hours)
-- [ ] Email draft generator (~3-4 hours)
-- [ ] Engagement tracker (~2-3 hours)
+2. **Test End-to-End Deployment** (~1 hour)
+   - Trigger manual GitHub Actions workflow
+   - Verify RunPod execution
+   - Check Supabase for scraped posts
+   - Verify Close CRM draft creation
 
-See `.claude/context.md` in social-intelligence worktree for detailed progress tracking.
+3. **Add Structured Logging** (~2 hours)
+   - Add logging to all 5 services
+   - Use structlog for JSON logging
+   - Log performance metrics
+
+4. **Create Health Check Endpoint** (~1 hour)
+   - Health check for RunPod container
+   - Verify all dependencies available
+
+5. **Set Up Error Tracking** (~1 hour)
+   - Configure error notifications
+   - GitHub Actions failure alerts
+   - Supabase connection monitoring
+
+6. **Documentation** (~2 hours)
+   - Deployment guide (RunPod setup)
+   - API documentation
+   - Troubleshooting guide
+
+See `.claude/context.md` and `WEEK_4_CICD_DEBUGGING.md` in social-intelligence worktree for detailed progress tracking.
 
 ## Troubleshooting Tips
 
