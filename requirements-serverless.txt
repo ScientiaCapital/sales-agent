@@ -17,7 +17,8 @@ beautifulsoup4==4.12.3  # Updated from 4.12.2
 lxml==4.9.3
 
 # Database
-psycopg[binary]==3.2.3  # Updated from 3.1.13 - matches main requirements.txt
+psycopg==3.2.3
+psycopg-binary==3.2.3
 redis==5.1.1  # Updated from 5.0.1 - matches main requirements.txt
 
 # Utilities
