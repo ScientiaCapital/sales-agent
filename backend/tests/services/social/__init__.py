@@ -1,0 +1,3 @@
+"""
+Social intelligence service tests
+"""
