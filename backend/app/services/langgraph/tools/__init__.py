@@ -49,6 +49,15 @@ from .linkedin_tools import (
     get_linkedin_profile_tool,
 )
 
+from .hunter_tools import (
+    find_company_emails_tool,
+    find_person_email_tool,
+)
+
+from .website_scraping_tools import (
+    scrape_company_team_tool,
+)
+
 from .cartesia_tools import (
     cartesia_text_to_speech,
     cartesia_list_voices,
@@ -171,6 +180,63 @@ def get_linkedin_tools():
     """
     return [
         get_linkedin_profile_tool,
+    ]
+
+
+def get_hunter_tools():
+    """
+    Get all Hunter.io tools for email discovery.
+
+    Returns:
+        List of Hunter tools: [find_company_emails_tool, find_person_email_tool]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_hunter_tools
+        from langgraph.prebuilt import create_react_agent
+
+        hunter_tools = get_hunter_tools()
+        agent = create_react_agent(llm, hunter_tools)
+
+        # Agent can now find emails at companies and for specific people
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Find ATL contact emails at acme.com"
+            )]
+        })
+        ```
+    """
+    return [
+        find_company_emails_tool,
+        find_person_email_tool,
+    ]
+
+
+def get_website_scraping_tools():
+    """
+    Get all website scraping tools for contact discovery.
+
+    Returns:
+        List of website scraping tools: [scrape_company_team_tool]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_website_scraping_tools
+        from langgraph.prebuilt import create_react_agent
+
+        scraping_tools = get_website_scraping_tools()
+        agent = create_react_agent(llm, scraping_tools)
+
+        # Agent can now scrape company websites for ATL contacts
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Find team members at https://acme.com"
+            )]
+        })
+        ```
+    """
+    return [
+        scrape_company_team_tool,
     ]
 
 
@@ -390,6 +456,13 @@ __all__ = [
     # LinkedIn Tools
     "get_linkedin_profile_tool",
 
+    # Hunter.io Tools
+    "find_company_emails_tool",
+    "find_person_email_tool",
+
+    # Website Scraping Tools
+    "scrape_company_team_tool",
+
     # Cartesia Voice Tools
     "cartesia_text_to_speech",
     "cartesia_list_voices",
@@ -410,6 +483,8 @@ __all__ = [
     "get_apollo_tools",
     "get_qualification_tools",
     "get_linkedin_tools",
+    "get_hunter_tools",
+    "get_website_scraping_tools",
     "get_cartesia_tools",
     "get_transfer_tools",
     "get_all_integration_tools",

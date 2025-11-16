@@ -492,49 +492,68 @@ Respond with JSON only."""
                 f"atl_contacts={len(website_result.atl_contacts)}"
             )
 
-            # ===== EMAIL EXTRACTION =====
-            # Two-tier email discovery: Tier 1 (scraping) → Tier 2 (Hunter.io)
-            # Extract email if not provided and website is available
+            # ===== EMAIL/CONTACT DISCOVERY =====
+            # Two-tier contact discovery: Tier 1 (Hunter.io) → Tier 2 (Web Scraping)
+            # Discover ATL contacts if not provided
+            discovered_contacts = []
+
             if not contact_email:
-                logger.info(f"Attempting email extraction for {company_name}")
+                logger.info(f"Attempting contact discovery for {company_name}")
 
-                # Tier 1: Website scraping (free)
-                try:
-                    extracted_emails = await self.email_extractor.extract_emails(company_website)
-
-                    if extracted_emails:
-                        contact_email = extracted_emails[0]  # Use top-priority email
-                        extraction_method = "scraping"
-                        logger.info(f"Extracted {len(extracted_emails)} emails, using: {contact_email}")
-
-                        # Add to qualification notes
-                        if notes:
-                            notes += f"\nEmails found: {', '.join(extracted_emails[:3])}"
-                        else:
-                            notes = f"Emails found: {', '.join(extracted_emails[:3])}"
-                    else:
-                        logger.warning(f"No emails extracted from {company_website}")
-                except Exception as e:
-                    logger.error(f"Email extraction failed for {company_website}: {e}")
-                    # Continue to Tier 2
-
-                # Tier 2: Hunter.io fallback (paid, only if scraping failed)
-                if not contact_email and company_website:
+                # Tier 1: Hunter.io Domain Search (PAID, but most reliable)
+                # Returns ALL employees with job titles, filtered for ATL contacts
+                if company_website:
                     try:
                         domain = extract_domain(company_website)
-                        hunter_result = await self.hunter_service.find_email(domain)
+                        hunter_contacts = await self.hunter_service.domain_search(
+                            domain=domain,
+                            limit=10,
+                            atl_only=True  # Only return decision-makers
+                        )
 
-                        if hunter_result and hunter_result.get("score", 0) > 70:
-                            contact_email = hunter_result["email"]
-                            extraction_method = "hunter"
-                            hunter_cost = hunter_result.get("cost", 0.01)
-                            if notes:
-                                notes += f"\nEmail found via Hunter.io: {contact_email} (confidence: {hunter_result['score']}%)"
-                            else:
-                                notes = f"Email found via Hunter.io: {contact_email} (confidence: {hunter_result['score']}%)"
-                            logger.info(f"Hunter.io found email for {company_name}: {contact_email} (score: {hunter_result['score']})")
+                        if hunter_contacts:
+                            discovered_contacts = hunter_contacts
+                            contact_email = hunter_contacts[0]["email"]  # Use top ATL contact
+                            extraction_method = "hunter_domain_search"
+                            hunter_cost = len(hunter_contacts) * 0.01  # $0.01 per contact
+
+                            # Add to qualification notes
+                            atl_summary = ", ".join([
+                                f"{c['first_name']} {c['last_name']} ({c['position']})"
+                                for c in hunter_contacts[:3]
+                            ])
+                            notes = notes or ""
+                            notes += f"\n\nATL CONTACTS (Hunter.io):\n{atl_summary}"
+                            if len(hunter_contacts) > 3:
+                                notes += f"\n+ {len(hunter_contacts) - 3} more ATL contacts"
+
+                            logger.info(
+                                f"Hunter.io found {len(hunter_contacts)} ATL contacts for {company_name}, "
+                                f"using: {contact_email}"
+                            )
                     except Exception as e:
-                        logger.warning(f"Hunter.io fallback failed for {company_website}: {e}")
+                        logger.warning(f"Hunter.io domain search failed for {company_website}: {e}")
+
+                # Tier 2: Website Scraping Fallback (FREE, but less reliable)
+                # Only if Hunter.io didn't find ATL contacts
+                if not contact_email and company_website:
+                    try:
+                        extracted_emails = await self.email_extractor.extract_emails(company_website)
+
+                        if extracted_emails:
+                            contact_email = extracted_emails[0]  # Use top-priority email
+                            extraction_method = "scraping"
+                            logger.info(f"Website scraping found {len(extracted_emails)} emails, using: {contact_email}")
+
+                            # Add to qualification notes
+                            if notes:
+                                notes += f"\nEmails found (scraping): {', '.join(extracted_emails[:3])}"
+                            else:
+                                notes = f"Emails found (scraping): {', '.join(extracted_emails[:3])}"
+                        else:
+                            logger.warning(f"No emails found via scraping for {company_website}")
+                    except Exception as e:
+                        logger.error(f"Website scraping failed for {company_website}: {e}")
             else:
                 # Email was provided upfront, no extraction needed
                 extraction_method = "provided"
@@ -726,7 +745,8 @@ Respond with JSON only."""
                 "estimated_cost_usd": round(estimated_cost_usd, 6),
                 "extracted_email": contact_email,  # Include extracted/provided email for downstream use
                 "extraction_method": extraction_method,  # Track how email was discovered
-                "hunter_cost_usd": hunter_cost  # Track Hunter.io API costs
+                "hunter_cost_usd": hunter_cost,  # Track Hunter.io API costs
+                "discovered_contacts": discovered_contacts  # ALL ATL contacts from Hunter.io for enrichment/CRM
             }
 
             logger.info(

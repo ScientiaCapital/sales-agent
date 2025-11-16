@@ -37,6 +37,17 @@ class HunterResult(BaseModel):
     error_message: Optional[str] = None
 
 
+class HunterEmailFinderResult(BaseModel):
+    """Result from Hunter.io email finder (single person)"""
+    email: Optional[EmailStr] = None
+    first_name: str
+    last_name: str
+    domain: str
+    confidence: int  # 0-100 confidence score
+    status: str  # "success" | "not_found" | "error" | "rate_limited"
+    error_message: Optional[str] = None
+
+
 class HunterEmailService:
     """Hunter.io email discovery service"""
 
@@ -174,6 +185,129 @@ class HunterEmailService:
                 domain=domain,
                 contacts=[],
                 total_emails=0,
+                status="error",
+                error_message=str(e)
+            )
+
+    async def find_email(
+        self,
+        first_name: str,
+        last_name: str,
+        domain: str
+    ) -> HunterEmailFinderResult:
+        """
+        Find email for a specific person at a company using Hunter.io Email Finder API
+
+        Args:
+            first_name: Person's first name (e.g., "John")
+            last_name: Person's last name (e.g., "Doe")
+            domain: Company domain (e.g., "acme.com")
+
+        Returns:
+            HunterEmailFinderResult with email and confidence score
+        """
+        # Clean domain
+        domain = domain.replace("https://", "").replace("http://", "").split("/")[0]
+
+        # Check API key
+        if not self.api_key:
+            logger.warning("Hunter.io API key not configured")
+            return HunterEmailFinderResult(
+                first_name=first_name,
+                last_name=last_name,
+                domain=domain,
+                confidence=0,
+                status="error",
+                error_message="HUNTER_API_KEY not configured"
+            )
+
+        try:
+            logger.info(f"Finding email for {first_name} {last_name} at {domain}")
+
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    f"{self.base_url}/email-finder",
+                    params={
+                        "domain": domain,
+                        "first_name": first_name,
+                        "last_name": last_name,
+                        "api_key": self.api_key
+                    }
+                )
+
+                # Handle rate limiting
+                if response.status_code == 429:
+                    logger.warning(f"Hunter.io rate limit hit for {first_name} {last_name}")
+                    return HunterEmailFinderResult(
+                        first_name=first_name,
+                        last_name=last_name,
+                        domain=domain,
+                        confidence=0,
+                        status="rate_limited",
+                        error_message="Hunter.io API rate limit exceeded"
+                    )
+
+                # Handle other errors
+                if response.status_code != 200:
+                    logger.error(f"Hunter.io API error: {response.status_code}")
+                    return HunterEmailFinderResult(
+                        first_name=first_name,
+                        last_name=last_name,
+                        domain=domain,
+                        confidence=0,
+                        status="error",
+                        error_message=f"HTTP {response.status_code}"
+                    )
+
+                data = response.json()
+                email_data = data.get("data", {})
+
+                # Check if email was found
+                if not email_data or not email_data.get("email"):
+                    logger.info(f"No email found for {first_name} {last_name} at {domain}")
+                    return HunterEmailFinderResult(
+                        first_name=first_name,
+                        last_name=last_name,
+                        domain=domain,
+                        confidence=0,
+                        status="not_found",
+                        error_message="No email found"
+                    )
+
+                email = email_data.get("email")
+                confidence = email_data.get("score", 0)
+
+                logger.info(
+                    f"Hunter.io found email for {first_name} {last_name}: "
+                    f"{email} (confidence: {confidence}%)"
+                )
+
+                return HunterEmailFinderResult(
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                    domain=domain,
+                    confidence=confidence,
+                    status="success"
+                )
+
+        except httpx.TimeoutException:
+            logger.error(f"Hunter.io timeout for {first_name} {last_name}")
+            return HunterEmailFinderResult(
+                first_name=first_name,
+                last_name=last_name,
+                domain=domain,
+                confidence=0,
+                status="error",
+                error_message="Request timeout"
+            )
+        except Exception as e:
+            logger.error(f"Hunter.io error for {first_name} {last_name}: {e}")
+            return HunterEmailFinderResult(
+                first_name=first_name,
+                last_name=last_name,
+                domain=domain,
+                confidence=0,
                 status="error",
                 error_message=str(e)
             )

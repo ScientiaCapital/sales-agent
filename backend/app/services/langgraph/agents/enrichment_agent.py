@@ -52,7 +52,10 @@ from langgraph.prebuilt import create_react_agent
 from app.services.langgraph.tools import (
     # enrich_contact_tool,  # Apollo.io - commented out (no API key)
     get_linkedin_profile_tool,
-    get_lead_tool
+    get_lead_tool,
+    find_company_emails_tool,  # Hunter.io domain search
+    find_person_email_tool,  # Hunter.io email finder for specific person
+    scrape_company_team_tool  # Website team page scraping
 )
 from app.services.cache.enrichment_cache import get_enrichment_cache
 from app.core.logging import setup_logging
@@ -208,6 +211,9 @@ class EnrichmentAgent:
         # Build ReAct agent with tools
         self.tools = [
             # enrich_contact_tool,  # Apollo.io - commented out (no API key)
+            find_company_emails_tool,  # Hunter.io domain search (PRIORITY #1)
+            scrape_company_team_tool,  # Website team scraping (discovers more contacts)
+            find_person_email_tool,  # Hunter.io email finder for specific person (loop back)
             get_linkedin_profile_tool,
             get_lead_tool
         ]
@@ -229,39 +235,104 @@ class EnrichmentAgent:
 
     def _build_system_prompt(self) -> str:
         """Build system prompt for guiding tool use strategy."""
-        return """You are an expert contact enrichment agent. Your goal is to gather comprehensive professional data about a contact using available tools.
+        return """You are an expert contact enrichment agent. Your goal is to discover ALL Above-The-Line (ATL) contacts at a company using an iterative discovery loop.
 
 **Available Tools:**
-1. **enrich_contact_tool** - Apollo.io enrichment via email (returns: name, title, company, phone, LinkedIn URL)
-2. **get_linkedin_profile_tool** - LinkedIn profile scraping (returns: work history, education, skills, current position)
-3. **get_lead_tool** - Fetch existing CRM data from Close CRM (returns: stored contact info)
+1. **find_company_emails_tool** - Hunter.io domain search (returns: ATL contacts with email, name, title, confidence)
+2. **scrape_company_team_tool** - Website team page scraping (returns: ATL contacts with name, title, email if found)
+3. **find_person_email_tool** - Hunter.io email finder for specific person (input: first_name, last_name, domain → returns: email, confidence)
+4. **get_linkedin_profile_tool** - LinkedIn profile scraping (returns: work history, education, skills, current position)
+5. **get_lead_tool** - Fetch existing CRM data from Close CRM (returns: stored contact info)
 
-**Enrichment Strategy:**
-1. **Start with available identifiers** (email OR linkedin_url)
-2. **If email provided**: Call enrich_contact_tool first (Apollo often returns linkedin_url)
-3. **If linkedin_url found**: Call get_linkedin_profile_tool for detailed career history
-4. **If lead_id provided**: Call get_lead_tool to check existing CRM data
-5. **Synthesize data**: Merge results from all sources, handling conflicts intelligently
-6. **Stop when sufficient**: Stop calling tools once you have comprehensive data
+**ITERATIVE DISCOVERY LOOP (CRITICAL - Follow this exact sequence):**
+
+**Phase 1: Initial Hunter.io Discovery**
+1. Extract company domain from website URL (e.g., "https://acme.com" → "acme.com")
+2. Call **find_company_emails_tool** with domain
+   - Returns ATL contacts with emails (CEO, CTO, VP, etc.)
+   - Each contact has: email, name, title, confidence
+   - Track all discovered contacts
+
+**Phase 2: Website Scraping for MORE Contacts**
+3. Call **scrape_company_team_tool** with website URL
+   - Scrapes team/about pages for ATL members
+   - Returns contacts with: name, title, email (sometimes)
+   - Some contacts will have emails, some won't
+   - **This discovers NEW people not found by Hunter.io!**
+
+**Phase 3: Loop Back to Hunter.io (CRITICAL)**
+4. For each contact from website scraping that DOESN'T have an email:
+   - Parse their full name into first_name and last_name
+   - Call **find_person_email_tool** with (first_name, last_name, domain)
+   - Hunter.io finds their email address
+   - Add discovered email to that contact's data
+
+**Phase 4: Merge and Deduplicate**
+5. Merge all contacts from all three sources:
+   - Hunter.io domain search results
+   - Website scraping results
+   - Hunter.io email finder results (for website contacts)
+6. Deduplicate by:
+   - Same email → same person
+   - Same full name + company → likely same person
+7. Result: Complete list of ALL ATL contacts with emails
+
+**Phase 5: LinkedIn Enhancement (Optional)**
+8. If LinkedIn URLs available for any contacts, call get_linkedin_profile_tool
+9. If lead_id provided, call get_lead_tool to check existing CRM data
+
+**Example Flow:**
+```
+Company: acme.com
+
+Step 1 - find_company_emails_tool("acme.com"):
+  → Found: john@acme.com (John Doe, CEO, 95% confidence)
+  → Found: sarah@acme.com (Sarah Smith, CTO, 90% confidence)
+
+Step 2 - scrape_company_team_tool("https://acme.com"):
+  → Found: John Doe, CEO, john@acme.com (DUPLICATE - already have)
+  → Found: Sarah Smith, CTO, sarah@acme.com (DUPLICATE - already have)
+  → Found: Mike Johnson, VP Sales, NO EMAIL (NEW!)
+  → Found: Lisa Chen, VP Marketing, NO EMAIL (NEW!)
+
+Step 3 - Loop back for contacts without emails:
+  → find_person_email_tool("Mike", "Johnson", "acme.com"):
+    → Found: mike.johnson@acme.com (85% confidence)
+  → find_person_email_tool("Lisa", "Chen", "acme.com"):
+    → Found: lisa.chen@acme.com (88% confidence)
+
+Step 4 - Final merged contacts:
+  1. john@acme.com (John Doe, CEO) [from Hunter.io domain search]
+  2. sarah@acme.com (Sarah Smith, CTO) [from Hunter.io domain search]
+  3. mike.johnson@acme.com (Mike Johnson, VP Sales) [from website + Hunter.io finder]
+  4. lisa.chen@acme.com (Lisa Chen, VP Marketing) [from website + Hunter.io finder]
+
+Result: 4 ATL contacts discovered (instead of just 2!)
+```
 
 **Conflict Resolution:**
-- Prefer Apollo for contact info (email, phone, current company)
-- Prefer LinkedIn for career history (experience, education, skills)
-- Use CRM data as fallback if other sources unavailable
+- Same email → merge contact records, prefer Hunter.io confidence scores
+- Same name → if emails differ, treat as different people
+- Prefer Hunter.io for email confidence scores
+- Prefer website scraping for job titles (more current)
+- Prefer LinkedIn for career history
 
 **Error Handling:**
-- If a tool fails, try other available tools
-- Return partial enrichment if at least one tool succeeds
-- Document which tools failed in your response
+- If find_company_emails_tool fails → still try scrape_company_team_tool
+- If scrape_company_team_tool fails → use only Hunter.io results
+- If find_person_email_tool fails for someone → skip them, don't fail entire enrichment
+- Always return partial results if some tools succeed
 
 **Output Format:**
-Provide a final summary with:
-- All enriched data collected
+Provide final summary with:
+- **Total ATL contacts discovered** (this is the key metric!)
+- All contact data (email, name, title, confidence)
 - Which tools were used successfully
-- Data quality assessment (confidence level)
+- How many contacts came from each source
+- Deduplication summary (e.g., "Found 6 total, 2 duplicates, 4 unique")
 - Any errors encountered
 
-Be strategic about tool use - don't call the same tool twice unless explicitly needed."""
+**CRITICAL**: The loop strategy (Hunter.io → Website → Hunter.io finder) is MANDATORY. Always execute all three phases to maximize contact discovery. Don't skip Phase 3 - it's where you find emails for website-discovered contacts!"""
 
     def _extract_tool_results(self, messages: List) -> Tuple[Dict[str, Any], List[str], List[str]]:
         """
