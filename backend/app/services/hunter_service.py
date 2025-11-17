@@ -158,9 +158,13 @@ class HunterService:
             logger.warning("Hunter.io API key not configured")
             return None
 
+        # Clean domain - remove www., https://, http://, trailing slashes
+        clean_domain = domain.replace("https://", "").replace("http://", "")
+        clean_domain = clean_domain.replace("www.", "").rstrip("/").split("/")[0]
+
         try:
             params = {
-                "domain": domain,
+                "domain": clean_domain,
                 "api_key": self.api_key,
                 "limit": limit
             }
@@ -179,7 +183,8 @@ class HunterService:
                     # Transform to our format
                     contacts = []
                     for email_data in emails:
-                        position = email_data.get("position", "").lower()
+                        # Handle None position (Hunter.io can return null)
+                        position = (email_data.get("position") or "").lower()
 
                         # Check if ATL contact
                         is_atl = any(title in position for title in ATL_TITLES)

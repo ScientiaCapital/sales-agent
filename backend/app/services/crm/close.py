@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import httpx
 import logging
 import base64
+import os
 
 from app.services.crm.base import (
     CRMProvider,
@@ -55,26 +56,49 @@ class CloseProvider(CRMProvider):
 
     def __init__(
         self,
-        credentials: CRMCredentials,
-        redis_client: Optional[Any] = None
+        credentials: Optional[CRMCredentials] = None,
+        redis_client: Optional[Any] = None,
+        api_key: Optional[str] = None
     ):
         """
         Initialize Close CRM provider.
 
         Args:
-            credentials: CRM credentials with encrypted API key
+            credentials: CRM credentials with encrypted API key (optional if api_key provided)
             redis_client: Redis client for rate limiting (optional)
+            api_key: Direct API key (optional if credentials provided)
         """
+        # Support direct api_key for convenience
+        if api_key and not credentials:
+            credentials = CRMCredentials(
+                platform="close",
+                api_key=api_key,  # Store unencrypted for now (encryption optional)
+                encrypted=False
+            )
+
+        if not credentials:
+            raise CRMValidationError("Either credentials or api_key must be provided")
+
         super().__init__(credentials)
         self.redis = redis_client
 
-        # Decrypt API key from credentials
+        # Get API key - either encrypted or direct
         self.api_key = None
-        if credentials.api_key:
-            self.api_key = self.decrypt_credential(credentials.api_key)
+        if api_key:
+            # Direct API key provided
+            self.api_key = api_key
+        elif credentials.api_key:
+            # Decrypt if encrypted
+            if credentials.encrypted:
+                self.api_key = self.decrypt_credential(credentials.api_key)
+            else:
+                self.api_key = credentials.api_key
         elif credentials.access_token:
             # Fallback: some configs might store API key as access_token
-            self.api_key = self.decrypt_credential(credentials.access_token)
+            if credentials.encrypted:
+                self.api_key = self.decrypt_credential(credentials.access_token)
+            else:
+                self.api_key = credentials.access_token
 
         if not self.api_key:
             raise CRMValidationError("Close CRM API key is required")
@@ -325,20 +349,18 @@ class CloseProvider(CRMProvider):
             qualification_score = enrichment.get("qualification_score", 0)
             contact_level = enrichment.get("contact_level", "Unknown")
 
-            # Determine lead status based on ATL/BTL and score
+            # ALL leads start as "Raw" - Smart views filter by custom fields
+            status_id = "stat_4qxeqdfEDGNFmh93pFmXz4l8bw78DuQtTlATratY2Qb"  # Raw
+            lead_data["status_id"] = status_id
+
+            # Determine priority label for description (not status!)
             if is_atl:
                 if qualification_score >= 70:
-                    status_id = os.getenv("CLOSE_STATUS_HOT_ATL")
                     priority_label = "🔥 Hot ATL"
                 else:
-                    status_id = os.getenv("CLOSE_STATUS_VALIDATED_ATL")
                     priority_label = "⭐ Validated ATL"
             else:
-                status_id = os.getenv("CLOSE_STATUS_BTL")
                 priority_label = "📋 BTL"
-
-            if status_id:
-                lead_data["status_id"] = status_id
 
             # Add enrichment metadata to description
             description_parts = []
@@ -388,7 +410,90 @@ class CloseProvider(CRMProvider):
             logger.error(f"Network error creating contact: {e}")
             raise CRMNetworkError(f"Network error: {e}")
 
-    async def create_lead(self, lead: Dict[str, Any]) -> Dict[str, Any]:
+    async def add_contact_to_lead(self, lead_id: str, contact_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Add a single contact to an existing lead in Close CRM.
+
+        This is used when deduplication finds that the company exists but the contact is new.
+        Prevents creating duplicate companies while adding new decision-makers.
+
+        Args:
+            lead_id: Close CRM lead ID (e.g., "lead_xxx...")
+            contact_data: Contact information dict with:
+                - first_name: str
+                - last_name: str
+                - email: str (required)
+                - position: str (job title)
+                - phone: str (optional)
+                - linkedin: str (optional)
+                - is_atl: bool
+
+        Returns:
+            Created contact data with contact_id
+
+        Raises:
+            CRMValidationError: If email is missing
+            CRMNetworkError: If network error occurs
+        """
+        try:
+            email = contact_data.get("email")
+            if not email:
+                raise CRMValidationError("Email is required to add contact to lead")
+
+            await self._check_rate_limit()
+
+            # Build contact payload for Close API
+            contact_payload = {
+                "name": f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip(),
+                "title": contact_data.get("position"),
+                "emails": [{"email": email}]
+            }
+
+            # Add phone if available
+            if contact_data.get("phone"):
+                contact_payload["phones"] = [{"phone": contact_data["phone"]}]
+
+            # Add LinkedIn URL as custom field or URL
+            if contact_data.get("linkedin"):
+                contact_payload["urls"] = [{"url": contact_data["linkedin"], "type": "linkedin"}]
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.BASE_URL}/lead/{lead_id}/contact/",
+                    headers={
+                        "Authorization": self.auth_header,
+                        "Content-Type": "application/json",
+                    },
+                    json=contact_payload,
+                    timeout=30.0
+                )
+
+                await self._update_rate_limit(response)
+
+                if response.status_code == 429:
+                    self._handle_rate_limit_error(response)
+                elif response.status_code >= 400:
+                    error_data = response.json() if response.text else {}
+                    raise CRMValidationError(
+                        f"Failed to add contact to lead in Close CRM: {error_data.get('error', response.status_code)}"
+                    )
+
+                result = response.json()
+                logger.info(f"✅ Added contact {contact_payload['name']} to lead {lead_id} (contact_id: {result.get('id')})")
+
+                return {
+                    "contact_id": result.get("id"),
+                    "name": contact_payload["name"],
+                    "email": email,
+                    "title": contact_data.get("position"),
+                    "is_atl": contact_data.get("is_atl", False)
+                }
+
+        except httpx.HTTPError as e:
+            logger.error(f"Network error adding contact to lead: {e}")
+            raise CRMNetworkError(f"Network error: {e}")
+
+    async def create_lead(self, lead: Dict[str, Any], matched_lead_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Create a lead in Close CRM from pipeline lead data.
 
@@ -408,38 +513,177 @@ class CloseProvider(CRMProvider):
             CRMValidationError: If required fields missing
         """
         try:
-            # Extract lead data
-            email = lead.get("email") or lead.get("domain")  # fallback to domain if no email
-            if not email:
-                raise CRMValidationError("Lead must have email or domain")
+            # Get email - must be a valid email address (not domain)
+            email = lead.get("email")
 
-            # Build Contact object from lead dict
-            contact = Contact(
-                email=email,
-                first_name=lead.get("first_name"),
-                last_name=lead.get("last_name"),
-                company=lead.get("name") or lead.get("company"),
-                title=lead.get("title"),
-                phone=lead.get("phone"),
-                linkedin_url=lead.get("linkedin_url"),
-                enrichment_data={
-                    "is_atl": lead.get("is_atl", False),
-                    "qualification_score": lead.get("qualification_score", 0),
-                    "contact_level": lead.get("contact_level", "Unknown"),
-                    "discovered_contacts": lead.get("_discovered_contacts", [])
+            # Validate email format if provided
+            if email and "@" not in email:
+                logger.warning(f"Invalid email format: {email}, skipping CRM creation")
+                email = None
+
+            # Check if we have discovered contacts from Hunter.io
+            discovered_contacts = lead.get("_discovered_contacts", [])
+
+            # If no email and no discovered contacts, we can't create contacts in Close CRM
+            # (Close CRM requires at least one contact per lead)
+            if not email and not discovered_contacts:
+                logger.info(
+                    f"No contacts available for {lead.get('name')} - "
+                    f"skipping Close CRM creation until contacts are discovered"
+                )
+                return {
+                    "status": "skipped",
+                    "reason": "no_contacts",
+                    "message": "Lead has no email or discovered contacts - waiting for enrichment"
                 }
-            )
 
-            # Create in Close CRM (will auto-set status and owner)
-            created_contact = await self.create_contact(contact)
+            # Use first discovered contact if we don't have primary email
+            if not email and discovered_contacts:
+                primary_contact = discovered_contacts[0]
+                email = primary_contact.get("email")
+                logger.info(f"Using first discovered contact email: {email}")
 
-            return {
-                "id": created_contact.external_ids.get("close"),
-                "email": created_contact.email,
-                "company": created_contact.company,
-                "name": f"{created_contact.first_name or ''} {created_contact.last_name or ''}".strip(),
-                "status": "created"
-            }
+            # If we have discovered contacts, create ALL of them in Close CRM
+            if discovered_contacts:
+                lead_name = lead.get("name") or lead.get("company") or "Unknown Company"
+                qualification_score = lead.get("qualification_score", 0)
+
+                # If matched_lead_id provided, ADD contacts to existing lead (deduplication!)
+                if matched_lead_id:
+                    logger.info(f"Adding {len(discovered_contacts)} contacts to EXISTING lead {matched_lead_id} for {lead_name}")
+
+                    added_contacts = []
+                    for contact in discovered_contacts:
+                        try:
+                            result = await self.add_contact_to_lead(matched_lead_id, contact)
+                            added_contacts.append(result)
+                        except Exception as e:
+                            logger.error(f"Failed to add contact {contact.get('email')} to lead {matched_lead_id}: {e}")
+                            # Continue adding other contacts even if one fails
+                            continue
+
+                    logger.info(f"✅ Added {len(added_contacts)} contacts to existing lead {matched_lead_id}")
+
+                    return {
+                        "id": matched_lead_id,
+                        "company": lead_name,
+                        "status": "contacts_added",
+                        "contacts_created": len(added_contacts),
+                        "added_contacts": [c["name"] for c in added_contacts],
+                        "action": "add_contact_to_existing"
+                    }
+
+                # Otherwise, CREATE new lead with ALL contacts at once
+                logger.info(f"Creating NEW lead with {len(discovered_contacts)} ATL contacts for {lead_name}")
+
+                # Build contacts array for ALL discovered contacts
+                contacts_data = []
+                for contact in discovered_contacts:
+                    contact_data = {
+                        "name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+                        "title": contact.get("position"),
+                        "emails": [{"email": contact.get("email")}],
+                    }
+                    if contact.get("phone"):
+                        contact_data["phones"] = [{"phone": contact.get("phone")}]
+
+                    contacts_data.append(contact_data)
+
+                # ALL leads start as "Raw" - Smart views filter by custom fields
+                status_id = "stat_4qxeqdfEDGNFmh93pFmXz4l8bw78DuQtTlATratY2Qb"  # Raw
+
+                # Determine priority label for description (not status!)
+                first_contact_is_atl = discovered_contacts[0].get("is_atl", False)
+                if first_contact_is_atl:
+                    if qualification_score >= 70:
+                        priority_label = "🔥 Hot ATL"
+                    else:
+                        priority_label = "⭐ Validated ATL"
+                else:
+                    priority_label = "📋 BTL"
+
+                # Build lead data with ALL contacts
+                lead_data = {
+                    "name": lead_name,
+                    "contacts": contacts_data,
+                    "status_id": status_id,  # Always "Raw"
+                    "description": f"{priority_label}\n\nQualification Score: {qualification_score}/100\nHunter.io ATL Contacts: {len(discovered_contacts)}",
+                    "custom": {
+                        "qualification_score": qualification_score,
+                        "is_atl": first_contact_is_atl,
+                        "priority_label": priority_label
+                    }
+                }
+
+                # Assign default owner (Tim Kipper)
+                default_owner = os.getenv("CLOSE_DEFAULT_OWNER_USER_ID")
+                if default_owner:
+                    lead_data["created_by"] = default_owner
+
+                # Create lead with ALL contacts via Close API
+                import httpx
+                await self._check_rate_limit()
+
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        f"{self.BASE_URL}/lead/",
+                        headers={
+                            "Authorization": self.auth_header,
+                            "Content-Type": "application/json",
+                        },
+                        json=lead_data,
+                        timeout=30.0
+                    )
+
+                    await self._update_rate_limit(response)
+
+                    if response.status_code == 429:
+                        self._handle_rate_limit_error(response)
+                    elif response.status_code >= 400:
+                        error_data = response.json() if response.text else {}
+                        raise CRMValidationError(
+                            f"Failed to create lead in Close CRM: {error_data.get('error', response.status_code)}"
+                        )
+
+                    result = response.json()
+                    logger.info(f"✅ Created lead {result.get('id')} with {len(contacts_data)} ATL contacts")
+
+                    return {
+                        "id": result.get("id"),
+                        "company": lead_name,
+                        "status": "created",
+                        "contacts_created": len(contacts_data),
+                        "atl_contacts": [c.get("name") for c in contacts_data]
+                    }
+
+            else:
+                # No discovered contacts - fall back to single contact creation
+                contact = Contact(
+                    email=email,
+                    first_name=lead.get("first_name"),
+                    last_name=lead.get("last_name"),
+                    company=lead.get("name") or lead.get("company"),
+                    title=lead.get("title"),
+                    phone=lead.get("phone"),
+                    linkedin_url=lead.get("linkedin_url"),
+                    enrichment_data={
+                        "is_atl": lead.get("is_atl", False),
+                        "qualification_score": lead.get("qualification_score", 0),
+                        "contact_level": lead.get("contact_level", "Unknown")
+                    }
+                )
+
+                # Create in Close CRM (will auto-set status and owner)
+                created_contact = await self.create_contact(contact)
+
+                return {
+                    "id": created_contact.external_ids.get("close"),
+                    "email": created_contact.email,
+                    "company": created_contact.company,
+                    "name": f"{created_contact.first_name or ''} {created_contact.last_name or ''}".strip(),
+                    "status": "created",
+                    "contacts_created": 1
+                }
 
         except Exception as e:
             logger.error(f"Failed to create lead in Close CRM: {e}")
@@ -507,6 +751,22 @@ class CloseProvider(CRMProvider):
         except httpx.HTTPError as e:
             logger.error(f"Network error updating contact {contact_id}: {e}")
             raise CRMNetworkError(f"Network error: {e}")
+
+    async def enrich_contact(self, email: str) -> Optional[Dict[str, Any]]:
+        """
+        Enrich contact data (not supported by Close CRM).
+
+        Close CRM does not provide enrichment capabilities.
+        Use Apollo integration for contact enrichment instead.
+
+        Args:
+            email: Contact email address
+
+        Returns:
+            None (enrichment not supported)
+        """
+        logger.debug(f"enrich_contact called for {email} - Close CRM does not support enrichment")
+        return None
 
     async def sync_contacts(
         self,

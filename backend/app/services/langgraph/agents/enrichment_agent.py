@@ -214,7 +214,7 @@ class EnrichmentAgent:
             find_company_emails_tool,  # Hunter.io domain search (PRIORITY #1)
             scrape_company_team_tool,  # Website team scraping (discovers more contacts)
             find_person_email_tool,  # Hunter.io email finder for specific person (loop back)
-            get_linkedin_profile_tool,
+            # get_linkedin_profile_tool,  # LinkedIn - commented out (no Browserbase credentials)
             get_lead_tool
         ]
 
