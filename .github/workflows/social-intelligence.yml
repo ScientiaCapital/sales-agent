@@ -14,7 +14,7 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,13 +29,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build Docker image (push disabled for testing)
+      - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           file: ./backend/Dockerfile.serverless
-          push: false
-          load: true
+          push: true
+          platforms: linux/amd64
           tags: ghcr.io/scientiacapital/sales-agent:social-intelligence-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -92,4 +92,3 @@ jobs:
                 "value": "The social intelligence pipeline failed to run. Check GitHub Actions logs."
               }]
             }'
-
