@@ -28,7 +28,7 @@ langgraph==0.2.60  # StateGraph orchestration for complex agents
 
 # LangChain Integrations
 langchain-anthropic==0.3.3  # Anthropic Claude integration
-langchain-openai==1.0.3  # OpenAI integration (supports openai 2.x for Cerebras)
+langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
 langchain-cerebras==0.5.0  # Official Cerebras LangChain integration
 langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
 langchain-huggingface==0.1.0  # Hugging Face embeddings and models
@@ -36,7 +36,7 @@ langchain-text-splitters>=0.3.3,<0.4.0  # Advanced text splitting (fixed version
 
 # AI Providers
 anthropic==0.69.0  # For Claude Sonnet 4.5
-openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras)
+openai>=1.58.1,<2.0.0  # For OpenAI-compatible APIs (RunPod/Cerebras) - compatible with langchain-openai 0.3.0
 
 # Vector Embeddings & Statistical Analysis
 sentence-transformers==3.3.1  # For generating text embeddings
