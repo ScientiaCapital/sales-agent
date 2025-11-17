@@ -40,7 +40,7 @@ openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras)
 
 # Vector Embeddings & Statistical Analysis
 sentence-transformers==3.3.1  # For generating text embeddings
-numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
+numpy>=1.22.4,<2  # LangChain requires <2 for Python <3.12
 scipy>=1.14.0  # Statistical functions for A/B test analysis
 pgvector==0.3.6  # PostgreSQL vector extension support
 
