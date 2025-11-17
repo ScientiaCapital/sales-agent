@@ -118,3 +118,6 @@ htmlcov/
 coverage.xml
 backend/.env.backup-*
 .worktrees/
+
+# Serena MCP memory files
+.serena/
