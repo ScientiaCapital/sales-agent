@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import runpod
 from social_intelligence_runner import SocialIntelligenceRunner
-from check_email_engagement import EngagementChecker
+# from check_email_engagement import EngagementChecker  # REMOVED: Class doesn't exist, engagement check runs separately
 from app.core.logging import setup_logging, log_performance, log_error
 
 # Set up structured logging
@@ -81,45 +81,22 @@ async def run_full_pipeline(config: Dict[str, Any]) -> Dict[str, Any]:
 
 async def run_engagement_check() -> Dict[str, Any]:
     """
-    Check email engagement and update high-intent flags.
+    DEPRECATED: Engagement check now runs as standalone script (check_email_engagement.py).
+    This endpoint kept for backward compatibility.
 
     Returns:
-        Engagement check results
+        Not implemented message
     """
-    start_time = datetime.now()
-    logger.info("engagement_check_started", task="engagement_check")
+    logger.info("engagement_check_called",
+                note="Engagement checking now via check_email_engagement.py standalone script")
 
-    try:
-        checker = EngagementChecker()
-        result = await checker.check_all_engagement()
-
-        latency_ms = (datetime.now() - start_time).total_seconds() * 1000
-        log_performance(
-            logger,
-            service="engagement_checker",
-            operation="check_all_engagement",
-            latency_ms=latency_ms,
-            high_intent_contacts=result.get("high_intent_contacts", 0)
-        )
-
-        return {
-            "success": True,
-            "task": "engagement_check",
-            "result": result,
-            "latency_ms": round(latency_ms, 2)
-        }
-
-    except Exception as e:
-        latency_ms = (datetime.now() - start_time).total_seconds() * 1000
-        log_error(logger, "engagement_checker", "check_all_engagement", e)
-
-        return {
-            "success": False,
-            "task": "engagement_check",
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "latency_ms": round(latency_ms, 2)
-        }
+    return {
+        "success": False,
+        "task": "engagement_check",
+        "error": "Engagement checking moved to standalone script (check_email_engagement.py)",
+        "note": "Use GitHub Actions scheduled run or call check_email_engagement.py directly",
+        "latency_ms": 0
+    }
 
 
 def handler(job: Dict[str, Any]) -> Dict[str, Any]:
