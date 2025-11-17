@@ -30,7 +30,7 @@ langgraph==0.2.60  # StateGraph orchestration for complex agents
 langchain-anthropic==0.3.3  # Anthropic Claude integration
 langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
 langchain-cerebras==0.5.0  # Official Cerebras LangChain integration
-langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
+# langchain-postgres - REMOVED: Not used in serverless (only for full API server with document embeddings)
 langchain-huggingface==0.1.0  # Hugging Face embeddings and models
 langchain-text-splitters>=0.3.3,<0.4.0  # Advanced text splitting (fixed version conflict!)
 
@@ -40,9 +40,9 @@ openai>=1.58.1,<2.0.0  # For OpenAI-compatible APIs (RunPod/Cerebras) - compatib
 
 # Vector Embeddings & Statistical Analysis
 sentence-transformers==3.3.1  # For generating text embeddings
-numpy>=1.26.2,<2.0.0  # Required for vector operations - langchain-postgres requires <2
+numpy>=2.1.0  # Required for vector operations and statistical analysis
 scipy>=1.14.0  # Statistical functions for A/B test analysis
-pgvector==0.3.6  # PostgreSQL vector extension support
+# pgvector - REMOVED: Not used in serverless (only needed with langchain-postgres)
 
 # Web Scraping
 playwright==1.48.0
