@@ -22,7 +22,7 @@ redis==5.0.1
 
 # AI Providers
 anthropic==0.18.1  # For Claude Sonnet 4.5
-openai==1.3.7  # For OpenRouter (DeepSeek)
+openai==1.66.3  # Upgraded to satisfy langchain-openai requirement (>=1.58.1,<2.0.0)
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (optional)
 langchain-cerebras==0.5.0  # LangChain Cerebras integration (for ChatCerebras)
 
