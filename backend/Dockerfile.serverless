@@ -53,6 +53,7 @@ RUN playwright install chromium
 COPY app /app/app
 COPY handler.py /app/
 COPY healthcheck.py /app/
+COPY healthcheck_simple.py /app/
 COPY social_intelligence_runner.py /app/
 COPY check_email_engagement.py /app/
 
