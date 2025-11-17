@@ -28,7 +28,7 @@ langgraph==0.2.60  # StateGraph orchestration for complex agents
 
 # LangChain Integrations
 langchain-anthropic==0.3.3  # Anthropic Claude integration
-langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
+langchain-openai==1.0.3  # OpenAI integration (supports openai 2.x for Cerebras)
 langchain-cerebras==0.5.0  # Official Cerebras LangChain integration
 langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
 langchain-huggingface==0.1.0  # Hugging Face embeddings and models
