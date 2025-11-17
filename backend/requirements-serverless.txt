@@ -1,41 +1,58 @@
 # Social Intelligence Serverless Dependencies
-# Optimized for RunPod deployment
+# Optimized for RunPod deployment - COMPREHENSIVE (matches main requirements)
 
 # Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.2  # Upgraded to satisfy langchain-core>=2.5.2 requirement
-python-dotenv==1.0.0
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+pydantic-settings==2.6.0
+python-dotenv==1.0.1
 
 # HTTP & Async
-httpx==0.25.1
-aiohttp==3.9.1
+httpx==0.27.2
+aiohttp==3.10.10
 tenacity==9.0.0  # Retry logic with exponential backoff
 
 # Database
-psycopg==3.2.3
-psycopg-binary==3.2.3
-sqlalchemy==2.0.23
+psycopg[binary]==3.2.3  # Modern PostgreSQL adapter (psycopg3)
+sqlalchemy==2.0.35
 
 # Redis (optional - Upstash)
-redis==5.0.1
+redis==5.1.1
+
+# AI/ML - LangChain/LangGraph Framework
+langchain==0.3.15  # Core LangChain framework
+langchain-core==0.3.31  # LangChain core abstractions
+langchain-community==0.3.14  # Community integrations
+langgraph==0.2.60  # StateGraph orchestration for complex agents
+langsmith==0.2.6  # LangSmith tracing and observability
+
+# LangChain Integrations
+langchain-anthropic==0.3.3  # Anthropic Claude integration
+langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
+langchain-cerebras==0.5.0  # Official Cerebras LangChain integration
+langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
+langchain-huggingface==0.1.0  # Hugging Face embeddings and models
+langchain-text-splitters==0.3.2  # Advanced text splitting strategies
 
 # AI Providers
-anthropic==0.18.1  # For Claude Sonnet 4.5
-openai==1.66.3  # Upgraded to satisfy langchain-openai requirement (>=1.58.1,<2.0.0)
-cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (optional)
-langchain-cerebras==0.5.0  # LangChain Cerebras integration (for ChatCerebras)
+anthropic==0.69.0  # For Claude Sonnet 4.5
+openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras)
+cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK
+
+# Vector Embeddings & Statistical Analysis (CRITICAL - was missing!)
+sentence-transformers==3.3.1  # For generating text embeddings
+numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
+scipy>=1.14.0  # Statistical functions for A/B test analysis
+pgvector==0.3.6  # PostgreSQL vector extension support
 
 # Web Scraping (LinkedIn)
-playwright==1.40.0
-beautifulsoup4==4.12.2
+playwright==1.48.0
+beautifulsoup4==4.12.3
 lxml==4.9.3
 
-# Twitter/X API
-tweepy==4.14.0
-
-# Close CRM API
-# (using httpx for API calls)
+# Social Media APIs
+tweepy==4.14.0  # Twitter API v2 client
 
 # Email notifications
 sendgrid==6.11.0
@@ -46,6 +63,15 @@ python-dateutil==2.8.2
 
 # Logging & Monitoring
 structlog==23.2.0
+sentry-sdk[fastapi]==2.15.0  # Error tracking
 
 # RunPod SDK
-runpod==1.5.1
+runpod==1.7.6  # RunPod Python SDK for serverless and GPU compute
+boto3==1.35.80  # AWS SDK for S3-compatible RunPod storage
+
+# Document Processing
+pdfplumber==0.11.4  # PDF text extraction
+python-docx==1.1.2  # DOCX document parsing
+
+# CLI Dependencies (for rich output if needed)
+rich==13.7.0  # Beautiful terminal UI
