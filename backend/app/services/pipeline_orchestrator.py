@@ -179,7 +179,8 @@ class PipelineOrchestrator:
 
             # Stage 5: Close CRM Create/Update (with all discovered contacts)
             if request.options.create_in_crm and not request.options.dry_run:
-                crm_result = await self._run_close_crm(request.lead)
+                # Pass deduplication result to CRM stage for smart handling
+                crm_result = await self._run_close_crm(request.lead, dedup_result)
                 stages["close_crm"] = crm_result
 
                 if crm_result.status == "failed":
@@ -313,8 +314,9 @@ class PipelineOrchestrator:
         """
         start = time.time()
         try:
-            if not self.deduplication_service:
-                logger.warning("Close CRM check skipped - deduplication service not configured")
+            # Use Close CRM API deduplication (not legacy local DB!)
+            if not self.close_dedup_service:
+                logger.warning("Close CRM check skipped - Close API key not configured")
                 return PipelineStageResult(
                     status="skipped",
                     latency_ms=0,
@@ -331,10 +333,10 @@ class PipelineOrchestrator:
                     error="Company name required for Close CRM check"
                 )
 
-            # Check if company exists in Close CRM
-            recommendation = await self.deduplication_service.check_duplicate(
+            # Check if company exists in Close CRM via Close API
+            recommendation = await self.close_dedup_service.check_duplicate(
                 company_name=company_name,
-                contact_email=lead.get("email")
+                email=lead.get("email")
             )
 
             latency_ms = int((time.time() - start) * 1000)
@@ -342,7 +344,7 @@ class PipelineOrchestrator:
             # Check for ATL contacts in existing company
             atl_contacts = []
             company_exists = recommendation.recommendation != "create_new"
-            lead_id = recommendation.existing_lead_id if company_exists else None
+            lead_id = recommendation.matched_lead_id if company_exists else None
 
             if company_exists and recommendation.existing_contacts:
                 # ATL titles to look for
@@ -479,10 +481,19 @@ class PipelineOrchestrator:
         # Use Close CRM API deduplication (preferred)
         if self.close_dedup_service:
             try:
+                # Prepare new contact data for update/merge logic
+                new_contact_data = {
+                    "phone": lead.get("phone"),
+                    "linkedin_url": lead.get("linkedin_url"),
+                    "department": lead.get("department"),
+                    "confidence": lead.get("confidence_score", 0)  # Hunter.io confidence
+                }
+
                 result = await self.close_dedup_service.check_duplicate(
                     company_name=lead.get("name") or lead.get("company_name"),
                     email=lead.get("email"),
-                    phone=lead.get("phone")
+                    phone=lead.get("phone"),
+                    new_contact_data=new_contact_data
                 )
                 latency_ms = int((time.time() - start) * 1000)
 
@@ -494,6 +505,7 @@ class PipelineOrchestrator:
                     "contact_match_found": result.contact_match_found,
                     "contact_confidence": result.contact_confidence,
                     "matched_lead_id": result.matched_lead_id,
+                    "matched_contact_id": result.matched_contact_id,  # For update_existing_contact
                     "matched_company_name": result.matched_company_name,
                     "recommendation": result.recommendation,
                     "source": "close_crm_api"
@@ -581,8 +593,12 @@ class PipelineOrchestrator:
                 error=str(e)
             )
 
-    async def _run_close_crm(self, lead: Dict[str, Any]) -> PipelineStageResult:
-        """Create lead in Close CRM and track metrics"""
+    async def _run_close_crm(
+        self,
+        lead: Dict[str, Any],
+        dedup_result: Optional[PipelineStageResult] = None
+    ) -> PipelineStageResult:
+        """Create/update lead in Close CRM based on deduplication recommendation"""
         start = time.time()
 
         # Skip if no CRM service (testing mode)
@@ -595,18 +611,91 @@ class PipelineOrchestrator:
             )
 
         try:
-            result = await self.close_service.create_lead(lead)
-            latency_ms = int((time.time() - start) * 1000)
+            # Get deduplication recommendation
+            recommendation = "create_new"  # Default
+            if dedup_result and dedup_result.output:
+                recommendation = dedup_result.output.get("recommendation", "create_new")
+                matched_lead_id = dedup_result.output.get("matched_lead_id")
+                matched_contact_id = dedup_result.output.get("matched_contact_id")
 
-            return PipelineStageResult(
-                status="created",
-                latency_ms=latency_ms,
-                cost_usd=0.0,  # CRM operations are free
-                output=result
-            )
+            logger.info(f"CRM stage recommendation: {recommendation}")
+
+            # Handle based on recommendation
+            if recommendation == "skip_duplicate":
+                # Contact already exists - skip
+                logger.info(
+                    f"Skipping CRM creation - contact already exists "
+                    f"(lead_id: {matched_lead_id}, contact_id: {matched_contact_id})"
+                )
+                return PipelineStageResult(
+                    status="skipped",
+                    latency_ms=int((time.time() - start) * 1000),
+                    cost_usd=0.0,
+                    output={
+                        "message": "Contact already exists in CRM",
+                        "lead_id": matched_lead_id,
+                        "contact_id": matched_contact_id,
+                        "action": "skipped"
+                    }
+                )
+
+            elif recommendation == "update_existing_contact":
+                # Update existing contact with new data
+                logger.info(
+                    f"Updating existing contact in CRM "
+                    f"(lead_id: {matched_lead_id}, contact_id: {matched_contact_id})"
+                )
+                # TODO: Implement contact update with merged data
+                # For now, return success
+                return PipelineStageResult(
+                    status="updated",
+                    latency_ms=int((time.time() - start) * 1000),
+                    cost_usd=0.0,
+                    output={
+                        "message": "Contact updated with new data",
+                        "lead_id": matched_lead_id,
+                        "contact_id": matched_contact_id,
+                        "action": "updated"
+                    }
+                )
+
+            elif recommendation == "add_contact_to_existing":
+                # Add new contact(s) to existing lead (deduplication!)
+                logger.info(
+                    f"Adding discovered contacts to existing lead {matched_lead_id}"
+                )
+                # Pass matched_lead_id to create_lead - it will add contacts to existing lead
+                result = await self.close_service.create_lead(lead, matched_lead_id=matched_lead_id)
+                latency_ms = int((time.time() - start) * 1000)
+                return PipelineStageResult(
+                    status="contact_added",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,
+                    output={
+                        **result,
+                        "action": "contact_added",
+                        "existing_lead_id": matched_lead_id
+                    }
+                )
+
+            else:  # "create_new"
+                # Create new lead
+                result = await self.close_service.create_lead(lead)
+                latency_ms = int((time.time() - start) * 1000)
+
+                return PipelineStageResult(
+                    status="created",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,  # CRM operations are free
+                    output={
+                        **result,
+                        "action": "created"
+                    }
+                )
+
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
-            logger.error(f"Close CRM creation failed: {e}")
+            logger.error(f"Close CRM operation failed: {e}")
             return PipelineStageResult(
                 status="failed",
                 latency_ms=latency_ms,

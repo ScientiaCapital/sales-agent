@@ -454,6 +454,7 @@ Respond with JSON only."""
         # Initialize email discovery tracking
         extraction_method = "none"
         hunter_cost = 0.0
+        discovered_contacts = []  # Initialize at function level to avoid UnboundLocalError
 
         # ===== WEBSITE VALIDATION (ICP Qualifier) =====
         # If no website or website is down, lead is not ICP
@@ -495,8 +496,6 @@ Respond with JSON only."""
             # ===== EMAIL/CONTACT DISCOVERY =====
             # Two-tier contact discovery: Tier 1 (Hunter.io) → Tier 2 (Web Scraping)
             # Discover ATL contacts if not provided
-            discovered_contacts = []
-
             if not contact_email:
                 logger.info(f"Attempting contact discovery for {company_name}")
 

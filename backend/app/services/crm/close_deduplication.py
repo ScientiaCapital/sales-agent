@@ -7,7 +7,13 @@ Two-stage matching:
 1. **Company-level**: Fuzzy match company name in Close CRM
 2. **Contact-level**: If company found, check if contact already exists
 
-This ensures we never create duplicate companies OR duplicate contacts within a company.
+Update/Merge Logic:
+- If contact exists with outdated data → Recommend "update_existing_contact"
+- Updates fields: phone, linkedin_url, department, confidence_score
+- Preserves existing: email, name, creation date, user-set custom fields
+
+This ensures we never create duplicate companies OR duplicate contacts within a company,
+while keeping contact data fresh with the latest enrichment information.
 
 Usage:
     ```python
@@ -62,6 +68,7 @@ class DuplicationCheckResult:
     company_confidence: float  # 0-100, fuzzy match score
     matched_lead_id: Optional[str] = None
     matched_company_name: Optional[str] = None
+    existing_contacts: List[Dict[str, Any]] = None  # All contacts in matched company
 
     # Contact-level matching
     contact_match_found: bool = False
@@ -70,7 +77,7 @@ class DuplicationCheckResult:
     matched_contact_email: Optional[str] = None
 
     # Recommendation
-    recommendation: str = ""  # "create_new", "add_contact_to_existing", "skip_duplicate"
+    recommendation: str = ""  # "create_new", "add_contact_to_existing", "skip_duplicate", "update_existing_contact"
 
 
 # ========== Close CRM Deduplication Service ==========
@@ -114,7 +121,8 @@ class CloseDeduplicationService:
         self,
         company_name: str,
         email: Optional[str] = None,
-        phone: Optional[str] = None
+        phone: Optional[str] = None,
+        new_contact_data: Optional[Dict[str, Any]] = None
     ) -> DuplicationCheckResult:
         """
         Check if lead/contact already exists in Close CRM.
@@ -123,6 +131,7 @@ class CloseDeduplicationService:
             company_name: Company name to check
             email: Contact email (optional but recommended)
             phone: Contact phone (optional)
+            new_contact_data: New contact data dict with fields like phone, linkedin_url, department, confidence
 
         Returns:
             DuplicationCheckResult with match details and recommendation
@@ -165,19 +174,40 @@ class CloseDeduplicationService:
             contact_match = self._find_contact_in_lead(email, best_match.lead)
 
             if contact_match:
-                # Duplicate contact found!
-                return DuplicationCheckResult(
-                    is_duplicate=True,
-                    company_match_found=True,
-                    company_confidence=best_match.confidence,
-                    matched_lead_id=best_match.lead.lead_id,
-                    matched_company_name=best_match.lead.company_name,
-                    contact_match_found=True,
-                    contact_confidence=100.0,  # Exact email match
-                    matched_contact_id=contact_match["id"],
-                    matched_contact_email=email,
-                    recommendation="skip_duplicate"
-                )
+                # Contact found - check if we need to update with new data
+                if new_contact_data and self._needs_update(contact_match, new_contact_data):
+                    logger.info(
+                        f"Contact exists but has outdated data - recommending update "
+                        f"(contact_id: {contact_match['id']}, lead_id: {best_match.lead.lead_id})"
+                    )
+                    return DuplicationCheckResult(
+                        is_duplicate=False,  # Not a duplicate - we'll update it!
+                        company_match_found=True,
+                        company_confidence=best_match.confidence,
+                        matched_lead_id=best_match.lead.lead_id,
+                        matched_company_name=best_match.lead.company_name,
+                        existing_contacts=best_match.lead.contacts,
+                        contact_match_found=True,
+                        contact_confidence=100.0,
+                        matched_contact_id=contact_match["id"],
+                        matched_contact_email=email,
+                        recommendation="update_existing_contact"
+                    )
+                else:
+                    # Duplicate contact found with no new data!
+                    return DuplicationCheckResult(
+                        is_duplicate=True,
+                        company_match_found=True,
+                        company_confidence=best_match.confidence,
+                        matched_lead_id=best_match.lead.lead_id,
+                        matched_company_name=best_match.lead.company_name,
+                        existing_contacts=best_match.lead.contacts,
+                        contact_match_found=True,
+                        contact_confidence=100.0,  # Exact email match
+                        matched_contact_id=contact_match["id"],
+                        matched_contact_email=email,
+                        recommendation="skip_duplicate"
+                    )
             else:
                 # Company exists but contact is new - add to existing lead
                 return DuplicationCheckResult(
@@ -186,6 +216,7 @@ class CloseDeduplicationService:
                     company_confidence=best_match.confidence,
                     matched_lead_id=best_match.lead.lead_id,
                     matched_company_name=best_match.lead.company_name,
+                    existing_contacts=best_match.lead.contacts,
                     contact_match_found=False,
                     recommendation="add_contact_to_existing"
                 )
@@ -198,6 +229,7 @@ class CloseDeduplicationService:
                 company_confidence=best_match.confidence,
                 matched_lead_id=best_match.lead.lead_id,
                 matched_company_name=best_match.lead.company_name,
+                existing_contacts=best_match.lead.contacts,
                 contact_match_found=False,
                 recommendation="add_contact_to_existing"  # Assume contact is new
             )
@@ -427,6 +459,69 @@ class CloseDeduplicationService:
                     return contact
 
         return None
+
+    def _needs_update(
+        self,
+        existing_contact: Dict[str, Any],
+        new_contact_data: Dict[str, Any]
+    ) -> bool:
+        """
+        Check if existing contact needs to be updated with new data.
+
+        Updates are recommended when:
+        1. New data has fields that existing contact lacks (phone, linkedin_url, etc.)
+        2. New data has higher confidence score (Hunter.io data quality metric)
+
+        Args:
+            existing_contact: Contact data from Close CRM
+            new_contact_data: New contact data (from Hunter.io, website scraping, etc.)
+
+        Returns:
+            True if update recommended, False otherwise
+        """
+        # Check if new data has phone and existing doesn't
+        if new_contact_data.get("phone") and not self._has_phone(existing_contact):
+            logger.info("Update recommended: new phone number available")
+            return True
+
+        # Check if new data has LinkedIn URL and existing doesn't
+        if new_contact_data.get("linkedin_url"):
+            existing_urls = existing_contact.get("urls", [])
+            has_linkedin = any("linkedin.com" in url.get("url", "").lower() for url in existing_urls)
+            if not has_linkedin:
+                logger.info("Update recommended: new LinkedIn URL available")
+                return True
+
+        # Check if new data has department and existing doesn't
+        if new_contact_data.get("department") and not existing_contact.get("title"):
+            logger.info("Update recommended: new department/title available")
+            return True
+
+        # Check if new data has higher confidence score (Hunter.io data quality)
+        new_confidence = new_contact_data.get("confidence", 0)
+        existing_confidence = existing_contact.get("confidence", 0)
+        if new_confidence > existing_confidence + 10:  # At least 10% better
+            logger.info(
+                f"Update recommended: higher confidence score "
+                f"(new: {new_confidence}, existing: {existing_confidence})"
+            )
+            return True
+
+        # No update needed
+        return False
+
+    def _has_phone(self, contact: Dict[str, Any]) -> bool:
+        """
+        Check if contact has a phone number.
+
+        Args:
+            contact: Contact data from Close CRM
+
+        Returns:
+            True if contact has at least one phone number
+        """
+        phones = contact.get("phones", [])
+        return len(phones) > 0 and any(phone.get("phone") for phone in phones)
 
 
 @dataclass
