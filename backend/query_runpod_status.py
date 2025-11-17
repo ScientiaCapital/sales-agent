@@ -29,7 +29,7 @@ headers = {
 query = """
 query {
   myself {
-    serverlessEndpoints {
+    endpoints {
       id
       name
       workersMin
@@ -72,7 +72,7 @@ if "errors" in data:
         print(f"   - {error.get('message', 'Unknown error')}")
     exit(1)
 
-endpoints = data.get("data", {}).get("myself", {}).get("serverlessEndpoints", [])
+endpoints = data.get("data", {}).get("myself", {}).get("endpoints", [])
 
 if not endpoints:
     print("⚠️  No serverless endpoints found!")
