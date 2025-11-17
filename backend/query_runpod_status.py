@@ -6,8 +6,8 @@ import os
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables from backend/.env
-load_dotenv()
+# Load environment variables from backend/.env (works from any CWD)
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 RUNPOD_API_KEY = os.getenv('RUNPOD_API_KEY')
 RUNPOD_API_URL = "https://api.runpod.io/graphql"
