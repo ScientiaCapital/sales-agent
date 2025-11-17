@@ -5,6 +5,10 @@ import os
 import json
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from backend/.env (works from any CWD)
+load_dotenv(os.path.join(os.path.dirname(__file__), 'backend', '.env'))
 
 RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY")
 if not RUNPOD_API_KEY:
@@ -33,7 +37,7 @@ def list_endpoints():
     query = """
     query {
       myself {
-        serverlessEndpoints {
+        endpoints {
           id
           name
           templateId
@@ -50,7 +54,7 @@ def list_endpoints():
     """
 
     result = query_graphql(query)
-    return result.get("data", {}).get("myself", {}).get("serverlessEndpoints", [])
+    return result.get("data", {}).get("myself", {}).get("endpoints", [])
 
 def get_endpoint_workers(endpoint_id: str):
     """Get detailed worker information for an endpoint."""

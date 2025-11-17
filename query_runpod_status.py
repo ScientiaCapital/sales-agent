@@ -14,7 +14,7 @@ RUNPOD_API_URL = "https://api.runpod.io/graphql"
 
 if not RUNPOD_API_KEY:
     print("❌ RUNPOD_API_KEY not found in environment variables")
-    print("Please set it in .env file")
+    print("Please set it in backend/.env file")
     exit(1)
 
 print(f"🔑 Using API Key: {RUNPOD_API_KEY[:10]}...{RUNPOD_API_KEY[-4:]}")
@@ -29,7 +29,7 @@ headers = {
 query = """
 query {
   myself {
-    serverlessEndpoints {
+    endpoints {
       id
       name
       workersMin
@@ -72,7 +72,7 @@ if "errors" in data:
         print(f"   - {error.get('message', 'Unknown error')}")
     exit(1)
 
-endpoints = data.get("data", {}).get("myself", {}).get("serverlessEndpoints", [])
+endpoints = data.get("data", {}).get("myself", {}).get("endpoints", [])
 
 if not endpoints:
     print("⚠️  No serverless endpoints found!")
