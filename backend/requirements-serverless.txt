@@ -1,5 +1,5 @@
 # Social Intelligence Serverless Dependencies
-# Optimized for RunPod deployment - COMPREHENSIVE (matches main requirements)
+# Optimized for RunPod deployment - CLEANED UP (only what's actually used)
 
 # Core Framework
 fastapi==0.115.0
@@ -17,7 +17,7 @@ tenacity==9.0.0  # Retry logic with exponential backoff
 psycopg[binary]==3.2.3  # Modern PostgreSQL adapter (psycopg3)
 sqlalchemy==2.0.35
 
-# Redis (optional - Upstash)
+# Redis (Upstash for checkpointing)
 redis==5.1.1
 
 # AI/ML - LangChain/LangGraph Framework
@@ -25,7 +25,6 @@ langchain==0.3.15  # Core LangChain framework
 langchain-core==0.3.31  # LangChain core abstractions
 langchain-community==0.3.14  # Community integrations
 langgraph==0.2.60  # StateGraph orchestration for complex agents
-langsmith==0.2.6  # LangSmith tracing and observability
 
 # LangChain Integrations
 langchain-anthropic==0.3.3  # Anthropic Claude integration
@@ -33,33 +32,28 @@ langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
 langchain-cerebras==0.5.0  # Official Cerebras LangChain integration
 langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
 langchain-huggingface==0.1.0  # Hugging Face embeddings and models
-langchain-text-splitters==0.3.2  # Advanced text splitting strategies
+langchain-text-splitters>=0.3.3,<0.4.0  # Advanced text splitting (fixed version conflict!)
 
 # AI Providers
 anthropic==0.69.0  # For Claude Sonnet 4.5
 openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras)
-cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK
 
-# Vector Embeddings & Statistical Analysis (CRITICAL - was missing!)
+# Vector Embeddings & Statistical Analysis
 sentence-transformers==3.3.1  # For generating text embeddings
 numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
 scipy>=1.14.0  # Statistical functions for A/B test analysis
 pgvector==0.3.6  # PostgreSQL vector extension support
 
-# Web Scraping (LinkedIn)
+# Web Scraping
 playwright==1.48.0
 beautifulsoup4==4.12.3
-lxml==4.9.3
+lxml==4.9.3  # XML parser (transitive dep, kept for BeautifulSoup4)
 
 # Social Media APIs
 tweepy==4.14.0  # Twitter API v2 client
 
-# Email notifications
-sendgrid==6.11.0
-
-# Utilities
-pytz==2023.3
-python-dateutil==2.8.2
+# Utilities (transitive dependencies)
+python-dateutil==2.8.2  # Date utilities (transitive dep, kept for safety)
 
 # Logging & Monitoring
 structlog==23.2.0
@@ -72,6 +66,3 @@ boto3==1.35.80  # AWS SDK for S3-compatible RunPod storage
 # Document Processing
 pdfplumber==0.11.4  # PDF text extraction
 python-docx==1.1.2  # DOCX document parsing
-
-# CLI Dependencies (for rich output if needed)
-rich==13.7.0  # Beautiful terminal UI
