@@ -4,7 +4,7 @@
 # Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
+pydantic==2.5.2  # Upgraded to satisfy langchain-core>=2.5.2 requirement
 python-dotenv==1.0.0
 
 # HTTP & Async
