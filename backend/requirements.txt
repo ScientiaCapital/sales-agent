@@ -65,7 +65,7 @@ langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
 langchain-community==0.3.14  # Community integrations (FAISS, Chroma, Qdrant)
 langchain-huggingface==0.1.0  # Hugging Face embeddings and models
 langchain-ollama==0.1.0  # Ollama local models and embeddings
-langchain-text-splitters==0.3.2  # Advanced text splitting strategies
+langchain-text-splitters==0.3.3  # Advanced text splitting strategies (required >=0.3.3 by langchain 0.3.15)
 
 # LangChain Integrations
 langchain-anthropic==0.3.3  # Anthropic Claude integration
