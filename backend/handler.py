@@ -99,7 +99,7 @@ async def run_engagement_check() -> Dict[str, Any]:
     }
 
 
-def handler(job: Dict[str, Any]) -> Dict[str, Any]:
+async def handler(job: Dict[str, Any]) -> Dict[str, Any]:
     """
     RunPod serverless handler function.
 
@@ -133,11 +133,11 @@ def handler(job: Dict[str, Any]) -> Dict[str, Any]:
             config=config
         )
 
-        # Route to appropriate handler
+        # Route to appropriate handler (use await instead of asyncio.run)
         if task == "full_pipeline":
-            result = asyncio.run(run_full_pipeline(config))
+            result = await run_full_pipeline(config)
         elif task == "engagement_check":
-            result = asyncio.run(run_engagement_check())
+            result = await run_engagement_check()
         else:
             return {
                 "success": False,
