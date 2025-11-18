@@ -61,10 +61,10 @@ langsmith==0.2.6  # LangSmith tracing and observability
 # No external dependencies needed - built on existing LangChain/LangGraph
 
 # LangChain Vector Store Integrations (NEW: 2025)
-langchain-postgres==0.0.12  # PGVector integration for PostgreSQL
+# langchain-postgres==0.0.12  # REMOVED: Conflicts with numpy>=2.1.0, unused in production (only in enhanced_vector_store.py which is not imported)
 langchain-community==0.3.14  # Community integrations (FAISS, Chroma, Qdrant)
-langchain-huggingface==0.1.0  # Hugging Face embeddings and models
-langchain-ollama==0.1.0  # Ollama local models and embeddings
+# langchain-huggingface==0.1.0  # REMOVED: Not used in production, no imports found
+# langchain-ollama==0.1.0  # REMOVED: Conflicts with langchain-core>=0.3.31 (requires <0.3.0), not used in production
 langchain-text-splitters==0.3.3  # Advanced text splitting strategies (required >=0.3.3 by langchain 0.3.15)
 
 # LangChain Integrations
@@ -74,7 +74,7 @@ langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
 
 # AI/ML - Model Providers
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
-openai==2.2.0  # For OpenAI-compatible APIs (RunPod/Cerebras via OpenAI client)
+openai>=1.58.1,<2.0.0  # For OpenAI-compatible APIs (RunPod/Cerebras via OpenAI client) - DOWNGRADED: langchain-openai 0.3.0 requires <2.0.0
 anthropic==0.69.0  # Claude streaming and batch API support (aligned with venv_requirements.txt)
 
 # Cloud Infrastructure - RunPod
@@ -104,7 +104,7 @@ praw==7.7.1  # Reddit API wrapper
 sentence-transformers==3.3.1  # For generating text embeddings
 numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
 scipy>=1.14.0  # Statistical functions for A/B test analysis (1.14+ for Python 3.13 compatibility)
-pgvector==0.3.6  # PostgreSQL vector extension support
+# pgvector==0.3.6  # REMOVED: Dependency of langchain-postgres, unused in production
 
 # Web Search (for Research Agents - NEW: 2025)
 tavily-python==0.7.12  # Production-grade web search API
