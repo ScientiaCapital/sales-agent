@@ -11,6 +11,7 @@ Rate Limits: 600 calls/hour (10 calls/minute)
 """
 
 import os
+import re
 import httpx
 from typing import Dict, Any, Optional, List
 from datetime import datetime
@@ -525,13 +526,216 @@ class ApolloService:
                 context={"error": str(e), "domain": clean_domain}
             )
     
+    async def search_and_enrich_contacts(
+        self,
+        domain: str,
+        job_titles: Optional[List[str]] = None,
+        max_results: int = 10,
+        reveal_emails: bool = True,
+        reveal_phones: bool = False  # Requires webhook_url - disabled by default
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for contacts and enrich them to get REAL emails and phones.
+
+        This is the CORRECT way to get verified contact data from Apollo:
+        1. Search: Find people at a company (returns names, titles, Apollo IDs)
+        2. Enrich: Reveal actual email addresses (costs credits per person)
+
+        Args:
+            domain: Company domain (e.g., "acmecompany.com")
+            job_titles: Optional ATL title filters (e.g., ["CEO", "Owner", "President"])
+            max_results: Max contacts to enrich (default: 10, balance cost vs coverage)
+            reveal_emails: Get real emails (costs 1 credit per contact)
+            reveal_phones: Get phone numbers (costs additional credits)
+
+        Returns:
+            List of enriched contact dicts with verified data:
+            - email: REAL verified email (not placeholder)
+            - phone: Actual phone number
+            - email_verified: True if email was revealed
+            - source: "apollo_enriched" (vs "apollo_search" for placeholders)
+            - confidence: Apollo's confidence score
+
+        Cost:
+            ~1-2 credits per contact enriched (emails + phones)
+        """
+        # Step 1: Search to find contacts (names/titles/IDs)
+        search_results = await self.search_company_contacts(
+            domain=domain,
+            job_titles=job_titles,
+            max_results=max_results
+        )
+
+        if not search_results:
+            logger.info(f"No contacts found at {domain}")
+            return []
+
+        # Step 2: Enrich each contact to reveal real emails
+        enriched_contacts = []
+        skipped = 0
+
+        for person in search_results:
+            # Skip if no identifying info for enrichment
+            first_name = person.get("first_name")
+            last_name = person.get("last_name")
+            linkedin_url = person.get("linkedin_url")
+
+            if not ((first_name and last_name) or linkedin_url):
+                skipped += 1
+                continue
+
+            try:
+                # Enrich to reveal real email
+                enriched = await self.enrich_contact(
+                    first_name=first_name,
+                    last_name=last_name,
+                    domain=domain,
+                    linkedin_url=linkedin_url,
+                    reveal_personal_email=reveal_emails,
+                    reveal_phone=reveal_phones
+                )
+
+                # Check if we got a real email (not placeholder)
+                email = enriched.email
+                is_real_email = email and "not_unlocked" not in email.lower() and "@" in email
+
+                # Build full name from first + last
+                enriched_first = enriched.first_name or first_name
+                enriched_last = enriched.last_name or last_name
+                full_name = f"{enriched_first} {enriched_last}".strip() if enriched_first or enriched_last else ""
+
+                contact = {
+                    "email": email if is_real_email else None,
+                    "name": full_name,
+                    "first_name": enriched_first,
+                    "last_name": enriched_last,
+                    "title": enriched.title or person.get("title"),
+                    "company": enriched.company or person.get("company"),
+                    "phone": enriched.phone,
+                    "linkedin_url": enriched.linkedin_url or linkedin_url,
+                    "seniority": person.get("seniority"),
+                    "departments": person.get("departments", []),
+                    "apollo_id": person.get("apollo_id"),
+                    "source": "apollo_enriched",
+                    "email_verified": is_real_email,
+                    "confidence": enriched.custom_fields.get("email_status", "unknown")
+                }
+                enriched_contacts.append(contact)
+
+                logger.debug(f"Enriched: {contact['name']} - {contact['email']} (verified: {is_real_email})")
+
+            except Exception as e:
+                logger.warning(f"Failed to enrich {first_name} {last_name}: {e}")
+                # Fall back to search data BUT skip placeholder emails
+                search_email = person.get("email", "")
+                if search_email and "not_unlocked" not in search_email.lower():
+                    enriched_contacts.append({
+                        **person,
+                        "source": "apollo_search",
+                        "email_verified": False,
+                        "confidence": "search_only"
+                    })
+                else:
+                    logger.debug(f"Skipped {first_name} {last_name} - placeholder email")
+
+        logger.info(
+            f"Apollo enrichment complete: {len(enriched_contacts)} contacts enriched "
+            f"({skipped} skipped due to missing data) from {domain}"
+        )
+
+        return enriched_contacts
+
+    async def enrich_by_phone(
+        self,
+        phone: str,
+        company_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Find contacts using phone number when website is unavailable.
+
+        This is a fallback method for contractors without websites.
+        Apollo can find people associated with a phone number.
+
+        Args:
+            phone: Business phone number (any format)
+            company_name: Optional company name for filtering
+
+        Returns:
+            List of contact dicts with email, name, title, etc.
+        """
+        if not phone:
+            return []
+
+        # Clean phone number (remove formatting)
+        clean_phone = re.sub(r'[^\d+]', '', phone)
+        if not clean_phone:
+            return []
+
+        logger.info(f"Apollo phone lookup: {phone}")
+
+        try:
+            # Search for organization by phone
+            search_params = {
+                "organization_num_phones": [clean_phone],
+                "per_page": 10,
+                "page": 1
+            }
+
+            response = await self.client.post(
+                "/mixed_people/search",
+                json=search_params
+            )
+
+            if response.status_code != 200:
+                logger.warning(f"Apollo phone search failed: HTTP {response.status_code}")
+                return []
+
+            data = response.json()
+            people = data.get("people", [])
+
+            if not people:
+                logger.info(f"No contacts found for phone {phone}")
+                return []
+
+            # Map to contact format
+            contacts = []
+            for person in people:
+                email = person.get("email", "")
+
+                # Skip placeholder emails
+                if not email or "not_unlocked" in email.lower():
+                    continue
+
+                contact = {
+                    "email": email,
+                    "name": person.get("name", ""),
+                    "first_name": person.get("first_name", ""),
+                    "last_name": person.get("last_name", ""),
+                    "title": person.get("title", ""),
+                    "company": person.get("organization", {}).get("name", ""),
+                    "phone": person.get("phone_number", ""),
+                    "linkedin_url": person.get("linkedin_url", ""),
+                    "seniority": person.get("seniority", ""),
+                    "source": "apollo_phone",
+                    "email_verified": False,  # Phone search doesn't reveal emails
+                    "confidence": "phone_lookup"
+                }
+                contacts.append(contact)
+
+            logger.info(f"Apollo phone search found {len(contacts)} contacts")
+            return contacts
+
+        except Exception as e:
+            logger.error(f"Apollo phone search failed: {e}")
+            return []
+
     async def get_credit_balance(self) -> Dict[str, Any]:
         """
         Get remaining API credits and usage information.
-        
+
         Returns:
             Dictionary with credit balance and usage stats
-        
+
         Note:
             Apollo doesn't provide a dedicated credits endpoint.
             This is a placeholder for tracking credits via response headers
@@ -542,7 +746,7 @@ class ApolloService:
         # 1. Track locally based on API calls
         # 2. Parse response headers if Apollo provides them
         # 3. Use separate Apollo dashboard API if available
-        
+
         logger.warning("Credit balance tracking not yet implemented")
         return {
             "credits_remaining": "Unknown",

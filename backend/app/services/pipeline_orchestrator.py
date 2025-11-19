@@ -4,7 +4,28 @@ Pipeline orchestrator for coordinating 4-stage lead processing
 import os
 import time
 import logging
-from typing import Dict, Any, Optional
+import csv
+import json
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+
+# Bad email patterns to filter out (Wix tracking pixels, placeholders, etc.)
+BAD_EMAIL_PATTERNS = [
+    r'@sentry\.wixpress\.com$',
+    r'@sentry-next\.wixpress\.com$',
+    r'@2x\.png$',
+    r'^youremail@',
+    r'^email@example\.com$',
+    r'^test@test\.com$',
+    r'^noreply@',
+    r'^no-reply@',
+    r'^donotreply@',
+    r'\.png$',
+    r'\.jpg$',
+    r'\.gif$',
+]
 
 from app.schemas.pipeline import (
     PipelineTestRequest,
@@ -87,6 +108,103 @@ class PipelineOrchestrator:
             logger.warning("Close CRM service disabled (no CLOSE_API_KEY)")
 
         self.db = db
+
+        # Session-based export tracking for master file
+        self._session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        self._output_dir = self._get_output_dir()
+        self._master_csv_path = None
+        self._master_json_path = None
+        self._log_path = None
+        self._exported_leads = []
+        self._filtered_emails = []
+
+    def _get_output_dir(self) -> Path:
+        """Get absolute path to output directory, avoiding path doubling issues."""
+        # Use absolute path based on this file's location
+        base_dir = Path(__file__).parent.parent.parent  # backend/app/services -> backend
+        output_dir = base_dir / "data" / "final_enrichment_output"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return output_dir
+
+    def _is_bad_email(self, email: str) -> bool:
+        """Check if email matches any bad pattern (tracking pixels, placeholders, etc.)."""
+        if not email:
+            return False
+        email_lower = email.lower().strip()
+        for pattern in BAD_EMAIL_PATTERNS:
+            if re.search(pattern, email_lower):
+                return True
+        return False
+
+    def _init_session_files(self):
+        """Initialize session files for master export (CSV, JSON, log)."""
+        if self._master_csv_path is None:
+            self._master_csv_path = self._output_dir / f"MASTER_enriched_leads_{self._session_id}.csv"
+            self._master_json_path = self._output_dir / f"enrichment_log_{self._session_id}.json"
+            self._log_path = self._output_dir / f"pipeline_{self._session_id}.log"
+
+            # Initialize log file
+            with open(self._log_path, 'w') as f:
+                f.write(f"Pipeline Session Started: {self._session_id}\n")
+                f.write(f"Output Directory: {self._output_dir}\n")
+                f.write("-" * 50 + "\n")
+
+            logger.info(f"📁 Session files initialized: {self._session_id}")
+            logger.info(f"   CSV: {self._master_csv_path}")
+            logger.info(f"   JSON: {self._master_json_path}")
+            logger.info(f"   Log: {self._log_path}")
+
+    def _log_to_file(self, message: str):
+        """Append message to session log file."""
+        if self._log_path:
+            with open(self._log_path, 'a') as f:
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                f.write(f"[{timestamp}] {message}\n")
+
+    def finalize_export(self) -> Dict[str, Any]:
+        """
+        Finalize the session export by writing JSON summary.
+
+        Call this after processing all leads to get export summary.
+
+        Returns:
+            Dict with export statistics and file paths
+        """
+        if not self._exported_leads:
+            return {"status": "no_leads_exported"}
+
+        # Write JSON summary
+        summary = {
+            "session_id": self._session_id,
+            "timestamp": datetime.now().isoformat(),
+            "total_leads": len(self._exported_leads),
+            "valid_emails": sum(1 for lead in self._exported_leads if lead.get("email")),
+            "filtered_emails": len(self._filtered_emails),
+            "atl_leads": sum(1 for lead in self._exported_leads if lead.get("is_atl")),
+            "btl_leads": sum(1 for lead in self._exported_leads if not lead.get("is_atl")),
+            "files": {
+                "csv": str(self._master_csv_path),
+                "json": str(self._master_json_path),
+                "log": str(self._log_path)
+            },
+            "leads": self._exported_leads,
+            "filtered_bad_emails": self._filtered_emails
+        }
+
+        with open(self._master_json_path, 'w') as f:
+            json.dump(summary, f, indent=2, default=str)
+
+        # Final log entry
+        self._log_to_file(f"Session Complete: {len(self._exported_leads)} leads exported")
+        self._log_to_file(f"Valid emails: {summary['valid_emails']}")
+        self._log_to_file(f"Filtered bad emails: {len(self._filtered_emails)}")
+        self._log_to_file(f"ATL: {summary['atl_leads']}, BTL: {summary['btl_leads']}")
+
+        logger.info(f"✅ Export finalized: {len(self._exported_leads)} leads")
+        logger.info(f"   📊 Valid emails: {summary['valid_emails']}")
+        logger.info(f"   🚫 Filtered: {len(self._filtered_emails)} bad emails")
+
+        return summary
 
     async def execute(self, request: PipelineTestRequest) -> PipelineTestResponse:
         """
@@ -178,7 +296,21 @@ class PipelineOrchestrator:
                     )
 
             # Stage 5: Close CRM Create/Update (with all discovered contacts)
-            if request.options.create_in_crm and not request.options.dry_run:
+            # SAFETY: Skip Close CRM writes if disabled
+            close_write_disabled = os.getenv("CLOSE_WRITE_DISABLED") == "True"
+
+            if close_write_disabled:
+                stages["close_crm"] = PipelineStageResult(
+                    status="disabled",
+                    latency_ms=0,
+                    cost_usd=0.0,
+                    output={
+                        "reason": "⚠️ CLOSE_WRITE_DISABLED: Close CRM writes are disabled for safety",
+                        "dedup_check_completed": dedup_result.status == "completed"
+                    }
+                )
+                logger.warning("⚠️ CLOSE_WRITE_DISABLED: Skipping Close CRM write stage")
+            elif request.options.create_in_crm and not request.options.dry_run:
                 # Pass deduplication result to CRM stage for smart handling
                 crm_result = await self._run_close_crm(request.lead, dedup_result)
                 stages["close_crm"] = crm_result
@@ -202,6 +334,14 @@ class PipelineOrchestrator:
             total_cost_usd = sum(
                 s.cost_usd for s in stages.values() if s.cost_usd is not None
             )
+
+            # Export to CSV (always, regardless of Close CRM status)
+            try:
+                csv_filepath = self._export_to_csv(request.lead, dedup_result)
+                logger.info(f"✅ CSV export successful: {csv_filepath}")
+            except Exception as e:
+                logger.error(f"CSV export failed: {e}")
+                # Don't fail the pipeline if CSV export fails
 
             return PipelineTestResponse(
                 success=True,
@@ -447,6 +587,24 @@ class PipelineOrchestrator:
                 linkedin_url=lead.get("linkedin_url"),
                 lead_id=lead.get("id")
             )
+
+            # NEW: Hunter.io Fallback - Discover Additional ATL Contacts
+            # If no contacts discovered yet, try Hunter.io domain search
+            if not lead.get("_discovered_contacts") and self.hunter_service:
+                company_website = lead.get("website") or lead.get("url")
+                if company_website:
+                    try:
+                        logger.info(f"Enrichment: Attempting Hunter.io domain search for {lead.get('name')}")
+                        hunter_contacts = await self.hunter_service.domain_search(
+                            company_website,
+                            atl_only=False  # Get ALL contacts (ATL + BTL) for marketing
+                        )
+                        if hunter_contacts:
+                            lead["_discovered_contacts"] = hunter_contacts
+                            logger.info(f"✅ Enrichment discovered {len(hunter_contacts)} additional ATL contacts via Hunter.io")
+                    except Exception as e:
+                        logger.warning(f"Hunter.io domain search in enrichment failed: {e}")
+
             latency_ms = int((time.time() - start) * 1000)
 
             # Convert result to dict if it's a Pydantic model
@@ -727,3 +885,133 @@ class PipelineOrchestrator:
             error_stage=error_stage,
             error_message=error_message
         )
+
+    def _export_to_csv(
+        self,
+        lead_data: Dict[str, Any],
+        dedup_result: Optional[PipelineStageResult] = None
+    ) -> str:
+        """
+        Export ALL contacts for a company to session master CSV.
+
+        Creates one row per contact with columns:
+        - company_name
+        - first_name
+        - last_name
+        - email
+        - phone
+        - position (job title)
+        - is_atl (decision maker flag)
+        - qualification_score
+        - dedup_status
+        - close_lead_id
+
+        Filters out bad email patterns (tracking pixels, placeholders).
+
+        Args:
+            lead_data: Enriched lead data from pipeline
+            dedup_result: Deduplication check result (optional)
+
+        Returns:
+            Path to master CSV file
+        """
+        # Initialize session files on first export
+        self._init_session_files()
+
+        # Extract dedup status
+        dedup_status = "unknown"
+        close_lead_id = ""
+        if dedup_result and dedup_result.output:
+            dedup_status = dedup_result.output.get("recommendation", "unknown")
+            close_lead_id = dedup_result.output.get("existing_lead_id", "")
+
+        company_name = lead_data.get("name") or lead_data.get("company_name", "")
+        company_phone = lead_data.get("phone", "")
+        qualification_score = lead_data.get("qualification_score", 0)
+
+        # Get all discovered contacts from Hunter.io
+        discovered_contacts = lead_data.get("_discovered_contacts", [])
+
+        # CSV field names
+        fieldnames = [
+            "company_name", "first_name", "last_name", "email", "phone",
+            "position", "is_atl", "qualification_score", "dedup_status", "close_lead_id"
+        ]
+
+        rows_written = 0
+
+        # Write header if file doesn't exist
+        file_exists = self._master_csv_path.exists()
+
+        with open(self._master_csv_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+
+            # If we have discovered contacts, write one row per contact
+            if discovered_contacts:
+                for contact in discovered_contacts:
+                    email = contact.get("email", "")
+
+                    # Filter bad emails
+                    if email and self._is_bad_email(email):
+                        self._filtered_emails.append({
+                            "company": company_name,
+                            "email": email,
+                            "reason": "bad_pattern"
+                        })
+                        self._log_to_file(f"🚫 Filtered bad email: {email} ({company_name})")
+                        continue  # Skip this contact
+
+                    csv_row = {
+                        "company_name": company_name,
+                        "first_name": contact.get("first_name", ""),
+                        "last_name": contact.get("last_name", ""),
+                        "email": email,
+                        "phone": contact.get("phone", "") or company_phone,
+                        "position": contact.get("position", ""),
+                        "is_atl": contact.get("is_atl", False),
+                        "qualification_score": qualification_score,
+                        "dedup_status": dedup_status,
+                        "close_lead_id": close_lead_id
+                    }
+
+                    writer.writerow(csv_row)
+                    self._exported_leads.append(csv_row.copy())
+                    rows_written += 1
+
+                    atl_status = "ATL" if csv_row["is_atl"] else "BTL"
+                    self._log_to_file(f"✅ [{atl_status}] {company_name} - {csv_row['first_name']} {csv_row['last_name']} - {email}")
+
+            else:
+                # No contacts discovered - write company row with existing data
+                email = lead_data.get("email") or lead_data.get("contact_email", "")
+
+                if email and self._is_bad_email(email):
+                    self._filtered_emails.append({
+                        "company": company_name,
+                        "email": email,
+                        "reason": "bad_pattern"
+                    })
+                    email = ""
+
+                csv_row = {
+                    "company_name": company_name,
+                    "first_name": "",
+                    "last_name": "",
+                    "email": email,
+                    "phone": company_phone,
+                    "position": "",
+                    "is_atl": False,
+                    "qualification_score": qualification_score,
+                    "dedup_status": dedup_status,
+                    "close_lead_id": close_lead_id
+                }
+
+                writer.writerow(csv_row)
+                self._exported_leads.append(csv_row.copy())
+                rows_written += 1
+                self._log_to_file(f"✅ [NO CONTACTS] {company_name} - {email or 'no email'}")
+
+        logger.info(f"✅ Exported {rows_written} contact(s) for {company_name}")
+        return str(self._master_csv_path)

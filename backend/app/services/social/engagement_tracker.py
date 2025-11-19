@@ -7,6 +7,7 @@ Updates Close CRM custom field "High Intent Flag" and populates smart view.
 
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
 
@@ -69,6 +70,17 @@ class EngagementTracker:
             - high_intent_count: Number of high-intent contacts
             - updated_contacts: List of contact IDs flagged
         """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("⚠️ CLOSE_WRITE_DISABLED: Engagement tracker disabled - read-only mode")
+            return {
+                'total_checked': 0,
+                'high_intent_count': 0,
+                'updated_contacts': [],
+                'status': 'disabled',
+                'message': 'Close CRM write operations are disabled for safety'
+            }
+
         logger.info("Starting email engagement check...")
 
         # Get sent emails from past 7 days
