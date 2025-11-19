@@ -315,6 +315,13 @@ class CloseProvider(CRMProvider):
             CRMValidationError: If required fields missing
             CRMRateLimitError: If rate limit exceeded
         """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("⚠️ CLOSE_WRITE_DISABLED: Skipping create_contact() - read-only mode")
+            # Return mock contact with error status
+            contact.external_id = "disabled"
+            return contact
+
         try:
             if not contact.email:
                 raise CRMValidationError("Email is required to create a contact in Close CRM")
@@ -376,6 +383,15 @@ class CloseProvider(CRMProvider):
             if description_parts:
                 lead_data["description"] = f"{priority_label}\n\n" + "\n".join(description_parts)
 
+            # Add custom fields for smart view filtering
+            tier = enrichment.get("tier", "unknown")
+            lead_data["custom"] = {
+                "qualification_score": qualification_score,
+                "is_atl": "Yes" if is_atl else "No",  # Close uses choices field (Yes/No)
+                "priority_label": priority_label,
+                "tier": tier  # hot/warm/cold/unqualified
+            }
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     f"{self.BASE_URL}/lead/",
@@ -435,6 +451,15 @@ class CloseProvider(CRMProvider):
             CRMValidationError: If email is missing
             CRMNetworkError: If network error occurs
         """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("⚠️ CLOSE_WRITE_DISABLED: Skipping add_contact_to_lead() - read-only mode")
+            return {
+                "status": "disabled",
+                "contact_id": "disabled",
+                "message": "Close CRM write operations are disabled"
+            }
+
         try:
             email = contact_data.get("email")
             if not email:
@@ -512,6 +537,15 @@ class CloseProvider(CRMProvider):
         Raises:
             CRMValidationError: If required fields missing
         """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("⚠️ CLOSE_WRITE_DISABLED: Skipping create_lead() - read-only mode")
+            return {
+                "status": "disabled",
+                "reason": "write_operations_disabled",
+                "message": "Close CRM write operations are disabled for safety"
+            }
+
         try:
             # Get email - must be a valid email address (not domain)
             email = lead.get("email")
@@ -610,8 +644,9 @@ class CloseProvider(CRMProvider):
                     "description": f"{priority_label}\n\nQualification Score: {qualification_score}/100\nHunter.io ATL Contacts: {len(discovered_contacts)}",
                     "custom": {
                         "qualification_score": qualification_score,
-                        "is_atl": first_contact_is_atl,
-                        "priority_label": priority_label
+                        "is_atl": "Yes" if first_contact_is_atl else "No",  # Close uses choices field (Yes/No)
+                        "priority_label": priority_label,
+                        "tier": lead.get("tier", "unknown")  # hot/warm/cold/unqualified
                     }
                 }
 
@@ -704,6 +739,13 @@ class CloseProvider(CRMProvider):
             CRMNotFoundError: If contact not found
             CRMRateLimitError: If rate limit exceeded
         """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("⚠️ CLOSE_WRITE_DISABLED: Skipping update_contact() - read-only mode")
+            # Return contact unchanged
+            contact.external_id = contact_id
+            return contact
+
         try:
             await self._check_rate_limit()
 

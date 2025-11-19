@@ -72,6 +72,8 @@ from app.services.website_validator import get_website_validator
 from app.services.review_scraper import get_review_scraper
 from app.services.email_extractor import EmailExtractor
 from app.services.hunter_service import HunterService, extract_domain
+from app.services.apollo import ApolloService
+from app.services.website_discovery import get_website_discovery_service
 
 logger = setup_logging(__name__)
 
@@ -220,6 +222,14 @@ class QualificationAgent:
         # Initialize Hunter.io service
         self.hunter_service = HunterService()
 
+        # Initialize Apollo service (optional - if API key configured)
+        try:
+            self.apollo_service = ApolloService()
+            logger.info("Apollo service initialized")
+        except Exception as e:
+            self.apollo_service = None
+            logger.warning(f"Apollo service not available: {e}")
+
         logger.info(
             f"QualificationAgent initialized: provider={provider}, model={model}, "
             f"temperature={temperature}, max_tokens={max_tokens}, email_extraction=enabled"
@@ -276,6 +286,21 @@ class QualificationAgent:
 
         else:
             raise ValueError(f"Unsupported provider: {self.provider}")
+
+    def _is_atl_title(self, title: str) -> bool:
+        """Check if job title indicates Above-The-Line (decision maker) position."""
+        if not title:
+            return False
+
+        title_lower = title.lower()
+        atl_keywords = [
+            "ceo", "chief executive", "president", "owner", "founder", "co-founder",
+            "cto", "chief technology", "cfo", "chief financial", "coo", "chief operating",
+            "vp", "vice president", "svp", "senior vice president", "evp", "executive vice president",
+            "director", "head of", "manager", "partner", "principal"
+        ]
+
+        return any(keyword in title_lower for keyword in atl_keywords)
 
     def _build_chain(self):
         """
@@ -494,44 +519,173 @@ Respond with JSON only."""
             )
 
             # ===== EMAIL/CONTACT DISCOVERY =====
-            # Two-tier contact discovery: Tier 1 (Hunter.io) → Tier 2 (Web Scraping)
+            # Three-tier contact discovery:
+            # 1. Website Discovery (if missing) → 2. Hunter.io + Apollo Domain Search → 3. Phone Fallback
             # Discover ATL contacts if not provided
             if not contact_email:
                 logger.info(f"Attempting contact discovery for {company_name}")
 
-                # Tier 1: Hunter.io Domain Search (PAID, but most reliable)
-                # Returns ALL employees with job titles, filtered for ATL contacts
-                if company_website:
+                # === STEP 0: Website Discovery (if missing) ===
+                # Many contractor CSVs don't have websites - find them via Google
+                if not company_website:
+                    logger.info(f"No website provided for {company_name}, attempting discovery...")
                     try:
-                        domain = extract_domain(company_website)
+                        discovery_service = get_website_discovery_service()
+                        discovered_website = await discovery_service.discover_website(
+                            company_name=company_name,
+                            industry=company_industry,
+                            state=""  # TODO: extract from address if available
+                        )
+                        if discovered_website:
+                            company_website = discovered_website
+                            logger.info(f"✅ Discovered website for {company_name}: {company_website}")
+                        else:
+                            logger.info(f"Could not discover website for {company_name}")
+                    except Exception as e:
+                        logger.warning(f"Website discovery failed for {company_name}: {e}")
+
+                # Tier 1: Hunter.io + Apollo Domain Search (run both, merge results)
+                # Returns ALL employees with job titles from both sources
+                all_contacts = []
+                seen_emails = set()
+
+                if company_website:
+                    domain = extract_domain(company_website)
+
+                    # Hunter.io Domain Search
+                    try:
                         hunter_contacts = await self.hunter_service.domain_search(
                             domain=domain,
                             limit=10,
-                            atl_only=True  # Only return decision-makers
+                            atl_only=False  # Get ALL contacts (ATL + BTL) for marketing
                         )
 
                         if hunter_contacts:
-                            discovered_contacts = hunter_contacts
-                            contact_email = hunter_contacts[0]["email"]  # Use top ATL contact
-                            extraction_method = "hunter_domain_search"
-                            hunter_cost = len(hunter_contacts) * 0.01  # $0.01 per contact
-
-                            # Add to qualification notes
-                            atl_summary = ", ".join([
-                                f"{c['first_name']} {c['last_name']} ({c['position']})"
-                                for c in hunter_contacts[:3]
-                            ])
-                            notes = notes or ""
-                            notes += f"\n\nATL CONTACTS (Hunter.io):\n{atl_summary}"
-                            if len(hunter_contacts) > 3:
-                                notes += f"\n+ {len(hunter_contacts) - 3} more ATL contacts"
-
-                            logger.info(
-                                f"Hunter.io found {len(hunter_contacts)} ATL contacts for {company_name}, "
-                                f"using: {contact_email}"
-                            )
+                            for contact in hunter_contacts:
+                                email = contact.get('email', '').lower()
+                                if email and email not in seen_emails:
+                                    contact['source'] = 'hunter'
+                                    all_contacts.append(contact)
+                                    seen_emails.add(email)
+                            logger.info(f"Hunter.io found {len(hunter_contacts)} contacts for {company_name}")
                     except Exception as e:
                         logger.warning(f"Hunter.io domain search failed for {company_website}: {e}")
+
+                    # Apollo Domain Search + Enrichment (to get REAL emails, not placeholders)
+                    if self.apollo_service:
+                        try:
+                            # Use search_and_enrich to get verified emails (costs credits but gets real data)
+                            apollo_contacts = await self.apollo_service.search_and_enrich_contacts(
+                                domain=domain,
+                                max_results=10,
+                                reveal_emails=True,
+                                reveal_phones=False  # Phones require webhook_url - get emails first
+                            )
+
+                            if apollo_contacts:
+                                for contact in apollo_contacts:
+                                    email = contact.get('email', '').lower() if contact.get('email') else ''
+
+                                    # Skip placeholder emails
+                                    if not email or 'not_unlocked' in email:
+                                        continue
+
+                                    # Check if Hunter already found this email
+                                    if email in seen_emails:
+                                        # CROSS-VERIFICATION: Mark existing contact as verified by both sources
+                                        for existing in all_contacts:
+                                            if existing.get('email', '').lower() == email:
+                                                existing['verified_by'] = 'hunter+apollo'
+                                                existing['apollo_verified'] = True
+                                                logger.info(f"✅ Cross-verified: {email} found by both Hunter and Apollo")
+                                        continue
+
+                                    # New contact from Apollo (verified email)
+                                    normalized = {
+                                        'email': contact.get('email'),
+                                        'first_name': contact.get('first_name', ''),
+                                        'last_name': contact.get('last_name', ''),
+                                        'position': contact.get('title', ''),
+                                        'phone': contact.get('phone', ''),
+                                        'linkedin_url': contact.get('linkedin_url', ''),
+                                        'is_atl': self._is_atl_title(contact.get('title', '')),
+                                        'source': contact.get('source', 'apollo'),  # Preserve enrichment source
+                                        'verified_by': 'apollo',
+                                        'email_verified': contact.get('email_verified', False),
+                                        'confidence': contact.get('confidence', 'unknown')
+                                    }
+                                    all_contacts.append(normalized)
+                                    seen_emails.add(email)
+                                    logger.info(f"Apollo contact added: {email} (verified: {contact.get('email_verified', False)})")
+
+                                verified_count = sum(1 for c in apollo_contacts if c.get('email_verified'))
+                                logger.info(f"Apollo enriched {len(apollo_contacts)} contacts for {company_name} ({verified_count} verified emails)")
+                        except Exception as e:
+                            logger.warning(f"Apollo enrichment failed for {company_website}: {e}")
+
+                # === TIER 3: Phone-based Apollo Fallback ===
+                # If no contacts found via domain search, try phone lookup
+                if not all_contacts and company_phone and self.apollo_service:
+                    logger.info(f"No contacts from domain search, trying phone lookup: {company_phone}")
+                    try:
+                        phone_contacts = await self.apollo_service.enrich_by_phone(
+                            phone=company_phone,
+                            company_name=company_name
+                        )
+
+                        if phone_contacts:
+                            for contact in phone_contacts:
+                                email = contact.get('email', '').lower()
+                                if email and email not in seen_emails:
+                                    # Normalize and add ATL classification
+                                    contact['is_atl'] = self._is_atl_title(contact.get('title', ''))
+                                    all_contacts.append(contact)
+                                    seen_emails.add(email)
+                            logger.info(f"✅ Apollo phone lookup found {len(phone_contacts)} contacts for {company_name}")
+                    except Exception as e:
+                        logger.warning(f"Apollo phone lookup failed for {company_phone}: {e}")
+
+                # Process merged contacts
+                if all_contacts:
+                    discovered_contacts = all_contacts
+                    extraction_method = "hunter_apollo_search"
+                    hunter_cost = len(all_contacts) * 0.01  # Approximate cost
+
+                    # Separate ATL and BTL contacts
+                    atl_contacts = [c for c in all_contacts if c.get('is_atl')]
+                    btl_contacts = [c for c in all_contacts if not c.get('is_atl')]
+
+                    # Use ATL contact first (for outreach), fallback to first contact
+                    if atl_contacts:
+                        contact_email = atl_contacts[0]["email"]
+                    else:
+                        contact_email = all_contacts[0]["email"]
+
+                    notes = notes or ""
+
+                    if atl_contacts:
+                        atl_summary = ", ".join([
+                            f"{c['first_name']} {c['last_name']} ({c['position']}) [{c.get('source', 'unknown')}]"
+                            for c in atl_contacts[:5]
+                        ])
+                        notes += f"\n\nATL CONTACTS ({len(atl_contacts)} found):\n{atl_summary}"
+                        if len(atl_contacts) > 5:
+                            notes += f"\n+ {len(atl_contacts) - 5} more ATL contacts"
+
+                    if btl_contacts:
+                        btl_summary = ", ".join([
+                            f"{c['first_name']} {c['last_name']} ({c['position']}) [{c.get('source', 'unknown')}]"
+                            for c in btl_contacts[:3]
+                        ])
+                        notes += f"\n\nBTL CONTACTS (for marketing):\n{btl_summary}"
+                        if len(btl_contacts) > 3:
+                            notes += f"\n+ {len(btl_contacts) - 3} more BTL contacts"
+
+                    logger.info(
+                        f"Total: {len(all_contacts)} contacts for {company_name} "
+                        f"({len(atl_contacts)} ATL, {len(btl_contacts)} BTL), "
+                        f"primary: {contact_email}"
+                    )
 
                 # Tier 2: Website Scraping Fallback (FREE, but less reliable)
                 # Only if Hunter.io didn't find ATL contacts

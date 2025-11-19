@@ -11,8 +11,7 @@ import os
 from langchain_core.messages import HumanMessage
 from langchain_cerebras import ChatCerebras
 from langchain_anthropic import ChatAnthropic
-from langchain_openai import ChatOpenAI
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI  # Used for DeepSeek via OpenRouter
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,7 @@ class CostOptimizedLLMProvider:
             from ai_cost_optimizer.app.router import Router
             from ai_cost_optimizer.app.complexity import score_complexity
             from ai_cost_optimizer.app.providers import (
-                CerebrasProvider, ClaudeProvider, GeminiProvider
+                CerebrasProvider, ClaudeProvider
             )
 
             # Initialize providers for the router
@@ -82,11 +81,6 @@ class CostOptimizedLLMProvider:
             claude_key = os.getenv("ANTHROPIC_API_KEY")
             if claude_key:
                 providers["claude"] = ClaudeProvider(claude_key)
-
-            # Add Gemini if API key available
-            gemini_key = os.getenv("GOOGLE_API_KEY")
-            if gemini_key:
-                providers["gemini"] = GeminiProvider(gemini_key)
 
             # Initialize router with available providers
             self.router = Router(providers=providers, enable_learning=False)
@@ -210,21 +204,10 @@ class CostOptimizedLLMProvider:
                     openai_api_base="https://openrouter.ai/api/v1"
                 )
 
-            elif provider == "gemini":
-                api_key = os.getenv("GOOGLE_API_KEY")
-                if not api_key:
-                    raise ValueError("GOOGLE_API_KEY not set")
-                llm = ChatGoogleGenerativeAI(
-                    model=model,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    google_api_key=api_key
-                )
-
             else:
                 raise ValueError(
                     f"Unknown provider: {provider}. "
-                    f"Supported: cerebras, claude, deepseek, gemini"
+                    f"Supported: cerebras, claude, deepseek"
                 )
 
             # Execute actual API call
@@ -240,9 +223,6 @@ class CostOptimizedLLMProvider:
             elif provider == "claude":
                 tokens_in = usage.get("input_tokens", 0)
                 tokens_out = usage.get("output_tokens", 0)
-            elif provider == "gemini":
-                tokens_in = usage.get("prompt_token_count", 0) or usage.get("promptTokenCount", 0)
-                tokens_out = usage.get("candidates_token_count", 0) or usage.get("candidatesTokenCount", 0)
             else:
                 # OpenRouter/DeepSeek
                 tokens_in = usage.get("prompt_tokens", 0)
@@ -319,10 +299,6 @@ class CostOptimizedLLMProvider:
         # Claude Haiku pricing
         elif provider == "claude" and "haiku" in model.lower():
             return (tokens_in * 0.00025 + tokens_out * 0.00125) / 1000
-
-        # Gemini Flash pricing
-        elif provider == "gemini" and "flash" in model.lower():
-            return (tokens_in * 0.00001 + tokens_out * 0.00003) / 1000
 
         # DeepSeek pricing
         elif provider == "deepseek":

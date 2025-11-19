@@ -198,6 +198,7 @@ class HunterService:
                             "first_name": email_data.get("first_name"),
                             "last_name": email_data.get("last_name"),
                             "position": email_data.get("position"),
+                            "phone": email_data.get("phone_number"),  # Hunter.io phone number
                             "confidence": email_data.get("confidence", 0),
                             "is_atl": is_atl,
                             "linkedin": email_data.get("linkedin"),

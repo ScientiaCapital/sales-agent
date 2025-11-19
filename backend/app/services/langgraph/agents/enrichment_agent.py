@@ -225,7 +225,7 @@ class EnrichmentAgent:
         self.agent = create_react_agent(
             self.llm,
             self.tools,
-            prompt=self.system_message
+            state_modifier=self.system_message
         )
 
         logger.info(
