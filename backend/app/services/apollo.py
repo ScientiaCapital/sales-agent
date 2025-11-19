@@ -618,7 +618,7 @@ class ApolloService:
                     "apollo_id": person.get("apollo_id"),
                     "source": "apollo_enriched",
                     "email_verified": is_real_email,
-                    "confidence": enriched.custom_fields.get("email_status", "unknown")
+                    "confidence": getattr(enriched, 'custom_fields', {}).get("email_status", "unknown") if hasattr(enriched, 'custom_fields') else "enriched"
                 }
                 enriched_contacts.append(contact)
 
