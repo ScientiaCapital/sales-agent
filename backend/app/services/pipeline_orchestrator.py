@@ -274,6 +274,23 @@ class PipelineOrchestrator:
                 enrich_result = await self._run_enrichment(request.lead)
                 stages["enrichment"] = enrich_result
 
+                # ===== CRITICAL FIX: Transfer enrichment contacts to _discovered_contacts =====
+                # The enrichment agent returns atl_contacts but they weren't being passed to CSV export
+                if enrich_result.output and enrich_result.status != "failed":
+                    enrich_contacts = enrich_result.output.get("atl_contacts", [])
+                    if enrich_contacts:
+                        # Merge with any existing discovered contacts (from qualification)
+                        existing = request.lead.get("_discovered_contacts", [])
+                        if existing:
+                            # Deduplicate by email
+                            existing_emails = {c.get("email") for c in existing if c.get("email")}
+                            new_contacts = [c for c in enrich_contacts if c.get("email") not in existing_emails]
+                            request.lead["_discovered_contacts"] = existing + new_contacts
+                            logger.info(f"Merged {len(new_contacts)} new enrichment contacts with {len(existing)} existing")
+                        else:
+                            request.lead["_discovered_contacts"] = enrich_contacts
+                            logger.info(f"✅ Transferred {len(enrich_contacts)} enrichment contacts to lead data")
+
                 if enrich_result.status == "failed":
                     # Don't fail the entire pipeline - continue to CRM creation
                     logger.warning(f"Enrichment failed for {lead_name}, continuing to CRM creation")
