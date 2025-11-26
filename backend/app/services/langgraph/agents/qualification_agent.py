@@ -590,79 +590,84 @@ Respond with JSON only."""
                     except Exception as e:
                         logger.warning(f"Hunter.io domain search failed for {company_website}: {e}")
 
+                    # ============================================================
+                    # APOLLO DISABLED - No credits available (Nov 26, 2025)
+                    # Re-enable when Apollo credits are purchased
+                    # ============================================================
                     # Apollo Domain Search + Enrichment (to get REAL emails, not placeholders)
-                    if self.apollo_service:
-                        try:
-                            # Use search_and_enrich to get verified emails (costs credits but gets real data)
-                            apollo_contacts = await self.apollo_service.search_and_enrich_contacts(
-                                domain=domain,
-                                max_results=10,
-                                reveal_emails=True,
-                                reveal_phones=False  # Phones require webhook_url - get emails first
-                            )
-
-                            if apollo_contacts:
-                                for contact in apollo_contacts:
-                                    email = contact.get('email', '').lower() if contact.get('email') else ''
-
-                                    # Skip placeholder emails
-                                    if not email or 'not_unlocked' in email:
-                                        continue
-
-                                    # Check if Hunter already found this email
-                                    if email in seen_emails:
-                                        # CROSS-VERIFICATION: Mark existing contact as verified by both sources
-                                        for existing in all_contacts:
-                                            if existing.get('email', '').lower() == email:
-                                                existing['verified_by'] = 'hunter+apollo'
-                                                existing['apollo_verified'] = True
-                                                logger.info(f"✅ Cross-verified: {email} found by both Hunter and Apollo")
-                                        continue
-
-                                    # New contact from Apollo (verified email)
-                                    normalized = {
-                                        'email': contact.get('email'),
-                                        'first_name': contact.get('first_name', ''),
-                                        'last_name': contact.get('last_name', ''),
-                                        'position': contact.get('title', ''),
-                                        'phone': contact.get('phone', ''),
-                                        'linkedin_url': contact.get('linkedin_url', ''),
-                                        'is_atl': self._is_atl_title(contact.get('title', '')),
-                                        'source': contact.get('source', 'apollo'),  # Preserve enrichment source
-                                        'verified_by': 'apollo',
-                                        'email_verified': contact.get('email_verified', False),
-                                        'confidence': contact.get('confidence', 'unknown')
-                                    }
-                                    all_contacts.append(normalized)
-                                    seen_emails.add(email)
-                                    logger.info(f"Apollo contact added: {email} (verified: {contact.get('email_verified', False)})")
-
-                                verified_count = sum(1 for c in apollo_contacts if c.get('email_verified'))
-                                logger.info(f"Apollo enriched {len(apollo_contacts)} contacts for {company_name} ({verified_count} verified emails)")
-                        except Exception as e:
-                            logger.warning(f"Apollo enrichment failed for {company_website}: {e}")
+                    # if self.apollo_service:
+                    #     try:
+                    #         # Use search_and_enrich to get verified emails (costs credits but gets real data)
+                    #         apollo_contacts = await self.apollo_service.search_and_enrich_contacts(
+                    #             domain=domain,
+                    #             max_results=10,
+                    #             reveal_emails=True,
+                    #             reveal_phones=False  # Phones require webhook_url - get emails first
+                    #         )
+                    #
+                    #         if apollo_contacts:
+                    #             for contact in apollo_contacts:
+                    #                 email = contact.get('email', '').lower() if contact.get('email') else ''
+                    #
+                    #                 # Skip placeholder emails
+                    #                 if not email or 'not_unlocked' in email:
+                    #                     continue
+                    #
+                    #                 # Check if Hunter already found this email
+                    #                 if email in seen_emails:
+                    #                     # CROSS-VERIFICATION: Mark existing contact as verified by both sources
+                    #                     for existing in all_contacts:
+                    #                         if existing.get('email', '').lower() == email:
+                    #                             existing['verified_by'] = 'hunter+apollo'
+                    #                             existing['apollo_verified'] = True
+                    #                             logger.info(f"✅ Cross-verified: {email} found by both Hunter and Apollo")
+                    #                     continue
+                    #
+                    #                 # New contact from Apollo (verified email)
+                    #                 normalized = {
+                    #                     'email': contact.get('email'),
+                    #                     'first_name': contact.get('first_name', ''),
+                    #                     'last_name': contact.get('last_name', ''),
+                    #                     'position': contact.get('title', ''),
+                    #                     'phone': contact.get('phone', ''),
+                    #                     'linkedin_url': contact.get('linkedin_url', ''),
+                    #                     'is_atl': self._is_atl_title(contact.get('title', '')),
+                    #                     'source': contact.get('source', 'apollo'),  # Preserve enrichment source
+                    #                     'verified_by': 'apollo',
+                    #                     'email_verified': contact.get('email_verified', False),
+                    #                     'confidence': contact.get('confidence', 'unknown')
+                    #                 }
+                    #                 all_contacts.append(normalized)
+                    #                 seen_emails.add(email)
+                    #                 logger.info(f"Apollo contact added: {email} (verified: {contact.get('email_verified', False)})")
+                    #
+                    #             verified_count = sum(1 for c in apollo_contacts if c.get('email_verified'))
+                    #             logger.info(f"Apollo enriched {len(apollo_contacts)} contacts for {company_name} ({verified_count} verified emails)")
+                    #     except Exception as e:
+                    #         logger.warning(f"Apollo enrichment failed for {company_website}: {e}")
+                    # ============================================================
 
                 # === TIER 3: Phone-based Apollo Fallback ===
-                # If no contacts found via domain search, try phone lookup
-                if not all_contacts and company_phone and self.apollo_service:
-                    logger.info(f"No contacts from domain search, trying phone lookup: {company_phone}")
-                    try:
-                        phone_contacts = await self.apollo_service.enrich_by_phone(
-                            phone=company_phone,
-                            company_name=company_name
-                        )
-
-                        if phone_contacts:
-                            for contact in phone_contacts:
-                                email = contact.get('email', '').lower()
-                                if email and email not in seen_emails:
-                                    # Normalize and add ATL classification
-                                    contact['is_atl'] = self._is_atl_title(contact.get('title', ''))
-                                    all_contacts.append(contact)
-                                    seen_emails.add(email)
-                            logger.info(f"✅ Apollo phone lookup found {len(phone_contacts)} contacts for {company_name}")
-                    except Exception as e:
-                        logger.warning(f"Apollo phone lookup failed for {company_phone}: {e}")
+                # DISABLED - No Apollo credits (Nov 26, 2025)
+                # if not all_contacts and company_phone and self.apollo_service:
+                #     logger.info(f"No contacts from domain search, trying phone lookup: {company_phone}")
+                #     try:
+                #         phone_contacts = await self.apollo_service.enrich_by_phone(
+                #             phone=company_phone,
+                #             company_name=company_name
+                #         )
+                #
+                #         if phone_contacts:
+                #             for contact in phone_contacts:
+                #                 email = contact.get('email', '').lower()
+                #                 if email and email not in seen_emails:
+                #                     # Normalize and add ATL classification
+                #                     contact['is_atl'] = self._is_atl_title(contact.get('title', ''))
+                #                     all_contacts.append(contact)
+                #                     seen_emails.add(email)
+                #             logger.info(f"✅ Apollo phone lookup found {len(phone_contacts)} contacts for {company_name}")
+                #     except Exception as e:
+                #         logger.warning(f"Apollo phone lookup failed for {company_phone}: {e}")
 
                 # Process merged contacts
                 if all_contacts:
