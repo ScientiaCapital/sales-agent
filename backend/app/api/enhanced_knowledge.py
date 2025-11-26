@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
 from typing import List, Optional, Dict, Any, Literal
 from pydantic import BaseModel, Field
 import asyncio
+import time
 
 from app.services.enhanced_knowledge_base import EnhancedKnowledgeBase
 from app.services.enhanced_vector_store import (
@@ -154,7 +155,7 @@ async def upload_document(
             temp_file_path = temp_file.name
         
         # Process document
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.perf_counter()
         document_ids = await vector_store.process_and_store_document(
             file_path=temp_file_path,
             document_type=document_type,
@@ -166,8 +167,8 @@ async def upload_document(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap
         )
-        end_time = asyncio.get_event_loop().time()
-        
+        end_time = time.perf_counter()
+
         # Clean up temp file
         import os
         os.unlink(temp_file_path)
@@ -212,7 +213,7 @@ async def load_web_document(
                 raise HTTPException(status_code=400, detail="Invalid metadata JSON")
         
         # Process web document
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.perf_counter()
         document_ids = await vector_store.process_and_store_document(
             file_path=url,
             document_type=DocumentType.WEB,
@@ -221,10 +222,10 @@ async def load_web_document(
                 "source_url": url
             }
         )
-        end_time = asyncio.get_event_loop().time()
-        
+        end_time = time.perf_counter()
+
         processing_time_ms = int((end_time - start_time) * 1000)
-        
+
         return DocumentUploadResponse(
             success=True,
             document_ids=document_ids,
@@ -255,8 +256,8 @@ async def search_knowledge(request: SearchRequest):
         raise HTTPException(status_code=500, detail="Enhanced knowledge base not initialized")
     
     try:
-        start_time = asyncio.get_event_loop().time()
-        
+        start_time = time.perf_counter()
+
         # Perform search
         results = await enhanced_kb.search_knowledge(
             query=request.query,
@@ -264,7 +265,7 @@ async def search_knowledge(request: SearchRequest):
             max_results=request.max_results
         )
         
-        end_time = asyncio.get_event_loop().time()
+        end_time = time.perf_counter()
         search_time_ms = int((end_time - start_time) * 1000)
         
         # Format results
@@ -386,7 +387,7 @@ async def health_check():
         return {
             "status": "unhealthy",
             "error": str(e),
-            "timestamp": asyncio.get_event_loop().time()
+            "timestamp": time.time()
         }
 
 

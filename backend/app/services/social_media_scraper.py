@@ -223,7 +223,7 @@ class SocialMediaScraper:
         Raises:
             HTTPException: If Twitter API unavailable or fails
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
             self._search_twitter_mentions_sync,
@@ -315,7 +315,7 @@ class SocialMediaScraper:
         Raises:
             HTTPException: If Reddit API unavailable or fails
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             self.executor,
             self._search_reddit_mentions_sync,
