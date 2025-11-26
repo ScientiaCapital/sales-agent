@@ -57,6 +57,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_cerebras import ChatCerebras
 from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI  # For DeepSeek (OpenAI-compatible API)
 from langchain_community.chat_models import ChatOllama
 from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.language_models import BaseChatModel
@@ -262,18 +263,18 @@ class QualificationAgent:
             )
 
         elif self.provider == "deepseek":
-            # DeepSeek supports Anthropic-compatible API (no OpenAI needed!)
-            # https://api-docs.deepseek.com/guides/anthropic_api
-            api_key = os.getenv("ANTHROPIC_API_KEY")
+            # DeepSeek V3 uses OpenAI-compatible API
+            # https://api-docs.deepseek.com - 671B MoE, $0.28/1M input, $0.42/1M output
+            api_key = os.getenv("DEEPSEEK_API_KEY")
             if not api_key:
-                raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+                raise ValueError("DEEPSEEK_API_KEY environment variable not set")
 
-            return ChatAnthropic(
+            return ChatOpenAI(
                 model=self.model,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
                 api_key=api_key,
-                base_url="https://api.deepseek.com"  # Anthropic-compatible endpoint
+                base_url="https://api.deepseek.com"  # OpenAI-compatible endpoint
             )
 
         elif self.provider == "ollama":
