@@ -213,27 +213,34 @@ async def import_mep_batch(filename: str):
     with open(csv_path, 'r', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            company_name = row.get('business_name', '').strip()
+            # Support both old (business_name) and new (company_name) column formats
+            company_name = row.get('company_name', row.get('business_name', '')).strip()
 
             # ===== OEM FILTER: Skip equipment manufacturers =====
             if is_oem(company_name):
                 oems_filtered.append(company_name)
                 continue  # Skip this row
 
-            # Map dealer-scraper columns to pipeline format
-            # Note: website will be discovered by qualification agent
+            # Map columns - support both old and new formats
+            # Old format: phone_normalized, coperniq_score, license_classifications
+            # New format: phone, icp_score, license_count
+            phone = row.get('phone', row.get('phone_normalized', ''))
+            score = row.get('icp_score', row.get('coperniq_score', 50))
+            licenses = row.get('license_count', row.get('license_classifications', ''))
+            domain = row.get('domain', '')  # New format has domain column
+
             lead = {
                 'name': company_name,
                 'company_name': company_name,
-                'website': '',  # Will be discovered during qualification
-                'phone': str(row.get('phone_normalized', '')).replace('.0', ''),
-                'company_size': estimate_size_from_score(float(row.get('coperniq_score', 50))),
+                'website': domain,  # Use domain if available, otherwise discovered later
+                'phone': str(phone).replace('.0', ''),
+                'company_size': estimate_size_from_score(float(score or 50)),
                 'industry': 'MEP Contractor',  # MEP = Mechanical, Electrical, Plumbing
                 'address': f"{row.get('city', '')}, {row.get('state', '')} {row.get('zip', '')}".strip(', '),
                 'contact_name': '',  # Will be discovered
-                'email': '',  # Will be discovered
+                'email': row.get('email', ''),  # Use email if available in CSV
                 # Metadata for qualification
-                'notes': f"ICP: {row.get('icp_tier', '')} | Score: {row.get('coperniq_score', '')} | Licenses: {row.get('license_classifications', '')}",
+                'notes': f"ICP: {row.get('icp_tier', '')} | Score: {score} | Licenses: {licenses}",
             }
             leads.append(lead)
 
