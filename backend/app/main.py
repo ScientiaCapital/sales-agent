@@ -34,7 +34,7 @@ from app.api import exports
 from app.api import pipeline  # Pipeline testing endpoints
 from app.api import pipeline_dry_run  # Dry run testing (NO CRM writes)
 from app.api import csv_import  # CSV upload and processing
-# HubSpot removed - replaced with Close CRM
+from app.api import hubspot  # HubSpot for GTM marketing (Close = Sales)
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -203,7 +203,7 @@ app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Carte
 app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
 app.include_router(apollo.router, prefix=settings.API_V1_PREFIX)  # Task 5.3: Apollo contact enrichment
 app.include_router(linkedin.router, prefix=settings.API_V1_PREFIX)  # Task 5.4: LinkedIn OAuth 2.0 connector
-# HubSpot CRM integration removed - replaced with Close CRM
+app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX)  # HubSpot for GTM marketing (Close = Sales)
 app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
 app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
 app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Cost reporting and budget monitoring

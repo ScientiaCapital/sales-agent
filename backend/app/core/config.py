@@ -46,6 +46,28 @@ class Settings(BaseSettings):
     COST_ALERT_WEBHOOK_URL: Optional[str] = None  # Webhook for budget alerts
     COST_ALERT_EMAIL: Optional[str] = None  # Email for budget alerts
 
+    # HubSpot CRM (GTM Team Marketing Automation)
+    HUBSPOT_API_KEY: Optional[str] = None  # Private App API Key (pat-na1-...)
+    HUBSPOT_CLIENT_ID: Optional[str] = None  # OAuth Client ID (if using OAuth)
+    HUBSPOT_CLIENT_SECRET: Optional[str] = None  # OAuth Client Secret
+    HUBSPOT_PORTAL_ID: Optional[str] = None  # HubSpot Portal/Account ID
+    HUBSPOT_WEBHOOK_SECRET: Optional[str] = None  # Webhook verification secret
+
+    # Close CRM (Sales Team)
+    CLOSE_API_KEY: Optional[str] = None  # Close API Key
+    CLOSE_WRITE_DISABLED: bool = True  # Safety switch - keep True unless testing
+
+    # Apollo.io (Enrichment)
+    APOLLO_API_KEY: Optional[str] = None  # Apollo API Key
+
+    # Hunter.io (Email Discovery)
+    HUNTER_API_KEY: Optional[str] = None  # Hunter.io API Key
+
+    # LinkedIn (Social Selling)
+    LINKEDIN_CLIENT_ID: Optional[str] = None
+    LINKEDIN_CLIENT_SECRET: Optional[str] = None
+    LINKEDIN_ACCESS_TOKEN: Optional[str] = None
+
     # Environment
     ENVIRONMENT: str = "development"
     DEBUG: bool = False  # Set DEBUG=true in .env for development

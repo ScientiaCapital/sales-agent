@@ -37,10 +37,11 @@ from app.services.crm.base import (
     CredentialEncryption,
 )
 
-# HubSpot removed - replaced with Close CRM
+# Platform Implementations
 from app.services.crm.close import CloseProvider
 from app.services.crm.apollo import ApolloProvider
 from app.services.crm.linkedin import LinkedInProvider
+from app.services.crm.hubspot import HubSpotService, get_hubspot_service
 
 __all__ = [
     # Abstract Base Class
@@ -65,7 +66,9 @@ __all__ = [
     "CredentialEncryption",
 
     # Platform Implementations
-    "CloseProvider",
-    "ApolloProvider",
-    "LinkedInProvider",
+    "CloseProvider",       # Sales CRM (primary)
+    "ApolloProvider",      # Enrichment
+    "LinkedInProvider",    # Social selling
+    "HubSpotService",      # Marketing automation (GTM team)
+    "get_hubspot_service", # Factory function
 ]
