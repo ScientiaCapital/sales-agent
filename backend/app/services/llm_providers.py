@@ -110,13 +110,13 @@ MODEL_CONFIGS: Dict[ModelTier, ModelConfig] = {
     ),
     ModelTier.PREMIUM: ModelConfig(
         provider="anthropic",
-        model="claude-3-haiku-20240307",
+        model="claude-sonnet-4-5-20250929",
         api_key_env="ANTHROPIC_API_KEY",
         temperature=0.3,
         max_tokens=800,
-        cost_per_1m_input=0.25,
-        cost_per_1m_output=1.25,
-        description="Claude for complex reasoning (fallback)"
+        cost_per_1m_input=3.00,
+        cost_per_1m_output=15.00,
+        description="Claude Sonnet 4.5 for complex reasoning (best-in-class)"
     ),
 }
 
