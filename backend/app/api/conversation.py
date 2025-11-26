@@ -130,7 +130,7 @@ async def conversation_stream(
                 # Run sentiment analysis and suggestions in parallel
                 sentiment_task = sentiment_analyzer.analyze_sentiment(
                     text=transcription_result["text"],
-                    speaker="prospect",  # TODO: detect speaker
+                    speaker="prospect",  # Speaker detection in Voice Phase 2
                     context=[h["text"] for h in conversation_history[-3:]],
                 )
 
@@ -188,7 +188,7 @@ async def conversation_stream(
                 turn = ConversationTurn(
                     conversation_id=conversation_id,
                     turn_number=conversation.total_turns + 1,
-                    speaker=SpeakerRole.PROSPECT,  # TODO: detect speaker
+                    speaker=SpeakerRole.PROSPECT,  # Speaker detection in Voice Phase 2
                     text=transcription_result["text"],
                     transcription_confidence=transcription_result.get("confidence"),
                     audio_duration_ms=transcription_result.get("duration_seconds", 0) * 1000 if transcription_result.get("duration_seconds") else None,

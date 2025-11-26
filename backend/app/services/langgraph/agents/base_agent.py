@@ -478,9 +478,12 @@ CONTEXT GUIDELINES:
 
         logger.info(f"🔄 {self.name} transferring to {target_agent}")
 
-        # TODO: Implement agent registry lookup and transfer
-        # This will integrate with the orchestrator and communication hub
-        raise NotImplementedError("Agent transfers not yet implemented")
+        # NOTE: Agent transfers planned for Phase 7 (Multi-Agent Orchestration)
+        # Will integrate with agent_factory and communication hub
+        raise NotImplementedError(
+            f"Agent transfers not yet implemented. "
+            f"Transfer from {self.name} to {target_agent} requires Phase 7."
+        )
 
     def get_stats(self) -> Dict[str, Any]:
         """Get agent statistics."""

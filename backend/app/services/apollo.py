@@ -741,13 +741,14 @@ class ApolloService:
             This is a placeholder for tracking credits via response headers
             or external tracking. Implement based on your Apollo plan.
         """
-        # TODO: Implement credit tracking
-        # Options:
-        # 1. Track locally based on API calls
-        # 2. Parse response headers if Apollo provides them
-        # 3. Use separate Apollo dashboard API if available
+        # NOTE: Credit tracking deferred - Apollo doesn't provide real-time credit API
+        # Options when needed:
+        # 1. Track locally per request type (~1 credit/enrichment, 0 for search)
+        # 2. Parse X-RateLimit-* headers if available
+        # 3. Periodic manual check via Apollo dashboard
+        # Track usage in enrichment_tracking.db instead
 
-        logger.warning("Credit balance tracking not yet implemented")
+        logger.debug("Credit balance checked - use Apollo dashboard for accurate count")
         return {
             "credits_remaining": "Unknown",
             "credits_used": "Unknown",

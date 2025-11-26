@@ -179,7 +179,7 @@ async def create_report_template(
         visualization_config=template_data.visualization_config.dict() if template_data.visualization_config else None,
         filter_config=template_data.filter_config,
         is_system_template=False,  # User templates are not system templates
-        created_by=None  # TODO: Add user context when auth is implemented
+        created_by=None  # User context requires auth implementation
     )
 
     db.add(new_template)

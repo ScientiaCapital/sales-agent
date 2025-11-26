@@ -396,8 +396,9 @@ class CostOptimizer:
         Args:
             payload: Alert payload
         """
-        # TODO: Implement email sending (e.g., via SendGrid, SES, etc.)
-        logger.info(f"Email alert would be sent to {self.alert_email}: {payload.alert_type}")
+        # NOTE: Email alerts deferred - integrate SendGrid/SES when alerts needed
+        # For now, alerts logged to console and can be monitored via observability
+        logger.info(f"[ALERT] Would email {self.alert_email}: {payload.alert_type}")
 
     async def update_spend(
         self,

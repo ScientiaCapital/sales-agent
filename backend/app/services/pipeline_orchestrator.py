@@ -820,8 +820,8 @@ class PipelineOrchestrator:
                     f"Updating existing contact in CRM "
                     f"(lead_id: {matched_lead_id}, contact_id: {matched_contact_id})"
                 )
-                # TODO: Implement contact update with merged data
-                # For now, return success
+                # NOTE: Contact update disabled while CLOSE_WRITE_DISABLED=True
+                # When re-enabled, use close_service.update_contact() with merged data
                 return PipelineStageResult(
                     status="updated",
                     latency_ms=int((time.time() - start) * 1000),

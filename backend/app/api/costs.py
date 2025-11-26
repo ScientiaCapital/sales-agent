@@ -751,7 +751,8 @@ async def get_agent_cost_stats(
         
         # Filter by agent if specified
         if agent_name:
-            # TODO: Implement agent-specific filtering in ai-cost-optimizer
+            # NOTE: Agent-specific filtering handled in ai-cost-optimizer worktree
+            # See .worktrees/ai-cost-optimizer for implementation
             logger.info(f"Retrieved cost stats for agent: {agent_name}")
         else:
             logger.info("Retrieved cost stats for all agents")

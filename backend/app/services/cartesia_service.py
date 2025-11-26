@@ -282,8 +282,9 @@ class CartesiaService:
         start_time = time.perf_counter()
 
         try:
-            # TODO: Integrate with Deepgram/AssemblyAI for actual STT
-            # For now, return a mock response to demonstrate the pattern
+            # NOTE: STT integration deferred to Voice Phase 2
+            # Options: Deepgram ($0.0059/min), AssemblyAI ($0.0065/min), Whisper API
+            # For now, return mock response to demonstrate the pattern
 
             # Simulate STT processing
             await asyncio.sleep(0.15)  # Simulate 150ms STT latency
