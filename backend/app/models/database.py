@@ -1,9 +1,14 @@
 """
 Database configuration and base models
+
+Supports both sync and async sessions:
+- Sync: `get_db()` for existing FastAPI dependencies
+- Async: `get_async_db()` for new async services like LeadAuditService
 """
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.exc import OperationalError, DBAPIError
 import os
 import logging
@@ -46,11 +51,57 @@ engine = create_engine(
     }
 )
 
-# Create sessionmaker
+# Create sessionmaker (sync)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for all models
 Base = declarative_base()
+
+# =========================================================================
+# Async Database Support (for LeadAuditService and future async services)
+# =========================================================================
+
+# Convert to async URL (postgresql+psycopg_async for async psycopg3)
+ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql+psycopg://")
+
+# Create async engine
+async_engine = create_async_engine(
+    ASYNC_DATABASE_URL,
+    echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
+    pool_pre_ping=True,
+    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),
+)
+
+# Create async sessionmaker
+AsyncSessionLocal = async_sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+
+async def get_async_db():
+    """
+    Async dependency function for FastAPI to get async database sessions.
+
+    Used by:
+    - LeadAuditService
+    - Other async services
+
+    Example:
+        @router.get("/audit")
+        async def get_audit(db: AsyncSession = Depends(get_async_db)):
+            ...
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        finally:
+            await session.close()
 
 # Import all models to ensure they are registered with SQLAlchemy
 from app.models.lead import Lead

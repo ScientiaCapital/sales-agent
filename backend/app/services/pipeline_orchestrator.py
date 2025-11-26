@@ -33,11 +33,15 @@ from app.schemas.pipeline import (
     PipelineStageResult
 )
 
+# Lead audit trail for GTM agent context
+from app.services.lead_audit_service import LeadAuditService
+from app.models.lead_audit import LeadAuditEventType, LeadAuditStage
+
 # Import agents (lazy imports to avoid dependency issues in tests)
 # These will be mocked in tests anyway
 def _lazy_import_agents():
     """Lazy import agents to avoid loading all dependencies during test collection"""
-    global QualificationAgent, EnrichmentAgent, DeduplicationService, CloseService, CloseDeduplicationService
+    global QualificationAgent, EnrichmentAgent, DeduplicationService, CloseService, CloseDeduplicationService, ColdReachClient
 
     if QualificationAgent is None:
         from app.services.langgraph.agents.qualification_agent import QualificationAgent as QA
@@ -45,31 +49,40 @@ def _lazy_import_agents():
         from app.services.crm.deduplication import DeduplicationEngine as DS
         from app.services.crm.close import CloseProvider as CS
         from app.services.crm.close_deduplication import CloseDeduplicationService as CDS
+        from app.services.cold_reach_client import ColdReachClient as CRC
 
         QualificationAgent = QA
         EnrichmentAgent = EA
         DeduplicationService = DS
         CloseService = CS
         CloseDeduplicationService = CDS
+        ColdReachClient = CRC
 
 QualificationAgent = None
 EnrichmentAgent = None
 DeduplicationService = None
 CloseService = None
 CloseDeduplicationService = None
+ColdReachClient = None
 
 logger = logging.getLogger(__name__)
 
 
 class PipelineOrchestrator:
     """
-    Orchestrates 4-stage lead processing pipeline with performance tracking.
+    Orchestrates 6-stage GTM lead processing pipeline with performance tracking.
 
     Pipeline Flow:
-    1. Qualification → Lead scoring and tier classification
-    2. Enrichment → Company data enhancement (skippable)
-    3. Deduplication → Check for existing leads
-    4. Close CRM → Create lead in CRM (conditional)
+    1. Qualification → Lead scoring and tier classification (A/B/C/D)
+    2. CRM Check → Check Close CRM for existing ATL contacts
+    3. Enrichment → Company data enhancement via Hunter.io (skippable)
+    4. Deduplication → Check for existing leads before creation
+    5. Close CRM → Create/update lead in CRM (conditional)
+    6. Cold Reach → Enroll A/B tier leads in email sequences
+
+    Integration Points:
+    - Qualifier (this) → Sender (cold-reach): Email sequence enrollment
+    - Sender (cold-reach) → VozLux: Voice call trigger on "interested" reply
 
     Tracks latency and cost per stage for observability.
     """
@@ -107,6 +120,19 @@ class PipelineOrchestrator:
             self.close_service = None
             logger.warning("Close CRM service disabled (no CLOSE_API_KEY)")
 
+        # Initialize Cold Reach client for email sequence enrollment
+        cold_reach_url = os.getenv("COLD_REACH_API_URL", "http://localhost:8002")
+        cold_reach_key = os.getenv("COLD_REACH_API_KEY", "")
+        if cold_reach_url:
+            self.cold_reach_client = ColdReachClient(
+                base_url=cold_reach_url,
+                api_key=cold_reach_key,
+            )
+            logger.info(f"Cold Reach client enabled: {cold_reach_url}")
+        else:
+            self.cold_reach_client = None
+            logger.warning("Cold Reach client disabled (no COLD_REACH_API_URL)")
+
         self.db = db
 
         # Session-based export tracking for master file
@@ -117,6 +143,14 @@ class PipelineOrchestrator:
         self._log_path = None
         self._exported_leads = []
         self._filtered_emails = []
+
+        # Lead audit trail service (optional - requires db session)
+        if db:
+            self._audit_service = LeadAuditService(db)
+            logger.info("Lead audit trail enabled")
+        else:
+            self._audit_service = None
+            logger.info("Lead audit trail disabled (no db session)")
 
     def _get_output_dir(self) -> Path:
         """Get absolute path to output directory, avoiding path doubling issues."""
@@ -135,6 +169,41 @@ class PipelineOrchestrator:
             if re.search(pattern, email_lower):
                 return True
         return False
+
+    async def _log_audit(
+        self,
+        company_name: str,
+        event_type: LeadAuditEventType,
+        stage: str,
+        decision_data: Dict[str, Any],
+        source_file: Optional[str] = None,
+        source_row: Optional[int] = None,
+        latency_ms: Optional[int] = None,
+        cost_usd: Optional[float] = None
+    ) -> None:
+        """
+        Log audit event (non-blocking - failures don't break pipeline).
+
+        Used to track lead lifecycle for GTM agent context.
+        """
+        if not self._audit_service:
+            return
+
+        try:
+            await self._audit_service.log_event(
+                session_id=self._session_id,
+                company_name=company_name,
+                event_type=event_type,
+                stage=stage,
+                decision_data=decision_data,
+                source_file=source_file,
+                source_row=source_row,
+                latency_ms=latency_ms,
+                cost_usd=cost_usd
+            )
+        except Exception as e:
+            # Non-blocking - log error but don't fail pipeline
+            logger.warning(f"Audit logging failed (non-blocking): {e}")
 
     def _init_session_files(self):
         """Initialize session files for master export (CSV, JSON, log)."""
@@ -344,6 +413,24 @@ class PipelineOrchestrator:
                     output={"reason": "Dry run mode" if request.options.dry_run else "CRM creation disabled"}
                 )
 
+            # Stage 6: Cold Reach Email Sequence Enrollment
+            # Enroll qualified leads (A/B tier) in email sequences
+            qual_output = stages.get("qualification", {}).output or {}
+            lead_tier = qual_output.get("tier") or request.lead.get("tier") or "C"
+
+            # Only enroll A/B tier leads in email sequences
+            if lead_tier in ["A", "B"] and not request.options.dry_run:
+                cold_reach_result = await self._run_cold_reach_enrollment(request.lead, lead_tier)
+                stages["cold_reach"] = cold_reach_result
+            else:
+                skip_reason = "Dry run mode" if request.options.dry_run else f"Tier {lead_tier} not eligible for email sequences"
+                stages["cold_reach"] = PipelineStageResult(
+                    status="skipped",
+                    latency_ms=0,
+                    cost_usd=0.0,
+                    output={"reason": skip_reason, "tier": lead_tier}
+                )
+
             # Calculate totals
             total_latency_ms = sum(
                 s.latency_ms for s in stages.values() if s.latency_ms is not None
@@ -356,6 +443,24 @@ class PipelineOrchestrator:
             try:
                 csv_filepath = self._export_to_csv(request.lead, dedup_result)
                 logger.info(f"✅ CSV export successful: {csv_filepath}")
+
+                # Log audit event for export
+                discovered_contacts = request.lead.get("_discovered_contacts", [])
+                export_dedup_status = "unknown"
+                if dedup_result and dedup_result.output:
+                    export_dedup_status = dedup_result.output.get("recommendation", "unknown")
+
+                await self._log_audit(
+                    company_name=lead_name,
+                    event_type=LeadAuditEventType.LEAD_EXPORTED,
+                    stage=LeadAuditStage.EXPORT.value,
+                    decision_data={
+                        "output_file": str(self._master_csv_path),
+                        "contacts_exported": len(discovered_contacts) if discovered_contacts else 1,
+                        "dedup_status": export_dedup_status,
+                        "session_id": self._session_id,
+                    }
+                )
             except Exception as e:
                 logger.error(f"CSV export failed: {e}")
                 # Don't fail the pipeline if CSV export fails
@@ -439,6 +544,22 @@ class PipelineOrchestrator:
                 output = {"result": str(result)}
                 cost = 0.000006
 
+            # Log audit event for qualification
+            company_name = lead.get("name") or lead.get("company_name", "")
+            await self._log_audit(
+                company_name=company_name,
+                event_type=LeadAuditEventType.LEAD_QUALIFIED,
+                stage=LeadAuditStage.QUALIFICATION.value,
+                decision_data={
+                    "score": output.get("qualification_score"),
+                    "tier": output.get("tier"),
+                    "website_found": bool(lead.get("website")),
+                    "email_found": bool(lead.get("email") or lead.get("contact_email")),
+                },
+                latency_ms=agent_latency_ms,
+                cost_usd=cost
+            )
+
             return PipelineStageResult(
                 status="success",
                 latency_ms=agent_latency_ms,
@@ -520,6 +641,21 @@ class PipelineOrchestrator:
                 )
 
                 if atl_contacts:
+                    # Log audit event for CRM check (ATL found)
+                    await self._log_audit(
+                        company_name=company_name,
+                        event_type=LeadAuditEventType.CRM_MATCH_FOUND,
+                        stage=LeadAuditStage.CRM_CHECK.value,
+                        decision_data={
+                            "company_exists": True,
+                            "lead_id": lead_id,
+                            "atl_contacts_count": len(atl_contacts),
+                            "recommendation": "skip_enrichment",
+                            "atl_titles": [c.get("title") for c in atl_contacts],
+                        },
+                        latency_ms=latency_ms
+                    )
+
                     # Company exists with ATL contacts - skip enrichment
                     return PipelineStageResult(
                         status="found_atl",
@@ -550,6 +686,19 @@ class PipelineOrchestrator:
             else:
                 # Company doesn't exist - run enrichment
                 logger.info(f"Close CRM check for {company_name}: company_exists=False")
+
+                # Log audit event for CRM check (no match)
+                await self._log_audit(
+                    company_name=company_name,
+                    event_type=LeadAuditEventType.CRM_NO_MATCH,
+                    stage=LeadAuditStage.CRM_CHECK.value,
+                    decision_data={
+                        "company_exists": False,
+                        "recommendation": "run_enrichment",
+                    },
+                    latency_ms=latency_ms
+                )
+
                 return PipelineStageResult(
                     status="not_found",
                     latency_ms=latency_ms,
@@ -633,6 +782,23 @@ class PipelineOrchestrator:
                 # Fallback: convert to string representation
                 output = {"result": str(result)}
 
+            # Log audit event for enrichment
+            company_name = lead.get("name") or lead.get("company_name", "")
+            discovered_contacts = lead.get("_discovered_contacts", [])
+            await self._log_audit(
+                company_name=company_name,
+                event_type=LeadAuditEventType.LEAD_ENRICHED,
+                stage=LeadAuditStage.ENRICHMENT.value,
+                decision_data={
+                    "sources_tried": ["apollo", "linkedin", "hunter"],
+                    "contacts_found": len(discovered_contacts),
+                    "atl_contacts": len([c for c in discovered_contacts if c.get("is_atl")]),
+                    "emails_found": len([c for c in discovered_contacts if c.get("email")]),
+                },
+                latency_ms=latency_ms,
+                cost_usd=0.0001
+            )
+
             return PipelineStageResult(
                 status="success",
                 latency_ms=latency_ms,
@@ -693,6 +859,34 @@ class PipelineOrchestrator:
                     f"Close CRM deduplication: {status}, "
                     f"company_match={result.company_match_found} ({result.company_confidence:.1f}%), "
                     f"contact_match={result.contact_match_found}"
+                )
+
+                # Log audit event for deduplication decision
+                company_name = lead.get("name") or lead.get("company_name", "")
+                # Map recommendation to event type
+                dedup_event_map = {
+                    "create_new": LeadAuditEventType.DEDUP_CREATE_NEW,
+                    "add_contact_to_existing": LeadAuditEventType.DEDUP_ADD_CONTACT,
+                    "skip_duplicate": LeadAuditEventType.DEDUP_SKIP_DUPLICATE,
+                    "update_existing_contact": LeadAuditEventType.DEDUP_UPDATE_EXISTING
+                }
+                dedup_event = dedup_event_map.get(
+                    result.recommendation,
+                    LeadAuditEventType.DEDUP_CREATE_NEW
+                )
+                await self._log_audit(
+                    company_name=company_name,
+                    event_type=dedup_event,
+                    stage=LeadAuditStage.DEDUPLICATION.value,
+                    decision_data={
+                        "recommendation": result.recommendation,
+                        "company_confidence": result.company_confidence,
+                        "contact_confidence": result.contact_confidence,
+                        "matched_lead_id": result.matched_lead_id,
+                        "matched_company_name": result.matched_company_name,
+                        "is_duplicate": result.is_duplicate,
+                    },
+                    latency_ms=latency_ms
                 )
 
                 return PipelineStageResult(
@@ -871,6 +1065,134 @@ class PipelineOrchestrator:
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
             logger.error(f"Close CRM operation failed: {e}")
+            return PipelineStageResult(
+                status="failed",
+                latency_ms=latency_ms,
+                cost_usd=0.0,
+                error=str(e)
+            )
+
+    async def _run_cold_reach_enrollment(
+        self,
+        lead: Dict[str, Any],
+        tier: str
+    ) -> PipelineStageResult:
+        """
+        Enroll qualified lead in cold-reach email sequences.
+
+        Integration Point: Qualifier (sales-agent) → Sender (cold-reach)
+
+        Args:
+            lead: Lead data with contact information
+            tier: Qualification tier (A, B, C, D)
+
+        Returns:
+            PipelineStageResult with enrollment status
+        """
+        start = time.time()
+
+        # Skip if no cold-reach client
+        if not self.cold_reach_client:
+            return PipelineStageResult(
+                status="skipped",
+                latency_ms=0,
+                cost_usd=0.0,
+                output={"reason": "Cold Reach client not available"}
+            )
+
+        try:
+            # Get email from lead data
+            email = lead.get("email") or lead.get("contact_email")
+            if not email:
+                # Check discovered contacts for ATL with email
+                discovered_contacts = lead.get("_discovered_contacts", [])
+                for contact in discovered_contacts:
+                    if contact.get("email") and contact.get("is_atl"):
+                        email = contact["email"]
+                        lead["first_name"] = contact.get("first_name")
+                        lead["last_name"] = contact.get("last_name")
+                        break
+
+            if not email:
+                return PipelineStageResult(
+                    status="skipped",
+                    latency_ms=int((time.time() - start) * 1000),
+                    cost_usd=0.0,
+                    output={"reason": "No email available for enrollment"}
+                )
+
+            # Build enrollment request
+            from app.services.cold_reach_client import EnrollmentRequest
+
+            company_name = lead.get("name") or lead.get("company_name", "")
+
+            request = EnrollmentRequest(
+                email=email,
+                company=company_name,
+                first_name=lead.get("first_name"),
+                last_name=lead.get("last_name"),
+                tier=tier,
+                icp_score=lead.get("qualification_score") or lead.get("icp_score"),
+                coperniq_score=lead.get("coperniq_score"),
+                oem_certifications=lead.get("oem_certifications", []),
+                state=lead.get("state"),
+                phone=lead.get("phone"),
+            )
+
+            # Enroll in cold-reach
+            result = await self.cold_reach_client.enroll_lead(request)
+            latency_ms = int((time.time() - start) * 1000)
+
+            if result.success:
+                if result.skipped:
+                    logger.info(
+                        f"Cold Reach enrollment skipped for {email}: {result.skip_reason}"
+                    )
+                    return PipelineStageResult(
+                        status="skipped",
+                        latency_ms=latency_ms,
+                        cost_usd=0.0,
+                        output={
+                            "reason": result.skip_reason,
+                            "email": email,
+                            "tier": tier,
+                        }
+                    )
+                else:
+                    logger.info(
+                        f"✅ Cold Reach enrollment successful: {email} → "
+                        f"sequence={result.sequence_id}, entry_id={result.entry_id}"
+                    )
+                    return PipelineStageResult(
+                        status="enrolled",
+                        latency_ms=latency_ms,
+                        cost_usd=0.0,
+                        output={
+                            "email": email,
+                            "company": company_name,
+                            "tier": tier,
+                            "sequence_id": result.sequence_id,
+                            "entry_id": result.entry_id,
+                            "prospect_id": result.prospect_id,
+                            "status": result.status,
+                            "first_step_due": result.first_step_due,
+                        }
+                    )
+            else:
+                logger.warning(
+                    f"Cold Reach enrollment failed for {email}: {result.error}"
+                )
+                return PipelineStageResult(
+                    status="failed",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,
+                    error=result.error,
+                    output={"email": email, "tier": tier}
+                )
+
+        except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
+            logger.error(f"Cold Reach enrollment failed: {e}")
             return PipelineStageResult(
                 status="failed",
                 latency_ms=latency_ms,

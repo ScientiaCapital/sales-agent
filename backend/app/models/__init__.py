@@ -62,6 +62,11 @@ from .langgraph_models import (
 )
 from .pipeline_models import PipelineTestExecution
 from .csv_import import CSVImport
+from .lead_audit import (
+    LeadAuditLog,
+    LeadAuditEventType,
+    LeadAuditStage
+)
 
 __all__ = [
     "Base",
@@ -111,5 +116,8 @@ __all__ = [
     "LangGraphCheckpoint",
     "LangGraphToolCall",
     "PipelineTestExecution",
-    "CSVImport"
+    "CSVImport",
+    "LeadAuditLog",
+    "LeadAuditEventType",
+    "LeadAuditStage"
 ]
