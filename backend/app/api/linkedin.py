@@ -22,6 +22,7 @@ import os
 import logging
 
 from app.services.crm import LinkedInProvider, CRMCredentials, CRMAuthenticationError, CRMRateLimitError
+from app.services.linkedin_credentials import LinkedInCredentialService, get_linkedin_credential_service
 from app.core.exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
@@ -170,6 +171,17 @@ def get_linkedin_config() -> Dict[str, str]:
     }
 
 
+def get_redis_client():
+    """Get Redis client for rate limiting (optional)."""
+    try:
+        import redis
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        return redis.from_url(redis_url)
+    except Exception as e:
+        logger.warning(f"Redis not available: {e}")
+        return None
+
+
 def get_linkedin_provider(
     config: Dict[str, str] = Depends(get_linkedin_config)
 ) -> LinkedInProvider:
@@ -186,7 +198,7 @@ def get_linkedin_provider(
         client_id=config["client_id"],
         client_secret=config["client_secret"],
         redirect_uri=config["redirect_uri"],
-        redis_client=None  # TODO: Inject Redis client when available
+        redis_client=get_redis_client()
     )
 
 
@@ -202,7 +214,10 @@ async def authorize(
         description="Space-separated OAuth scopes",
         example="r_liteprofile r_emailaddress w_member_social"
     ),
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    user_id: Optional[str] = Query(None, description="User ID to associate with OAuth flow"),
+    redirect_after: Optional[str] = Query(None, description="URL to redirect after OAuth completes"),
+    provider: LinkedInProvider = Depends(get_linkedin_provider),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> AuthorizeResponse:
     """
     Generate LinkedIn OAuth authorization URL.
@@ -250,10 +265,13 @@ async def authorize(
 
         auth_url, code_verifier, state = provider.generate_authorization_url(scope_list)
 
-        logger.info(f"Generated LinkedIn authorization URL with scopes: {scope_list}")
+        # Store OAuth state in Supabase for callback verification
+        await cred_service.create_oauth_state(
+            redirect_after=redirect_after,
+            user_id=user_id
+        )
 
-        # TODO: Store code_verifier in session/database for callback
-        # For now, it's stored in Redis via the provider if Redis is available
+        logger.info(f"Generated LinkedIn authorization URL with scopes: {scope_list}")
 
         return AuthorizeResponse(
             authorization_url=auth_url,
@@ -270,7 +288,8 @@ async def authorize(
 async def callback(
     code: str = Query(..., description="Authorization code from LinkedIn"),
     state: str = Query(..., description="State parameter for CSRF verification"),
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    provider: LinkedInProvider = Depends(get_linkedin_provider),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> TokenResponse:
     """
     Handle OAuth callback and exchange authorization code for tokens.
@@ -317,9 +336,15 @@ async def callback(
         ```
     """
     try:
-        # TODO: Retrieve code_verifier from session/database
-        # For now, it's retrieved from Redis via the provider if available
-        # In production, you'd get this from a secure session store
+        # Validate and consume OAuth state from Supabase
+        state_data = await cred_service.validate_and_consume_state(state)
+        if not state_data:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid or expired state parameter - possible CSRF attack"
+            )
+
+        user_id = state_data.get("user_id") or "default"
 
         # Exchange code for tokens
         token_data = await provider.exchange_code_for_token(
@@ -328,9 +353,13 @@ async def callback(
             state=state
         )
 
-        # TODO: Store credentials in database (encrypted)
-        # credentials = provider.credentials
-        # await db.save_credentials(credentials)
+        # Store credentials in Supabase
+        await cred_service.store_credentials(
+            user_id=user_id,
+            access_token=token_data['access_token'],
+            expires_in=token_data.get('expires_in', 5184000),
+            scope=token_data.get('scope')
+        )
 
         logger.info(
             f"LinkedIn OAuth callback successful - "
@@ -356,7 +385,9 @@ async def callback(
 
 @router.post("/refresh", response_model=TokenResponse, status_code=200)
 async def refresh_token(
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    user_id: str = Query("default", description="User ID to refresh token for"),
+    provider: LinkedInProvider = Depends(get_linkedin_provider),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> TokenResponse:
     """
     Refresh access token using refresh token.
@@ -398,13 +429,26 @@ async def refresh_token(
         ```
     """
     try:
-        # TODO: Load credentials from database
-        # provider.credentials = await db.get_linkedin_credentials(user_id)
+        # Load credentials from Supabase
+        creds = await cred_service.get_credentials(user_id)
+        if not creds:
+            raise HTTPException(
+                status_code=401,
+                detail="No credentials found for user - please authenticate via OAuth first"
+            )
+
+        # Set access token on provider for refresh
+        provider.access_token = creds.get("access_token")
+        provider.credentials.access_token = provider.encrypt_credential(provider.access_token)
 
         new_access_token = await provider.refresh_access_token()
 
-        # TODO: Update credentials in database
-        # await db.update_credentials(provider.credentials)
+        # Update credentials in Supabase
+        await cred_service.update_credentials(
+            user_id=user_id,
+            access_token=new_access_token,
+            expires_in=5184000  # 60 days
+        )
 
         logger.info("LinkedIn access token refreshed successfully")
 
@@ -434,7 +478,9 @@ async def refresh_token(
 
 @router.get("/profile", response_model=ProfileResponse, status_code=200)
 async def get_profile(
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    user_id: str = Query("default", description="User ID to get profile for"),
+    provider: LinkedInProvider = Depends(get_linkedin_provider),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> ProfileResponse:
     """
     Get authenticated user's LinkedIn profile.
@@ -470,8 +516,16 @@ async def get_profile(
         ```
     """
     try:
-        # TODO: Load credentials from database
-        # provider.credentials = await db.get_linkedin_credentials(user_id)
+        # Load credentials from Supabase
+        creds = await cred_service.get_credentials(user_id)
+        if not creds:
+            raise HTTPException(
+                status_code=401,
+                detail="No credentials found - please authenticate via OAuth first"
+            )
+
+        # Set access token on provider
+        provider.access_token = creds.get("access_token")
 
         profile_data = await provider.get_profile()
 
@@ -498,7 +552,9 @@ async def get_profile(
 
 @router.get("/email", response_model=EmailResponse, status_code=200)
 async def get_email(
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    user_id: str = Query("default", description="User ID to get email for"),
+    provider: LinkedInProvider = Depends(get_linkedin_provider),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> EmailResponse:
     """
     Get authenticated user's email address.
@@ -526,8 +582,16 @@ async def get_email(
         ```
     """
     try:
-        # TODO: Load credentials from database
-        # provider.credentials = await db.get_linkedin_credentials(user_id)
+        # Load credentials from Supabase
+        creds = await cred_service.get_credentials(user_id)
+        if not creds:
+            raise HTTPException(
+                status_code=401,
+                detail="No credentials found - please authenticate via OAuth first"
+            )
+
+        # Set access token on provider
+        provider.access_token = creds.get("access_token")
 
         email = await provider.get_email_address()
 
@@ -592,7 +656,8 @@ async def rate_limit_status(
 
 @router.get("/token-status", response_model=TokenStatusResponse, status_code=200)
 async def token_status(
-    provider: LinkedInProvider = Depends(get_linkedin_provider)
+    user_id: str = Query("default", description="User ID to check token status for"),
+    cred_service: LinkedInCredentialService = Depends(get_linkedin_credential_service)
 ) -> TokenStatusResponse:
     """
     Check token expiration status and refresh availability.
@@ -622,25 +687,27 @@ async def token_status(
         ```
     """
     try:
-        # TODO: Load credentials from database
-        # provider.credentials = await db.get_linkedin_credentials(user_id)
+        # Load credentials from Supabase
+        creds = await cred_service.get_credentials(user_id)
 
-        credentials = provider.credentials
-        has_access = credentials.access_token is not None
-        has_refresh = credentials.refresh_token is not None
-        expires_at = credentials.token_expires_at
-
-        is_expired = False
+        has_access = creds is not None and creds.get("access_token") is not None
+        has_refresh = False  # LinkedIn typically doesn't provide refresh tokens
+        expires_at = None
+        is_expired = True
         days_until_expiry = None
-        requires_reauth = False
+        requires_reauth = True
 
-        if expires_at:
+        if creds and creds.get("expires_at"):
+            expires_at_str = creds["expires_at"]
+            expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
             is_expired = expires_at <= datetime.utcnow()
+
             if not is_expired:
                 time_until_expiry = expires_at - datetime.utcnow()
                 days_until_expiry = time_until_expiry.total_seconds() / 86400
+                requires_reauth = False
             else:
-                requires_reauth = not has_refresh  # Need reauth if expired and no refresh token
+                requires_reauth = True  # Need reauth if expired
 
         return TokenStatusResponse(
             has_access_token=has_access,
