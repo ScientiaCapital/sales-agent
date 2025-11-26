@@ -1,3 +1,38 @@
+# =============================================================================
+# SENSITIVE DATA - NEVER COMMIT
+# =============================================================================
+
+# Claude Code project context (contains internal details)
+.claude/
+CLAUDE.md
+
+# Company/Lead Data - CSV files with business info
+*.csv
+!CSV_TEMPLATE.csv
+!backend/app/tests/**/*.csv
+
+# Company/Lead Data - All data directories
+data/
+backend/data/
+backend/test_data/
+
+# Database files (may contain lead data)
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# JSON data exports
+*_leads_*.json
+*_contacts_*.json
+*_companies_*.json
+
+# =============================================================================
+# STANDARD IGNORES
+# =============================================================================
+
 # Logs
 logs
 *.log
