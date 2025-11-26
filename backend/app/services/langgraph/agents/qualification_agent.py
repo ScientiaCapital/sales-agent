@@ -490,7 +490,7 @@ Respond with JSON only."""
                 discovered_website = await discovery_service.discover_website(
                     company_name=company_name,
                     industry=industry,
-                    state=""  # TODO: extract from address if available
+                    state=""  # NOTE: Address field not in current schema - would need usaddress library + parameter addition
                 )
                 if discovered_website:
                     company_website = discovered_website
@@ -553,7 +553,7 @@ Respond with JSON only."""
                         discovered_website = await discovery_service.discover_website(
                             company_name=company_name,
                             industry=company_industry,
-                            state=""  # TODO: extract from address if available
+                            state=""  # NOTE: Address field not in current schema - would need usaddress library + parameter addition
                         )
                         if discovered_website:
                             company_website = discovered_website

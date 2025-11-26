@@ -281,7 +281,7 @@ async def get_supported_formats():
                 "format": "pdf",
                 "mime_type": "application/pdf",
                 "extension": ".pdf",
-                "supports_charts": False,  # TODO: Add chart support
+                "supports_charts": False,  # Charts not supported in CSV format
                 "supports_formatting": True,
                 "best_for": "Professional reports, presentations, archival"
             },

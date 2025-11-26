@@ -346,8 +346,9 @@ class KnowledgeBaseService:
             if not documents:
                 return []
 
-            # For now, return documents without vector similarity scoring
-            # TODO: Implement pgvector cosine similarity once pgvector extension is enabled
+            # Return documents without vector similarity scoring
+            # NOTE: pgvector extension not enabled - using placeholder scores
+            # Enable pgvector in PostgreSQL to implement cosine similarity
             results = []
             for doc in documents:
                 results.append({
