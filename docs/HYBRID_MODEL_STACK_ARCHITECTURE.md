@@ -164,17 +164,19 @@ llm = ChatOpenAI(
 )
 ```
 
-### Tier 4: Claude Premium (Fallback)
+### Tier 4: Claude Sonnet 4.5 (Complex Reasoning)
 
 | Property | Value |
 |----------|-------|
 | **Provider** | Anthropic |
-| **Model** | claude-3-haiku-20240307 |
+| **Model** | claude-sonnet-4-5-20250929 |
 | **Latency** | ~2,000ms |
-| **Cost** | $0.25/1M input, $1.25/1M output |
+| **Cost** | $3.00/1M input, $15.00/1M output |
 | **Max Tokens** | 800 |
 | **Temperature** | 0.3 |
-| **Use Case** | Complex reasoning fallback |
+| **Use Case** | Complex reasoning, edge cases, nuanced decisions |
+
+**Why Sonnet 4.5**: Best-in-class reasoning for complex ICP decisions, ambiguous company data, or when lower-tier models disagree.
 
 ---
 
