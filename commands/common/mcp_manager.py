@@ -13,6 +13,7 @@ import os
 import sys
 import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
@@ -385,7 +386,7 @@ class MCPManager:
     
     async def run_mandatory_workflow(self, task: str) -> WorkflowResult:
         """Run the mandatory MCP workflow: Sequential Thinking → Serena → Context7."""
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.perf_counter()
         
         try:
             self.log_info("Starting mandatory MCP workflow...")
@@ -409,7 +410,7 @@ class MCPManager:
             
             # Calculate total tokens and duration
             total_tokens = sum(self.token_usage.values())
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.perf_counter() - start_time
             
             result = WorkflowResult(
                 success=True,
@@ -426,7 +427,7 @@ class MCPManager:
             return result
             
         except Exception as e:
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.perf_counter() - start_time
             result = WorkflowResult(
                 success=False,
                 error_message=str(e),

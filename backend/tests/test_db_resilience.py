@@ -3,6 +3,7 @@
 import sys
 import os
 import asyncio
+import time
 from pathlib import Path
 
 # Add backend to path
@@ -38,12 +39,12 @@ async def test_health_check():
     
     # Test 3: Multiple rapid checks (pool stress test)
     print("\n[TEST 3] Rapid Connection Pool Test (10 checks)")
-    start_time = asyncio.get_event_loop().time()
-    
+    start_time = time.perf_counter()
+
     tasks = [check_database_health() for _ in range(10)]
     results = await asyncio.gather(*tasks)
-    
-    elapsed = (asyncio.get_event_loop().time() - start_time) * 1000
+
+    elapsed = (time.perf_counter() - start_time) * 1000
     successful = sum(1 for r in results if r.get('status') == 'healthy')
     
     print(f"  Completed: {successful}/10 checks")
