@@ -134,11 +134,11 @@ curl -X POST http://localhost:8001/api/langgraph/invoke \
 ### 📈 Data Enrichment
 - Company profile enhancement
 - Contact discovery and validation
-- **Email Discovery** (NEW ✅): Automatic email extraction from company websites
-  - Multi-pattern detection with smart prioritization
-  - Non-blocking web scraping (free)
-  - Hunter.io API fallback (coming in Sub-Phase 2B)
-  - ~80% success rate for contractor/SMB leads
+- **Free-First Enrichment** (NEW ✅): Cost-optimized contact discovery
+  - Website discovery via domain inference ($0)
+  - Email extraction from company websites ($0)
+  - Hunter.io fallback for ATL contacts ($0.01/domain)
+  - CLI tool: `python free_first_enrichment.py --csv input.csv`
 - Technographic analysis
 - Competitive intelligence
 

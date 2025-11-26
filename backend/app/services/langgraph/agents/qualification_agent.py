@@ -481,6 +481,25 @@ Respond with JSON only."""
         hunter_cost = 0.0
         discovered_contacts = []  # Initialize at function level to avoid UnboundLocalError
 
+        # ===== WEBSITE DISCOVERY (if missing) =====
+        # Many contractor CSVs don't have websites - find them via Google BEFORE validation
+        if not company_website:
+            logger.info(f"No website provided for {company_name}, attempting discovery...")
+            try:
+                discovery_service = await get_website_discovery_service()
+                discovered_website = await discovery_service.discover_website(
+                    company_name=company_name,
+                    industry=industry,
+                    state=""  # TODO: extract from address if available
+                )
+                if discovered_website:
+                    company_website = discovered_website
+                    logger.info(f"✅ Discovered website for {company_name}: {company_website}")
+                else:
+                    logger.info(f"Could not discover website for {company_name}")
+            except Exception as e:
+                logger.warning(f"Website discovery failed for {company_name}: {e}")
+
         # ===== WEBSITE VALIDATION (ICP Qualifier) =====
         # If no website or website is down, lead is not ICP
         if company_website:
@@ -767,7 +786,7 @@ Respond with JSON only."""
                     )
                     estimated_tokens = 100  # Rough estimate for qualification
                     savings_usd = (estimated_tokens / 1_000_000) * cost_per_m_tokens
-                    
+
                     await self.cost_optimizer.log_cache_hit(
                         cache_type="qualification",
                         cache_key=f"{company_name}:{industry or 'none'}",
@@ -775,8 +794,16 @@ Respond with JSON only."""
                         latency_saved_ms=cached_qualification["latency_ms"],
                         agent_name="qualification"
                     )
-                
-                return result, cached_qualification["latency_ms"], cached_qualification["metadata"]
+
+                # ===== CRITICAL FIX: Merge discovered contacts into cached metadata =====
+                # Contact discovery (Hunter.io, Apollo) runs BEFORE cache check
+                # So we must update the cached metadata with newly discovered contacts
+                cached_metadata = cached_qualification["metadata"].copy()
+                if discovered_contacts:
+                    cached_metadata["discovered_contacts"] = discovered_contacts
+                    logger.info(f"🔄 Cache hit - merged {len(discovered_contacts)} newly discovered contacts into cached result")
+
+                return result, cached_qualification["latency_ms"], cached_metadata
 
         # Format optional fields
         optional_fields = self._format_optional_fields(

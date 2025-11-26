@@ -113,6 +113,9 @@ test_*.csv
 # CSV Import Data Directory (runtime file storage)
 backend/data/
 
+# Performance reports (private)
+backend/performance_reports/
+
 # Coverage reports
 htmlcov/
 coverage.xml
@@ -121,3 +124,19 @@ backend/.env.backup-*
 
 # Serena MCP memory files
 .serena/
+
+# Batch import logs
+batch_import_log.txt
+*_import_log.txt
+
+# Temp diagnostic scripts (if recreated)
+backend/test_*.py
+backend/check_*.py
+backend/diagnose_*.py
+backend/verify_*.py
+backend/inspect_*.py
+backend/tim_*.py
+
+# Keep production scripts
+!backend/test_api.py
+!backend/test_streaming.py
