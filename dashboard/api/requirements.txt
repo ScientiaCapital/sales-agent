@@ -1,0 +1,11 @@
+# Vercel Python Serverless - Lightweight deps (~30MB)
+# Keep minimal to stay under 250MB limit
+
+# FastAPI for API handling
+fastapi==0.115.0
+
+# Pydantic for data validation
+pydantic==2.9.2
+
+# HTTPX for async HTTP (optional - for real DB later)
+httpx==0.27.2
