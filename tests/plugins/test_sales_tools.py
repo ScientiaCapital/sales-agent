@@ -22,53 +22,137 @@ class TestOutreachTool:
         assert defn.parameters["required"] == ["lead_id", "channel"]
         assert "lead_id" in defn.parameters["properties"]
         assert "channel" in defn.parameters["properties"]
-        assert "template" in defn.parameters["properties"]
+        assert "email" in defn.parameters["properties"]
+        assert "sequence" in defn.parameters["properties"]["channel"]["enum"]
 
     @pytest.mark.asyncio
     async def test_send_email_outreach(self):
-        """Can send email outreach to lead."""
+        """Can send email outreach via SendGrid."""
         from plugins.sales_tools.outreach import OutreachTool
 
         tool = OutreachTool()
 
-        with patch.object(tool, "_send_outreach") as mock_send:
+        with patch.object(tool, "_send_email") as mock_send:
             mock_send.return_value = {
                 "message_id": "msg-123",
                 "channel": "email",
                 "status": "sent",
+                "cost_usd": 0.00025,
             }
 
             result = await tool.run({
                 "lead_id": "lead-abc",
                 "channel": "email",
-                "template": "intro",
+                "email": "test@example.com",
+                "subject": "Quick question",
+                "custom_message": "Hello!",
             })
 
         assert result.success is True
         assert result.result["message_id"] == "msg-123"
         assert result.result["status"] == "sent"
+        assert result.result["cost_usd"] == 0.00025
 
     @pytest.mark.asyncio
     async def test_send_sms_outreach(self):
-        """Can send SMS outreach to lead."""
+        """Can send SMS outreach via Twilio."""
         from plugins.sales_tools.outreach import OutreachTool
 
         tool = OutreachTool()
 
-        with patch.object(tool, "_send_outreach") as mock_send:
+        with patch.object(tool, "_send_sms") as mock_send:
             mock_send.return_value = {
                 "message_id": "sms-456",
                 "channel": "sms",
-                "status": "queued",
+                "status": "sent",
+                "segments": 1,
+                "cost_usd": 0.0079,
             }
 
             result = await tool.run({
                 "lead_id": "lead-abc",
                 "channel": "sms",
+                "phone": "+15551234567",
+                "custom_message": "Hi there!",
             })
 
         assert result.success is True
         assert result.result["channel"] == "sms"
+        assert result.result["segments"] == 1
+
+    @pytest.mark.asyncio
+    async def test_enroll_sequence(self):
+        """Can enroll lead in cold-reach email sequence."""
+        from plugins.sales_tools.outreach import OutreachTool
+
+        tool = OutreachTool()
+
+        with patch.object(tool, "_enroll_sequence") as mock_enroll:
+            mock_enroll.return_value = {
+                "enrollment_id": "seq-abc123",
+                "channel": "sequence",
+                "sequence_name": "high_priority_solar",
+                "status": "enrolled",
+            }
+
+            result = await tool.run({
+                "lead_id": "lead-abc",
+                "channel": "sequence",
+                "email": "test@example.com",
+                "company_name": "ABC Solar",
+                "tier": "A",
+            })
+
+        assert result.success is True
+        assert result.result["status"] == "enrolled"
+        assert result.result["sequence_name"] == "high_priority_solar"
+
+    @pytest.mark.asyncio
+    async def test_queue_linkedin(self):
+        """LinkedIn queues for manual action."""
+        from plugins.sales_tools.outreach import OutreachTool
+
+        tool = OutreachTool()
+
+        result = await tool.run({
+            "lead_id": "lead-abc",
+            "channel": "linkedin",
+            "company_name": "ABC Solar",
+        })
+
+        assert result.success is True
+        assert result.result["status"] == "queued"
+        assert result.result["action_required"] == "manual"
+
+    @pytest.mark.asyncio
+    async def test_email_requires_email_field(self):
+        """Email channel requires email field."""
+        from plugins.sales_tools.outreach import OutreachTool
+
+        tool = OutreachTool()
+        result = await tool.run({
+            "lead_id": "lead-abc",
+            "channel": "email",
+            # Missing email field
+        })
+
+        assert result.success is False
+        assert "email" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_sms_requires_phone(self):
+        """SMS channel requires phone field."""
+        from plugins.sales_tools.outreach import OutreachTool
+
+        tool = OutreachTool()
+        result = await tool.run({
+            "lead_id": "lead-abc",
+            "channel": "sms",
+            # Missing phone field
+        })
+
+        assert result.success is False
+        assert "phone" in result.error.lower()
 
     @pytest.mark.asyncio
     async def test_invalid_channel_fails(self):
@@ -83,6 +167,30 @@ class TestOutreachTool:
 
         assert result.success is False
         assert "channel" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_service_unavailable_graceful(self):
+        """Handles service unavailable gracefully."""
+        from plugins.sales_tools.outreach import OutreachTool
+
+        tool = OutreachTool()
+
+        with patch.object(tool, "_send_email") as mock_send:
+            mock_send.return_value = {
+                "status": "service_unavailable",
+                "error": "DeliveryService not available",
+                "fallback": True,
+            }
+
+            result = await tool.run({
+                "lead_id": "lead-abc",
+                "channel": "email",
+                "email": "test@example.com",
+            })
+
+        # Should still return result, just with unavailable status
+        assert result.result["status"] == "service_unavailable"
+        assert result.result["fallback"] is True
 
 
 class TestQualifyTool:
