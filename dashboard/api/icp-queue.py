@@ -1,17 +1,20 @@
 """
 ICP Queue Endpoint for Sales-Agent Dashboard
 
-GET /api/icp-queue - Returns Q3/Q4 ICP leads from Tim's Smart Views + Max/Abdullah opportunity tracking
+GET /api/icp-queue - Returns Q3/Q4 ICP leads from Tim's Smart Views + AE opportunity tracking
 
 Philosophy: "Never lost, always aware" - surfaces leads that haven't been touched recently.
 
 Smart Views:
 - Tim's: Q3/Q4 SQLs, Q3/Q4 Leads, PPL
 - AE Tracking: Max, Abdullah, Levi, Jerry opportunities (active + lost)
+
+OPTIMIZED: Uses asyncio.gather for parallel API calls to avoid Vercel timeout.
 """
 
 import os
 import json
+import asyncio
 from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler
 import httpx
@@ -73,13 +76,12 @@ SMART_VIEWS = {
 }
 
 
-async def execute_saved_search(saved_search_id: str, limit: int = 50) -> list:
+async def execute_saved_search(client: httpx.AsyncClient, saved_search_id: str, limit: int = 10) -> list:
     """
     Execute a saved search and return matching leads.
-
     Uses Close's Advanced Filter API with the saved search's query.
     """
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    try:
         # First, get the saved search to get its query
         response = await client.get(
             f"{CLOSE_API_URL}/saved_search/{saved_search_id}/",
@@ -111,83 +113,27 @@ async def execute_saved_search(saved_search_id: str, limit: int = 50) -> list:
         )
 
         if response.status_code != 200:
-            logger.warning(f"Error executing search: {response.status_code} - {response.text[:200]}")
+            logger.warning(f"Error executing search: {response.status_code}")
             return []
 
         return response.json().get("data", [])
 
-
-async def get_lead_details(lead_id: str) -> dict:
-    """Get full lead details including contacts."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.get(
-            f"{CLOSE_API_URL}/lead/{lead_id}/",
-            auth=(CLOSE_API_KEY, ""),
-            params={"_fields": "id,display_name,status_label,contacts,date_created,date_updated,custom"}
-        )
-
-        if response.status_code != 200:
-            return None
-
-        return response.json()
+    except Exception as e:
+        logger.error(f"Error in execute_saved_search: {e}")
+        return []
 
 
-async def get_lead_last_activity(lead_id: str) -> dict:
-    """Get last activity date for a lead."""
-    activities = {"last_activity": None, "days_since": 999, "calls": 0, "emails": 0}
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        # Check last call
-        response = await client.get(
-            f"{CLOSE_API_URL}/activity/call/",
-            auth=(CLOSE_API_KEY, ""),
-            params={"lead_id": lead_id, "_limit": 1, "_order_by": "-date_created"}
-        )
-
-        if response.status_code == 200:
-            calls = response.json().get("data", [])
-            if calls:
-                activities["last_activity"] = calls[0].get("date_created")
-                activities["calls"] = len(calls)
-
-        # Check last email
-        response = await client.get(
-            f"{CLOSE_API_URL}/activity/email/",
-            auth=(CLOSE_API_KEY, ""),
-            params={"lead_id": lead_id, "_limit": 1, "_order_by": "-date_created"}
-        )
-
-        if response.status_code == 200:
-            emails = response.json().get("data", [])
-            if emails:
-                email_date = emails[0].get("date_created")
-                if not activities["last_activity"] or email_date > activities["last_activity"]:
-                    activities["last_activity"] = email_date
-                activities["emails"] = len(emails)
-
-    # Calculate days since
-    if activities["last_activity"]:
-        try:
-            last_dt = datetime.fromisoformat(activities["last_activity"].replace("Z", "+00:00"))
-            activities["days_since"] = (datetime.now(last_dt.tzinfo) - last_dt).days
-        except Exception:
-            pass
-
-    return activities
-
-
-async def get_ae_opportunities(user_id: str, user_name: str) -> dict:
+async def get_ae_opportunities(client: httpx.AsyncClient, user_id: str, user_name: str) -> dict:
     """Get opportunities for an AE (active, won, lost)."""
     result = {"name": user_name, "active": [], "won": [], "lost": [], "totals": {}}
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        # Get all opportunities for this user
+    try:
         response = await client.get(
             f"{CLOSE_API_URL}/opportunity/",
             auth=(CLOSE_API_KEY, ""),
             params={
                 "user_id": user_id,
-                "_limit": 200,
+                "_limit": 100,
             }
         )
 
@@ -210,9 +156,6 @@ async def get_ae_opportunities(user_id: str, user_name: str) -> dict:
                 "status_label": opp.get("status_label", ""),
                 "value": value,
                 "confidence": opp.get("confidence", 0),
-                "created_at": opp.get("date_created"),
-                "date_won": opp.get("date_won"),
-                "date_lost": opp.get("date_lost"),
             }
 
             if status == "active":
@@ -234,12 +177,65 @@ async def get_ae_opportunities(user_id: str, user_name: str) -> dict:
             "lost_value": round(lost_value, 2),
         }
 
+    except Exception as e:
+        logger.error(f"Error fetching opportunities for {user_name}: {e}")
+
     return result
 
 
-async def fetch_icp_queue(untouched_days: int = 7, limit: int = 25) -> dict:
+async def fetch_single_view(client: httpx.AsyncClient, view_key: str, view_config: dict, limit: int, untouched_days: int) -> tuple:
+    """Fetch a single smart view's leads."""
+    leads = await execute_saved_search(client, view_config["id"], limit=limit)
+
+    view_leads = []
+    for lead in leads:
+        # Extract data directly from search results (avoid extra API calls)
+        lead_id = lead.get("id")
+        contacts = lead.get("contacts", [])
+        primary_contact = contacts[0] if contacts else {}
+
+        # Use date_updated as proxy for activity (avoids extra API call)
+        date_updated = lead.get("date_updated", "")
+        days_since = 999
+        if date_updated:
+            try:
+                updated_dt = datetime.fromisoformat(date_updated.replace("Z", "+00:00"))
+                days_since = (datetime.now(updated_dt.tzinfo) - updated_dt).days
+            except Exception:
+                pass
+
+        lead_data = {
+            "id": lead_id,
+            "company_name": lead.get("display_name", "Unknown"),
+            "status": lead.get("status_label", ""),
+            "contact_name": primary_contact.get("name", ""),
+            "contact_phone": (primary_contact.get("phones", [{}])[0].get("phone", "")
+                              if primary_contact.get("phones") else ""),
+            "contact_email": (primary_contact.get("emails", [{}])[0].get("email", "")
+                              if primary_contact.get("emails") else ""),
+            "smart_view": view_config["name"],
+            "quarter": view_config["quarter"],
+            "priority": view_config["priority"],
+            "color": view_config["color"],
+            "days_since_activity": days_since,
+            "is_untouched": days_since >= untouched_days,
+        }
+        view_leads.append(lead_data)
+
+    return view_key, {
+        "name": view_config["name"],
+        "color": view_config["color"],
+        "priority": view_config["priority"],
+        "leads": view_leads,
+        "total": len(view_leads),
+        "untouched": len([l for l in view_leads if l["is_untouched"]]),
+    }
+
+
+async def fetch_icp_queue(untouched_days: int = 7, limit: int = 10) -> dict:
     """
     Fetch ICP leads from Tim's smart views + AE opportunity tracking.
+    OPTIMIZED: Uses parallel requests to avoid timeout.
     """
     if not CLOSE_API_KEY:
         logger.warning("Close API key not configured")
@@ -256,71 +252,52 @@ async def fetch_icp_queue(untouched_days: int = 7, limit: int = 25) -> dict:
         },
     }
 
-    # 1. Fetch Tim's Smart Views
-    for view_key, view_config in SMART_VIEWS.items():
-        logger.info(f"Fetching smart view: {view_config['name']}")
+    async with httpx.AsyncClient(timeout=25.0) as client:
+        # Parallel fetch: all smart views + all AE opportunities at once
+        tasks = []
 
-        leads = await execute_saved_search(view_config["id"], limit=limit)
-        logger.info(f"  Found {len(leads)} leads")
+        # Smart view tasks
+        for view_key, view_config in SMART_VIEWS.items():
+            tasks.append(fetch_single_view(client, view_key, view_config, limit, untouched_days))
 
-        view_leads = []
-        for lead in leads:
-            lead_id = lead.get("id")
+        # AE opportunity tasks
+        ae_keys = ["max", "abdullah", "levi", "jerry"]
+        for ae_key in ae_keys:
+            user_id = USERS.get(ae_key)
+            if user_id:
+                tasks.append(get_ae_opportunities(client, user_id, ae_key.title()))
 
-            # Get full lead details
-            lead_details = await get_lead_details(lead_id) if lead_id else None
-            if not lead_details:
-                lead_details = lead
+        # Execute all in parallel
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-            # Get activity info
-            activity = await get_lead_last_activity(lead_id) if lead_id else {"days_since": 999}
+        # Process smart view results (first 5)
+        for i, res in enumerate(results[:5]):
+            if isinstance(res, Exception):
+                logger.error(f"Smart view task failed: {res}")
+                continue
+            if isinstance(res, tuple):
+                view_key, view_data = res
+                result["smart_views"][view_key] = view_data
+                result["summary"]["total_leads"] += view_data["total"]
 
-            # Extract primary contact
-            contacts = lead_details.get("contacts", [])
-            primary_contact = contacts[0] if contacts else {}
+                # Add untouched leads
+                for lead in view_data["leads"]:
+                    if lead["is_untouched"]:
+                        result["untouched_leads"].append(lead)
+                        result["summary"]["untouched_count"] += 1
 
-            lead_data = {
-                "id": lead_id,
-                "company_name": lead_details.get("display_name", lead.get("display_name", "Unknown")),
-                "status": lead_details.get("status_label", lead.get("status_label", "")),
-                "contact_name": primary_contact.get("name", ""),
-                "contact_phone": (primary_contact.get("phones", [{}])[0].get("phone", "")
-                                  if primary_contact.get("phones") else ""),
-                "contact_email": (primary_contact.get("emails", [{}])[0].get("email", "")
-                                  if primary_contact.get("emails") else ""),
-                "smart_view": view_config["name"],
-                "quarter": view_config["quarter"],
-                "priority": view_config["priority"],
-                "color": view_config["color"],
-                "days_since_activity": activity["days_since"],
-                "is_untouched": activity["days_since"] >= untouched_days,
-                "last_activity": activity.get("last_activity"),
-            }
+                # Update quarter count
+                quarter = SMART_VIEWS[view_key]["quarter"]
+                result["summary"]["by_quarter"][quarter] += view_data["total"]
 
-            view_leads.append(lead_data)
-
-            if lead_data["is_untouched"]:
-                result["untouched_leads"].append(lead_data)
-                result["summary"]["untouched_count"] += 1
-
-        result["smart_views"][view_key] = {
-            "name": view_config["name"],
-            "color": view_config["color"],
-            "priority": view_config["priority"],
-            "leads": view_leads,
-            "total": len(view_leads),
-            "untouched": len([l for l in view_leads if l["is_untouched"]]),
-        }
-
-        result["summary"]["total_leads"] += len(view_leads)
-        result["summary"]["by_quarter"][view_config["quarter"]] += len(view_leads)
-
-    # 2. Fetch AE Opportunities (Max, Abdullah, Levi, Jerry)
-    for ae_key in ["max", "abdullah", "levi", "jerry"]:
-        user_id = USERS.get(ae_key)
-        if user_id:
-            logger.info(f"Fetching opportunities for {ae_key}")
-            result["ae_tracking"][ae_key] = await get_ae_opportunities(user_id, ae_key.title())
+        # Process AE opportunity results (remaining)
+        for i, res in enumerate(results[5:]):
+            if isinstance(res, Exception):
+                logger.error(f"AE opportunity task failed: {res}")
+                continue
+            if isinstance(res, dict) and "name" in res:
+                ae_key = ae_keys[i]
+                result["ae_tracking"][ae_key] = res
 
     # Sort untouched leads by priority then days (most stale first)
     result["untouched_leads"].sort(
@@ -338,7 +315,7 @@ class handler(BaseHTTPRequestHandler):
         import asyncio
 
         untouched_days = 7
-        limit = 25
+        limit = 10  # Reduced default for faster response
 
         if "?" in self.path:
             query = self.path.split("?")[1]
@@ -346,7 +323,7 @@ class handler(BaseHTTPRequestHandler):
                 if param.startswith("days="):
                     untouched_days = int(param.split("=")[1])
                 elif param.startswith("limit="):
-                    limit = int(param.split("=")[1])
+                    limit = min(int(param.split("=")[1]), 15)  # Cap at 15
 
         try:
             loop = asyncio.new_event_loop()
