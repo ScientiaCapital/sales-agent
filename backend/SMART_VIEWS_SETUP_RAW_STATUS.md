@@ -1,5 +1,19 @@
 # Smart Views Setup - Using Raw Status
 
+## Current Smart Views (As of Nov 27, 2025)
+
+Tim Kipper's active smart views (queried from Close CRM API):
+
+| # | Name | ID | Created | Shared |
+|---|------|-----|---------|--------|
+| 1 | 3rd_QTR_SQLs_Book/Rebook | save_m5RDRHUNY8t1CvsW4wQBa7iP5z8FbG3OYnR0exZdNr2 | 2025-11-18 | No |
+| 2 | 4th_QTR_SQLs_Book/Rebook | save_d01lfNavD2kkrb0UACDzNNOZ6addJmu4kLLfulF3Uck | 2025-11-18 | No |
+| 3 | 3rd_QTR_Leads | save_1rEzQOws9l2joCyz6AbcJj6ly2NHLCcbBiAV2qEVoFM | 2025-11-17 | Yes |
+| 4 | 4th_QTR_Leads | save_fxo5NkMWcjPAU2M7WCdczloeHoqsAGPHzI7loFdq7Vg | 2025-11-17 | Yes |
+| 5 | PPL | save_ALEPunhYOfLtftHXoypnT05GU1eMawSJtyb6e7NJQNx | 2025-11-17 | Yes |
+
+---
+
 ## Overview
 ALL leads are created with status = "Raw". Smart views filter **within** Raw leads based on:
 - Custom fields (is_atl, qualification_score)
@@ -8,10 +22,19 @@ ALL leads are created with status = "Raw". Smart views filter **within** Raw lea
 
 ---
 
-## The 4 Smart Views
+<!--
+=============================================================================
+OLD SMART VIEWS - ARCHIVED (DELETED FROM CLOSE CRM)
+=============================================================================
+These smart views were accidentally deleted and could not be recovered.
+Keeping this documentation for reference if we want to recreate them later.
+=============================================================================
+
+## The 4 Smart Views (ARCHIVED - NO LONGER EXIST)
 
 ### 1. 🔥 Hot ATL Leads (Priority)
 **Purpose**: High-scoring decision-makers for immediate calling
+**Status**: ❌ DELETED
 
 **Filters**:
 ```
@@ -34,6 +57,7 @@ AND Created date >= Last 7 days
 
 ### 2. ⭐ Validated ATL Leads
 **Purpose**: Decision-makers with lower scores, still valuable
+**Status**: ❌ DELETED
 
 **Filters**:
 ```
@@ -54,6 +78,7 @@ AND Created by = Tim Kipper
 
 ### 3. 📋 BTL Leads (Lower Priority)
 **Purpose**: Individual contributors, not decision-makers
+**Status**: ❌ DELETED
 
 **Filters**:
 ```
@@ -73,6 +98,7 @@ AND Created by = Tim Kipper
 
 ### 4. 🔥 High-Intent ATL Contacts (3+ Opens)
 **Purpose**: Hot prospects showing active email engagement
+**Status**: ❌ DELETED
 
 **Filters**:
 ```
@@ -81,6 +107,7 @@ AND Custom field "High Intent Flag" = "Yes"
 AND (Description contains "🔥 Hot ATL" OR Description contains "⭐ Validated ATL")
 AND Created by = Tim Kipper
 ```
+-->
 
 ---
 
