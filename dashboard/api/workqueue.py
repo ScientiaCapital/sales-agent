@@ -1,13 +1,13 @@
 """
 Work Queue Endpoint for Sales-Agent Dashboard
 
-GET /api/workqueue - Returns BDR daily task queue
+GET /api/workqueue - Returns BDR daily task queue from Star Schema
 
-Uses Supabase REST API (PostgREST) for serverless-compatible data fetching.
+Uses mv_bdr_work_queue materialized view for pre-computed task priorities.
 """
 
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import httpx
@@ -18,28 +18,20 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Supabase REST API configuration (strip to handle Vercel env var newlines)
+# Supabase REST API configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
-
-# Task type configuration
-TASK_CONFIG = {
-    "new_lead": {"icon": "user-plus", "color": "#3B82F6", "label": "New Lead", "priority": 1},
-    "follow_up": {"icon": "phone", "color": "#10B981", "label": "Follow Up", "priority": 2},
-    "callback": {"icon": "phone-incoming", "color": "#F59E0B", "label": "Call Back", "priority": 3},
-    "no_answer": {"icon": "phone-missed", "color": "#EF4444", "label": "No Answer", "priority": 4},
-    "send_email": {"icon": "mail", "color": "#8B5CF6", "label": "Send Email", "priority": 5},
-}
 
 
 async def fetch_work_queue(limit: int = 25) -> dict | None:
     """
-    Fetch BDR work queue from lead_current_state.
+    Fetch BDR work queue from mv_bdr_work_queue materialized view.
 
-    Prioritizes:
-    1. Hot ATL leads not yet contacted
-    2. Leads needing follow-up (last contact > 24h ago)
-    3. Qualified leads without outreach
+    The view pre-computes:
+    - Recommended actions (9 types: CALL NOW, First Call, Follow-up, etc.)
+    - Priority ranking (hot intent > new ATL > stale > default)
+    - Best contact info (name, phone, email, LinkedIn)
+    - Close CRM direct links
     """
     if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
         logger.warning("Supabase credentials not configured")
@@ -53,115 +45,85 @@ async def fetch_work_queue(limit: int = 25) -> dict | None:
 
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
+            # Single query to the materialized view - already prioritized!
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/mv_bdr_work_queue",
+                headers=headers,
+                params={
+                    "select": "*",
+                    "order": "rank.asc",
+                    "limit": str(limit)
+                }
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Supabase error: {response.status_code} - {response.text}")
+                return None
+
+            rows = response.json()
+
+            # Transform to frontend format
             tasks = []
+            for row in rows:
+                action = row.get("recommended_action", "")
 
-            # 1. New qualified leads not yet contacted (in_close with no outreach)
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/lead_current_state",
-                headers=headers,
-                params={
-                    "current_stage": "eq.in_close",
-                    "total_calls": "eq.0",
-                    "total_emails": "eq.0",
-                    "select": "id,company_name,qualification_score,is_atl,close_status,created_at",
-                    "order": "qualification_score.desc.nullslast",
-                    "limit": "10"
-                }
-            )
+                # Determine task type and styling from recommended action
+                if "CALL NOW" in action:
+                    task_type, icon, color = "hot_intent", "flame", "#EF4444"
+                elif "First Call" in action:
+                    task_type, icon, color = "new_lead", "phone", "#3B82F6"
+                elif "They Read Your Email" in action:
+                    task_type, icon, color = "email_opened", "mail-open", "#10B981"
+                elif "Follow-up Email" in action:
+                    task_type, icon, color = "follow_up", "mail", "#8B5CF6"
+                elif "LinkedIn" in action:
+                    task_type, icon, color = "linkedin", "linkedin", "#0077B5"
+                elif "Warm Handoff" in action:
+                    task_type, icon, color = "handoff", "user-check", "#F59E0B"
+                elif "Re-enrich" in action:
+                    task_type, icon, color = "reenrich", "refresh-cw", "#6366F1"
+                elif "Research" in action:
+                    task_type, icon, color = "research", "search", "#64748B"
+                else:
+                    task_type, icon, color = "review", "clipboard", "#94A3B8"
 
-            if response.status_code == 200:
-                for lead in response.json():
-                    config = TASK_CONFIG["new_lead"]
-                    tasks.append({
-                        "id": f"new-{lead.get('id')}",
-                        "task_type": "new_lead",
-                        "label": config["label"],
-                        "company_name": lead.get("company_name"),
-                        "score": lead.get("qualification_score"),
-                        "is_atl": lead.get("is_atl", False),
-                        "close_status": lead.get("close_status"),
-                        "icon": config["icon"],
-                        "color": config["color"],
-                        "priority": config["priority"],
-                        "due": "Today",
-                        "created_at": lead.get("created_at"),
-                    })
+                tasks.append({
+                    "id": str(row.get("company_id", "")),
+                    "rank": row.get("rank"),
+                    "task_type": task_type,
+                    "recommended_action": row.get("recommended_action"),
+                    "action_reason": row.get("action_reason"),
+                    "company_name": row.get("company_name"),
+                    "icp_tier": row.get("icp_tier"),
+                    "icp_score": row.get("icp_score"),
+                    "total_touches": row.get("total_touches", 0),
+                    "days_since_activity": row.get("days_since_activity"),
+                    "days_in_pipeline": row.get("days_in_pipeline"),
+                    "opportunity_value": float(row.get("opportunity_value")) if row.get("opportunity_value") else None,
+                    # Best contact info
+                    "contact_name": row.get("best_contact_name"),
+                    "contact_phone": row.get("best_contact_phone"),
+                    "contact_email": row.get("best_contact_email"),
+                    "contact_title": row.get("best_contact_title"),
+                    "contact_linkedin": row.get("best_contact_linkedin"),
+                    # CRM link
+                    "close_url": row.get("close_lead_url"),
+                    # UI styling
+                    "icon": icon,
+                    "color": color,
+                })
 
-            # 2. Leads needing follow-up (contacted > 24h ago, not meeting_booked)
-            day_ago = (datetime.utcnow() - timedelta(days=1)).isoformat()
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/lead_current_state",
-                headers=headers,
-                params={
-                    "current_stage": "eq.contacted",
-                    "last_contacted_at": f"lt.{day_ago}",
-                    "select": "id,company_name,qualification_score,is_atl,last_contacted_at,last_contact_method",
-                    "order": "last_contacted_at.asc",
-                    "limit": "10"
-                }
-            )
-
-            if response.status_code == 200:
-                for lead in response.json():
-                    config = TASK_CONFIG["follow_up"]
-                    tasks.append({
-                        "id": f"followup-{lead.get('id')}",
-                        "task_type": "follow_up",
-                        "label": config["label"],
-                        "company_name": lead.get("company_name"),
-                        "score": lead.get("qualification_score"),
-                        "is_atl": lead.get("is_atl", False),
-                        "last_contact": lead.get("last_contact_method"),
-                        "icon": config["icon"],
-                        "color": config["color"],
-                        "priority": config["priority"],
-                        "due": "Overdue",
-                        "created_at": lead.get("last_contacted_at"),
-                    })
-
-            # 3. Qualified leads with attention flag
-            response = await client.get(
-                f"{SUPABASE_URL}/rest/v1/lead_current_state",
-                headers=headers,
-                params={
-                    "needs_attention": "eq.true",
-                    "select": "id,company_name,qualification_score,is_atl,attention_reason,current_stage",
-                    "order": "qualification_score.desc.nullslast",
-                    "limit": "5"
-                }
-            )
-
-            if response.status_code == 200:
-                for lead in response.json():
-                    config = TASK_CONFIG["callback"]
-                    tasks.append({
-                        "id": f"attention-{lead.get('id')}",
-                        "task_type": "callback",
-                        "label": lead.get("attention_reason", "Needs Attention"),
-                        "company_name": lead.get("company_name"),
-                        "score": lead.get("qualification_score"),
-                        "is_atl": lead.get("is_atl", False),
-                        "stage": lead.get("current_stage"),
-                        "icon": config["icon"],
-                        "color": config["color"],
-                        "priority": config["priority"],
-                        "due": "ASAP",
-                        "created_at": None,
-                    })
-
-            # Sort by priority
-            tasks.sort(key=lambda x: x.get("priority", 99))
-
-            # Summary counts
+            # Summary counts by action type
             summary = {
                 "total": len(tasks),
+                "hot_intent": len([t for t in tasks if t["task_type"] == "hot_intent"]),
                 "new_leads": len([t for t in tasks if t["task_type"] == "new_lead"]),
-                "follow_ups": len([t for t in tasks if t["task_type"] == "follow_up"]),
-                "callbacks": len([t for t in tasks if t["task_type"] == "callback"]),
+                "follow_ups": len([t for t in tasks if t["task_type"] in ("follow_up", "email_opened")]),
+                "research": len([t for t in tasks if t["task_type"] in ("research", "reenrich")]),
             }
 
             return {
-                "tasks": tasks[:limit],
+                "tasks": tasks,
                 "summary": summary,
             }
 
@@ -174,55 +136,61 @@ def get_mock_workqueue() -> dict:
     """Return mock work queue for development."""
     tasks = [
         {
-            "id": "new-1",
-            "task_type": "new_lead",
-            "label": "New Lead",
+            "id": "mock-1",
+            "rank": 1,
+            "task_type": "hot_intent",
+            "recommended_action": "🔥 CALL NOW - Hot Intent",
+            "action_reason": "5 email opens, no call in 3 days",
             "company_name": "AUTOMATED CONTROL LOGIC",
-            "score": 85,
-            "is_atl": True,
-            "close_status": "Hot ATL",
-            "icon": "user-plus",
-            "color": "#3B82F6",
-            "priority": 1,
-            "due": "Today",
+            "icp_tier": "GOLD",
+            "icp_score": 85,
+            "total_touches": 4,
+            "days_since_activity": 3,
+            "contact_name": "John Smith",
+            "contact_phone": "(555) 123-4567",
+            "contact_email": "john@aclsystems.com",
+            "contact_title": "VP Operations",
+            "close_url": "https://app.close.com/lead/lead_abc123",
+            "icon": "flame",
+            "color": "#EF4444",
         },
         {
-            "id": "new-2",
+            "id": "mock-2",
+            "rank": 2,
             "task_type": "new_lead",
-            "label": "New Lead",
+            "recommended_action": "📞 First Call - ATL Decision Maker",
+            "action_reason": "New qualified lead with ATL contact",
             "company_name": "BCM Controls",
-            "score": 78,
-            "is_atl": True,
-            "close_status": "Hot ATL",
-            "icon": "user-plus",
-            "color": "#3B82F6",
-            "priority": 1,
-            "due": "Today",
-        },
-        {
-            "id": "followup-1",
-            "task_type": "follow_up",
-            "label": "Follow Up",
-            "company_name": "Climate Systems Inc",
-            "score": 72,
-            "is_atl": True,
-            "last_contact": "call",
+            "icp_tier": "PLATINUM",
+            "icp_score": 92,
+            "total_touches": 0,
+            "days_since_activity": None,
+            "contact_name": "Sarah Johnson",
+            "contact_phone": "(555) 987-6543",
+            "contact_email": "sarah@bcmcontrols.com",
+            "contact_title": "CEO",
+            "close_url": "https://app.close.com/lead/lead_def456",
             "icon": "phone",
-            "color": "#10B981",
-            "priority": 2,
-            "due": "Overdue",
+            "color": "#3B82F6",
         },
         {
-            "id": "callback-1",
-            "task_type": "callback",
-            "label": "Requested callback",
-            "company_name": "Stark Tech Operating",
-            "score": 80,
-            "is_atl": True,
-            "icon": "phone-incoming",
-            "color": "#F59E0B",
-            "priority": 3,
-            "due": "ASAP",
+            "id": "mock-3",
+            "rank": 3,
+            "task_type": "research",
+            "recommended_action": "🔍 Research - Find Decision Maker",
+            "action_reason": "No ATL contacts found yet",
+            "company_name": "Climate Systems Inc",
+            "icp_tier": "GOLD",
+            "icp_score": 78,
+            "total_touches": 0,
+            "days_since_activity": None,
+            "contact_name": None,
+            "contact_phone": None,
+            "contact_email": None,
+            "contact_title": None,
+            "close_url": None,
+            "icon": "search",
+            "color": "#64748B",
         },
     ]
 
@@ -230,9 +198,10 @@ def get_mock_workqueue() -> dict:
         "tasks": tasks,
         "summary": {
             "total": len(tasks),
-            "new_leads": 2,
-            "follow_ups": 1,
-            "callbacks": 1,
+            "hot_intent": 1,
+            "new_leads": 1,
+            "follow_ups": 0,
+            "research": 1,
         }
     }
 
@@ -240,22 +209,24 @@ def get_mock_workqueue() -> dict:
 @app.get("/api/workqueue")
 async def get_workqueue(limit: int = 25) -> JSONResponse:
     """
-    Get BDR daily work queue.
+    Get BDR daily work queue from Star Schema.
 
     Query params:
     - limit: Max tasks to return (default 25)
 
-    Returns prioritized task list for Tim's daily workflow.
+    Returns prioritized task list with recommended actions for Tim's daily workflow.
+    Data comes from mv_bdr_work_queue materialized view (refreshes every 15 min).
     """
     # Try Supabase first
     data = await fetch_work_queue(limit)
 
     if data is not None:
-        logger.info("Using Supabase REST API work queue data")
+        logger.info(f"Work queue: {data['summary']['total']} tasks from mv_bdr_work_queue")
         return JSONResponse(
             content={
                 **data,
-                "data_source": "supabase_rest",
+                "data_source": "star_schema",
+                "view": "mv_bdr_work_queue",
                 "updated_at": datetime.utcnow().isoformat()
             },
             headers={

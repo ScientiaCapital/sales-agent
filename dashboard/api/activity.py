@@ -1,119 +1,172 @@
 """
 Activity Endpoint for Sales-Agent Dashboard
 
-GET /api/activity - Returns recent audit trail events
+GET /api/activity - Returns recent audit trail events from lead_audit_log
 """
 
+import os
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+import httpx
+import logging
 import random
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Supabase REST API configuration
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+
 
 class AuditEvent(BaseModel):
-    id: int
+    id: str
     company_name: str
     event_type: str
+    stage: str
     event_details: Dict[str, Any]
     created_at: str
     session_id: Optional[str] = None
+    latency_ms: Optional[int] = None
+    cost_usd: Optional[float] = None
 
 
-# Event types from lead_audit.py model
-EVENT_TYPES = [
-    "lead_imported",
-    "lead_qualified",
-    "crm_match_found",
-    "lead_enriched",
-    "atl_contact_found",
-    "dedup_create_new",
-    "dedup_skip_duplicate",
-    "lead_exported",
-]
+# Event type icons and colors for UI
+EVENT_CONFIG = {
+    "lead_imported": {"icon": "download", "color": "#3B82F6", "label": "Imported"},
+    "lead_qualified": {"icon": "check-circle", "color": "#10B981", "label": "Qualified"},
+    "crm_match_found": {"icon": "link", "color": "#8B5CF6", "label": "CRM Match"},
+    "lead_enriched": {"icon": "sparkles", "color": "#F59E0B", "label": "Enriched"},
+    "atl_contact_found": {"icon": "user-check", "color": "#10B981", "label": "ATL Found"},
+    "dedup_create_new": {"icon": "plus-circle", "color": "#3B82F6", "label": "New Lead"},
+    "dedup_add_contact": {"icon": "user-plus", "color": "#6366F1", "label": "Added Contact"},
+    "dedup_skip_duplicate": {"icon": "x-circle", "color": "#EF4444", "label": "Skipped (Dup)"},
+    "dedup_update_existing": {"icon": "refresh-cw", "color": "#F59E0B", "label": "Updated"},
+    "lead_exported": {"icon": "upload", "color": "#10B981", "label": "Exported"},
+    "status_changed": {"icon": "arrow-right", "color": "#6366F1", "label": "Status Changed"},
+}
 
-# Sample company names for mock data
-COMPANIES = [
+
+async def fetch_activity(hours: int, limit: int) -> list | None:
+    """
+    Fetch recent activity from lead_audit_log table.
+    """
+    if not SUPABASE_URL or not SUPABASE_SERVICE_KEY:
+        logger.warning("Supabase credentials not configured")
+        return None
+
+    headers = {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+    # Calculate cutoff time
+    cutoff = (datetime.utcnow() - timedelta(hours=hours)).isoformat()
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{SUPABASE_URL}/rest/v1/lead_audit_log",
+                headers=headers,
+                params={
+                    "select": "id,company_name,event_type,stage,decision_data,created_at,session_id,latency_ms,cost_usd",
+                    "created_at": f"gte.{cutoff}",
+                    "order": "created_at.desc",
+                    "limit": str(limit)
+                }
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Supabase error: {response.status_code} - {response.text}")
+                return None
+
+            rows = response.json()
+
+            # Transform to frontend format
+            events = []
+            for row in rows:
+                event_type = row.get("event_type", "unknown")
+                config = EVENT_CONFIG.get(event_type, {"icon": "activity", "color": "#94A3B8", "label": event_type})
+
+                events.append({
+                    "id": str(row.get("id", "")),
+                    "company_name": row.get("company_name"),
+                    "event_type": event_type,
+                    "stage": row.get("stage"),
+                    "event_details": row.get("decision_data", {}),
+                    "created_at": row.get("created_at"),
+                    "session_id": row.get("session_id"),
+                    "latency_ms": row.get("latency_ms"),
+                    "cost_usd": float(row["cost_usd"]) if row.get("cost_usd") else None,
+                    # UI config
+                    "icon": config["icon"],
+                    "color": config["color"],
+                    "label": config["label"],
+                })
+
+            return events
+
+    except Exception as e:
+        logger.error(f"Supabase REST API error: {e}")
+        return None
+
+
+# Mock data for when Supabase is unavailable
+MOCK_COMPANIES = [
     "ABC HVAC Services",
     "Brower Mechanical Inc",
     "Elite Plumbing & Heating",
     "GreenTech Solar Solutions",
     "Metro Mechanical Contractors",
-    "Pacific Coast HVAC",
-    "Premier Energy Systems",
-    "Quality Air & Heat",
-    "SunPower Installations",
-    "TechServ Mechanical",
 ]
 
 
-def generate_mock_event(event_id: int, minutes_ago: int) -> AuditEvent:
-    """Generate a realistic mock audit event."""
-    event_type = random.choice(EVENT_TYPES)
-    company = random.choice(COMPANIES)
+def get_mock_activity(hours: int, limit: int) -> list:
+    """Return mock activity for development."""
+    events = []
     now = datetime.utcnow()
+    max_minutes = hours * 60
 
-    # Event-specific details
-    details: Dict[str, Any] = {}
+    event_types = list(EVENT_CONFIG.keys())
 
-    if event_type == "lead_imported":
-        details = {
-            "source": random.choice(["csv_import", "dealer_scraper", "manual"]),
-            "batch_size": random.randint(1, 50),
-        }
-    elif event_type == "lead_qualified":
-        score = random.randint(45, 95)
-        details = {
-            "score": score,
-            "tier": "hot_atl" if score >= 70 else "validated_atl" if score >= 50 else "btl",
-            "latency_ms": random.randint(500, 900),
-            "model": "cerebras-llama3.1-8b",
-        }
-    elif event_type == "crm_match_found":
-        details = {
-            "close_lead_id": f"lead_{random.randint(10000, 99999)}",
-            "match_confidence": round(random.uniform(0.85, 0.99), 2),
-        }
-    elif event_type == "lead_enriched":
-        details = {
-            "contacts_found": random.randint(1, 8),
-            "source": random.choice(["hunter.io", "apollo", "website_scrape"]),
-            "cost_usd": round(random.uniform(0.01, 0.03), 3),
-        }
-    elif event_type == "atl_contact_found":
-        details = {
-            "contact_name": f"{random.choice(['John', 'Sarah', 'Mike', 'Lisa'])} {random.choice(['Smith', 'Johnson', 'Williams', 'Brown'])}",
-            "title": random.choice(["CEO", "President", "VP Operations", "Owner", "Director"]),
-            "email_found": random.choice([True, True, True, False]),
-        }
-    elif event_type == "dedup_create_new":
-        details = {
-            "recommendation": "create_new",
-            "highest_match": round(random.uniform(0.45, 0.84), 2),
-        }
-    elif event_type == "dedup_skip_duplicate":
-        details = {
-            "recommendation": "skip_duplicate",
-            "match_confidence": round(random.uniform(0.85, 0.98), 2),
-            "existing_lead_id": f"lead_{random.randint(10000, 99999)}",
-        }
-    elif event_type == "lead_exported":
-        details = {
-            "output_file": f"enriched_leads_{now.strftime('%Y%m%d_%H%M')}.csv",
-            "leads_count": random.randint(10, 150),
-        }
+    for i in range(min(limit, 10)):
+        minutes_ago = random.randint(1, max_minutes)
+        event_type = random.choice(event_types)
+        config = EVENT_CONFIG[event_type]
 
-    return AuditEvent(
-        id=event_id,
-        company_name=company,
-        event_type=event_type,
-        event_details=details,
-        created_at=(now - timedelta(minutes=minutes_ago)).isoformat(),
-        session_id=f"session_{random.randint(1000, 9999)}" if random.random() > 0.3 else None
-    )
+        # Generate event-specific details
+        details = {}
+        if event_type == "lead_qualified":
+            score = random.randint(50, 95)
+            details = {"score": score, "tier": "GOLD" if score >= 70 else "SILVER", "model": "cerebras"}
+        elif event_type == "lead_enriched":
+            details = {"contacts_found": random.randint(1, 5), "source": random.choice(["hunter", "apollo"])}
+        elif event_type == "dedup_skip_duplicate":
+            details = {"match_confidence": round(random.uniform(0.85, 0.98), 2)}
+
+        events.append({
+            "id": f"mock-{i}",
+            "company_name": random.choice(MOCK_COMPANIES),
+            "event_type": event_type,
+            "stage": random.choice(["import", "qualification", "enrichment", "export"]),
+            "event_details": details,
+            "created_at": (now - timedelta(minutes=minutes_ago)).isoformat(),
+            "session_id": f"session_{random.randint(1000, 9999)}",
+            "latency_ms": random.randint(100, 1500),
+            "cost_usd": round(random.uniform(0.001, 0.03), 4) if random.random() > 0.5 else None,
+            "icon": config["icon"],
+            "color": config["color"],
+            "label": config["label"],
+        })
+
+    events.sort(key=lambda e: e["created_at"], reverse=True)
+    return events
 
 
 @app.get("/api/activity")
@@ -122,31 +175,46 @@ async def get_activity(
     limit: int = Query(default=10, ge=1, le=100)
 ) -> JSONResponse:
     """
-    Get recent audit trail activity.
+    Get recent audit trail activity from lead_audit_log.
 
     Args:
         hours: Number of hours to look back (default: 24, max: 168)
         limit: Maximum events to return (default: 10, max: 100)
 
-    For MVP: Returns realistic mock data based on sales-agent audit trail.
-    Production: Will query lead_audit_log table.
+    Returns events from the sales-agent pipeline showing lead processing activity.
     """
-    events = []
+    # Try Supabase first
+    events = await fetch_activity(hours, limit)
 
-    # Generate events distributed over the time period
-    max_minutes = hours * 60
-    for i in range(limit):
-        minutes_ago = random.randint(1, max_minutes)
-        event = generate_mock_event(event_id=i + 1, minutes_ago=minutes_ago)
-        events.append(event)
+    if events is not None:
+        logger.info(f"Activity: {len(events)} events from lead_audit_log")
+        return JSONResponse(
+            content={
+                "events": events,
+                "count": len(events),
+                "hours_back": hours,
+                "data_source": "lead_audit_log",
+                "updated_at": datetime.utcnow().isoformat()
+            },
+            headers={
+                "Cache-Control": "public, max-age=60",
+                "Access-Control-Allow-Origin": "*",
+            }
+        )
 
-    # Sort by created_at descending (most recent first)
-    events.sort(key=lambda e: e.created_at, reverse=True)
-
+    # Fall back to mock
+    logger.info("Using mock activity data")
+    mock_events = get_mock_activity(hours, limit)
     return JSONResponse(
-        content=[e.model_dump() for e in events],
+        content={
+            "events": mock_events,
+            "count": len(mock_events),
+            "hours_back": hours,
+            "data_source": "mock",
+            "updated_at": datetime.utcnow().isoformat()
+        },
         headers={
-            "Cache-Control": "public, max-age=60",  # 1 min cache
+            "Cache-Control": "public, max-age=60",
             "Access-Control-Allow-Origin": "*",
         }
     )
