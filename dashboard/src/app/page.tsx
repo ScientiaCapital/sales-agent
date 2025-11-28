@@ -12,9 +12,10 @@ import {
   BDRWorkQueue,
   ImportHistory,
   OutreachMetrics,
+  ICPQueue,
 } from "@/components/dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, ClipboardList } from "lucide-react";
+import { BarChart3, ClipboardList, Target } from "lucide-react";
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<"7d" | "mtd">("7d");
@@ -29,34 +30,34 @@ export default function Dashboard() {
         <TimePeriodToggle value={period} onChange={setPeriod} />
       </div>
 
-      {/* Tab Navigation: CEO/CTO View vs BDR View */}
-      <Tabs defaultValue="executive" className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="executive" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            CEO/CTO View
+      {/* Tab Navigation: CEO/CTO View vs BDR View vs ICP/Sales */}
+      <Tabs defaultValue="icp" className="space-y-6">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
+          <TabsTrigger value="icp" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            ICP Queue
           </TabsTrigger>
           <TabsTrigger value="bdr" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
             BDR View
           </TabsTrigger>
+          <TabsTrigger value="executive" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            CEO/CTO
+          </TabsTrigger>
         </TabsList>
 
-        {/* CEO/CTO Executive View */}
-        <TabsContent value="executive" className="space-y-6">
-          {/* Executive Summary - 4 KPI Cards */}
-          <ExecutiveSummary />
-
-          {/* Two Column Layout: New Lifecycle Funnel + Alerts */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <LeadLifecycleFunnel period={period} />
-            <NeedsAttentionQueue />
+        {/* ICP Queue - Tim's Smart Views + AE Pipeline */}
+        <TabsContent value="icp" className="space-y-6">
+          {/* Full Width: ICP Queue with Smart Views + AE Tracking */}
+          <div className="grid gap-6">
+            <ICPQueue />
           </div>
 
-          {/* Two Column Layout: Agent Health + Activity */}
+          {/* Outreach + Work Queue */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <AgentHealth />
-            <RecentActivity />
+            <OutreachMetrics period={period} />
+            <NeedsAttentionQueue />
           </div>
         </TabsContent>
 
@@ -77,6 +78,24 @@ export default function Dashboard() {
           {/* Bottom Row: Import History + Recent Activity */}
           <div className="grid gap-6 lg:grid-cols-2">
             <ImportHistory />
+            <RecentActivity />
+          </div>
+        </TabsContent>
+
+        {/* CEO/CTO Executive View */}
+        <TabsContent value="executive" className="space-y-6">
+          {/* Executive Summary - 4 KPI Cards */}
+          <ExecutiveSummary />
+
+          {/* Two Column Layout: New Lifecycle Funnel + Alerts */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <LeadLifecycleFunnel period={period} />
+            <NeedsAttentionQueue />
+          </div>
+
+          {/* Two Column Layout: Agent Health + Activity */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <AgentHealth />
             <RecentActivity />
           </div>
         </TabsContent>
