@@ -310,6 +310,86 @@ class QualificationAgent:
 
         return any(keyword in title_lower for keyword in atl_keywords)
 
+    def _classify_phones(
+        self,
+        contacts: List[Dict[str, Any]],
+        company_phone: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Classify phone numbers as direct_line vs main_office.
+
+        Logic:
+        1. If Hunter.io returns unique phone for contact → direct_line (highest value!)
+        2. If all contacts share same phone → main_office (receptionist likely)
+        3. If contact has no phone, fallback to company_phone → main_office
+
+        Args:
+            contacts: List of contact dicts with optional 'phone' field
+            company_phone: Fallback company phone from CSV import
+
+        Returns:
+            Contacts with 'phone_type' and 'phone_source' fields added
+        """
+        if not contacts:
+            return contacts
+
+        # Normalize phones for comparison
+        def normalize_phone(p: str) -> str:
+            if not p:
+                return ""
+            return re.sub(r'\D', '', str(p))[-10:]  # Last 10 digits
+
+        company_phone_normalized = normalize_phone(company_phone) if company_phone else ""
+
+        # Collect all phones from contacts (from Hunter.io)
+        hunter_phones = {}
+        for c in contacts:
+            phone = c.get('phone')
+            if phone:
+                normalized = normalize_phone(phone)
+                if normalized:
+                    hunter_phones[normalized] = hunter_phones.get(normalized, 0) + 1
+
+        # Determine if phones are shared (main_office) or unique (direct_line)
+        unique_phones = set(hunter_phones.keys())
+        total_with_phone = sum(hunter_phones.values())
+
+        for contact in contacts:
+            hunter_phone = contact.get('phone')
+            hunter_phone_normalized = normalize_phone(hunter_phone) if hunter_phone else ""
+
+            if hunter_phone_normalized:
+                # Hunter.io provided a phone - check if it's unique
+                if hunter_phones.get(hunter_phone_normalized, 0) == 1 and len(unique_phones) > 1:
+                    # Unique phone among contacts = likely direct line
+                    contact['phone_type'] = 'direct_line'
+                    contact['phone_source'] = 'hunter_io'
+                else:
+                    # Shared phone OR only phone found = main office
+                    contact['phone_type'] = 'main_office'
+                    contact['phone_source'] = 'hunter_io'
+            elif company_phone:
+                # No Hunter phone, fallback to company CSV phone
+                contact['phone'] = company_phone
+                contact['phone_type'] = 'main_office'
+                contact['phone_source'] = 'company_csv'
+            else:
+                # No phone available at all
+                contact['phone_type'] = None
+                contact['phone_source'] = None
+
+        # Log phone classification stats
+        direct_count = sum(1 for c in contacts if c.get('phone_type') == 'direct_line')
+        main_count = sum(1 for c in contacts if c.get('phone_type') == 'main_office')
+        no_phone = sum(1 for c in contacts if not c.get('phone_type'))
+
+        logger.info(
+            f"Phone classification: {direct_count} direct_line, {main_count} main_office, "
+            f"{no_phone} no_phone (total: {len(contacts)})"
+        )
+
+        return contacts
+
     def _build_chain(self):
         """
         Build LCEL chain: prompt | llm (free-form JSON generation)
@@ -446,6 +526,7 @@ Respond with JSON only."""
         contact_name: Optional[str] = None,
         contact_title: Optional[str] = None,
         contact_email: Optional[str] = None,
+        company_phone: Optional[str] = None,
         notes: Optional[str] = None
     ) -> tuple[LeadQualificationResult, int, Dict[str, Any]]:
         """
@@ -774,6 +855,11 @@ Respond with JSON only."""
                 btl_contacts = []
 
                 if all_contacts:
+                    # ===== PHONE CLASSIFICATION =====
+                    # Classify phones as direct_line (unique from Hunter.io) vs main_office (shared/fallback)
+                    # This helps voice agent know if they'll reach receptionist or direct contact
+                    all_contacts = self._classify_phones(all_contacts, company_phone)
+
                     discovered_contacts = all_contacts
                     extraction_method = "hunter_apollo_search"
                     hunter_cost = len(all_contacts) * 0.01  # Approximate cost
@@ -1170,6 +1256,7 @@ Respond with JSON only."""
                 "extraction_method": extraction_method,  # Track how email was discovered
                 "hunter_cost_usd": hunter_cost,  # Track Hunter.io API costs
                 "discovered_contacts": discovered_contacts,  # ALL ATL contacts from Hunter.io for enrichment/CRM
+                "discovered_website": company_website if company_website else None,  # Website for CSV writeback
                 "discovery_audit": discovery_audit.get_summary()  # Full contact discovery audit trail
             }
 

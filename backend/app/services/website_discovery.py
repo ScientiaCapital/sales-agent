@@ -5,10 +5,12 @@ Finds company websites when missing from CSV data.
 Uses domain inference + validation (Google scraping is broken due to JS rendering).
 
 Security: Includes SSRF protection to block requests to private IP ranges.
+Caching: Redis-based caching to avoid redundant searches (7-day TTL).
 """
 
 import httpx
 import ipaddress
+import os
 import re
 import socket
 from typing import Optional, List
@@ -17,6 +19,19 @@ from urllib.parse import urlparse, quote_plus
 from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)
+
+# Redis caching for discovered websites
+try:
+    import redis
+    REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    _redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+    REDIS_AVAILABLE = True
+except Exception as e:
+    REDIS_AVAILABLE = False
+    _redis_client = None
+    logger.warning(f"Redis not available for website caching: {e}")
+
+WEBSITE_CACHE_TTL = 7 * 24 * 60 * 60  # 7 days in seconds
 
 # =============================================================================
 # SSRF Protection (Ported from conductor-ai)
@@ -127,6 +142,37 @@ class WebsiteDiscoveryService:
         # Social domains - we'll extract but flag separately
         self.social_domains = {"facebook.com"}
 
+    def _get_cache_key(self, company_name: str) -> str:
+        """Generate cache key for website discovery."""
+        # Normalize company name for consistent caching
+        normalized = company_name.lower().strip()
+        return f"website:{normalized}"
+
+    def _get_cached_website(self, company_name: str) -> Optional[str]:
+        """Check Redis cache for previously discovered website."""
+        if not REDIS_AVAILABLE or not _redis_client:
+            return None
+        try:
+            cache_key = self._get_cache_key(company_name)
+            cached = _redis_client.get(cache_key)
+            if cached:
+                logger.info(f"🎯 Website cache HIT for {company_name}: {cached}")
+                return cached
+        except Exception as e:
+            logger.warning(f"Redis cache read error: {e}")
+        return None
+
+    def _cache_website(self, company_name: str, website: str) -> None:
+        """Cache discovered website in Redis (7-day TTL)."""
+        if not REDIS_AVAILABLE or not _redis_client:
+            return
+        try:
+            cache_key = self._get_cache_key(company_name)
+            _redis_client.setex(cache_key, WEBSITE_CACHE_TTL, website)
+            logger.info(f"💾 Cached website for {company_name}: {website} (TTL: 7 days)")
+        except Exception as e:
+            logger.warning(f"Redis cache write error: {e}")
+
     async def discover_website(
         self,
         company_name: str,
@@ -136,6 +182,8 @@ class WebsiteDiscoveryService:
     ) -> Optional[str]:
         """
         Discover company website via domain inference and search.
+
+        Uses Redis caching (7-day TTL) to avoid redundant searches.
 
         Args:
             company_name: Company name to search for
@@ -149,24 +197,32 @@ class WebsiteDiscoveryService:
         if not company_name:
             return None
 
+        # Check cache first
+        cached = self._get_cached_website(company_name)
+        if cached:
+            return cached
+
         logger.info(f"Searching for website: {company_name}")
 
         # Strategy 1: Try domain inference (fast, free)
         website = await self._infer_domain(company_name)
         if website:
             logger.info(f"✅ Found website via inference: {website}")
+            self._cache_website(company_name, website)
             return website
 
         # Strategy 2: Search DuckDuckGo (static HTML, actually works)
         website = await self._search_duckduckgo(company_name, industry)
         if website:
             logger.info(f"✅ Found website via DuckDuckGo: {website}")
+            self._cache_website(company_name, website)
             return website
 
         # Strategy 3: Try Facebook business page search
         facebook_url = await self._search_facebook_page(company_name, city, state)
         if facebook_url:
             logger.info(f"✅ Found Facebook page (no website): {facebook_url}")
+            self._cache_website(company_name, facebook_url)
             return facebook_url
 
         logger.info(f"Could not discover website for {company_name}")

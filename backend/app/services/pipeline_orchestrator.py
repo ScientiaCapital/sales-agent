@@ -41,11 +41,12 @@ from app.models.lead_audit import LeadAuditEventType, LeadAuditStage
 # These will be mocked in tests anyway
 def _lazy_import_agents():
     """Lazy import agents to avoid loading all dependencies during test collection"""
-    global QualificationAgent, EnrichmentAgent, DeduplicationService, CloseService, CloseDeduplicationService, ColdReachClient
+    global QualificationAgent, EnrichmentAgent, MarketingAgent, DeduplicationService, CloseService, CloseDeduplicationService, ColdReachClient
 
     if QualificationAgent is None:
         from app.services.langgraph.agents.qualification_agent import QualificationAgent as QA
         from app.services.langgraph.agents.enrichment_agent import EnrichmentAgent as EA
+        from app.services.langgraph.agents.marketing_agent import MarketingAgent as MA
         from app.services.crm.deduplication import DeduplicationEngine as DS
         from app.services.crm.close import CloseProvider as CS
         from app.services.crm.close_deduplication import CloseDeduplicationService as CDS
@@ -53,6 +54,7 @@ def _lazy_import_agents():
 
         QualificationAgent = QA
         EnrichmentAgent = EA
+        MarketingAgent = MA
         DeduplicationService = DS
         CloseService = CS
         CloseDeduplicationService = CDS
@@ -60,6 +62,7 @@ def _lazy_import_agents():
 
 QualificationAgent = None
 EnrichmentAgent = None
+MarketingAgent = None
 DeduplicationService = None
 CloseService = None
 CloseDeduplicationService = None
@@ -95,7 +98,15 @@ class PipelineOrchestrator:
         """
         _lazy_import_agents()  # Import agents only when needed
         self.qualification_agent = QualificationAgent()
-        self.enrichment_agent = EnrichmentAgent()
+        # Use DeepSeek via OpenRouter (90% cheaper, ANTHROPIC_API_KEY invalid)
+        self.enrichment_agent = EnrichmentAgent(
+            provider="openrouter",
+            model="deepseek/deepseek-chat"
+        )
+
+        # Marketing agent for email/SMS content generation
+        # Uses cost-optimized providers: Cerebras for email, DeepSeek for blog
+        self.marketing_agent = MarketingAgent()
 
         # Close CRM deduplication (checks Close API, not local database)
         close_api_key = os.getenv("CLOSE_API_KEY")
@@ -364,7 +375,34 @@ class PipelineOrchestrator:
                     # Don't fail the entire pipeline - continue to CRM creation
                     logger.warning(f"Enrichment failed for {lead_name}, continuing to CRM creation")
 
-            # Stage 4: Deduplication (final check before CRM creation)
+            # Stage 4: Marketing Content Generation (email, SMS for outreach)
+            # Only generate if we have contacts to reach out to
+            discovered_contacts = request.lead.get("_discovered_contacts", [])
+            if discovered_contacts and request.options.generate_marketing:
+                marketing_result = await self._run_marketing(request.lead)
+                stages["marketing"] = marketing_result
+
+                if marketing_result.status == "failed":
+                    logger.warning(f"Marketing content generation failed for {lead_name}, continuing pipeline")
+            else:
+                skip_reason = "No contacts discovered" if not discovered_contacts else "Marketing disabled"
+                stages["marketing"] = PipelineStageResult(
+                    status="skipped",
+                    latency_ms=0,
+                    cost_usd=0.0,
+                    output={"reason": skip_reason}
+                )
+                logger.info(f"Skipping marketing for {lead_name}: {skip_reason}")
+
+            # Stage 4.5: Staging (optional - stage marketing content to Close CRM as notes)
+            if request.options.stage_to_crm and request.lead.get("_marketing_content"):
+                staging_result = await self._run_staging(request.lead)
+                stages["staging"] = staging_result
+
+                if staging_result.status != "success" and staging_result.status != "skipped":
+                    logger.warning(f"Staging failed for {lead_name}, continuing pipeline")
+
+            # Stage 5: Deduplication (final check before CRM creation)
             dedup_result = await self._run_deduplication(request.lead)
             stages["deduplication"] = dedup_result
 
@@ -495,6 +533,7 @@ class PipelineOrchestrator:
                 contact_name=lead.get("contact_name"),
                 contact_email=lead.get("email") or lead.get("contact_email"),
                 contact_title=lead.get("contact_title"),
+                company_phone=lead.get("phone"),  # For phone type classification
                 notes=lead.get("notes")
             )
 
@@ -808,6 +847,190 @@ class PipelineOrchestrator:
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
             logger.error(f"Enrichment failed: {e}")
+            return PipelineStageResult(
+                status="failed",
+                latency_ms=latency_ms,
+                cost_usd=0.0,
+                error=str(e)
+            )
+
+    async def _run_marketing(self, lead: Dict[str, Any]) -> PipelineStageResult:
+        """Generate marketing content (email, SMS) using MarketingAgent"""
+        start = time.time()
+        try:
+            # Build campaign brief from lead data
+            company_name = lead.get("company_name") or lead.get("name") or "Unknown Company"
+            industry = lead.get("industry", "business services")
+            qualification_score = lead.get("qualification_score", 50)
+
+            # Get primary contact if available
+            contacts = lead.get("_discovered_contacts", [])
+            primary_contact = contacts[0] if contacts else {}
+            contact_name = primary_contact.get("name", "Decision Maker")
+            contact_title = primary_contact.get("title", "")
+
+            # Create personalized campaign brief
+            campaign_brief = f"""
+            Outreach for {company_name} in the {industry} industry.
+            Target contact: {contact_name}{f' ({contact_title})' if contact_title else ''}.
+            Lead quality: {'Hot' if qualification_score >= 70 else 'Warm' if qualification_score >= 50 else 'Cold'} prospect.
+            Goal: Schedule a discovery call to discuss solar/energy efficiency solutions.
+            """
+
+            target_audience = f"{contact_title or 'Decision makers'} at {industry} companies"
+
+            # Generate content using MarketingAgent
+            result = await self.marketing_agent.generate_campaign(
+                campaign_brief=campaign_brief.strip(),
+                target_audience=target_audience,
+                campaign_goals=["awareness", "meeting_request"]
+            )
+
+            latency_ms = int((time.time() - start) * 1000)
+
+            # Extract content for delivery
+            output = {
+                "email_content": result.email_content,
+                "email_subject": f"Quick question for {contact_name} at {company_name}",
+                "sms_content": result.social_content[:160] if result.social_content else None,  # SMS limit
+                "linkedin_content": result.linkedin_content,
+                "content_quality_score": result.content_quality_score,
+                "total_cost_usd": result.total_cost_usd
+            }
+
+            # Store in lead for later delivery
+            lead["_marketing_content"] = output
+
+            logger.info(f"Generated marketing content for {company_name}: email={bool(result.email_content)}, sms={bool(output['sms_content'])}")
+
+            return PipelineStageResult(
+                status="completed",
+                latency_ms=latency_ms,
+                cost_usd=result.total_cost_usd,
+                output=output
+            )
+
+        except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
+            logger.error(f"Marketing content generation failed: {e}")
+            return PipelineStageResult(
+                status="failed",
+                latency_ms=latency_ms,
+                cost_usd=0.0,
+                error=str(e)
+            )
+
+    async def _run_staging(self, lead: Dict[str, Any]) -> PipelineStageResult:
+        """
+        Stage marketing content to Close CRM as notes (NO actual email/SMS sends).
+
+        Creates a note in Close CRM containing the generated email and SMS content
+        for manual review and sending later.
+
+        Args:
+            lead: Lead data with _marketing_content populated by marketing stage
+
+        Returns:
+            PipelineStageResult with staging status and Close CRM activity ID
+        """
+        start = time.time()
+        company_name = lead.get("name") or lead.get("company_name", "Unknown")
+
+        try:
+            # Import staging service
+            from app.services.crm.close_staging import CloseStagingService
+
+            # Get marketing content
+            marketing_content = lead.get("_marketing_content", {})
+            if not marketing_content:
+                return PipelineStageResult(
+                    status="skipped",
+                    latency_ms=0,
+                    cost_usd=0.0,
+                    output={"reason": "No marketing content to stage"}
+                )
+
+            # Need a Close lead_id to stage to
+            # Check multiple possible locations for lead_id
+            close_lead_id = (
+                lead.get("close_lead_id") or
+                lead.get("_close_lead_id") or
+                lead.get("lead_id")
+            )
+
+            if not close_lead_id:
+                # If no lead_id, we can't stage - log warning and skip
+                logger.warning(f"No Close CRM lead_id for {company_name} - cannot stage content")
+                return PipelineStageResult(
+                    status="skipped",
+                    latency_ms=int((time.time() - start) * 1000),
+                    cost_usd=0.0,
+                    output={
+                        "reason": "No Close CRM lead_id - cannot stage content",
+                        "company_name": company_name
+                    }
+                )
+
+            # Initialize staging service
+            staging = CloseStagingService()
+
+            # Stage the content
+            result = await staging.stage_marketing_content(
+                lead_id=close_lead_id,
+                marketing_content=marketing_content
+            )
+
+            latency_ms = int((time.time() - start) * 1000)
+
+            # Check if staging succeeded
+            note_result = result.get("note", {})
+            if note_result.get("success"):
+                logger.info(
+                    f"✅ Staged marketing content for {company_name} "
+                    f"(activity_id: {note_result.get('activity_id')})"
+                )
+
+                # Log audit event for staging
+                await self._log_audit(
+                    company_name=company_name,
+                    event_type=LeadAuditEventType.LEAD_STAGED,
+                    stage=LeadAuditStage.STAGING.value,
+                    decision_data={
+                        "lead_id": close_lead_id,
+                        "activity_id": note_result.get("activity_id"),
+                        "content_type": "note",
+                        "email_staged": bool(marketing_content.get("email_content")),
+                        "sms_staged": bool(marketing_content.get("sms_content")),
+                    },
+                    latency_ms=latency_ms,
+                    cost_usd=0.0
+                )
+
+                return PipelineStageResult(
+                    status="success",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,  # Staging is free (just API calls)
+                    output={
+                        "lead_id": close_lead_id,
+                        "activity_id": note_result.get("activity_id"),
+                        "type": "note",
+                        "message": "Marketing content staged as note in Close CRM"
+                    }
+                )
+            else:
+                error_msg = note_result.get("error", "Unknown staging error")
+                logger.warning(f"Staging failed for {company_name}: {error_msg}")
+                return PipelineStageResult(
+                    status="failed",
+                    latency_ms=latency_ms,
+                    cost_usd=0.0,
+                    error=error_msg,
+                    output={"lead_id": close_lead_id}
+                )
+
+        except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
+            logger.error(f"Staging failed for {company_name}: {e}")
             return PipelineStageResult(
                 status="failed",
                 latency_ms=latency_ms,
@@ -1271,10 +1494,11 @@ class PipelineOrchestrator:
         # Get all discovered contacts from Hunter.io
         discovered_contacts = lead_data.get("_discovered_contacts", [])
 
-        # CSV field names
+        # CSV field names - include all Hunter.io enrichment data
         fieldnames = [
             "company_name", "first_name", "last_name", "email", "phone",
-            "position", "is_atl", "qualification_score", "dedup_status", "close_lead_id"
+            "position", "is_atl", "linkedin", "twitter", "confidence",
+            "qualification_score", "dedup_status", "close_lead_id"
         ]
 
         rows_written = 0
@@ -1310,6 +1534,9 @@ class PipelineOrchestrator:
                         "phone": contact.get("phone", "") or company_phone,
                         "position": contact.get("position", ""),
                         "is_atl": contact.get("is_atl", False),
+                        "linkedin": contact.get("linkedin", ""),
+                        "twitter": contact.get("twitter", ""),
+                        "confidence": contact.get("confidence", 0),
                         "qualification_score": qualification_score,
                         "dedup_status": dedup_status,
                         "close_lead_id": close_lead_id
@@ -1342,6 +1569,9 @@ class PipelineOrchestrator:
                     "phone": company_phone,
                     "position": "",
                     "is_atl": False,
+                    "linkedin": "",
+                    "twitter": "",
+                    "confidence": 0,
                     "qualification_score": qualification_score,
                     "dedup_status": dedup_status,
                     "close_lead_id": close_lead_id
