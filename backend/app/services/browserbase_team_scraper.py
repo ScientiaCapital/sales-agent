@@ -6,6 +6,11 @@ This is a fallback for when BeautifulSoup fails (client-side rendered content).
 
 Performance: ~10-15 seconds per scrape (browser automation overhead)
 Cost: Browserbase session pricing (check https://browserbase.com/pricing)
+
+Rate Limits (per project):
+- Concurrency: Check project settings (default: 1-99 based on plan)
+- Sessions: ~100/minute for API calls
+- This scraper enforces MIN_DELAY_BETWEEN_SCRAPES to avoid rate limiting
 """
 
 import os
@@ -14,8 +19,28 @@ import httpx
 import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+import time
 
 logger = logging.getLogger(__name__)
+
+# Rate limiting configuration (based on Browserbase pricing tiers)
+# Free: 1 concurrent, 5/min | Developer: 25 concurrent, 25/min | Startup: 100 concurrent, 50/min
+# Configure via env vars for your plan:
+#   BROWSERBASE_MAX_CONCURRENT=10  (safe testing default)
+#   BROWSERBASE_MIN_DELAY=1.0      (seconds between session creates)
+MAX_CONCURRENT_SCRAPES = int(os.getenv("BROWSERBASE_MAX_CONCURRENT", "5"))  # safe testing limit
+MIN_DELAY_BETWEEN_SCRAPES = float(os.getenv("BROWSERBASE_MIN_DELAY", "1.0"))  # seconds between scrapes
+_last_scrape_time: float = 0.0
+_semaphore: Optional[asyncio.Semaphore] = None
+
+
+def _get_semaphore() -> asyncio.Semaphore:
+    """Get or create the concurrency semaphore."""
+    global _semaphore
+    if _semaphore is None:
+        _semaphore = asyncio.Semaphore(MAX_CONCURRENT_SCRAPES)
+        logger.info(f"Browserbase concurrency limit set to {MAX_CONCURRENT_SCRAPES}")
+    return _semaphore
 
 
 class BrowserbaseTeamScraper:
@@ -66,32 +91,46 @@ class BrowserbaseTeamScraper:
         Returns:
             List of ATL contacts: [{"name": str, "title": str, "email": Optional[str]}]
         """
+        global _last_scrape_time
+
         if not self.api_key or not self.project_id:
             logger.error("Browserbase not configured - cannot scrape")
             return []
 
-        try:
-            logger.info(f"Starting Browserbase team scraping for: {website_url}")
+        # Use semaphore for safe concurrent limit (default: 5)
+        semaphore = _get_semaphore()
+        async with semaphore:
+            # Rate limiting: ensure minimum delay between scrapes
+            if MIN_DELAY_BETWEEN_SCRAPES > 0:
+                elapsed = time.time() - _last_scrape_time
+                if elapsed < MIN_DELAY_BETWEEN_SCRAPES:
+                    wait_time = MIN_DELAY_BETWEEN_SCRAPES - elapsed
+                    logger.info(f"Rate limiting: waiting {wait_time:.1f}s before Browserbase scrape")
+                    await asyncio.sleep(wait_time)
+                _last_scrape_time = time.time()
 
-            # Step 1: Create Browserbase session
-            session_id, connect_url = await self._create_session()
+            try:
+                logger.info(f"Starting Browserbase team scraping for: {website_url}")
 
-            # Step 2: Navigate to team page and scrape
-            team_contacts = await self._scrape_with_session(session_id, website_url, connect_url)
+                # Step 1: Create Browserbase session
+                session_id, connect_url = await self._create_session()
 
-            # Step 3: Close session
-            await self._close_session(session_id)
+                # Step 2: Navigate to team page and scrape
+                team_contacts = await self._scrape_with_session(session_id, website_url, connect_url)
 
-            logger.info(
-                f"Browserbase scraping completed: {website_url} "
-                f"({len(team_contacts)} ATL contacts found)"
-            )
+                # Step 3: Close session
+                await self._close_session(session_id)
 
-            return team_contacts
+                logger.info(
+                    f"Browserbase scraping completed: {website_url} "
+                    f"({len(team_contacts)} ATL contacts found)"
+                )
 
-        except Exception as e:
-            logger.error(f"Browserbase scraping failed for {website_url}: {e}", exc_info=True)
-            return []
+                return team_contacts
+
+            except Exception as e:
+                logger.error(f"Browserbase scraping failed for {website_url}: {e}", exc_info=True)
+                return []
 
     async def _create_session(self) -> tuple:
         """
