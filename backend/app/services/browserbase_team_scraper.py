@@ -20,6 +20,14 @@ import asyncio
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import time
+from pathlib import Path
+
+# Load .env from project root to ensure credentials are available
+# override=True ensures .env values take precedence over shell env vars
+from dotenv import load_dotenv
+_env_path = Path(__file__).resolve().parents[3] / '.env'
+if _env_path.exists():
+    load_dotenv(_env_path, override=True)
 
 logger = logging.getLogger(__name__)
 
