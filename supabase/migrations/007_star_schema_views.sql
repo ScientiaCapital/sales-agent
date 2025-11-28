@@ -44,7 +44,7 @@ SELECT
 FROM dim_companies c
 WHERE c.icp_tier IN ('PLATINUM', 'GOLD')
   AND c.icp_score >= 70
-  AND c.current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact');
+  AND c.current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact', 'customer', 'not_interested', 'disqualified', 'bad_data');
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_icp_gold_company ON mv_icp_gold_leads(company_id);
 
@@ -67,7 +67,7 @@ WITH company_metrics AS (
         (SELECT activity_type FROM fact_activities fa WHERE fa.company_id = c.company_id ORDER BY fa.activity_at DESC LIMIT 1) as last_activity_type,
         (SELECT value_usd FROM fact_opportunities fo WHERE fo.company_id = c.company_id AND fo.stage = 'active' LIMIT 1) as opp_value
     FROM dim_companies c
-    WHERE c.current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact')
+    WHERE c.current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact', 'customer', 'not_interested', 'disqualified', 'bad_data')
 )
 SELECT
     ROW_NUMBER() OVER (ORDER BY
@@ -150,7 +150,7 @@ SELECT
 FROM dim_companies
 WHERE (last_enriched_at IS NULL OR last_enriched_at < NOW() - INTERVAL '30 days')
   AND icp_tier IN ('PLATINUM', 'GOLD')
-  AND current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact')
+  AND current_stage NOT IN ('won', 'lost', 'junk', 'do_not_contact', 'customer', 'not_interested', 'disqualified', 'bad_data')
   AND flagged_for_reenrich = FALSE
 ORDER BY icp_score DESC NULLS LAST
 LIMIT 50;
