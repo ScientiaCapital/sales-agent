@@ -769,6 +769,10 @@ Respond with JSON only."""
                 #         logger.warning(f"Apollo phone lookup failed for {company_phone}: {e}")
 
                 # Process merged contacts
+                # Initialize contact lists before conditional block (prevents UnboundLocalError)
+                atl_contacts = []
+                btl_contacts = []
+
                 if all_contacts:
                     discovered_contacts = all_contacts
                     extraction_method = "hunter_apollo_search"
