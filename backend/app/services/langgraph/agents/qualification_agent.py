@@ -75,6 +75,13 @@ from app.services.email_extractor import EmailExtractor
 from app.services.hunter_service import HunterService, extract_domain
 from app.services.apollo import ApolloService
 from app.services.website_discovery import get_website_discovery_service
+from app.services.browserbase_team_scraper import get_browserbase_team_scraper
+from app.services.apollo_enrichment_queue import get_apollo_queue, QueuePriority
+from app.services.contact_discovery_audit import (
+    ContactDiscoveryAudit,
+    DiscoveryMethod,
+    get_discovery_audit
+)
 
 logger = setup_logging(__name__)
 
@@ -482,10 +489,19 @@ Respond with JSON only."""
         hunter_cost = 0.0
         discovered_contacts = []  # Initialize at function level to avoid UnboundLocalError
 
+        # Initialize Contact Discovery Audit for full visibility
+        discovery_audit = get_discovery_audit(
+            company_name=company_name,
+            company_website=company_website,
+            session_id=str(lead_id) if lead_id else None,
+            create_new=True  # Fresh audit for each qualification
+        )
+
         # ===== WEBSITE DISCOVERY (if missing) =====
         # Many contractor CSVs don't have websites - find them via Google BEFORE validation
         if not company_website:
             logger.info(f"No website provided for {company_name}, attempting discovery...")
+            start_discovery = time.time()
             try:
                 discovery_service = await get_website_discovery_service()
                 discovered_website = await discovery_service.discover_website(
@@ -493,12 +509,30 @@ Respond with JSON only."""
                     industry=industry,
                     state=""  # NOTE: Address field not in current schema - would need usaddress library + parameter addition
                 )
+                discovery_latency = int((time.time() - start_discovery) * 1000)
                 if discovered_website:
                     company_website = discovered_website
+                    discovery_audit.company_website = company_website  # Update audit
+                    discovery_audit.log_attempt(
+                        DiscoveryMethod.WEBSITE_DISCOVERY,
+                        success=True, contacts=0, latency_ms=discovery_latency,
+                        reason=f"Found: {company_website}"
+                    )
                     logger.info(f"✅ Discovered website for {company_name}: {company_website}")
                 else:
+                    discovery_audit.log_attempt(
+                        DiscoveryMethod.WEBSITE_DISCOVERY,
+                        success=True, contacts=0, latency_ms=discovery_latency,
+                        reason="No website found via search"
+                    )
                     logger.info(f"Could not discover website for {company_name}")
             except Exception as e:
+                discovery_latency = int((time.time() - start_discovery) * 1000)
+                discovery_audit.log_attempt(
+                    DiscoveryMethod.WEBSITE_DISCOVERY,
+                    success=False, latency_ms=discovery_latency,
+                    reason=str(e)
+                )
                 logger.warning(f"Website discovery failed for {company_name}: {e}")
 
         # ===== WEBSITE VALIDATION (ICP Qualifier) =====
@@ -573,22 +607,51 @@ Respond with JSON only."""
                     domain = extract_domain(company_website)
 
                     # Hunter.io Domain Search
+                    hunter_start = time.time()
                     try:
                         hunter_contacts = await self.hunter_service.domain_search(
                             domain=domain,
                             limit=10,
                             atl_only=False  # Get ALL contacts (ATL + BTL) for marketing
                         )
+                        hunter_latency = int((time.time() - hunter_start) * 1000)
 
                         if hunter_contacts:
+                            atl_count = 0
+                            btl_count = 0
                             for contact in hunter_contacts:
                                 email = contact.get('email', '').lower()
                                 if email and email not in seen_emails:
                                     contact['source'] = 'hunter'
                                     all_contacts.append(contact)
                                     seen_emails.add(email)
+                                    if contact.get('is_atl'):
+                                        atl_count += 1
+                                    else:
+                                        btl_count += 1
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.HUNTER_DOMAIN_SEARCH,
+                                success=True,
+                                contacts=len(hunter_contacts),
+                                atl=atl_count, btl=btl_count,
+                                latency_ms=hunter_latency,
+                                cost_usd=0.01,  # Hunter.io domain search cost
+                                contacts_data=hunter_contacts
+                            )
                             logger.info(f"Hunter.io found {len(hunter_contacts)} contacts for {company_name}")
+                        else:
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.HUNTER_DOMAIN_SEARCH,
+                                success=True, contacts=0, latency_ms=hunter_latency,
+                                reason="No contacts found"
+                            )
                     except Exception as e:
+                        hunter_latency = int((time.time() - hunter_start) * 1000)
+                        discovery_audit.log_attempt(
+                            DiscoveryMethod.HUNTER_DOMAIN_SEARCH,
+                            success=False, latency_ms=hunter_latency,
+                            reason=str(e)
+                        )
                         logger.warning(f"Hunter.io domain search failed for {company_website}: {e}")
 
                     # ============================================================
@@ -647,6 +710,41 @@ Respond with JSON only."""
                     #     except Exception as e:
                     #         logger.warning(f"Apollo enrichment failed for {company_website}: {e}")
                     # ============================================================
+
+                    # Log Apollo as disabled for audit visibility
+                    discovery_audit.log_disabled_method(
+                        DiscoveryMethod.APOLLO_DOMAIN_SEARCH,
+                        "No Apollo credits (Nov 26, 2025) - re-enable when purchased"
+                    )
+
+                    # ===== QUEUE FOR APOLLO ENRICHMENT =====
+                    # DISABLED - No Apollo credits (Nov 26, 2025)
+                    # Re-enable when Apollo credits are purchased
+                    # Calculate ATL contacts from Hunter.io results
+                    atl_contacts = [c for c in all_contacts if c.get('is_atl')]
+                    # contacts_needing_email = [c for c in all_contacts if c.get('needs_email') or not c.get('email')]
+                    # if len(atl_contacts) < 3 or contacts_needing_email:
+                    #     try:
+                    #         apollo_queue = get_apollo_queue()
+                    #         # Determine priority based on qualification
+                    #         priority = QueuePriority.HIGH if len(atl_contacts) > 0 else QueuePriority.MEDIUM
+                    #
+                    #         await apollo_queue.add_to_queue(
+                    #             company_name=company_name,
+                    #             company_website=company_website,
+                    #             company_phone=company_phone,
+                    #             priority=priority,
+                    #             source="qualification_incomplete",
+                    #             existing_contacts=contacts_needing_email + [
+                    #                 c for c in atl_contacts if c.get('needs_email')
+                    #             ]
+                    #         )
+                    #         logger.info(
+                    #             f"📋 Added to Apollo queue: {company_name} "
+                    #             f"(priority={priority}, contacts_needing_email={len(contacts_needing_email)})"
+                    #         )
+                    #     except Exception as e:
+                    #         logger.warning(f"Failed to add to Apollo queue: {e}")
 
                 # === TIER 3: Phone-based Apollo Fallback ===
                 # DISABLED - No Apollo credits (Nov 26, 2025)
@@ -712,15 +810,110 @@ Respond with JSON only."""
                         f"primary: {contact_email}"
                     )
 
+                # ===== TIER 1.5: BROWSERBASE TEAM SCRAPING =====
+                # If Hunter.io found <3 ATL contacts, use Browserbase to scrape team pages
+                # This handles JavaScript-heavy sites that Hunter.io can't parse
+                if company_website and len(atl_contacts) < 3:
+                    browserbase_start = time.time()
+                    try:
+                        browserbase_scraper = await get_browserbase_team_scraper()
+                        team_contacts = await browserbase_scraper.scrape_team_page(company_website)
+                        browserbase_latency = int((time.time() - browserbase_start) * 1000)
+
+                        if team_contacts:
+                            new_atl = 0
+                            new_btl = 0
+                            for contact in team_contacts:
+                                email = contact.get('email', '').lower()
+                                # Only add if we don't already have this email
+                                if email and email not in seen_emails:
+                                    # Classify ATL/BTL
+                                    is_atl = self._is_atl_title(contact.get('title', ''))
+                                    normalized = {
+                                        'email': email,
+                                        'first_name': contact.get('name', '').split()[0] if contact.get('name') else '',
+                                        'last_name': ' '.join(contact.get('name', '').split()[1:]) if contact.get('name') else '',
+                                        'position': contact.get('title', ''),
+                                        'is_atl': is_atl,
+                                        'source': 'browserbase_team'
+                                    }
+                                    all_contacts.append(normalized)
+                                    seen_emails.add(email)
+                                    if is_atl:
+                                        new_atl += 1
+                                        atl_contacts.append(normalized)
+                                    else:
+                                        new_btl += 1
+                                        btl_contacts.append(normalized)
+                                elif contact.get('name') and not email:
+                                    # Contact without email - still valuable for BTL marketing
+                                    normalized = {
+                                        'email': '',
+                                        'first_name': contact.get('name', '').split()[0] if contact.get('name') else '',
+                                        'last_name': ' '.join(contact.get('name', '').split()[1:]) if contact.get('name') else '',
+                                        'position': contact.get('title', ''),
+                                        'is_atl': self._is_atl_title(contact.get('title', '')),
+                                        'source': 'browserbase_team',
+                                        'needs_email': True
+                                    }
+                                    all_contacts.append(normalized)
+                                    if normalized['is_atl']:
+                                        new_atl += 1
+                                    else:
+                                        new_btl += 1
+
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.BROWSERBASE_TEAM,
+                                success=True,
+                                contacts=len(team_contacts),
+                                atl=new_atl, btl=new_btl,
+                                latency_ms=browserbase_latency,
+                                cost_usd=0.01,  # Browserbase session cost estimate
+                                reason=f"Team page scraped: {new_atl} new ATL, {new_btl} new BTL"
+                            )
+
+                            # Update primary contact if we found better ATL
+                            if not contact_email and atl_contacts:
+                                contact_email = atl_contacts[0].get('email', '')
+                            elif not contact_email and btl_contacts:
+                                contact_email = btl_contacts[0].get('email', '')
+
+                            logger.info(f"Browserbase found {len(team_contacts)} team members ({new_atl} ATL, {new_btl} BTL)")
+                        else:
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.BROWSERBASE_TEAM,
+                                success=True, contacts=0, latency_ms=browserbase_latency,
+                                reason="No team page found or no contacts extracted"
+                            )
+                    except Exception as e:
+                        browserbase_latency = int((time.time() - browserbase_start) * 1000) if 'browserbase_start' in dir() else 0
+                        discovery_audit.log_attempt(
+                            DiscoveryMethod.BROWSERBASE_TEAM,
+                            success=False, latency_ms=browserbase_latency,
+                            reason=str(e)
+                        )
+                        logger.warning(f"Browserbase team scraping failed for {company_website}: {e}")
+
                 # Tier 2: Website Scraping Fallback (FREE, but less reliable)
-                # Only if Hunter.io didn't find ATL contacts
+                # Only if Hunter.io + Browserbase didn't find ATL contacts
                 if not contact_email and company_website:
+                    scrape_start = time.time()
                     try:
                         extracted_emails = await self.email_extractor.extract_emails(company_website)
+                        scrape_latency = int((time.time() - scrape_start) * 1000)
 
                         if extracted_emails:
                             contact_email = extracted_emails[0]  # Use top-priority email
                             extraction_method = "scraping"
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.WEBSITE_EMAIL_SCRAPE,
+                                success=True,
+                                contacts=len(extracted_emails),
+                                atl=0, btl=len(extracted_emails),  # Scraped emails are typically BTL
+                                latency_ms=scrape_latency,
+                                cost_usd=0.0,  # FREE
+                                reason=f"Emails: {', '.join(extracted_emails[:3])}"
+                            )
                             logger.info(f"Website scraping found {len(extracted_emails)} emails, using: {contact_email}")
 
                             # Add to qualification notes
@@ -729,8 +922,19 @@ Respond with JSON only."""
                             else:
                                 notes = f"Emails found (scraping): {', '.join(extracted_emails[:3])}"
                         else:
+                            discovery_audit.log_attempt(
+                                DiscoveryMethod.WEBSITE_EMAIL_SCRAPE,
+                                success=True, contacts=0, latency_ms=scrape_latency,
+                                reason="No emails found on website"
+                            )
                             logger.warning(f"No emails found via scraping for {company_website}")
                     except Exception as e:
+                        scrape_latency = int((time.time() - scrape_start) * 1000)
+                        discovery_audit.log_attempt(
+                            DiscoveryMethod.WEBSITE_EMAIL_SCRAPE,
+                            success=False, latency_ms=scrape_latency,
+                            reason=str(e)
+                        )
                         logger.error(f"Website scraping failed for {company_website}: {e}")
             else:
                 # Email was provided upfront, no extraction needed
@@ -738,9 +942,11 @@ Respond with JSON only."""
 
             # ===== REVIEW SCRAPING (Reputation Data) =====
             # Scrape reviews from multiple platforms for reputation scoring
+            review_start = time.time()
             try:
                 review_scraper = await get_review_scraper()
                 review_result = await review_scraper.get_reviews(company_name, company_website)
+                review_latency = int((time.time() - review_start) * 1000)
 
                 # Add review data to context for scoring
                 notes = notes or ""
@@ -756,15 +962,39 @@ Respond with JSON only."""
                 if successful_platforms:
                     notes += f"- Platforms Found: {', '.join([p.platform for p in successful_platforms])}\n"
 
+                # Log review scraping to audit
+                discovery_audit.log_attempt(
+                    DiscoveryMethod.REVIEW_SCRAPING,
+                    success=True,
+                    contacts=0,  # Review scraping doesn't find contacts
+                    latency_ms=review_latency,
+                    cost_usd=0.0,
+                    reason=f"Score: {review_result.overall_reputation_score}/100, Platforms: {len(successful_platforms)}"
+                )
+
                 logger.info(
                     f"Reviews scraped for {company_name}: "
                     f"reputation_score={review_result.overall_reputation_score}, "
                     f"platforms={len(successful_platforms)}"
                 )
             except Exception as e:
+                review_latency = int((time.time() - review_start) * 1000)
+                discovery_audit.log_attempt(
+                    DiscoveryMethod.REVIEW_SCRAPING,
+                    success=False, latency_ms=review_latency,
+                    reason=str(e)
+                )
                 logger.warning(f"Review scraping failed for {company_name}: {e}")
                 # Don't fail qualification if review scraping fails
                 pass
+
+            # ===== ADD DISCOVERY AUDIT TO NOTES =====
+            # Append the discovery audit summary to qualification notes
+            audit_notes = discovery_audit.get_qualification_notes()
+            if notes:
+                notes += audit_notes
+            else:
+                notes = audit_notes
 
         # Initialize cache on first use
         if self.use_cache and self.cache is None:
@@ -808,6 +1038,9 @@ Respond with JSON only."""
                 if discovered_contacts:
                     cached_metadata["discovered_contacts"] = discovered_contacts
                     logger.info(f"🔄 Cache hit - merged {len(discovered_contacts)} newly discovered contacts into cached result")
+
+                # Include discovery audit in cached metadata
+                cached_metadata["discovery_audit"] = discovery_audit.get_summary()
 
                 return result, cached_qualification["latency_ms"], cached_metadata
 
@@ -932,7 +1165,8 @@ Respond with JSON only."""
                 "extracted_email": contact_email,  # Include extracted/provided email for downstream use
                 "extraction_method": extraction_method,  # Track how email was discovered
                 "hunter_cost_usd": hunter_cost,  # Track Hunter.io API costs
-                "discovered_contacts": discovered_contacts  # ALL ATL contacts from Hunter.io for enrichment/CRM
+                "discovered_contacts": discovered_contacts,  # ALL ATL contacts from Hunter.io for enrichment/CRM
+                "discovery_audit": discovery_audit.get_summary()  # Full contact discovery audit trail
             }
 
             logger.info(

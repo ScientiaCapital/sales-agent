@@ -47,7 +47,7 @@ class BrowserbaseTeamScraper:
     def __init__(self):
         self.api_key = os.getenv("BROWSERBASE_API_KEY")
         self.project_id = os.getenv("BROWSERBASE_PROJECT_ID")
-        self.base_url = "https://www.browserbase.com/v1"
+        self.base_url = "https://api.browserbase.com/v1"
         self.timeout = 30.0  # Browser sessions can take time
 
         if not self.api_key or not self.project_id:
@@ -74,10 +74,10 @@ class BrowserbaseTeamScraper:
             logger.info(f"Starting Browserbase team scraping for: {website_url}")
 
             # Step 1: Create Browserbase session
-            session_id = await self._create_session()
+            session_id, connect_url = await self._create_session()
 
             # Step 2: Navigate to team page and scrape
-            team_contacts = await self._scrape_with_session(session_id, website_url)
+            team_contacts = await self._scrape_with_session(session_id, website_url, connect_url)
 
             # Step 3: Close session
             await self._close_session(session_id)
@@ -93,12 +93,12 @@ class BrowserbaseTeamScraper:
             logger.error(f"Browserbase scraping failed for {website_url}: {e}", exc_info=True)
             return []
 
-    async def _create_session(self) -> str:
+    async def _create_session(self) -> tuple:
         """
         Create a new Browserbase browser session.
 
         Returns:
-            Session ID string
+            Tuple of (session_id, connect_url)
         """
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             response = await client.post(
@@ -108,26 +108,23 @@ class BrowserbaseTeamScraper:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "projectId": self.project_id,
-                    "browserSettings": {
-                        "context": {
-                            "id": "default"
-                        }
-                    }
+                    "projectId": self.project_id
                 }
             )
 
             response.raise_for_status()
             data = response.json()
             session_id = data["id"]
+            connect_url = data.get("connectUrl", f"wss://connect.browserbase.com?sessionId={session_id}&apiKey={self.api_key}")
 
             logger.info(f"Browserbase session created: {session_id}")
-            return session_id
+            return session_id, connect_url
 
     async def _scrape_with_session(
         self,
         session_id: str,
-        website_url: str
+        website_url: str,
+        connect_url: str
     ) -> List[Dict[str, str]]:
         """
         Use Browserbase session to scrape team page via Playwright.
@@ -146,11 +143,9 @@ class BrowserbaseTeamScraper:
             ]
 
             async with async_playwright() as p:
-                # Connect to Browserbase session via CDP
-                cdp_url = f"wss://connect.browserbase.com?sessionId={session_id}&apiKey={self.api_key}"
-
+                # Connect to Browserbase session via CDP using the API-provided connect URL
                 logger.info(f"Connecting to Browserbase session: {session_id}")
-                browser = await p.chromium.connect_over_cdp(cdp_url)
+                browser = await p.chromium.connect_over_cdp(connect_url)
 
                 # Get default context and page
                 contexts = browser.contexts
