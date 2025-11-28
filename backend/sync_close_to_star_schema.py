@@ -185,6 +185,51 @@ async def fetch_close_activities(client: httpx.AsyncClient, days: int = 90) -> l
     return activities
 
 
+def map_close_status_to_stage(status_label: str) -> str:
+    """
+    Map Close CRM status_label to our current_stage.
+
+    This is critical for filtering out customers, disqualified, etc.
+    from the BDR Work Queue.
+    """
+    status_lower = status_label.lower().strip()
+
+    # Exclude statuses - these should NOT appear in work queues
+    if "customer" in status_lower:
+        return "customer"
+    if "not interested" in status_lower:
+        return "not_interested"
+    if "disqualified" in status_lower:
+        return "disqualified"
+    if "bad" in status_lower or "junk" in status_lower:
+        return "bad_data"
+    if "do not contact" in status_lower or "dnc" in status_lower:
+        return "do_not_contact"
+    if "lost" in status_lower:
+        return "lost"
+    if "won" in status_lower:
+        return "won"
+
+    # Active statuses - these appear in work queues
+    if "hot" in status_lower:
+        return "qualified"
+    if "atl" in status_lower or "validated" in status_lower:
+        return "qualified"
+    if "btl" in status_lower:
+        return "contacted"
+    if "nurture" in status_lower:
+        return "nurture"
+    if "meeting" in status_lower or "scheduled" in status_lower:
+        return "meeting_booked"
+    if "opportunity" in status_lower or "opp" in status_lower:
+        return "opportunity"
+    if "contacted" in status_lower:
+        return "contacted"
+
+    # Default for unrecognized statuses
+    return "imported"
+
+
 async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
     """Insert/update leads into dim_companies."""
     print(f"\nUpserting {len(leads)} companies to dim_companies...", flush=True)
@@ -200,8 +245,11 @@ async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
         phones = primary_contact.get("phones", [])
         emails = primary_contact.get("emails", [])
 
-        # Determine ICP tier from status
+        # Get status and map to current_stage
         status = lead.get("status_label", "")
+        current_stage = map_close_status_to_stage(status)
+
+        # Determine ICP tier from status
         if "Hot" in status:
             tier = "PLATINUM"
             score = 85
@@ -223,7 +271,7 @@ async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
             "state": custom.get("State") or custom.get("state"),
             "icp_score": score,
             "icp_tier": tier,
-            "current_stage": "in_close",
+            "current_stage": current_stage,
             "close_lead_id": lead.get("id"),
             "source_type": "close_crm",
             "first_seen_at": lead.get("date_created"),

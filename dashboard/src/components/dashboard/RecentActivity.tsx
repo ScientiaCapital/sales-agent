@@ -16,6 +16,14 @@ interface AuditEvent {
   session_id?: string;
 }
 
+interface ActivityResponse {
+  events: AuditEvent[];
+  count: number;
+  hours_back: number;
+  data_source: string;
+  updated_at: string;
+}
+
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const eventConfig: Record<string, { color: string; label: string }> = {
@@ -80,11 +88,14 @@ function ActivitySkeleton() {
 }
 
 export function RecentActivity() {
-  const { data: events, isLoading, mutate } = useSWR<AuditEvent[]>(
+  const { data, isLoading, mutate } = useSWR<ActivityResponse>(
     "/api/activity?hours=24&limit=15",
     fetcher,
     { refreshInterval: 60000 } // Refresh every minute
   );
+
+  // Extract events from response object
+  const events = data?.events || [];
 
   return (
     <Card>
@@ -106,7 +117,7 @@ export function RecentActivity() {
       </CardHeader>
       <CardContent>
         <div className="space-y-0 max-h-[400px] overflow-y-auto">
-          {isLoading || !events ? (
+          {isLoading || !data ? (
             <>
               <ActivitySkeleton />
               <ActivitySkeleton />
