@@ -7,17 +7,20 @@ Processes MEP leads through the full pipeline:
 3. Hunter.io Fallback (if scraping fails)
 4. Deduplication check (against Close CRM)
 5. CSV Export (to data/final_enrichment_output/)
+6. **CSV Website Writeback** - Updates source CSV with discovered websites
 
 SAFE MODE: No writes to Close CRM (CLOSE_WRITE_DISABLED=True)
 
 Usage:
     python import_mep_batch.py top_100_mep_energy_prospects_20251119.csv
     python import_mep_batch.py --list  # Show available files
+    python import_mep_batch.py --no-writeback file.csv  # Skip CSV updates
 """
 import asyncio
 import csv
 import os
 import sys
+import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime
@@ -96,6 +99,58 @@ KNOWN_OEMS = {
 # Short OEM names that need exact match only (to avoid false positives)
 # These won't match as substrings in other words
 SHORT_OEMS = {"ge", "abb", "lg", "sma"}
+
+
+def update_csv_with_websites(csv_path: Path, website_updates: dict) -> int:
+    """
+    Update source CSV with discovered websites for future runs.
+
+    Args:
+        csv_path: Path to source CSV file
+        website_updates: Dict mapping company_name -> discovered_website
+
+    Returns:
+        Number of rows updated
+    """
+    if not website_updates:
+        return 0
+
+    # Create backup before modifying
+    backup_path = csv_path.with_suffix('.csv.bak')
+    shutil.copy(csv_path, backup_path)
+    logger.info(f"📁 Created backup: {backup_path.name}")
+
+    # Read all rows
+    rows = []
+    fieldnames = None
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        rows = list(reader)
+
+    # Ensure 'domain' column exists
+    if 'domain' not in fieldnames:
+        fieldnames = list(fieldnames) + ['domain']
+
+    # Update rows with discovered websites
+    updated_count = 0
+    for row in rows:
+        company = row.get('company_name', row.get('business_name', '')).strip()
+        current_domain = row.get('domain', '').strip()
+
+        # Only update if domain is empty and we have a discovery
+        if not current_domain and company in website_updates:
+            row['domain'] = website_updates[company]
+            updated_count += 1
+
+    # Write back
+    with open(csv_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    logger.info(f"✅ Updated {updated_count} rows with discovered websites in {csv_path.name}")
+    return updated_count
 
 
 def is_oem(company_name: str) -> bool:
@@ -178,8 +233,13 @@ def estimate_size_from_score(coperniq_score: float) -> str:
         return "10-20"
 
 
-async def import_mep_batch(filename: str):
-    """Import MEP leads through full enrichment pipeline"""
+async def import_mep_batch(filename: str, enable_writeback: bool = True):
+    """Import MEP leads through full enrichment pipeline.
+
+    Args:
+        filename: CSV file to process
+        enable_writeback: If True, update source CSV with discovered websites
+    """
     print("\n" + "=" * 80)
     print(f"BATCH IMPORT - MEP ENERGY PROSPECTS (SAFE MODE)")
     print("=" * 80)
@@ -262,6 +322,7 @@ async def import_mep_batch(filename: str):
     results = []
     successful = 0
     failed = 0
+    website_discoveries = {}  # Track discovered websites for CSV writeback
 
     for i, lead in enumerate(leads, 1):
         try:
@@ -317,6 +378,11 @@ async def import_mep_batch(filename: str):
                 metadata.get("discovered_website") or
                 lead.get('website', '')
             )
+
+            # Track website discoveries for CSV writeback
+            # Only track if website was discovered (not from original CSV)
+            if website and not lead.get('website'):
+                website_discoveries[lead['company_name']] = website
 
             output = {
                 'company_name': lead['company_name'],
@@ -383,11 +449,26 @@ async def import_mep_batch(filename: str):
     print(f"  Emails found: {with_email}/{len(results)}")
 
     print(f"\n📁 Output saved to: {output_file}")
+
+    # CSV Website Writeback - Update source CSV with discovered websites
+    if enable_writeback and website_discoveries:
+        print(f"\n📝 CSV WEBSITE WRITEBACK:")
+        print(f"   {len(website_discoveries)} websites discovered for leads without domains")
+        updated = update_csv_with_websites(csv_path, website_discoveries)
+        if updated > 0:
+            print(f"   ✅ Source CSV updated - future runs will skip website discovery for these leads")
+            print(f"   📁 Backup saved as: {csv_path.stem}.csv.bak")
+    elif not enable_writeback:
+        print(f"\n📝 CSV writeback disabled (use without --no-writeback to enable)")
+
     print("=" * 80 + "\n")
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] == '--list':
         list_available_files()
+    elif sys.argv[1] == '--no-writeback' and len(sys.argv) > 2:
+        # Disable CSV writeback
+        asyncio.run(import_mep_batch(sys.argv[2], enable_writeback=False))
     else:
-        asyncio.run(import_mep_batch(sys.argv[1]))
+        asyncio.run(import_mep_batch(sys.argv[1], enable_writeback=True))
