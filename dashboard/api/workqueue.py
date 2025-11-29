@@ -4,14 +4,21 @@ Work Queue Endpoint for Sales-Agent Dashboard
 GET /api/workqueue - Returns BDR daily task queue from Star Schema
 
 Uses mv_bdr_work_queue materialized view for pre-computed task priorities.
+Generates contextual talking points for each lead based on ICP tier, title, and activity.
+
+Security: Protected by Vercel deployment protection (authenticated users only).
+For local development, set DASHBOARD_API_KEY in environment.
 """
 
 import os
 from datetime import datetime
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, Header, HTTPException
 from fastapi.responses import JSONResponse
 import httpx
 import logging
+
+# Suppress httpx DEBUG logging only (keeps INFO/WARNING/ERROR for security events)
+logging.getLogger("httpx").setLevel(logging.INFO)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,6 +28,86 @@ app = FastAPI()
 # Supabase REST API configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "").strip()
+
+# Optional API key for local development (Vercel handles auth in production)
+DASHBOARD_API_KEY = os.environ.get("DASHBOARD_API_KEY", "").strip()
+
+
+# ============================================================================
+# TALKING POINTS GENERATION
+# ============================================================================
+
+# OEM brands to highlight as talking points
+NOTABLE_OEMS = {
+    "carrier", "trane", "lennox", "rheem", "york", "daikin",
+    "mitsubishi", "lg", "bosch", "generac", "kohler", "briggs"
+}
+
+# Title-based talking points
+TITLE_TALKING_POINTS = {
+    "ceo": "CEOs appreciate ROI and bottom-line impact",
+    "owner": "Owners care about efficiency and customer satisfaction",
+    "founder": "Founders appreciate innovation and new technology",
+    "president": "Presidents focus on growth and competitive advantage",
+    "vp": "VPs need solutions that make their teams more effective",
+    "director": "Directors value operational efficiency and team tools",
+    "manager": "Managers want tools that simplify their daily work",
+    "head": "Department heads need visibility and reporting"
+}
+
+
+def generate_talking_points(row: dict) -> list[str]:
+    """
+    Generate contextual talking points for a lead based on available data.
+
+    Talking points are prioritized:
+    1. ICP Tier (PLATINUM/GOLD = strongest)
+    2. Contact title (decision-maker angles)
+    3. Phone availability
+    4. Activity status (new vs existing)
+    5. Stale data warning
+    """
+    points = []
+
+    # 1. ICP Tier
+    tier = row.get("icp_tier", "")
+    score = row.get("icp_score", 0)
+    if tier == "PLATINUM":
+        points.append(f"🏆 PLATINUM lead (Score: {score}) - our ideal customer profile")
+    elif tier == "GOLD":
+        points.append(f"⭐ GOLD lead (Score: {score}) - strong ICP fit")
+    elif tier == "SILVER":
+        points.append(f"🥈 SILVER lead (Score: {score}) - good potential")
+
+    # 2. Contact title
+    title = row.get("best_contact_title", "") or ""
+    title_lower = title.lower()
+    for keyword, point in TITLE_TALKING_POINTS.items():
+        if keyword in title_lower:
+            points.append(f"👤 {title}: {point}")
+            break
+
+    # 3. Phone availability
+    if row.get("best_contact_phone"):
+        points.append("📞 Phone number available for outreach")
+
+    # 4. Activity status
+    total_touches = row.get("total_touches", 0)
+    days_since = row.get("days_since_activity")
+
+    if total_touches == 0:
+        points.append("🆕 First outreach - introduce Coperniq value proposition")
+    elif days_since and days_since > 14:
+        points.append(f"⏰ {days_since} days since last touch - may need re-engagement")
+    elif total_touches >= 3:
+        points.append(f"📊 {total_touches} previous touches - reference prior conversations")
+
+    # 5. Stale data warning
+    enrichment_age = row.get("enrichment_age_days")
+    if enrichment_age and enrichment_age > 30:
+        points.append(f"🔄 Data is {int(enrichment_age)} days old - may need re-enrichment")
+
+    return points[:5]  # Limit to 5 most relevant
 
 
 async def fetch_work_queue(limit: int = 25) -> dict | None:
@@ -87,6 +174,9 @@ async def fetch_work_queue(limit: int = 25) -> dict | None:
                 else:
                     task_type, icon, color = "review", "clipboard", "#94A3B8"
 
+                # Generate talking points for this lead
+                talking_points = generate_talking_points(row)
+
                 tasks.append({
                     "id": str(row.get("company_id", "")),
                     "rank": row.get("rank"),
@@ -99,7 +189,7 @@ async def fetch_work_queue(limit: int = 25) -> dict | None:
                     "total_touches": row.get("total_touches", 0),
                     "days_since_activity": row.get("days_since_activity"),
                     "days_in_pipeline": row.get("days_in_pipeline"),
-                    "opportunity_value": float(row.get("opportunity_value")) if row.get("opportunity_value") else None,
+                    "opportunity_value": float(val) if (val := row.get("opportunity_value")) is not None else None,
                     # Best contact info
                     "contact_name": row.get("best_contact_name"),
                     "contact_phone": row.get("best_contact_phone"),
@@ -111,6 +201,8 @@ async def fetch_work_queue(limit: int = 25) -> dict | None:
                     # UI styling
                     "icon": icon,
                     "color": color,
+                    # NEW: Talking points for Tim's calls
+                    "talking_points": talking_points,
                 })
 
             # Summary counts by action type
@@ -127,8 +219,14 @@ async def fetch_work_queue(limit: int = 25) -> dict | None:
                 "summary": summary,
             }
 
+    except httpx.HTTPStatusError as e:
+        logger.error(f"Supabase HTTP error: {e.response.status_code} - {e.response.text[:200]}")
+        return None
+    except httpx.RequestError as e:
+        logger.error(f"Supabase network error: {e}")
+        return None
     except Exception as e:
-        logger.error(f"Supabase REST API error: {e}")
+        logger.exception(f"Unexpected error in fetch_work_queue: {e}")
         return None
 
 
@@ -153,6 +251,12 @@ def get_mock_workqueue() -> dict:
             "close_url": "https://app.close.com/lead/lead_abc123",
             "icon": "flame",
             "color": "#EF4444",
+            "talking_points": [
+                "⭐ GOLD lead (Score: 85) - strong ICP fit",
+                "👤 VP Operations: VPs need solutions that make their teams more effective",
+                "📞 Phone number available for outreach",
+                "📊 4 previous touches - reference prior conversations",
+            ],
         },
         {
             "id": "mock-2",
@@ -172,6 +276,12 @@ def get_mock_workqueue() -> dict:
             "close_url": "https://app.close.com/lead/lead_def456",
             "icon": "phone",
             "color": "#3B82F6",
+            "talking_points": [
+                "🏆 PLATINUM lead (Score: 92) - our ideal customer profile",
+                "👤 CEO: CEOs appreciate ROI and bottom-line impact",
+                "📞 Phone number available for outreach",
+                "🆕 First outreach - introduce Coperniq value proposition",
+            ],
         },
         {
             "id": "mock-3",
@@ -191,6 +301,10 @@ def get_mock_workqueue() -> dict:
             "close_url": None,
             "icon": "search",
             "color": "#64748B",
+            "talking_points": [
+                "⭐ GOLD lead (Score: 78) - strong ICP fit",
+                "🆕 First outreach - introduce Coperniq value proposition",
+            ],
         },
     ]
 
@@ -207,16 +321,27 @@ def get_mock_workqueue() -> dict:
 
 
 @app.get("/api/workqueue")
-async def get_workqueue(limit: int = 25) -> JSONResponse:
+async def get_workqueue(
+    limit: int = Query(default=25, ge=1, le=100, description="Max tasks to return (1-100)"),
+    x_api_key: str | None = Header(default=None, alias="X-API-Key")
+) -> JSONResponse:
     """
     Get BDR daily work queue from Star Schema.
 
     Query params:
-    - limit: Max tasks to return (default 25)
+    - limit: Max tasks to return (1-100, default 25)
+
+    Headers:
+    - X-API-Key: Optional API key for local development (Vercel handles auth in production)
 
     Returns prioritized task list with recommended actions for Tim's daily workflow.
     Data comes from mv_bdr_work_queue materialized view (refreshes every 15 min).
     """
+    # API key validation for local development (if DASHBOARD_API_KEY is set)
+    if DASHBOARD_API_KEY and x_api_key != DASHBOARD_API_KEY:
+        logger.warning(f"Unauthorized access attempt to /api/workqueue")
+        raise HTTPException(status_code=401, detail="Unauthorized - invalid API key")
+
     # Try Supabase first
     data = await fetch_work_queue(limit)
 
