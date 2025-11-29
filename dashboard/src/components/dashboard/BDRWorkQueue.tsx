@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +20,9 @@ import {
   UserCheck,
   Linkedin,
   ExternalLink,
+  MessageSquare,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 interface Task {
@@ -42,6 +46,7 @@ interface Task {
   close_url: string | null;
   icon: string;
   color: string;
+  talking_points: string[];
 }
 
 interface WorkQueueResponse {
@@ -96,12 +101,58 @@ function TaskSkeleton() {
   );
 }
 
+type TierFilter = "all" | "PLATINUM" | "GOLD" | "SILVER" | "BRONZE";
+type ActionFilter = "all" | "hot_intent" | "new_lead" | "follow_up" | "research";
+
 export function BDRWorkQueue() {
-  const { data, isLoading } = useSWR<WorkQueueResponse>(
+  const [tierFilter, setTierFilter] = useState<TierFilter>("all");
+  const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
+  const [expandedTalkingPoints, setExpandedTalkingPoints] = useState<Set<string>>(new Set());
+
+  const { data, isLoading, error } = useSWR<WorkQueueResponse>(
     "/api/workqueue",
     fetcher,
     { refreshInterval: 30000 } // Refresh every 30s
   );
+
+  // Toggle talking points visibility for a task
+  const toggleTalkingPoints = (taskId: string) => {
+    setExpandedTalkingPoints(prev => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  // Filter tasks based on tier and action filters
+  const filteredTasks = data?.tasks.filter(task => {
+    const matchesTier = tierFilter === "all" || task.icp_tier === tierFilter;
+    const matchesAction = actionFilter === "all" || task.task_type === actionFilter;
+    return matchesTier && matchesAction;
+  }) ?? [];
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold text-[var(--turkish-blue)] flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            BDR Work Queue
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6 text-red-500">
+            <p className="font-medium">Failed to load work queue</p>
+            <p className="text-sm text-muted-foreground">Please try refreshing the page</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -158,16 +209,71 @@ export function BDRWorkQueue() {
             </Badge>
           )}
         </div>
+
+        {/* Filter Chips */}
+        <div className="mt-3 space-y-2">
+          {/* Tier Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">Tier:</span>
+            {(["all", "PLATINUM", "GOLD", "SILVER", "BRONZE"] as TierFilter[]).map((tier) => (
+              <Button
+                key={tier}
+                variant={tierFilter === tier ? "default" : "outline"}
+                size="sm"
+                className={`h-6 px-2 text-xs ${
+                  tierFilter === tier
+                    ? "bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
+                    : tier === "PLATINUM" ? "hover:bg-purple-100" :
+                      tier === "GOLD" ? "hover:bg-yellow-100" :
+                      tier === "SILVER" ? "hover:bg-gray-100" :
+                      tier === "BRONZE" ? "hover:bg-amber-100" : ""
+                }`}
+                onClick={() => setTierFilter(tier)}
+              >
+                {tier === "all" ? "All Tiers" : tier}
+              </Button>
+            ))}
+          </div>
+
+          {/* Action Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">Action:</span>
+            {(["all", "hot_intent", "new_lead", "follow_up", "research"] as ActionFilter[]).map((action) => (
+              <Button
+                key={action}
+                variant={actionFilter === action ? "default" : "outline"}
+                size="sm"
+                className={`h-6 px-2 text-xs ${
+                  actionFilter === action
+                    ? "bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
+                    : action === "hot_intent" ? "hover:bg-red-100" :
+                      action === "new_lead" ? "hover:bg-blue-100" :
+                      action === "follow_up" ? "hover:bg-green-100" :
+                      action === "research" ? "hover:bg-purple-100" : ""
+                }`}
+                onClick={() => setActionFilter(action)}
+              >
+                {action === "all" ? "All Actions" :
+                 action === "hot_intent" ? "🔥 Hot Intent" :
+                 action === "new_lead" ? "📞 New Lead" :
+                 action === "follow_up" ? "🔄 Follow-up" :
+                 action === "research" ? "🔍 Research" : action}
+              </Button>
+            ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
-        {data.tasks.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <p className="font-medium">Queue empty!</p>
             <p className="text-sm">No tasks pending.</p>
           </div>
         ) : (
           <div className="space-y-3 max-h-[500px] overflow-y-auto">
-            {data.tasks.map((task) => {
+            {filteredTasks.map((task) => {
+              const isTalkingPointsExpanded = expandedTalkingPoints.has(task.id);
+              const hasTalkingPoints = task.talking_points && task.talking_points.length > 0;
               const IconComponent = ICON_MAP[task.icon] || Phone;
               const tierColors = task.icp_tier ? ICP_TIER_COLORS[task.icp_tier] : null;
               const isHotIntent = task.task_type === "hot_intent";
@@ -258,6 +364,35 @@ export function BDRWorkQueue() {
                               </a>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Talking Points Section */}
+                      {hasTalkingPoints && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => toggleTalkingPoints(task.id)}
+                            className="flex items-center gap-1 text-xs text-[var(--turkish-blue)] hover:underline"
+                          >
+                            {isTalkingPointsExpanded ? (
+                              <ChevronDown className="h-3 w-3" />
+                            ) : (
+                              <ChevronRight className="h-3 w-3" />
+                            )}
+                            <MessageSquare className="h-3 w-3" />
+                            {task.talking_points.length} talking points
+                          </button>
+                          {isTalkingPointsExpanded && (
+                            <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
+                              <ul className="space-y-1 text-xs">
+                                {task.talking_points.map((point, idx) => (
+                                  <li key={idx} className="text-gray-700">
+                                    {point}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
