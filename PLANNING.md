@@ -1,12 +1,12 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-11-30
+**Last Updated**: 2025-12-01
 
 ---
 
 ## Tech Stack
 
-Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph
+Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph | Browserbase
 
 ---
 
@@ -14,14 +14,25 @@ Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph
 
 ### Data Flow
 ```
-CSV Import → ICP Scoring → Hunter.io Enrichment → Supabase Star Schema → BDR Work Queue
+CSV Import → ICP Scoring → Multi-source Enrichment → Deep Scrape → Close CRM Export
+                                                            ↓
+                                              Manual Import to Close CRM
 ```
+
+### Pipeline Stages
+| Stage | Script | Output |
+|-------|--------|--------|
+| 1. ICP Scoring | `create_gold_standard_lists.py` | Scored leads by tier |
+| 2. Multi-source Enrichment | `enrich_multi_source.py` | Phone/email verification |
+| 3. Deep Scrape (Browserbase) | `deep_scrape_companies.py` | ATL names, addresses |
+| 4. Export | (generated) | `CLOSE_CRM_IMPORT_*.csv` |
 
 ### Key Components
 
 | Component | Purpose | Location |
 |-----------|---------|----------|
 | LangGraph Agents | AI-powered lead processing | `backend/app/services/langgraph/agents/` |
+| Deep Scraper | Website + LinkedIn scraping | `backend/deep_scrape_companies.py` |
 | Lead Scorer | ICP scoring algorithm | `backend/create_gold_standard_lists.py` |
 | Enrichment Pipeline | Hunter.io contact discovery | `backend/enrich_gold_standard_batch.py` |
 | Supabase Sync | Data warehouse sync | `backend/sync_gold_standard_to_supabase.py` |
@@ -50,6 +61,33 @@ CSV Import → ICP Scoring → Hunter.io Enrichment → Supabase Star Schema →
 
 ---
 
+## Deep Scraper Architecture (NEW)
+
+### Technology
+- **Browserbase**: Cloud browser automation (avoids bot detection)
+- **Playwright**: Browser control
+- **Concurrent scraping**: 10 companies at once
+
+### Pages Scraped Per Company
+1. Landing page (homepage)
+2. Team / Management page
+3. About Us page
+4. Contact page
+5. LinkedIn company page (via Google search)
+
+### ATL Extraction Methods
+1. **Structured**: Cards with name + title
+2. **Text patterns**: "Founded by X", "Owner: X", "President: X"
+
+### Output Files
+| File | Purpose |
+|------|---------|
+| `DEEP_SCRAPE_*.csv` | Full results |
+| `DEEP_SCRAPE_*.json` | Detailed audit trail |
+| `CLOSE_CRM_IMPORT_*.csv` | Tim's manual import |
+
+---
+
 ## Key Patterns
 
 ### Check-Then-Insert (Supabase)
@@ -70,6 +108,14 @@ def is_unique_direct(contact_phone, company_phone):
     return c_norm and c_norm != co_norm
 ```
 
+### Phone Audit Trail
+```python
+if phone in existing_phones:
+    audit_status = 'VERIFIED'  # Confirmed existing
+else:
+    audit_status = 'NEW'       # Discovered new
+```
+
 ### Lead Scoring
 ```
 Unique direct phone   +100 pts
@@ -88,6 +134,7 @@ Company phone         +10 pts
 - API keys in `.env` only, never hardcoded
 - Close CRM is read-only (`CLOSE_WRITE_DISABLED=True`)
 - 1 company = 1 lead - Don't inflate counts with multiple contacts
+- **Manual import only** - Review `CLOSE_CRM_IMPORT_*.csv` before importing
 
 ---
 
@@ -107,3 +154,13 @@ Company phone         +10 pts
 - **Date**: 2025-11-20
 - **Decision**: Use Cerebras (633ms avg) instead of OpenAI
 - **Rationale**: Cost-effective, fast, NO OpenAI policy
+
+### ADR-004: Browserbase for Scraping
+- **Date**: 2025-12-01
+- **Decision**: Use Browserbase for website scraping instead of direct HTTP
+- **Rationale**: Cloud browsers avoid bot detection, handle JavaScript-heavy sites
+
+### ADR-005: Manual Close CRM Import
+- **Date**: 2025-12-01
+- **Decision**: Export CSV for manual import, no auto-push to Close
+- **Rationale**: Tim reviews leads before adding to CRM, avoids data quality issues
