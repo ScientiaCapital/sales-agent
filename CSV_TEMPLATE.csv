@@ -1,0 +1,6 @@
+company_name,company_website,company_size,industry,contact_email,contact_name,contact_title
+TechCorp,SaaS,https://techcorp.com,50-200,john@techcorp.com,John Doe,CEO
+DataInc,Analytics,https://datainc.com,200-500,jane@datainc.com,Jane Smith,CTO
+CloudSoft,Software,https://cloudsoft.io,10-50,info@cloudsoft.io,,
+MakerSpace,Hardware,https://makerspace.com,50-200,contact@makerspace.com,Mike Johnson,Founder
+
