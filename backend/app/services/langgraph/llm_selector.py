@@ -230,12 +230,17 @@ def get_llm_for_capability(
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY not set")
 
+        # OpenRouter requires HTTP-Referer header for authentication
         return ChatOpenAI(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
             openai_api_key=api_key,
-            openai_api_base="https://openrouter.ai/api/v1"
+            openai_api_base="https://openrouter.ai/api/v1",
+            default_headers={
+                "HTTP-Referer": "https://sales-agent.local",
+                "X-Title": "Sales Agent Pipeline"
+            }
         )
 
     else:

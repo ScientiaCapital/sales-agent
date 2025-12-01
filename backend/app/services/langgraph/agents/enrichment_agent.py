@@ -195,11 +195,16 @@ class EnrichmentAgent:
             if not api_key:
                 raise ValueError("OPENROUTER_API_KEY environment variable not set")
 
+            # OpenRouter requires HTTP-Referer header for authentication
             self.llm = ChatOpenAI(
                 model=self.model,  # e.g., "deepseek/deepseek-chat"
                 temperature=self.temperature,
                 openai_api_key=api_key,
-                openai_api_base="https://openrouter.ai/api/v1"
+                openai_api_base="https://openrouter.ai/api/v1",
+                default_headers={
+                    "HTTP-Referer": "https://sales-agent.local",
+                    "X-Title": "Sales Agent Enrichment"
+                }
             )
 
         else:
@@ -214,7 +219,7 @@ class EnrichmentAgent:
             find_company_emails_tool,  # Hunter.io domain search (PRIORITY #1)
             scrape_company_team_tool,  # Website team scraping (discovers more contacts)
             find_person_email_tool,  # Hunter.io email finder for specific person (loop back)
-            # get_linkedin_profile_tool,  # LinkedIn - commented out (no Browserbase credentials)
+            get_linkedin_profile_tool,  # LinkedIn profile scraping (Browserbase) - ENABLED
             get_lead_tool
         ]
 

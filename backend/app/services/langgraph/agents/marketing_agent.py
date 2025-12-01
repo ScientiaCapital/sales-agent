@@ -60,6 +60,15 @@ import os
 import time
 import operator
 from typing import Dict, Any, List, Optional, Annotated, Union
+
+
+def merge_dicts(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
+    """Custom reducer for merging dictionaries in parallel state updates"""
+    if left is None:
+        return right or {}
+    if right is None:
+        return left or {}
+    return {**left, **right}
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -100,8 +109,8 @@ class MarketingAgentState(TypedDict):
     social_content: Optional[str]
     blog_content: Optional[str]
 
-    # Aggregated metadata with reducer for parallel updates
-    generation_metadata: Annotated[Dict[str, Any], operator.add]
+    # Aggregated metadata with custom dict merger for parallel updates
+    generation_metadata: Annotated[Dict[str, Any], merge_dicts]
 
     # Output: Campaign summary
     total_cost_usd: Optional[float]
