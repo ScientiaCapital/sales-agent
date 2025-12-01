@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-11-30
+**Last Updated**: 2025-12-01
 **Sprint**: Current
 
 ---
@@ -11,9 +11,9 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 0 |
+| 🟡 In Progress | 1 |
 | 🟢 Ready | 3 |
-| ✅ Done (this sprint) | 5 |
+| ✅ Done (this sprint) | 8 |
 
 ---
 
@@ -29,32 +29,69 @@
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-*None currently*
+#### 1. [HIGH] Run Deep Scrape on 1,000 Companies
+- **ID**: TASK-007
+- **Assignee**: Team (Dec 2)
+- **Labels**: `enrichment`, `scraping`, `atl-extraction`
+- **Est. Time**: 8 hours (runs overnight)
+- **Dependencies**: None
+
+**Description**: Run Browserbase deep scraper to extract ATL names from company websites.
+
+**Command**:
+```bash
+./run_deep_scrape.sh 1000
+```
+
+**Acceptance Criteria**:
+- [ ] Run `./run_deep_scrape.sh 1000`
+- [ ] Review `CLOSE_CRM_IMPORT_1000_*.csv` in Excel
+- [ ] Remove any bad data
+- [ ] Manual import to Close CRM
 
 ---
 
 ### 🟢 Ready (Prioritized)
 <!-- Tasks ready to start, ordered by priority -->
 
-#### 1. [HIGH] Run Hunter.io Batch 2 Enrichment
+#### 1. [HIGH] Review & Import Close CRM Data
+- **ID**: TASK-008
+- **Assignee**: Tim
+- **Labels**: `crm`, `manual-review`
+- **Est. Time**: 1-2 hours
+- **Dependencies**: TASK-007
+
+**Description**: Review deep scrape output and import qualified leads to Close CRM.
+
+**Acceptance Criteria**:
+- [ ] Open `CLOSE_CRM_IMPORT_*.csv` in Excel
+- [ ] Filter to leads with ATL Count > 0
+- [ ] Verify data quality
+- [ ] Import to Close CRM manually
+- [ ] Update Supabase sync
+
+---
+
+#### 2. [MEDIUM] Run Hunter.io on ATL Leads
 - **ID**: TASK-001
 - **Assignee**: Unassigned
 - **Labels**: `enrichment`, `data-quality`
 - **Est. Time**: 2 hours
-- **Dependencies**: None
+- **Cost**: ~$10 for 1000 domains
+- **Dependencies**: TASK-007
 
-**Description**: Enrich leads 501-1000 with Hunter.io to find more direct phone numbers.
+**Description**: Enrich leads that have ATL names with Hunter.io to find email/direct phone.
 
 **Acceptance Criteria**:
 - [ ] Run `python enrich_gold_standard_batch.py --batch 2`
-- [ ] Verify 500 new leads enriched
-- [ ] Check cost (~$5 for 500 domains)
+- [ ] Verify ATL leads enriched first
+- [ ] Check cost
 - [ ] Sync results to Supabase
-- [ ] Update lead scores
+- [ ] Re-score leads
 
 ---
 
-#### 2. [MEDIUM] Connect Dashboard to Real Supabase Data
+#### 3. [MEDIUM] Connect Dashboard to Real Supabase Data
 - **ID**: TASK-002
 - **Assignee**: Unassigned
 - **Labels**: `frontend`, `integration`
@@ -71,28 +108,13 @@
 
 ---
 
-#### 3. [LOW] Increase HOT Lead Count
-- **ID**: TASK-003
-- **Assignee**: Unassigned
-- **Labels**: `data-quality`, `strategy`
-- **Est. Time**: Ongoing
-- **Dependencies**: TASK-001
-
-**Description**: Currently only 2 HOT leads (unique direct phone + email). Need more enrichment batches.
-
-**Acceptance Criteria**:
-- [ ] Run multiple Hunter.io batches
-- [ ] Achieve 50+ HOT leads
-- [ ] Document discovery patterns
-
----
-
 ### ⏸️ Backlog (Future)
 <!-- Tasks not yet prioritized for this sprint -->
 
 | ID | Title | Priority | Labels |
 |----|-------|----------|--------|
-| TASK-004 | Add voice AI calling integration | Medium | `feature`, `voice` |
+| TASK-003 | Increase HOT Lead Count (50+ target) | Medium | `data-quality` |
+| TASK-004 | Voice AI calling integration | Medium | `feature`, `voice` |
 | TASK-005 | CRM sync improvements | Low | `integration`, `crm` |
 | TASK-006 | Email sequence automation | Medium | `feature`, `automation` |
 
@@ -103,11 +125,14 @@
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| TASK-D01 | Multi-source enrichment on 1,000 leads | 2025-12-01 | Claude |
+| TASK-D02 | Deep scraper with ATL extraction | 2025-12-01 | Claude |
+| TASK-D03 | Phone audit trail (NEW/VERIFIED) | 2025-12-01 | Claude |
+| TASK-D04 | Close CRM export format | 2025-12-01 | Claude |
+| TASK-D05 | run_deep_scrape.sh runner script | 2025-12-01 | Claude |
 | TASK-000 | Gold Standard Lead Pipeline | 2025-11-29 | Claude |
 | TASK-000 | Context Engineering Setup | 2025-11-30 | Claude |
 | TASK-000 | Lead Scoring Algorithm | 2025-11-29 | Claude |
-| TASK-000 | Supabase Star Schema | 2025-11-29 | Claude |
-| TASK-000 | ICP Tier System | 2025-11-29 | Claude |
 
 ---
 
@@ -115,17 +140,27 @@
 
 ### Velocity
 - **Last Sprint**: 5 tasks completed
-- **This Sprint Target**: 3 tasks
-- **Avg Task Time**: 3 hours
+- **This Sprint**: 8 tasks completed
+- **Avg Task Time**: 2 hours
 
-### Quality
-- **Tests Passing**: ✅
-- **Type Errors**: 0
-- **Lint Issues**: 0
+### Data Quality (Dec 1)
+| Metric | Count |
+|--------|-------|
+| Clean Companies | 6,568 |
+| Enriched Leads | 1,000 |
+| Verified Phones | 699 (70%) |
+| ATL Contacts | 14 |
 
 ---
 
 ## 🔄 Workflow
+
+### Pipeline Flow
+```
+CSV Import → ICP Scoring → Multi-source Enrichment → Deep Scrape → Close CRM Export
+                                                            ↓
+                                              Manual Import to Close CRM
+```
 
 ### Task Lifecycle
 ```
@@ -134,29 +169,13 @@ Ready → In Progress → Review → Done
        Blocked (if dependencies)
 ```
 
-### How to Use This File
-
-**Starting a task**:
-1. Move task from "Ready" to "In Progress"
-2. Add your name as Assignee
-3. Update the date
-
-**Completing a task**:
-1. Check all acceptance criteria boxes
-2. Move to "Done" section
-3. Add completion date
-
-**Adding a new task**:
-1. Add to "Backlog" table first
-2. When prioritized, create full entry in "Ready"
-3. Include: ID, description, acceptance criteria
-
 ---
 
 ## 🚨 Blockers & Risks
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
+| ATL extraction rate (5-15% expected) | Medium | Many sites don't list owner names |
 | Hunter.io rate limits | Medium | Space out batch runs |
 | Close CRM write disabled | Low | Read-only is intentional |
 
@@ -165,22 +184,26 @@ Ready → In Progress → Review → Done
 ## 📝 Notes
 
 ### Decisions Made
+- 2025-12-01: Manual Close CRM import only (no auto-push)
+- 2025-12-01: Browserbase for website scraping (ADR-004)
 - 2025-11-29: Close CRM writes disabled for safety
 - 2025-11-29: 1 company = 1 lead philosophy adopted
-- 2025-11-30: Context engineering deployed
 
-### Questions to Resolve
-- When to re-enable Close CRM writes?
-- What's the HOT lead target for Tim's list?
+### Key Outputs (Dec 1)
+| File | Purpose |
+|------|---------|
+| `DEEP_SCRAPE_*.csv` | Full scrape results |
+| `CLOSE_CRM_IMPORT_*.csv` | Tim's manual import |
+| `TOP_1000_PRIORITIZED_*.csv` | Daily caller list |
 
 ---
 
 ## 🔗 Related Files
 
-- `CLAUDE.md` - Project overview and rules
+- `.claude/CLAUDE.md` - Project overview and rules
 - `PLANNING.md` - Architecture decisions
 - `TASK.md` - Quick task reference
-- `PRPs/` - Implementation plans
+- `run_deep_scrape.sh` - Deep scraper runner
 
 ---
 
@@ -189,8 +212,8 @@ Ready → In Progress → Review → Done
 - **NO OpenAI** - Use Cerebras, Claude, DeepSeek only
 - **API keys in .env only** - Never hardcode
 - **Close CRM WRITE DISABLED** - Read-only for safety
+- **Manual import only** - Review CSV before importing
 - **Run `/validate` before marking tasks done**
-- **Update this file as work progresses**
 
 ---
 
