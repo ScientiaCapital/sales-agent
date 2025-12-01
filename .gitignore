@@ -15,6 +15,7 @@ CLAUDE.md
 data/
 backend/data/
 backend/test_data/
+backend/docs/
 
 # Database files (may contain lead data)
 *.db
@@ -24,10 +25,25 @@ backend/test_data/
 *.db-wal
 *.db-shm
 
-# JSON data exports
+# JSON data exports (contact/company info)
 *_leads_*.json
 *_contacts_*.json
 *_companies_*.json
+*enriched*.json
+*apollo*.json
+change_report_*.json
+
+# Enrichment and pipeline output
+*_enrichment_*.csv
+*_scored_*.csv
+*GOLD_STANDARD*.csv
+
+# MCP Configuration (MAY contain API keys)
+.mcp.json
+
+# Log files (may contain company names in errors)
+*.log
+data/logs/
 
 # =============================================================================
 # STANDARD IGNORES
