@@ -28,7 +28,24 @@ alembic upgrade head  # Apply migrations 015, 016, 009
 
 **See**: `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md` for full deployment guide
 
-### 3. Run Deep Scrape on 1,000 Companies
+### 3. Run LinkedIn Enrichment Pipeline (NEW)
+
+```bash
+cd backend
+python run_linkedin_enrichment.py --limit 100  # Test with 100
+./run_linkedin_scrape.sh 1000                  # Full run
+```
+
+**Time**: ~4-5 hours for 1000 companies
+**Output**: LinkedIn URLs + ATL employees synced to Supabase
+
+**What it does**:
+- Scrapes LinkedIn company /people/ pages
+- Extracts employees with ATL classification
+- Searches for personal LinkedIn profiles
+- Syncs all data to dim_companies and dim_contacts
+
+### 4. Run Deep Scrape on 1,000 Companies
 
 ```bash
 ./run_deep_scrape.sh 1000
@@ -50,6 +67,14 @@ alembic upgrade head  # Apply migrations 015, 016, 009
 ### Completed (Dec 1)
 | Task | Status |
 |------|--------|
+| **Phase 3: LinkedIn Enrichment Pipeline** | |
+| Browserbase session pool with stealth mode | DONE |
+| Parallel LinkedIn company scraper | DONE |
+| Parallel LinkedIn profile scraper | DONE |
+| Supabase sync for LinkedIn data | DONE |
+| Orchestrator script (run_linkedin_enrichment.py) | DONE |
+| Security audit - API key exposure fix (4 files) | DONE |
+| All print() replaced with logger | DONE |
 | **Phase 1: Infrastructure Setup** | |
 | Supabase CLI installed and linked | DONE |
 | Docker infrastructure (PostgreSQL, Redis, Neo4j) | DONE |
