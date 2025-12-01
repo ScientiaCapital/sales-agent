@@ -174,3 +174,16 @@ Company phone         +10 pts
   - `016_add_star_schema_performance_indexes.py` - Performance indexes (JSONB GIN, composite)
   - `009_consolidate_duplicate_policies.sql` - Removes duplicate RLS policies
 - **Impact**: Protects dim_companies, dim_contacts, fact_opportunities, re_enrich_queue from unauthorized access
+
+### ADR-007: LinkedIn Enrichment Pipeline with Browserbase Session Pool
+- **Date**: 2025-12-01
+- **Decision**: Create dedicated LinkedIn scraping pipeline with session pooling
+- **Rationale**: Need LinkedIn employee data for ATL discovery, existing deep scraper only does website scraping
+- **Components Created**:
+  - `browserbase_session_pool.py` - Managed browser sessions with stealth mode
+  - `parallel_linkedin_company_scraper.py` - Company /people/ page scraper
+  - `parallel_linkedin_profile_scraper.py` - Personal profile URL finder
+  - `sync_linkedin_to_supabase.py` - Syncs LinkedIn data to star schema
+  - `run_linkedin_enrichment.py` - Full pipeline orchestrator
+- **Security**: API key exposure fixed in 4 files (never construct URL with API key)
+- **Rate Limits**: 30 companies/hr, 10 profiles/hr (conservative)

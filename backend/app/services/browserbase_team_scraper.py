@@ -162,9 +162,12 @@ class BrowserbaseTeamScraper:
             response.raise_for_status()
             data = response.json()
             session_id = data["id"]
-            connect_url = data.get("connectUrl", f"wss://connect.browserbase.com?sessionId={session_id}&apiKey={self.api_key}")
+            connect_url = data.get("connectUrl")
+            if not connect_url:
+                # SECURITY: Never construct URL with API key - it would appear in logs
+                raise ValueError(f"Browserbase API did not return connectUrl for session {session_id[:8]}...")
 
-            logger.info(f"Browserbase session created: {session_id}")
+            logger.info(f"Browserbase session created: {session_id[:8]}...")
             return session_id, connect_url
 
     async def _scrape_with_session(
