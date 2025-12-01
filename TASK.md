@@ -6,13 +6,35 @@
 
 ## NEXT ACTION (Dec 2)
 
-### Run Deep Scrape on 1,000 Companies
+### 1. Add API Keys to .env
+
+**Required keys** (see `API_KEYS_VALIDATION_REPORT.md`):
+- CEREBRAS_API_KEY
+- ANTHROPIC_API_KEY
+- BROWSERBASE_API_KEY
+- BROWSERBASE_PROJECT_ID
+- HUNTER_API_KEY
+- CLOSE_API_KEY
+- SUPABASE_URL
+- SUPABASE_SERVICE_KEY
+- CRM_ENCRYPTION_KEY (already generated)
+
+### 2. Deploy Supabase Migrations
+
+```bash
+cd backend
+alembic upgrade head  # Apply migrations 015, 016, 009
+```
+
+**See**: `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md` for full deployment guide
+
+### 3. Run Deep Scrape on 1,000 Companies
 
 ```bash
 ./run_deep_scrape.sh 1000
 ```
 
-**Time**: ~8 hours
+**Time**: ~2-4 hours (revised from 8 hours)
 **Output**: `backend/data/final_enrichment_output/CLOSE_CRM_IMPORT_1000_*.csv`
 
 **What it does**:
@@ -28,16 +50,34 @@
 ### Completed (Dec 1)
 | Task | Status |
 |------|--------|
+| **Phase 1: Infrastructure Setup** | |
+| Supabase CLI installed and linked | DONE |
+| Docker infrastructure (PostgreSQL, Redis, Neo4j) | DONE |
+| All 113 Supabase issues categorized | DONE |
+| API key validation report created | DONE |
+| Code quality baseline (96.5/100) | DONE |
+| Deep scrape code review (70% ready) | DONE |
+| **Phase 2: Security & Database Fixes** | |
+| Migration 015: RLS enabled on 14 tables | DONE |
+| Migration 016: Performance indexes created | DONE |
+| Migration 009: Duplicate policies consolidated | DONE |
+| Fixed 40-50 of 113 Supabase issues | DONE |
+| Created deployment checklists | DONE |
+| PgAdmin email configuration fixed | DONE |
+| **Previous Work** | |
 | Multi-source enrichment on 1,000 leads | DONE |
 | Deep scraper with ATL extraction | DONE |
 | Phone audit trail (NEW/VERIFIED) | DONE |
 | Close CRM export format | DONE |
 | Git commit and push | DONE |
 
-### Up Next
+### Up Next (Dec 2)
 | Task | Priority | Est. Time |
 |------|----------|-----------|
-| Run deep scrape on 1,000 companies | HIGH | 8 hours |
+| Add API keys to .env | HIGH | 15 min |
+| Deploy Supabase migrations (015, 016, 009) | HIGH | 30 min |
+| Test migrations and verify RLS | HIGH | 30 min |
+| Run deep scrape on 1,000 companies | HIGH | 2-4 hours |
 | Review `CLOSE_CRM_IMPORT_*.csv` | HIGH | 30 min |
 | Manual import to Close CRM | HIGH | 1 hour |
 | Run Hunter.io on ATL leads | MEDIUM | ~$10, 1 hour |
