@@ -6,12 +6,14 @@ Validates company websites and extracts key information:
 - Team/About Us pages discovery
 - Contact information extraction
 - ATL (Above The Line) contact discovery
+- Company phone number extraction
 
 Used as early ICP filter in pipeline.
 """
 import httpx
 import time
-from typing import Dict, Any, Optional, List
+import re
+from typing import Dict, Any, Optional, List, Tuple
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import logging
@@ -38,6 +40,10 @@ class WebsiteValidationResult:
 
     # ATL contacts found on team page
     atl_contacts: List[Dict[str, str]]  # [{name, title, email?}]
+
+    # Company phone (extracted from website)
+    company_phone: Optional[str] = None
+    phone_source: Optional[str] = None  # "tel_link", "contact_page", "footer", "header"
 
     # Error details
     error_message: Optional[str] = None
@@ -79,6 +85,21 @@ class WebsiteValidator:
         "director sales", "director marketing",
         "president", "founder", "co-founder"
     ]
+
+    # US phone regex patterns (captures various formats)
+    PHONE_PATTERN = re.compile(
+        r'''
+        (?:
+            \+?1[-.\s]?                    # Optional country code
+        )?
+        \(?([2-9]\d{2})\)?                 # Area code (can't start with 0 or 1)
+        [-.\s]?
+        ([2-9]\d{2})                       # Exchange (can't start with 0 or 1)
+        [-.\s]?
+        (\d{4})                            # Subscriber number
+        ''',
+        re.VERBOSE
+    )
 
     def __init__(self):
         """Initialize website validator with HTTP client"""
@@ -141,11 +162,27 @@ class WebsiteValidator:
             if team_url:
                 atl_contacts = await self._extract_atl_contacts(team_url)
 
+            # Extract company phone from homepage
+            company_phone, phone_source = self._extract_phone_from_soup(soup)
+
+            # If no phone on homepage, try contact page
+            if not company_phone and contact_url:
+                try:
+                    contact_response = await self.client.get(contact_url)
+                    if contact_response.status_code == 200:
+                        contact_soup = BeautifulSoup(contact_response.text, 'html.parser')
+                        company_phone, phone_source = self._extract_phone_from_soup(contact_soup)
+                        if phone_source:
+                            phone_source = "contact_page"
+                except Exception as e:
+                    logger.debug(f"Failed to fetch contact page for phone: {e}")
+
             logger.info(
                 f"Website validated: {website_url} "
                 f"(status={response.status_code}, "
                 f"team={bool(team_url)}, "
-                f"atl_contacts={len(atl_contacts)})"
+                f"atl_contacts={len(atl_contacts)}, "
+                f"phone={company_phone})"
             )
 
             return WebsiteValidationResult(
@@ -158,7 +195,9 @@ class WebsiteValidator:
                 team_page_url=team_url,
                 about_page_url=about_url,
                 contact_page_url=contact_url,
-                atl_contacts=atl_contacts
+                atl_contacts=atl_contacts,
+                company_phone=company_phone,
+                phone_source=phone_source
             )
 
         except httpx.TimeoutException:
@@ -194,6 +233,96 @@ class WebsiteValidator:
                 atl_contacts=[],
                 error_message=str(e)
             )
+
+    def _normalize_phone(self, phone: str) -> Optional[str]:
+        """
+        Normalize a phone number to standard format (XXX) XXX-XXXX.
+
+        Returns None if invalid.
+        """
+        # Remove all non-digit characters
+        digits = re.sub(r'\D', '', phone)
+
+        # Handle country code
+        if len(digits) == 11 and digits[0] == '1':
+            digits = digits[1:]
+
+        # Must be exactly 10 digits
+        if len(digits) != 10:
+            return None
+
+        # Format as (XXX) XXX-XXXX
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+
+    def _extract_phone_from_soup(self, soup: BeautifulSoup) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Extract company phone number from parsed HTML.
+
+        Priority:
+        1. tel: links (highest confidence - explicitly marked as phone)
+        2. Contact page content
+        3. Footer
+        4. Header area
+
+        Returns:
+            Tuple of (phone_number, source) or (None, None)
+        """
+        phones_found = []
+
+        # Strategy 1: Look for tel: links (highest confidence)
+        tel_links = soup.find_all('a', href=re.compile(r'^tel:', re.IGNORECASE))
+        for link in tel_links:
+            href = link.get('href', '')
+            # Extract number from tel:+1-555-123-4567 or tel:5551234567
+            phone_digits = re.sub(r'\D', '', href)
+            normalized = self._normalize_phone(phone_digits)
+            if normalized:
+                phones_found.append((normalized, "tel_link"))
+                logger.debug(f"Found tel: link phone: {normalized}")
+
+        # Strategy 2: Look in footer (common location for company phone)
+        footer = soup.find('footer') or soup.find(class_=re.compile(r'footer', re.IGNORECASE))
+        if footer:
+            footer_text = footer.get_text()
+            for match in self.PHONE_PATTERN.finditer(footer_text):
+                phone = f"{match.group(1)}{match.group(2)}{match.group(3)}"
+                normalized = self._normalize_phone(phone)
+                if normalized:
+                    phones_found.append((normalized, "footer"))
+                    logger.debug(f"Found footer phone: {normalized}")
+
+        # Strategy 3: Look in header/nav area
+        header = soup.find('header') or soup.find(class_=re.compile(r'header|nav', re.IGNORECASE))
+        if header:
+            header_text = header.get_text()
+            for match in self.PHONE_PATTERN.finditer(header_text):
+                phone = f"{match.group(1)}{match.group(2)}{match.group(3)}"
+                normalized = self._normalize_phone(phone)
+                if normalized:
+                    phones_found.append((normalized, "header"))
+                    logger.debug(f"Found header phone: {normalized}")
+
+        # Strategy 4: Look for "Call" or "Phone" nearby text
+        call_patterns = soup.find_all(string=re.compile(r'call\s*us|phone|contact\s*us', re.IGNORECASE))
+        for pattern in call_patterns[:3]:  # Limit to first 3
+            parent = pattern.find_parent()
+            if parent:
+                parent_text = parent.get_text()
+                for match in self.PHONE_PATTERN.finditer(parent_text):
+                    phone = f"{match.group(1)}{match.group(2)}{match.group(3)}"
+                    normalized = self._normalize_phone(phone)
+                    if normalized:
+                        phones_found.append((normalized, "call_text"))
+                        logger.debug(f"Found call text phone: {normalized}")
+
+        # Deduplicate by phone number, prioritize by source
+        priority = {"tel_link": 0, "header": 1, "footer": 2, "call_text": 3}
+        if phones_found:
+            # Sort by priority (tel_link first)
+            phones_found.sort(key=lambda x: priority.get(x[1], 99))
+            return phones_found[0]
+
+        return None, None
 
     async def _find_page(
         self,

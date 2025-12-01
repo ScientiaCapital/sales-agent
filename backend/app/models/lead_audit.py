@@ -58,6 +58,10 @@ class LeadAuditEventType(str, Enum):
     LEAD_EXPORTED = "lead_exported"
     LEAD_FILTERED_EXPORT = "lead_filtered_export"  # Bad email, etc.
 
+    # Delivery/Staging Stage
+    LEAD_STAGED = "lead_staged"  # Marketing content staged in Close CRM as draft
+    LEAD_DELIVERED = "lead_delivered"  # Email/SMS actually sent (future)
+
     # Lifecycle Changes (manual or automated)
     STATUS_CHANGED = "status_changed"
     TIER_CHANGED = "tier_changed"
@@ -72,6 +76,7 @@ class LeadAuditStage(str, Enum):
     ENRICHMENT = "enrichment"
     DEDUPLICATION = "deduplication"
     EXPORT = "export"
+    STAGING = "staging"  # Close CRM draft staging (no sends)
     LIFECYCLE = "lifecycle"
 
 

@@ -198,11 +198,15 @@ class HunterService:
                             "first_name": email_data.get("first_name"),
                             "last_name": email_data.get("last_name"),
                             "position": email_data.get("position"),
-                            "phone": email_data.get("phone_number"),  # Hunter.io phone number
+                            "phone_number": email_data.get("phone_number"),  # Direct phone from Hunter
                             "confidence": email_data.get("confidence", 0),
                             "is_atl": is_atl,
                             "linkedin": email_data.get("linkedin"),
-                            "twitter": email_data.get("twitter")
+                            "twitter": email_data.get("twitter"),
+                            "seniority": email_data.get("seniority"),  # junior/senior/executive
+                            "department": email_data.get("department"),  # sales/marketing/etc
+                            "email_type": email_data.get("type"),  # personal vs generic
+                            "verification": email_data.get("verification"),  # verification status
                         })
 
                     logger.info(

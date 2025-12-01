@@ -124,3 +124,6 @@ hubspot-api-client==9.0.0  # Official HubSpot CRM SDK
 # CLI Dependencies (Agent CLI)
 rich==13.7.0  # Beautiful terminal UI for agent CLI
 click==8.1.7  # CLI framework for command-line interface
+
+# Graph Database (Relationship Mapping - NEW: Nov 2025)
+neo4j==5.26.0  # Official Neo4j Python driver for warm path discovery

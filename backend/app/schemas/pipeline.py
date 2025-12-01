@@ -10,8 +10,10 @@ class PipelineTestOptions(BaseModel):
     """Options for pipeline test execution"""
     stop_on_duplicate: bool = Field(default=True, description="Halt if duplicate detected")
     skip_enrichment: bool = Field(default=False, description="Skip enrichment stage")
+    generate_marketing: bool = Field(default=True, description="Generate email/SMS marketing content")
     create_in_crm: bool = Field(default=True, description="Actually create lead in CRM")
     dry_run: bool = Field(default=False, description="Test without CRM writes")
+    stage_to_crm: bool = Field(default=False, description="Stage email/SMS as drafts in Close CRM (no actual sends)")
 
 
 class PipelineTestRequest(BaseModel):
