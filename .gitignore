@@ -191,3 +191,21 @@ backend/tim_*.py
 # Keep production scripts
 !backend/test_api.py
 !backend/test_streaming.py
+
+# Review/Analysis Documents (temporary)
+*_REVIEW*.md
+*_REVIEW*.txt
+*REVIEW_*.md
+*FIXES_REQUIRED*.md
+*_ANALYSIS*.txt
+00_START_HERE*.md
+PRP.md
+REVIEW_COMPLETE.txt
+REVIEW_INDEX.md
+
+# Test data files
+test_*.csv
+
+# Temp directories
+**/.temp/
+.audit-saas.yaml
