@@ -30,7 +30,6 @@ Estimated Time: 1,000 companies @ 30s each = ~8 hours with 10 concurrent
 """
 
 import asyncio
-import pandas as pd
 import logging
 import sys
 import os
@@ -42,6 +41,19 @@ import argparse
 from typing import List, Dict, Any, Optional, Set
 from dataclasses import dataclass, field, asdict
 from urllib.parse import urljoin, urlparse
+
+# Check critical dependencies early
+try:
+    import pandas as pd
+except ImportError:
+    print("ERROR: pandas is not installed. Run: pip install pandas")
+    sys.exit(1)
+
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    print("ERROR: Playwright is not installed. Run: pip install playwright && playwright install chromium")
+    sys.exit(1)
 
 # Load environment variables (override=True to prefer .env over shell vars)
 from dotenv import load_dotenv
@@ -70,6 +82,12 @@ logger = logging.getLogger(__name__)
 BROWSERBASE_API_KEY = os.getenv('BROWSERBASE_API_KEY')
 BROWSERBASE_PROJECT_ID = os.getenv('BROWSERBASE_PROJECT_ID')
 MAX_CONCURRENT = int(os.getenv('BROWSERBASE_MAX_CONCURRENT', '10'))
+
+# Validate critical environment variables
+if not BROWSERBASE_API_KEY or not BROWSERBASE_PROJECT_ID:
+    logger.error("ERROR: BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID must be set in .env")
+    logger.error("Run the validation script: python backend/validate_deep_scrape_prerequisites.py")
+    sys.exit(1)
 
 # Paths
 INPUT_DIR = Path('data/final_enrichment_output')
@@ -230,8 +248,9 @@ async def close_browserbase_session(session_id: str):
                 f"https://api.browserbase.com/v1/sessions/{session_id}/stop",
                 headers={"x-bb-api-key": BROWSERBASE_API_KEY}
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to close Browserbase session {session_id}: {str(e)}")
+        # Session cleanup failure is not critical - session will auto-expire
 
 
 async def extract_phones_from_page(page, result: DeepScrapeResult, page_url: str):
@@ -868,6 +887,9 @@ def save_deep_scrape_results(results: List[DeepScrapeResult], output_file: Path)
                 'Phone Audit': f"{r.new_phone_count} new, {r.verified_phone_count} verified",
             }
             close_crm_records.append(close_record)
+
+    # Ensure output directory exists
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 
     # Save main results
     df = pd.DataFrame(records)

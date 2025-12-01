@@ -30,19 +30,33 @@ def upgrade() -> None:
     """
     Create unified api_call_logs table and migrate existing Cerebras data.
     """
-    # Create ENUM types
+    # Create ENUM types with IF NOT EXISTS guards
+    # Using execute() with DO block provides better control than create(checkfirst=True)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE providertype AS ENUM ('cerebras', 'openrouter', 'ollama', 'anthropic', 'deepseek');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE operationtype AS ENUM ('qualification', 'research', 'enrichment', 'outreach',
+                                               'conversation', 'synthesis', 'analysis', 'other');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
+
+    # Define enum types for table creation
     provider_enum = sa.Enum(
         'cerebras', 'openrouter', 'ollama', 'anthropic', 'deepseek',
-        name='providertype'
+        name='providertype', create_type=False  # Don't create, already exists
     )
     operation_enum = sa.Enum(
         'qualification', 'research', 'enrichment', 'outreach',
         'conversation', 'synthesis', 'analysis', 'other',
-        name='operationtype'
+        name='operationtype', create_type=False  # Don't create, already exists
     )
-
-    provider_enum.create(op.get_bind(), checkfirst=True)
-    operation_enum.create(op.get_bind(), checkfirst=True)
 
     # Create api_call_logs table
     op.create_table(

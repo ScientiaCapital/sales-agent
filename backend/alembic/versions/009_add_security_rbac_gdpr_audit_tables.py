@@ -25,23 +25,29 @@ depends_on = None
 def upgrade() -> None:
     """Create security-related tables for Task 9: Security & Compliance"""
 
-    # Create enum types
+    # Create enum types with IF NOT EXISTS guards to prevent conflicts
     op.execute("""
-        CREATE TYPE eventtype AS ENUM (
-            'login_success', 'login_failed', 'logout', 'token_refresh', 'token_revoked',
-            'access_granted', 'access_denied', 'permission_changed', 'role_assigned', 'role_removed',
-            'data_created', 'data_read', 'data_updated', 'data_deleted', 'data_exported',
-            'crm_sync', 'crm_auth', 'credential_encrypted', 'credential_decrypted',
-            'consent_granted', 'consent_revoked', 'data_export_requested', 'data_deletion_requested',
-            'config_changed', 'api_error', 'security_alert'
-        )
-    """)
+        DO $$ BEGIN
+            CREATE TYPE eventtype AS ENUM (
+                'login_success', 'login_failed', 'logout', 'token_refresh', 'token_revoked',
+                'access_granted', 'access_denied', 'permission_changed', 'role_assigned', 'role_removed',
+                'data_created', 'data_read', 'data_updated', 'data_deleted', 'data_exported',
+                'crm_sync', 'crm_auth', 'credential_encrypted', 'credential_decrypted',
+                'consent_granted', 'consent_revoked', 'data_export_requested', 'data_deletion_requested',
+                'config_changed', 'api_error', 'security_alert'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
 
-    op.execute("""
-        CREATE TYPE consenttype AS ENUM (
-            'marketing', 'analytics', 'data_processing',
-            'third_party_sharing', 'cookies', 'profiling'
-        )
+        DO $$ BEGIN
+            CREATE TYPE consenttype AS ENUM (
+                'marketing', 'analytics', 'data_processing',
+                'third_party_sharing', 'cookies', 'profiling'
+            );
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
     """)
 
     # 1. Create users table

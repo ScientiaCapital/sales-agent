@@ -17,12 +17,31 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create enum types
+    # Create enum types with IF NOT EXISTS guards to prevent conflicts
     op.execute("""
-        CREATE TYPE conversationstatus AS ENUM ('active', 'completed', 'paused', 'error', 'abandoned');
-        CREATE TYPE speakerrole AS ENUM ('agent', 'prospect', 'system');
-        CREATE TYPE sentimenttype AS ENUM ('positive', 'neutral', 'negative', 'mixed');
-        CREATE TYPE battlecardtype AS ENUM ('pricing', 'competitor', 'feature', 'objection', 'case_study', 'technical', 'general');
+        DO $$ BEGIN
+            CREATE TYPE conversationstatus AS ENUM ('active', 'completed', 'paused', 'error', 'abandoned');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE speakerrole AS ENUM ('agent', 'prospect', 'system');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE sentimenttype AS ENUM ('positive', 'neutral', 'negative', 'mixed');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+
+        DO $$ BEGIN
+            CREATE TYPE battlecardtype AS ENUM ('pricing', 'competitor', 'feature', 'objection', 'case_study', 'technical', 'general');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
     """)
 
     # Create conversations table
