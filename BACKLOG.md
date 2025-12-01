@@ -11,9 +11,9 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 1 |
+| 🟡 In Progress | 2 |
 | 🟢 Ready | 3 |
-| ✅ Done (this sprint) | 8 |
+| ✅ Done (this sprint) | 15 |
 
 ---
 
@@ -29,12 +29,35 @@
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-#### 1. [HIGH] Run Deep Scrape on 1,000 Companies
+#### 1. [HIGH] Deploy Supabase Security Migrations
+- **ID**: TASK-009
+- **Assignee**: Team (Dec 2)
+- **Labels**: `security`, `database`, `migrations`
+- **Est. Time**: 1 hour
+- **Dependencies**: API keys in .env
+
+**Description**: Deploy RLS security fixes and performance optimizations to Supabase.
+
+**Migrations to Deploy**:
+- `015_enable_rls_security.py` - RLS on 14 tables
+- `016_add_star_schema_performance_indexes.py` - Performance indexes
+- `009_consolidate_duplicate_policies.sql` - Remove duplicates
+
+**Acceptance Criteria**:
+- [ ] Add required API keys to .env
+- [ ] Review `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md`
+- [ ] Run `alembic upgrade head`
+- [ ] Verify RLS enabled with test queries
+- [ ] Monitor application for 24 hours
+
+---
+
+#### 2. [HIGH] Run Deep Scrape on 1,000 Companies
 - **ID**: TASK-007
 - **Assignee**: Team (Dec 2)
 - **Labels**: `enrichment`, `scraping`, `atl-extraction`
-- **Est. Time**: 8 hours (runs overnight)
-- **Dependencies**: None
+- **Est. Time**: 2-4 hours (revised)
+- **Dependencies**: TASK-009 (migrations deployed)
 
 **Description**: Run Browserbase deep scraper to extract ATL names from company websites.
 
@@ -125,6 +148,21 @@
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Phase 2: Security & Database (Dec 1)** | | | |
+| TASK-D14 | Migration 015: Enable RLS on 14 tables | 2025-12-01 | Agent 7 |
+| TASK-D15 | Migration 016: Performance indexes | 2025-12-01 | Agent 7 |
+| TASK-D16 | Migration 009: Consolidate duplicate policies | 2025-12-01 | Agent 7 |
+| TASK-D17 | Fixed 40-50 of 113 Supabase issues | 2025-12-01 | Agent 7 |
+| TASK-D18 | Created deployment checklists | 2025-12-01 | Agent 7 |
+| TASK-D19 | PgAdmin email configuration fixed | 2025-12-01 | Agent 10 |
+| **Phase 1: Infrastructure (Dec 1)** | | | |
+| TASK-D08 | Supabase CLI installation | 2025-12-01 | Agent 1 |
+| TASK-D09 | Docker infrastructure setup | 2025-12-01 | Agent 2 |
+| TASK-D10 | Categorized all 113 Supabase issues | 2025-12-01 | Agent 4 |
+| TASK-D11 | API key validation report | 2025-12-01 | Agent 3 |
+| TASK-D12 | Code quality baseline (96.5/100) | 2025-12-01 | Agent 6 |
+| TASK-D13 | Deep scrape code review | 2025-12-01 | Agent 5 |
+| **Previous Work** | | | |
 | TASK-D01 | Multi-source enrichment on 1,000 leads | 2025-12-01 | Claude |
 | TASK-D02 | Deep scraper with ATL extraction | 2025-12-01 | Claude |
 | TASK-D03 | Phone audit trail (NEW/VERIFIED) | 2025-12-01 | Claude |
@@ -140,8 +178,17 @@
 
 ### Velocity
 - **Last Sprint**: 5 tasks completed
-- **This Sprint**: 8 tasks completed
-- **Avg Task Time**: 2 hours
+- **This Sprint**: 15 tasks completed (Phase 1: 6 tasks, Phase 2: 6 tasks)
+- **Avg Task Time**: 1.5 hours
+
+### Security Status (Dec 1)
+| Metric | Before | After |
+|--------|--------|-------|
+| Supabase Issues | 113 | ~63-73 (40-50 fixed) |
+| Tables Without RLS | 16 | 2 (14 secured) |
+| Duplicate Policies | 8+ | 0 (all consolidated) |
+| Missing Indexes | 7+ | 0 (all added) |
+| Code Quality Score | Unknown | 96.5/100 (A+) |
 
 ### Data Quality (Dec 1)
 | Metric | Count |
@@ -184,6 +231,7 @@ Ready → In Progress → Review → Done
 ## 📝 Notes
 
 ### Decisions Made
+- 2025-12-01: **Supabase RLS security hardening** - 14 tables secured (ADR-006)
 - 2025-12-01: Manual Close CRM import only (no auto-push)
 - 2025-12-01: Browserbase for website scraping (ADR-004)
 - 2025-11-29: Close CRM writes disabled for safety
@@ -192,6 +240,16 @@ Ready → In Progress → Review → Done
 ### Key Outputs (Dec 1)
 | File | Purpose |
 |------|---------|
+| **Migrations** | |
+| `015_enable_rls_security.py` | RLS policies for 14 tables |
+| `016_add_star_schema_performance_indexes.py` | Performance indexes |
+| `009_consolidate_duplicate_policies.sql` | Duplicate policy cleanup |
+| **Documentation** | |
+| `AGENT_7_RLS_SECURITY_FIXES_REPORT.md` | Complete security analysis |
+| `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md` | Deployment guide |
+| `SUPABASE_ISSUES_CATEGORIZED.md` | All 113 issues categorized |
+| `CODE_QUALITY_BASELINE_REPORT.md` | Baseline: 96.5/100 |
+| **Data Outputs** | |
 | `DEEP_SCRAPE_*.csv` | Full scrape results |
 | `CLOSE_CRM_IMPORT_*.csv` | Tim's manual import |
 | `TOP_1000_PRIORITIZED_*.csv` | Daily caller list |

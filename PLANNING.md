@@ -164,3 +164,13 @@ Company phone         +10 pts
 - **Date**: 2025-12-01
 - **Decision**: Export CSV for manual import, no auto-push to Close
 - **Rationale**: Tim reviews leads before adding to CRM, avoids data quality issues
+
+### ADR-006: Supabase RLS Security Hardening
+- **Date**: 2025-12-01
+- **Decision**: Enable Row Level Security on all 14 public tables
+- **Rationale**: 113 Supabase audit issues identified - 40-50 critical security issues (missing RLS policies) fixed in migration 015
+- **Migrations Created**:
+  - `015_enable_rls_security.py` - Enables RLS on 14 tables, adds service role policies
+  - `016_add_star_schema_performance_indexes.py` - Performance indexes (JSONB GIN, composite)
+  - `009_consolidate_duplicate_policies.sql` - Removes duplicate RLS policies
+- **Impact**: Protects dim_companies, dim_contacts, fact_opportunities, re_enrich_queue from unauthorized access
