@@ -14,8 +14,9 @@ import {
   OutreachMetrics,
   ICPQueue,
 } from "@/components/dashboard";
+import { CommandCenter, DraftReviewQueue } from "@/components/ai";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, ClipboardList, Target } from "lucide-react";
+import { BarChart3, ClipboardList, Target, Zap, Mail } from "lucide-react";
 
 export default function Dashboard() {
   const [period, setPeriod] = useState<"7d" | "mtd">("7d");
@@ -30,9 +31,17 @@ export default function Dashboard() {
         <TimePeriodToggle value={period} onChange={setPeriod} />
       </div>
 
-      {/* Tab Navigation: CEO/CTO View vs BDR View vs ICP/Sales */}
-      <Tabs defaultValue="icp" className="space-y-6">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+      {/* Tab Navigation: AI Command Center + CEO/CTO View vs BDR View vs ICP/Sales */}
+      <Tabs defaultValue="command-center" className="space-y-6">
+        <TabsList className="grid w-full max-w-4xl grid-cols-5">
+          <TabsTrigger value="command-center" className="flex items-center gap-2">
+            <Zap className="h-4 w-4" />
+            Command Center
+          </TabsTrigger>
+          <TabsTrigger value="draft-queue" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Draft Queue
+          </TabsTrigger>
           <TabsTrigger value="icp" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             ICP Queue
@@ -46,6 +55,16 @@ export default function Dashboard() {
             CEO/CTO
           </TabsTrigger>
         </TabsList>
+
+        {/* AI Command Center - Interactive Chat with LangGraph Agents */}
+        <TabsContent value="command-center">
+          <CommandCenter />
+        </TabsContent>
+
+        {/* Draft Review Queue - Email/LinkedIn Message Review */}
+        <TabsContent value="draft-queue">
+          <DraftReviewQueue />
+        </TabsContent>
 
         {/* ICP Queue - Tim's Smart Views + AE Pipeline */}
         <TabsContent value="icp" className="space-y-6">
