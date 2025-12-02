@@ -577,6 +577,286 @@ def extract_maintenance_plans(content):
     return unique_plans[:5]  # Return top 5 to avoid noise
 
 
+def extract_industries(content):
+    """Extract industries served by the company.
+
+    Looks for patterns like:
+    - "Industries Served" sections
+    - "We serve: Oil/Gas, Mining, Agriculture"
+    - Bulleted industry lists
+
+    Returns list of industries found (e.g., ["Oil/Gas", "Mining", "Renewable Energy"]).
+    """
+    industries = set()
+    content_lower = content.lower()
+
+    # Common industrial sectors (Brandon Clark example: 12 industries)
+    industry_keywords = {
+        # Energy sector
+        'oil/gas': ['oil', 'gas', 'oil/gas', 'oil & gas', 'oil and gas', 'petroleum', 'refinery', 'refineries'],
+        'mining': ['mining', 'mines', 'mineral', 'quarry', 'quarries'],
+        'renewable energy': ['renewable', 'wind', 'solar farm', 'hydro', 'hydroelectric', 'green energy'],
+        'power generation': ['power generation', 'power plant', 'utility', 'utilities', 'electric utility'],
+        # Industrial
+        'manufacturing': ['manufacturing', 'factory', 'factories', 'production', 'industrial'],
+        'food processing': ['food processing', 'food & beverage', 'food and beverage', 'brewery', 'dairy'],
+        'pulp & paper': ['pulp', 'paper', 'paper mill', 'pulp & paper', 'pulp and paper'],
+        'chemical': ['chemical', 'petrochemical', 'pharmaceutical', 'plastics'],
+        'steel & metals': ['steel', 'metals', 'foundry', 'foundries', 'smelter', 'aluminum'],
+        # Infrastructure
+        'water/wastewater': ['water treatment', 'wastewater', 'water utility', 'sewage', 'municipal water'],
+        'transportation': ['transportation', 'railroad', 'marine', 'port', 'airport', 'transit'],
+        'agriculture': ['agriculture', 'farm', 'farming', 'agribusiness', 'irrigation'],
+        # Commercial/Other
+        'healthcare': ['hospital', 'healthcare', 'medical center', 'clinic'],
+        'data centers': ['data center', 'data centers', 'colocation'],
+        'commercial real estate': ['commercial real estate', 'property management', 'facilities'],
+        'education': ['university', 'school', 'campus', 'education'],
+        'government': ['government', 'military', 'federal', 'municipal'],
+    }
+
+    # Look for industry keywords in content
+    for industry, keywords in industry_keywords.items():
+        for keyword in keywords:
+            if keyword in content_lower:
+                industries.add(industry.title())
+                break
+
+    # Also look for "Industries Served" sections
+    lines = content.split('\n')
+    in_industries_section = False
+
+    for line in lines:
+        line_lower = line.strip().lower()
+
+        # Detect start of industries section
+        if any(phrase in line_lower for phrase in ['industries served', 'industries we serve', 'sectors served']):
+            in_industries_section = True
+            continue
+
+        # If in section, look for capitalized industry names
+        if in_industries_section:
+            # Stop if we hit another section header
+            if line_lower.startswith('about') or line_lower.startswith('contact') or line_lower.startswith('services'):
+                in_industries_section = False
+                continue
+
+            # Look for capitalized phrases that could be industries
+            line_clean = line.strip()
+            if 3 < len(line_clean) < 40 and line_clean[0].isupper():
+                # Filter out navigation/generic words
+                if not any(word in line_lower for word in ['home', 'about', 'contact', 'call', 'email', 'learn more']):
+                    industries.add(line_clean)
+
+    return sorted(list(industries))[:15]  # Cap at 15 industries
+
+
+def extract_company_age(content):
+    """Extract company age / years in business.
+
+    Looks for patterns like:
+    - "Since 1950" / "Est. 1950" / "Established 1950"
+    - "75 years of experience"
+    - "Founded in 1950"
+    - "Serving customers for over 50 years"
+
+    Returns dict with 'founded_year' and 'years_in_business'.
+    """
+    from datetime import datetime
+    current_year = datetime.now().year
+
+    result = {'founded_year': None, 'years_in_business': None}
+
+    # Pattern 1: "Since YYYY" / "Est. YYYY" / "Established YYYY"
+    year_patterns = [
+        r'(?:since|est\.?|established|founded)\s*(?:in\s*)?(\d{4})',
+        r'(\d{4})\s*[-–]\s*(?:present|today|' + str(current_year) + ')',
+        r'founded\s+(?:in\s+)?(\d{4})',
+        r'serving\s+(?:since|for\s+over)\s+(\d{4})',
+    ]
+
+    for pattern in year_patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            year = int(match.group(1))
+            if 1900 <= year <= current_year:
+                result['founded_year'] = year
+                result['years_in_business'] = current_year - year
+                return result
+
+    # Pattern 2: "XX years of experience" / "over XX years"
+    years_patterns = [
+        r'(\d{1,3})\+?\s*years?\s*(?:of\s+)?(?:experience|in\s+business|serving)',
+        r'(?:over|more\s+than)\s+(\d{1,3})\s*years?',
+        r'for\s+(?:the\s+past\s+)?(\d{1,3})\+?\s*years?',
+    ]
+
+    for pattern in years_patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            years = int(match.group(1))
+            if 1 <= years <= 150:  # Sanity check
+                result['years_in_business'] = years
+                result['founded_year'] = current_year - years
+                return result
+
+    return result
+
+
+def extract_employee_count(content):
+    """Extract employee count from content.
+
+    Looks for patterns like:
+    - "200+ employees"
+    - "team of 50"
+    - "50-100 employees"
+    - "workforce of 200"
+
+    Returns employee count as text (e.g., "200+", "50-100").
+    """
+    patterns = [
+        r'(\d{1,5})\+?\s*employees?',
+        r'team\s+of\s+(\d{1,5})\+?',
+        r'(\d{1,5})\s*[-–]\s*(\d{1,5})\s*employees?',
+        r'workforce\s+of\s+(\d{1,5})\+?',
+        r'employs?\s+(?:over\s+)?(\d{1,5})\+?',
+        r'staff\s+of\s+(\d{1,5})\+?',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, content, re.IGNORECASE)
+        if match:
+            groups = match.groups()
+            if len(groups) == 2 and groups[1]:  # Range like "50-100"
+                return f"{groups[0]}-{groups[1]}"
+            elif groups[0]:
+                count = int(groups[0])
+                if 1 <= count <= 100000:  # Sanity check
+                    # Check if there's a + after the number
+                    if '+' in match.group(0):
+                        return f"{count}+"
+                    return str(count)
+
+    return None
+
+
+def extract_certifications(content):
+    """Extract certifications and accreditations.
+
+    Looks for patterns like:
+    - "EASA accredited"
+    - "Siemens warranty center"
+    - "NATE certified"
+    - "EPA certified"
+
+    Returns list of certifications found.
+    """
+    certifications = set()
+    content_lower = content.lower()
+
+    # Known certifications and accreditations (from Brandon Clark example)
+    cert_patterns = {
+        # Industry accreditations
+        'EASA Accredited': ['easa', 'easa accredited', 'easa certified'],
+        'NATE Certified': ['nate', 'nate certified', 'nate certification'],
+        'EPA Certified': ['epa certified', 'epa certification', 'section 608'],
+        'OSHA Certified': ['osha', 'osha certified', 'osha 10', 'osha 30'],
+
+        # Manufacturer partnerships (HIGH VALUE - indicates quality)
+        'Siemens Warranty Center': ['siemens warranty', 'siemens certified', 'siemens partner'],
+        'Koyo Certified': ['koyo certified', 'koyo partner'],
+        'Carrier Factory Authorized': ['carrier factory', 'carrier authorized'],
+        'Trane Comfort Specialist': ['trane comfort specialist', 'trane certified'],
+        'Lennox Premier Dealer': ['lennox premier', 'lennox dealer'],
+        'Bryant Factory Authorized': ['bryant factory', 'bryant authorized'],
+        'Rheem Pro Partner': ['rheem pro', 'rheem partner'],
+        'Mitsubishi Diamond Contractor': ['mitsubishi diamond', 'diamond contractor'],
+
+        # Solar/Energy certifications
+        'NABCEP Certified': ['nabcep', 'nabcep certified'],
+        'Tesla Certified Installer': ['tesla certified', 'tesla powerwall certified'],
+        'Enphase Certified': ['enphase certified', 'enphase installer'],
+        'SunPower Master Dealer': ['sunpower master', 'sunpower dealer'],
+
+        # General contractor certs
+        'BBB Accredited': ['bbb accredited', 'better business bureau', 'bbb a+'],
+        'Licensed & Insured': ['licensed and insured', 'licensed & insured', 'fully licensed'],
+        'Bonded': ['fully bonded', 'licensed bonded'],
+
+        # ISO certifications
+        'ISO 9001': ['iso 9001', 'iso 9001:2015'],
+        'ISO 14001': ['iso 14001'],
+    }
+
+    for cert_name, keywords in cert_patterns.items():
+        for keyword in keywords:
+            if keyword in content_lower:
+                certifications.add(cert_name)
+                break
+
+    # Also look for generic certification patterns
+    generic_patterns = [
+        r'certified\s+(?:by|with)\s+([A-Z][A-Za-z\s&]+)',
+        r'([A-Z]{2,6})\s+certified',
+        r'authorized\s+([A-Z][A-Za-z\s&]+)\s+dealer',
+        r'([A-Z][A-Za-z\s&]+)\s+warranty\s+center',
+    ]
+
+    for pattern in generic_patterns:
+        matches = re.findall(pattern, content)
+        for match in matches:
+            if 3 < len(match) < 50:
+                certifications.add(match.strip())
+
+    return sorted(list(certifications))[:10]  # Cap at 10
+
+
+def extract_emergency_services(content):
+    """Extract emergency/24-7 service availability.
+
+    Looks for patterns like:
+    - "24/7 emergency service"
+    - "Call us anytime"
+    - Emergency phone numbers
+
+    Returns dict with 'has_emergency_services' (bool) and 'emergency_phone' (str or None).
+    """
+    result = {'has_emergency_services': False, 'emergency_phone': None}
+    content_lower = content.lower()
+
+    # Check for emergency service indicators
+    emergency_keywords = [
+        '24/7', '24-7', '24 hour', '24-hour', 'around the clock',
+        'emergency service', 'emergency repair', 'emergency call',
+        'after hours', 'after-hours', 'nights and weekends',
+        'call anytime', 'available anytime', 'always available',
+        'emergency response', 'same day service', 'same-day',
+    ]
+
+    for keyword in emergency_keywords:
+        if keyword in content_lower:
+            result['has_emergency_services'] = True
+            break
+
+    # If emergency services found, look for dedicated emergency phone
+    if result['has_emergency_services']:
+        # Look for phone numbers near "emergency" keyword
+        lines = content.split('\n')
+        for i, line in enumerate(lines):
+            line_lower = line.lower()
+            if 'emergency' in line_lower or '24/7' in line_lower or '24-7' in line_lower:
+                # Check this line and next 2 lines for a phone number
+                for j in range(i, min(i+3, len(lines))):
+                    phones = extract_phones(lines[j])
+                    if phones:
+                        result['emergency_phone'] = phones[0]
+                        break
+                if result['emergency_phone']:
+                    break
+
+    return result
+
+
 def extract_service_areas(content):
     """Extract service areas/cities from content.
 
@@ -732,6 +1012,14 @@ async def scrape_one(company_id, company_name, domain, extra_pages=None):
         'service_areas': [],
         'maintenance_plans': [],  # BDR gold - plan names for openers
         'owner_bios': [],  # BDR gold - personal details for rapport building
+        # NEW ICP enrichment fields (Dec 2, 2025)
+        'industries_served': [],
+        'founded_year': None,
+        'years_in_business': None,
+        'employee_count': None,
+        'certifications': [],
+        'has_emergency_services': False,
+        'emergency_phone': None,
         'pages_checked': [],
         'error': '',
         'duration': 0
@@ -765,6 +1053,17 @@ async def scrape_one(company_id, company_name, domain, extra_pages=None):
                 result['service_areas'] = extract_service_areas(text)
                 result['maintenance_plans'] = extract_maintenance_plans(text)
                 result['owner_bios'] = extract_owner_quote(text)
+
+                # NEW: Extract ICP enrichment fields
+                result['industries_served'] = extract_industries(text)
+                company_age = extract_company_age(text)
+                result['founded_year'] = company_age['founded_year']
+                result['years_in_business'] = company_age['years_in_business']
+                result['employee_count'] = extract_employee_count(text)
+                result['certifications'] = extract_certifications(text)
+                emergency = extract_emergency_services(text)
+                result['has_emergency_services'] = emergency['has_emergency_services']
+                result['emergency_phone'] = emergency['emergency_phone']
 
                 # Discover team links from navigation
                 discovered_links = await find_team_links(page)
@@ -865,6 +1164,36 @@ async def scrape_one(company_id, company_name, domain, extra_pages=None):
                         if bio.get('bio_snippet') and bio['bio_snippet'] not in existing_snippets:
                             result['owner_bios'].append(bio)
 
+                    # NEW: Extract ICP enrichment fields from secondary pages
+                    # Industries
+                    new_industries = extract_industries(text)
+                    for ind in new_industries:
+                        if ind not in result['industries_served']:
+                            result['industries_served'].append(ind)
+
+                    # Company age (only if not found yet)
+                    if not result['founded_year']:
+                        company_age = extract_company_age(text)
+                        if company_age['founded_year']:
+                            result['founded_year'] = company_age['founded_year']
+                            result['years_in_business'] = company_age['years_in_business']
+
+                    # Employee count (only if not found yet)
+                    if not result['employee_count']:
+                        result['employee_count'] = extract_employee_count(text)
+
+                    # Certifications
+                    new_certs = extract_certifications(text)
+                    for cert in new_certs:
+                        if cert not in result['certifications']:
+                            result['certifications'].append(cert)
+
+                    # Emergency services (only if not found yet)
+                    if not result['has_emergency_services']:
+                        emergency = extract_emergency_services(text)
+                        result['has_emergency_services'] = emergency['has_emergency_services']
+                        result['emergency_phone'] = emergency['emergency_phone']
+
                     # Extract additional phones/emails
                     content = await page.content()
                     for phone in extract_phones(content):
@@ -903,26 +1232,40 @@ def sync_to_supabase(supabase, results):
 
         company_id = r['company_id']
 
-        # Update company with service_areas if found
+        # Update company with all extracted data
         update_data = {'last_enriched_at': datetime.now().isoformat()}
+
+        # Service areas
         if r.get('service_areas'):
-            # Store service areas as JSON array in a dedicated column if it exists
-            # Otherwise just track in the enrichment metadata
             update_data['service_areas'] = r['service_areas']
+
+        # NEW: ICP enrichment fields (Dec 2, 2025)
+        if r.get('industries_served'):
+            update_data['industries_served'] = r['industries_served']
+        if r.get('founded_year'):
+            update_data['founded_year'] = r['founded_year']
+        if r.get('years_in_business'):
+            update_data['years_in_business'] = r['years_in_business']
+        if r.get('employee_count'):
+            update_data['employee_count'] = r['employee_count']
+        if r.get('certifications'):
+            update_data['certifications'] = r['certifications']
+        if r.get('has_emergency_services'):
+            update_data['has_emergency_services'] = r['has_emergency_services']
+        if r.get('emergency_phone'):
+            update_data['emergency_phone'] = r['emergency_phone']
+
         try:
             supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
             companies_updated += 1
         except Exception as e:
-            # If service_areas column doesn't exist, try without it
-            if 'service_areas' in update_data:
-                del update_data['service_areas']
-                try:
-                    supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
-                    companies_updated += 1
-                except Exception as e2:
-                    print(f"    Update error: {e2}")
-            else:
-                print(f"    Update error: {e}")
+            # If new columns don't exist yet, fall back to basic fields
+            fallback_data = {'last_enriched_at': datetime.now().isoformat()}
+            try:
+                supabase.table('dim_companies').update(fallback_data).eq('company_id', company_id).execute()
+                companies_updated += 1
+            except Exception as e2:
+                print(f"    Update error: {e2}")
 
         # Add ALL contacts (ATL + BTL) with proper is_atl flag
         for contact in r['atl_contacts']:
@@ -991,12 +1334,26 @@ async def run_batch(supabase, companies):
             areas = len(r.get('service_areas', []))
             brands = len(r.get('brands', []))
             plans = len(r.get('maintenance_plans', []))
-            pages = len(r.get('pages_checked', []))
-            # Show maintenance plan names if found (BDR gold!)
-            plan_info = ""
+            industries = len(r.get('industries_served', []))
+            certs = len(r.get('certifications', []))
+
+            # Build info string with highlights
+            info_parts = []
+            if r.get('years_in_business'):
+                info_parts.append(f"🏢{r['years_in_business']}yr")
+            if r.get('employee_count'):
+                info_parts.append(f"👥{r['employee_count']}")
+            if r.get('has_emergency_services'):
+                info_parts.append("🚨24/7")
+            if industries:
+                info_parts.append(f"🏭{industries}ind")
+            if certs:
+                info_parts.append(f"🏅{certs}cert")
             if r.get('maintenance_plans'):
-                plan_info = f" 🎯{r['maintenance_plans'][0][:20]}"
-            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands{plan_info})")
+                info_parts.append(f"🎯{r['maintenance_plans'][0][:15]}")
+
+            extra = f" [{' '.join(info_parts)}]" if info_parts else ""
+            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands){extra}")
         else:
             print(f"FAIL: {r['error']}")
             # Log to failed companies CSV
