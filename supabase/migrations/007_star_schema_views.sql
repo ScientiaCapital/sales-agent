@@ -156,6 +156,7 @@ ORDER BY icp_score DESC NULLS LAST
 LIMIT 50;
 
 -- Helper view: Funnel metrics for dashboard
+DROP VIEW IF EXISTS v_pipeline_funnel;
 CREATE OR REPLACE VIEW v_pipeline_funnel AS
 SELECT
     current_stage,

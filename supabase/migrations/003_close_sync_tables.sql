@@ -224,7 +224,12 @@ ALTER TABLE close_opportunities ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hot_nurture_leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE icp_gold_leads ENABLE ROW LEVEL SECURITY;
 
--- Allow service role full access
+-- Allow service role full access (drop first if exists for idempotency)
+DROP POLICY IF EXISTS "Service role access" ON close_activities;
+DROP POLICY IF EXISTS "Service role access" ON close_opportunities;
+DROP POLICY IF EXISTS "Service role access" ON hot_nurture_leads;
+DROP POLICY IF EXISTS "Service role access" ON icp_gold_leads;
+
 CREATE POLICY "Service role access" ON close_activities FOR ALL USING (true);
 CREATE POLICY "Service role access" ON close_opportunities FOR ALL USING (true);
 CREATE POLICY "Service role access" ON hot_nurture_leads FOR ALL USING (true);
