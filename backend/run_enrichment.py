@@ -164,19 +164,33 @@ TEAM_PAGE_PATHS = [
 ]
 
 # Services that indicate good ICP fit for Coperniq
+# HIGH VALUE: generators, commercial, maintenance = larger operations
 ICP_SERVICES = [
+    # GOLD signals (larger operations)
+    'generator', 'generators', 'standby generator', 'backup generator',
+    'commercial', 'commercial hvac', 'commercial refrigeration',
+    'maintenance', 'maintenance plan', 'maintenance agreement', 'service agreement',
+    'preventative maintenance', 'preventive maintenance',
+    # Standard HVAC
     'ac repair', 'air conditioning', 'hvac', 'heating', 'cooling',
-    'preventative maintenance', 'maintenance plan', 'service agreement',
-    'ductwork', 'furnace', 'heat pump', 'mini split', 'commercial hvac',
-    'plumbing', 'electrical', 'refrigeration'
+    'ductwork', 'furnace', 'heat pump', 'mini split', 'ductless',
+    # Multi-trade (bigger companies)
+    'plumbing', 'electrical', 'refrigeration',
+    # Residential indicators
+    'residential', 'home comfort'
 ]
 
 # HVAC brands - indicates established contractor with brand partnerships
 HVAC_BRANDS = [
+    # Premium HVAC brands
     'Carrier', 'Trane', 'Lennox', 'Bryant', 'Rheem', 'Ruud', 'Goodman', 'Daikin',
     'American Standard', 'York', 'Amana', 'Mitsubishi', 'Fujitsu', 'LG', 'Samsung',
     'Bosch', 'Honeywell', 'Nest', 'Ecobee', 'Aprilaire', 'Coleman', 'Heil',
-    'Payne', 'Comfortmaker', 'Tempstar', 'Day & Night', 'Arcoaire', 'Keeprite'
+    'Payne', 'Comfortmaker', 'Tempstar', 'Day & Night', 'Arcoaire', 'Keeprite',
+    # Generator brands (HIGH VALUE - indicates larger operation)
+    'Generac', 'Kohler', 'Cummins', 'Briggs & Stratton', 'Champion',
+    # Water heater brands
+    'Navien', 'Rinnai', 'Noritz', 'Takagi', 'Bradford White', 'A.O. Smith'
 ]
 
 # Service area page paths to check (with trailing slash variants)
@@ -320,7 +334,10 @@ def extract_contacts(content):
                         'plumbing', 'electrical', 'products', 'systems', 'solutions',
                         'awards', 'recognition', 'promised', 'spring', 'valley', 'city',
                         'rating', 'ratings', 'reviews', 'review', 'google', 'yelp',
-                        'privacy', 'policy', 'terms', 'conditions', 'copyright'
+                        'privacy', 'policy', 'terms', 'conditions', 'copyright',
+                        # More false positives from McAllister pattern
+                        'full', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be',
+                        'membership', 'plan', 'plans', 'club', 'program', 'programs'
                     }
                     # Skip if any word is in skip list OR line contains '*' (form fields)
                     if not any(w.lower() in skip_words for w in words) and '*' not in current_line:
@@ -393,6 +410,58 @@ def extract_owner_quote(content):
     return quotes
 
 
+def extract_maintenance_plans(content):
+    """Extract maintenance plan/membership names - BDR gold for openers.
+
+    Common patterns:
+    - "Comfort Club"
+    - "Priority Service Agreement"
+    - "Home Protection Plan"
+    - "VIP Membership"
+    - "Service Partner Program"
+    """
+    plans = []
+    content_lower = content.lower()
+
+    # Keywords that indicate a maintenance plan section
+    plan_keywords = [
+        'comfort club', 'service club', 'priority club', 'vip club',
+        'maintenance plan', 'maintenance agreement', 'service agreement',
+        'service plan', 'protection plan', 'home protection',
+        'membership', 'priority member', 'preferred customer',
+        'service partner', 'comfort agreement', 'priority service',
+        'maintenance membership', 'annual plan', 'yearly plan'
+    ]
+
+    for keyword in plan_keywords:
+        if keyword in content_lower:
+            # Try to find the full branded name (capitalized version)
+            # Look for the keyword in original content with surrounding context
+            pattern = rf'([A-Z][A-Za-z\s&\']+)?({re.escape(keyword)})([A-Za-z\s&\']+)?'
+            matches = re.findall(pattern, content, re.IGNORECASE)
+            for match in matches:
+                # Combine the parts
+                full_name = ''.join(match).strip()
+                if full_name and len(full_name) <= 50:
+                    # Clean up and add
+                    plans.append(full_name.title())
+
+            # If no fancy name found, just add the keyword
+            if not any(keyword.lower() in p.lower() for p in plans):
+                plans.append(keyword.title())
+
+    # Deduplicate
+    seen = set()
+    unique_plans = []
+    for p in plans:
+        p_lower = p.lower()
+        if p_lower not in seen:
+            seen.add(p_lower)
+            unique_plans.append(p)
+
+    return unique_plans[:5]  # Return top 5 to avoid noise
+
+
 def extract_service_areas(content):
     """Extract service areas/cities from content.
 
@@ -410,14 +479,26 @@ def extract_service_areas(content):
     in_service_section = False
     service_section_lines = 0
 
-    # Common California cities that might appear (to validate found names)
-    # We'll be permissive but filter out obvious non-cities
+    # Filter out non-city words that appear in service sections
     skip_words = {
+        # Navigation
         'home', 'about', 'contact', 'services', 'team', 'blog', 'news',
+        'call', 'today', 'now', 'free', 'estimate', 'quote', 'schedule',
+        # Industry terms (NOT cities!)
         'heating', 'cooling', 'hvac', 'air', 'conditioning', 'repair',
         'service', 'areas', 'we', 'serve', 'our', 'the', 'and', 'or',
-        'call', 'today', 'now', 'free', 'estimate', 'quote', 'schedule',
-        'residential', 'commercial', 'emergency', 'maintenance', 'installation'
+        'residential', 'commercial', 'emergency', 'maintenance', 'installation',
+        'plumbing', 'electrical', 'generator', 'generators', 'furnace',
+        'ductless', 'mini', 'split', 'heat', 'pump', 'water', 'heater',
+        # Common false positive phrases
+        'air conditioning', 'full service', 'service agreement', 'new jersey',
+        'south jersey', 'north jersey', 'central jersey',
+        # Brand names (not cities)
+        'carrier', 'trane', 'lennox', 'bryant', 'rheem', 'goodman', 'daikin',
+        'generac', 'kohler', 'american', 'standard', 'york', 'amana',
+        # Common words that get capitalized
+        'county', 'township', 'borough', 'city', 'town', 'village',
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
     }
 
     for i, line in enumerate(lines):
@@ -447,8 +528,11 @@ def extract_service_areas(content):
             words = re.findall(r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?(?:\s+[A-Z][a-z]+)?', line_clean)
             for word in words:
                 word_lower = word.lower()
-                # Skip if it's a common non-city word
+                # Skip if it's a common non-city word (check full phrase and individual words)
                 if word_lower in skip_words:
+                    continue
+                # Also check if any word in the phrase is a skip word
+                if any(w in skip_words for w in word_lower.split()):
                     continue
                 # Skip very short or very long
                 if len(word) < 3 or len(word) > 30:
@@ -468,7 +552,11 @@ def extract_service_areas(content):
             match_text = line_clean[serving_match.start():serving_match.end()]
             cities = re.findall(r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?', match_text)
             for city in cities:
-                if city.lower() not in skip_words and 3 <= len(city) <= 25:
+                city_lower = city.lower()
+                # Skip if any word in the phrase is a skip word
+                if city_lower in skip_words or any(w in skip_words for w in city_lower.split()):
+                    continue
+                if 3 <= len(city) <= 25:
                     areas.add(city)
 
     return sorted(list(areas))
@@ -516,6 +604,7 @@ async def scrape_one(company_id, company_name, domain):
         'services': [],
         'brands': [],
         'service_areas': [],
+        'maintenance_plans': [],  # BDR gold - plan names for openers
         'pages_checked': [],
         'error': '',
         'duration': 0
@@ -550,6 +639,7 @@ async def scrape_one(company_id, company_name, domain):
                 result['services'] = extract_services(text)
                 result['brands'] = extract_brands(text)
                 result['service_areas'] = extract_service_areas(text)
+                result['maintenance_plans'] = extract_maintenance_plans(text)
 
                 # Discover team links from navigation
                 discovered_links = await find_team_links(page)
@@ -623,6 +713,12 @@ async def scrape_one(company_id, company_name, domain):
                         if brand not in result['brands']:
                             result['brands'].append(brand)
 
+                    # Extract maintenance plans
+                    new_plans = extract_maintenance_plans(text)
+                    for plan in new_plans:
+                        if plan not in result['maintenance_plans']:
+                            result['maintenance_plans'].append(plan)
+
                     # Extract additional phones/emails
                     content = await page.content()
                     for phone in extract_phones(content):
@@ -685,18 +781,24 @@ def sync_to_supabase(supabase, results):
 
         # Add ALL contacts (ATL + BTL) with proper is_atl flag
         for contact in r['atl_contacts']:
-            name_parts = contact['name'].split()
+            # Skip contacts with invalid names (too long, contains bad chars)
+            name = contact['name'].strip()
+            if len(name) > 60 or '-' in name or '\n' in name:
+                continue  # Skip garbage contacts like "agreements Full - Service"
+
+            name_parts = name.split()
+            # Truncate to fit DB columns (varchar 255)
             contact_data = {
                 'company_id': company_id,
-                'full_name': contact['name'],
-                'first_name': name_parts[0] if name_parts else '',
-                'last_name': ' '.join(name_parts[1:]) if len(name_parts) > 1 else '',
-                'title': contact['title'],
+                'full_name': name[:100],  # Truncate to safe length
+                'first_name': (name_parts[0] if name_parts else '')[:50],
+                'last_name': (' '.join(name_parts[1:]) if len(name_parts) > 1 else '')[:50],
+                'title': contact['title'][:100],  # Truncate title too
                 'is_atl': contact.get('is_atl', True),  # Use actual flag from extraction
                 'source': 'enrichment_runner'
             }
             try:
-                existing = supabase.table('dim_contacts').select('contact_id').eq('company_id', company_id).eq('full_name', contact['name']).execute()
+                existing = supabase.table('dim_contacts').select('contact_id').eq('company_id', company_id).eq('full_name', name[:100]).execute()
                 if not existing.data:
                     supabase.table('dim_contacts').insert(contact_data).execute()
                     contacts_added += 1
@@ -743,8 +845,13 @@ async def run_batch(supabase, companies):
             services = len(r.get('services', []))
             areas = len(r.get('service_areas', []))
             brands = len(r.get('brands', []))
+            plans = len(r.get('maintenance_plans', []))
             pages = len(r.get('pages_checked', []))
-            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands)")
+            # Show maintenance plan names if found (BDR gold!)
+            plan_info = ""
+            if r.get('maintenance_plans'):
+                plan_info = f" 🎯{r['maintenance_plans'][0][:20]}"
+            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands{plan_info})")
         else:
             print(f"FAIL: {r['error']}")
             # Log to failed companies CSV
