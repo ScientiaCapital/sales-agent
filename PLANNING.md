@@ -82,23 +82,43 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 
 ---
 
-## Deep Scraper Architecture (NEW)
+## Deep Scraper Architecture (Updated Dec 2)
 
 ### Technology
 - **Browserbase**: Cloud browser automation (avoids bot detection)
 - **Playwright**: Browser control
-- **Concurrent scraping**: 10 companies at once
+- **Sequential scraping**: 5 companies at a time (interactive)
 
 ### Pages Scraped Per Company
 1. Landing page (homepage)
-2. Team / Management page
+2. Team / Meet-the-team pages (priority order)
 3. About Us page
-4. Contact page
-5. LinkedIn company page (via Google search)
+4. Service area pages (`/areas-served`, `/service-area`, etc.)
+5. Contact page
 
-### ATL Extraction Methods
-1. **Structured**: Cards with name + title
+### Data Extraction
+
+**ATL Contacts (Decision Makers)**:
+- Owner, Founder, CEO, President, VP, Director, GM
+
+**BTL Contacts (Staff)**:
+- Technician, Installer, Dispatcher, Coordinator, Estimator
+
+**Extraction Methods**:
+1. **Structured**: Cards with name + title (team page pattern)
 2. **Text patterns**: "Founded by X", "Owner: X", "President: X"
+3. **Quote attributions**: "- Name, Owner" format
+
+**ICP Signals Extracted**:
+- **Service Areas**: Cities served (company footprint indicator)
+- **HVAC Brands**: 28 brands (Carrier, Trane, Lennox, etc.)
+- **Services**: AC repair, maintenance plans, commercial HVAC
+
+### False Positive Filtering
+Skip words prevent detecting menu items as contacts:
+- Navigation: schedule, now, call, today, quote
+- Services: heating, cooling, installation, maintenance
+- Legal: privacy, policy, terms, copyright
 
 ### Output Files
 | File | Purpose |
@@ -208,3 +228,15 @@ Company phone         +10 pts
   - `run_linkedin_enrichment.py` - Full pipeline orchestrator
 - **Security**: API key exposure fixed in 4 files (never construct URL with API key)
 - **Rate Limits**: 30 companies/hr, 10 profiles/hr (conservative)
+
+### ADR-008: Enhanced ICP Signal Extraction (Service Areas + Brands)
+- **Date**: 2025-12-02
+- **Decision**: Extend deep scraper to capture service areas and HVAC brand partnerships
+- **Rationale**: Service areas indicate company footprint/scale; HVAC brands indicate established contractor status
+- **New Extractions**:
+  - **Service Areas**: Cities served from `/service-area`, `/areas-we-serve` pages
+  - **HVAC Brands**: 28 brands detected (Carrier, Trane, Lennox, Bryant, etc.)
+  - **BTL Contacts**: Technicians/installers captured alongside ATL decision makers
+  - **Owner Quotes**: "- Name, Owner" attribution patterns from message sections
+- **False Positive Filtering**: Expanded skip_words to filter menu items, service terms, legal text
+- **Impact**: Better ICP qualification - contractors serving 50+ cities with multiple brand partnerships = larger operations

@@ -13,7 +13,7 @@
 | 🔴 Blocked | 0 |
 | 🟡 In Progress | 1 |
 | 🟢 Ready | 2 |
-| ✅ Done (this sprint) | 22 |
+| ✅ Done (this sprint) | 23 |
 
 ---
 
@@ -137,6 +137,7 @@ python run_enrichment.py
 | TASK-D26 | Archived 49 obsolete Python scripts | 2025-12-02 | Claude |
 | TASK-D27 | Updated CLAUDE.md, PLANNING.md, TASK.md, BACKLOG.md | 2025-12-02 | Claude |
 | TASK-D28 | Created run_enrichment.py (interactive batch runner) | 2025-12-02 | Claude |
+| TASK-D29 | Enhanced scraper: service areas, HVAC brands, BTL contacts, owner quotes | 2025-12-02 | Claude |
 | **Phase 2: Security & Database (Dec 1)** | | | |
 | TASK-D14 | Migration 015: Enable RLS on 14 tables | 2025-12-01 | Agent 7 |
 | TASK-D15 | Migration 016: Performance indexes | 2025-12-01 | Agent 7 |

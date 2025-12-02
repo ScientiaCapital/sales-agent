@@ -244,6 +244,10 @@ async def scrape_domain(domain, company_name=None):
         else:
             print(f"      📍 {', '.join(areas[:10])}... and {len(areas)-10} more")
 
+    print(f"   HVAC Brands: {len(result.get('brands', []))}")
+    if result.get('brands'):
+        print(f"      🏭 {', '.join(result['brands'])}")
+
     # Step 4: Sync to Supabase
     print(f"\n☁️  Syncing to Supabase...")
     contacts_added = sync_results_to_supabase(supabase, company_id, result)
@@ -257,6 +261,7 @@ async def scrape_domain(domain, company_name=None):
     print(f"ATL contacts found: {len(atl_contacts)}")
     print(f"BTL contacts found: {len(btl_contacts)}")
     print(f"Service areas found: {len(result.get('service_areas', []))}")
+    print(f"HVAC brands found: {len(result.get('brands', []))}")
     print(f"New contacts added: {contacts_added}")
     print(f"Last enriched: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
