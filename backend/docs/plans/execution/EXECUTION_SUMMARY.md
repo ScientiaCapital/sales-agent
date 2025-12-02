@@ -1,6 +1,6 @@
 # Execution Plans - Consolidated Summary
 
-**Last Updated**: 2025-12-02  
+**Last Updated**: 2025-12-02 (Evening)
 **Purpose**: Single source of truth for all execution plans and pipeline documentation
 
 ---
@@ -9,9 +9,9 @@
 
 This document consolidates all execution plans from `backend/docs/plans/execution/` and summarizes pipeline execution results and validation status.
 
-**Total Execution Documents**: 3  
-**Historical Summaries**: 2  
-**Active Pipeline Docs**: 1
+**Total Execution Documents**: 4
+**Historical Summaries**: 2
+**Active Pipeline Docs**: 2
 
 ---
 
@@ -98,7 +98,49 @@ This document consolidates all execution plans from `backend/docs/plans/executio
 
 ## 🔄 Active Pipeline Documentation
 
-### 3. LinkedIn ATL Discovery Pipeline
+### 3. Coperniq ICP Enrichment Pipeline (Dec 2, 2025)
+**Status**: ✅ **RUNNING**
+
+**How to Run**:
+```bash
+cd backend
+source ../venv/bin/activate
+python run_enrichment.py
+```
+
+**What It Does**:
+- Pulls unenriched companies directly from Supabase
+- Scrapes 5 companies at a time using Browserbase cloud browsers
+- Extracts comprehensive ICP signals:
+  - ATL/BTL contacts (decision makers + staff)
+  - Phones, emails
+  - Services offered
+  - Service areas (cities served)
+  - OEM brands (100+ across HVAC, solar, battery, EV, generators)
+  - Maintenance plan names (BDR opener gold)
+- Syncs results back to Supabase (dim_companies, dim_contacts)
+- Press Enter for next batch, 'q' to quit
+
+**Current Progress** (Dec 2):
+- Total companies: 8,889
+- With domains: 3,643
+- Needing enrichment: ~3,500
+- Already enriched: ~75
+
+**Performance**:
+- ~27 seconds per company
+- ~2.5 minutes per batch of 5
+- ~30 hours total estimated
+
+**Edge Cases Handled**:
+- net::ERR_ABORTED on blocked pages (graceful skip)
+- varchar(255) overflow (field truncation)
+- False positive contacts (skip_words filtering)
+- Service area false positives (industry terms filtered)
+
+---
+
+### 4. LinkedIn ATL Discovery Pipeline
 **File**: `linkedin-atl-discovery-pipeline.md`  
 **Status**: ⚠️ **DESIGN COMPLETE, IMPLEMENTATION PENDING**
 
@@ -157,7 +199,7 @@ This document consolidates all execution plans from `backend/docs/plans/executio
 | Document Type | Count | Status |
 |---------------|-------|--------|
 | Historical Summaries | 2 | ✅ Complete |
-| Active Pipeline Docs | 1 | ⚠️ Design Complete, Implementation Pending |
+| Active Pipeline Docs | 2 | ✅ Running / ⚠️ Design Complete |
 
 ---
 
