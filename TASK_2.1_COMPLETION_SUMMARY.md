@@ -23,8 +23,8 @@
    - Performance benchmarks
    - Testing instructions
 
-### 4. **backend/app/api/ai_outreach_migration.sql** (Database Schema)
-   - Supabase table: `ai_outreach_drafts`
+### 4. **supabase/migrations/20251202_create_ai_drafts.sql** (Database Schema)
+   - Supabase table: `dim_ai_drafts`
    - Indexes for performance
    - Triggers for updated_at
    - Row Level Security policies
