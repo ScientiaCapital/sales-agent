@@ -171,10 +171,18 @@ ICP_SERVICES = [
     'plumbing', 'electrical', 'refrigeration'
 ]
 
-# Service area page paths to check
+# Service area page paths to check (with trailing slash variants)
 SERVICE_AREA_PATHS = [
-    '/service-area', '/service-areas', '/areas-served', '/areas-we-serve',
-    '/locations', '/coverage', '/service-locations', '/where-we-serve'
+    '/service-area', '/service-area/',
+    '/service-areas', '/service-areas/',
+    '/areas-served', '/areas-served/',
+    '/areas-we-serve', '/areas-we-serve/',
+    '/locations', '/locations/',
+    '/coverage', '/coverage/',
+    '/service-locations', '/service-locations/',
+    '/where-we-serve', '/where-we-serve/',
+    '/cities-served', '/cities-served/',
+    '/our-service-area', '/our-service-area/'
 ]
 
 
@@ -292,16 +300,19 @@ def extract_contacts(content):
                         'the', 'our', 'meet', 'about', 'company', 'team', 'staff',
                         'contact', 'home', 'services', 'phone', 'email', 'address',
                         'schedule', 'now', 'call', 'today', 'free', 'quote', 'estimate',
-                        'learn', 'more', 'view', 'all', 'read', 'get', 'request',
+                        'learn', 'more', 'view', 'all', 'read', 'get', 'request', 'from',
                         # Industry/business terms
                         'heating', 'cooling', 'hvac', 'air', 'conditioning',
                         'residential', 'commercial', 'emergency', 'repair', 'installation',
-                        'installations', 'repairs', 'maintenance', 'preventative',
-                        'service', 'agreement', 'agreements',
+                        'installations', 'repairs', 'maintenance', 'preventative', 'routine',
+                        'service', 'agreement', 'agreements', 'area', 'areas',
                         'inquiry', 'about', 'new', 'existing', 'customer', 'customers',
                         # Common false positives
                         'financing', 'available', 'indoor', 'outdoor', 'quality', 'comfort',
-                        'plumbing', 'electrical', 'products', 'systems', 'solutions'
+                        'plumbing', 'electrical', 'products', 'systems', 'solutions',
+                        'awards', 'recognition', 'promised', 'spring', 'valley', 'city',
+                        'rating', 'ratings', 'reviews', 'review', 'google', 'yelp',
+                        'privacy', 'policy', 'terms', 'conditions', 'copyright'
                     }
                     # Skip if any word is in skip list OR line contains '*' (form fields)
                     if not any(w.lower() in skip_words for w in words) and '*' not in current_line:
