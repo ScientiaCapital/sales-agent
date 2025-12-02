@@ -186,6 +186,7 @@ ICP_SERVICES = [
 
 # OEM Brands - indicates authorized dealer status and company size
 # More brands = larger operation with multiple partnerships
+# Coperniq ICP: intelligence layer for field service - we want BOTH resi and commercial
 OEM_BRANDS = [
     # Premium HVAC brands
     'Carrier', 'Trane', 'Lennox', 'Bryant', 'Rheem', 'Ruud', 'Goodman', 'Daikin',
@@ -196,21 +197,57 @@ OEM_BRANDS = [
     'Generac', 'Kohler', 'Cummins', 'Briggs & Stratton', 'Champion',
     # Water heater brands
     'Navien', 'Rinnai', 'Noritz', 'Takagi', 'Bradford White', 'A.O. Smith',
-    # Solar/Energy brands (HIGH VALUE - growing market)
-    'Enphase', 'Tesla', 'SolarEdge', 'SunPower', 'LG Solar', 'Panasonic Solar',
-    'Q Cells', 'Canadian Solar', 'JinkoSolar', 'Trina Solar', 'REC Solar',
+
+    # === SOLAR INVERTERS ===
+    # Residential microinverters
+    'Enphase', 'Enphase IQ7', 'Enphase IQ8', 'IQ7', 'IQ8',
+    # Residential string inverters
+    'SolarEdge', 'Tesla', 'SunPower',
+    # Commercial inverters (HIGH VALUE - bigger projects)
+    'SMA', 'SMA Sunny Boy', 'SMA Sunny Tripower', 'Sunny Boy', 'Sunny Tripower',
+    'Fronius', 'Fronius Primo', 'Fronius Symo',
+    'ABB', 'FIMER', 'Chint', 'Sungrow', 'Huawei', 'GoodWe', 'Growatt',
+    'Delta', 'Schneider Electric', 'Outback Power', 'Magnum Energy',
+
+    # === SOLAR PANELS ===
+    # Premium tier
+    'SunPower', 'LG Solar', 'Panasonic Solar', 'REC Solar',
+    # Mid tier
+    'Q Cells', 'Canadian Solar', 'JinkoSolar', 'Trina Solar',
     'Silfab', 'Mission Solar', 'Hanwha', 'LONGi', 'JA Solar',
-    # Battery/Storage brands
-    'Tesla Powerwall', 'Enphase IQ', 'LG Chem', 'Sonnen', 'Generac PWRcell',
-    'Franklin WholePower', 'SunVault', 'Panasonic EverVolt',
-    # EV Charger brands
-    'ChargePoint', 'JuiceBox', 'Wallbox', 'Emporia', 'Grizzl-E', 'Tesla Wall Connector',
-    # Ductless/Mini-split specific
+    'Axitec', 'Astronergy', 'Phono Solar', 'Risen', 'Seraphim',
+
+    # === BATTERY/STORAGE ===
+    # Residential
+    'Tesla Powerwall', 'Enphase IQ Battery', 'LG Chem', 'LG RESU',
+    'Sonnen', 'Generac PWRcell', 'Franklin WholePower', 'SunVault',
+    'Panasonic EverVolt', 'SolarEdge Home Battery',
+    # Commercial storage
+    'Tesla Megapack', 'Tesla Powerpack', 'BYD', 'Fluence', 'Powin',
+
+    # === EV CHARGERS ===
+    # Residential
+    'ChargePoint', 'JuiceBox', 'Wallbox', 'Emporia', 'Grizzl-E',
+    'Tesla Wall Connector', 'ClipperCreek', 'Enel X', 'Siemens VersiCharge',
+    # Commercial (HIGH VALUE)
+    'ChargePoint Express', 'ABB Terra', 'Tritium', 'Electrify America',
+    'EVBox', 'Blink', 'SemaConnect', 'FLO',
+
+    # === HVAC SPECIALIZED ===
+    # Ductless/Mini-split
     'Mitsubishi Electric', 'Daikin Mini Split', 'Fujitsu Halcyon', 'LG Art Cool',
-    # Smart home/controls
+    'Gree', 'Senville', 'MrCool', 'Pioneer',
+    # VRF/Commercial (HIGH VALUE)
+    'Daikin VRV', 'Mitsubishi City Multi', 'LG Multi V', 'Samsung DVM',
+    'Carrier VRF', 'Trane VRF',
+
+    # === CONTROLS/SMART HOME ===
     'Honeywell Home', 'Google Nest', 'Ecobee SmartThermostat', 'Sensi',
-    # Air quality
-    'Aprilaire', 'Honeywell', 'Lennox PureAir', 'Trane CleanEffects', 'iWave', 'REME HALO'
+    'Emerson', 'Johnson Controls', 'Schneider',
+
+    # === AIR QUALITY ===
+    'Aprilaire', 'Lennox PureAir', 'Trane CleanEffects', 'iWave', 'REME HALO',
+    'Air Scrubber', 'Aerus', 'RGF Environmental'
 ]
 
 # Keep HVAC_BRANDS as alias for backwards compatibility
