@@ -13,7 +13,7 @@
 | 🔴 Blocked | 0 |
 | 🟡 In Progress | 1 |
 | 🟢 Ready | 2 |
-| ✅ Done (this sprint) | 27 |
+| ✅ Done (this sprint) | 32 |
 
 ---
 
@@ -133,6 +133,12 @@ python run_enrichment.py
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **AI Command Center (Dec 2 Evening)** | | | |
+| TASK-D34 | AI Outreach API (7 FastAPI endpoints) | 2025-12-02 | Claude |
+| TASK-D35 | CommandCenter.tsx (two-panel lead enrichment) | 2025-12-02 | Claude |
+| TASK-D36 | DraftReviewQueue.tsx (bulk review UI) | 2025-12-02 | Claude |
+| TASK-D37 | AIInsightsPanel.tsx (personal hooks display) | 2025-12-02 | Claude |
+| TASK-D38 | dim_ai_drafts Supabase migration | 2025-12-02 | Claude |
 | **OEM Brand Expansion (Dec 2 PM)** | | | |
 | TASK-D30 | Expanded OEM brands to 100+ (solar, battery, EV, VRF) | 2025-12-02 | Claude |
 | TASK-D31 | Added maintenance plan extraction (BDR opener gold) | 2025-12-02 | Claude |
@@ -180,7 +186,7 @@ python run_enrichment.py
 
 ### Velocity
 - **Last Sprint**: 5 tasks completed
-- **This Sprint**: 27 tasks completed (Phase 1: 6, Phase 2: 6, Phase 3: 6, Security: 3, Dec 2: 8)
+- **This Sprint**: 32 tasks completed (Phase 1: 6, Phase 2: 6, Phase 3: 6, Security: 3, Dec 2 AM: 8, AI Command Center: 5)
 - **Avg Task Time**: 1.5 hours
 
 ### Security Status (Dec 1)
