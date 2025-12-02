@@ -13,7 +13,7 @@
 | 🔴 Blocked | 0 |
 | 🟡 In Progress | 1 |
 | 🟢 Ready | 2 |
-| ✅ Done (this sprint) | 23 |
+| ✅ Done (this sprint) | 27 |
 
 ---
 
@@ -133,7 +133,12 @@ python run_enrichment.py
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
-| **Code Cleanup (Dec 2)** | | | |
+| **OEM Brand Expansion (Dec 2 PM)** | | | |
+| TASK-D30 | Expanded OEM brands to 100+ (solar, battery, EV, VRF) | 2025-12-02 | Claude |
+| TASK-D31 | Added maintenance plan extraction (BDR opener gold) | 2025-12-02 | Claude |
+| TASK-D32 | Improved false positive filtering (service areas, contacts) | 2025-12-02 | Claude |
+| TASK-D33 | Fixed varchar(255) overflow errors in contact sync | 2025-12-02 | Claude |
+| **Code Cleanup (Dec 2 AM)** | | | |
 | TASK-D26 | Archived 49 obsolete Python scripts | 2025-12-02 | Claude |
 | TASK-D27 | Updated CLAUDE.md, PLANNING.md, TASK.md, BACKLOG.md | 2025-12-02 | Claude |
 | TASK-D28 | Created run_enrichment.py (interactive batch runner) | 2025-12-02 | Claude |
@@ -175,7 +180,7 @@ python run_enrichment.py
 
 ### Velocity
 - **Last Sprint**: 5 tasks completed
-- **This Sprint**: 21 tasks completed (Phase 1: 6, Phase 2: 6, Phase 3: 6, Security: 3)
+- **This Sprint**: 27 tasks completed (Phase 1: 6, Phase 2: 6, Phase 3: 6, Security: 3, Dec 2: 8)
 - **Avg Task Time**: 1.5 hours
 
 ### Security Status (Dec 1)

@@ -240,3 +240,19 @@ Company phone         +10 pts
   - **Owner Quotes**: "- Name, Owner" attribution patterns from message sections
 - **False Positive Filtering**: Expanded skip_words to filter menu items, service terms, legal text
 - **Impact**: Better ICP qualification - contractors serving 50+ cities with multiple brand partnerships = larger operations
+
+### ADR-009: Comprehensive OEM Brand Coverage (100+ brands)
+- **Date**: 2025-12-02 (Evening)
+- **Decision**: Massively expand brand detection to cover full Coperniq ICP across all verticals
+- **Rationale**: Coperniq serves HVAC, solar, storage, and EV charging contractors - need to identify dealers in all verticals
+- **Brand Categories Added**:
+  - **Solar Inverters (Resi)**: Enphase IQ7/IQ8, SolarEdge, Hoymiles, APsystems
+  - **Solar Inverters (Commercial)**: SMA Sunny Tripower, Fronius Eco, Sungrow, Huawei
+  - **Battery Storage (Resi)**: Tesla Powerwall, Generac PWRcell, Enphase IQ, Sonnen, FranklinWH
+  - **Battery Storage (Commercial)**: Tesla Megapack, BYD Commercial, Fluence, Powin
+  - **EV Chargers (Resi)**: ChargePoint Home, JuiceBox, Wallbox Pulsar, Grizzl-E
+  - **EV Chargers (Commercial)**: ABB Terra, Tritium, Kempower, Blink
+  - **VRF/Commercial HVAC**: Daikin VRV, Mitsubishi City Multi, LG Multi V, Samsung DVM
+  - **Generators**: Generac, Kohler, Cummins, Briggs & Stratton
+- **Maintenance Plans Extraction**: Detects membership/subscription names (Comfort Club, Service Agreement, etc.) for BDR openers
+- **Impact**: Full-spectrum contractor identification for Coperniq intelligence layer
