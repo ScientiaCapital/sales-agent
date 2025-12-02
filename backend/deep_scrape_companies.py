@@ -50,6 +50,27 @@ except ImportError:
     sys.exit(1)
 
 try:
+    from supabase import create_client
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print("WARNING: supabase not installed. Supabase sync disabled.")
+    create_client = None
+
+# Supabase client (lazy init)
+_supabase_client = None
+
+def get_supabase():
+    """Get or create Supabase client."""
+    global _supabase_client
+    if _supabase_client is None and create_client:
+        url = os.getenv('SUPABASE_URL')
+        key = os.getenv('SUPABASE_SERVICE_KEY')
+        if url and key:
+            _supabase_client = create_client(url, key)
+    return _supabase_client
+
+try:
     from playwright.async_api import async_playwright
 except ImportError:
     print("ERROR: Playwright is not installed. Run: pip install playwright && playwright install chromium")
@@ -83,6 +104,33 @@ BROWSERBASE_API_KEY = os.getenv('BROWSERBASE_API_KEY')
 BROWSERBASE_PROJECT_ID = os.getenv('BROWSERBASE_PROJECT_ID')
 MAX_CONCURRENT = int(os.getenv('BROWSERBASE_MAX_CONCURRENT', '10'))
 
+# Rate limit: Developer plan = 25 sessions/minute, Startup plan = 50 sessions/minute
+# We use 20/min to stay safely under the limit
+SESSIONS_PER_MINUTE = int(os.getenv('BROWSERBASE_SESSIONS_PER_MINUTE', '20'))
+
+
+class RateLimiter:
+    """Token bucket rate limiter for Browserbase session creation."""
+
+    def __init__(self, rate_per_minute: int):
+        self.rate = rate_per_minute
+        self.interval = 60.0 / rate_per_minute  # seconds between tokens
+        self.last_time = 0.0
+        self._lock = asyncio.Lock()
+
+    async def acquire(self):
+        """Wait until a session creation token is available."""
+        async with self._lock:
+            now = asyncio.get_event_loop().time()
+            wait_time = self.last_time + self.interval - now
+            if wait_time > 0:
+                await asyncio.sleep(wait_time)
+            self.last_time = asyncio.get_event_loop().time()
+
+
+# Global rate limiter (initialized in main)
+_rate_limiter: Optional[RateLimiter] = None
+
 # Validate critical environment variables
 if not BROWSERBASE_API_KEY or not BROWSERBASE_PROJECT_ID:
     logger.error("ERROR: BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID must be set in .env")
@@ -107,6 +155,63 @@ BTL_TITLES = [
     'service', 'operations', 'admin', 'assistant', 'secretary',
     'hr', 'human resources', 'marketing', 'analyst'
 ]
+
+# Trade detection keywords for multi-trade ICP scoring
+TRADE_KEYWORDS = {
+    'hvac': ['hvac', 'heating', 'cooling', 'air conditioning', 'a/c', 'ac ', 'furnace', 'heat pump', 'mechanical'],
+    'plumbing': ['plumbing', 'plumber', 'drain', 'sewer', 'water heater', 'pipe', 'piping'],
+    'electrical': ['electrical', 'electrician', 'wiring', 'panel', 'electric '],
+    'roofing': ['roofing', 'roofer', 'shingle', 'roof repair', 'roof installation'],
+    'general': ['general contractor', 'self-performing', 'self performing', 'design-build', 'design build'],
+    'energy': ['solar', 'battery', 'generator', 'energy', 'ev charger', 'renewable'],
+}
+
+
+def detect_trades(text: str) -> List[str]:
+    """Detect trades mentioned in website text."""
+    if not text:
+        return []
+    text_lower = text.lower()
+    detected = []
+    for trade, keywords in TRADE_KEYWORDS.items():
+        if any(kw in text_lower for kw in keywords):
+            detected.append(trade)
+    return detected
+
+
+def detect_family_owned(text: str) -> bool:
+    """Detect if company is family-owned."""
+    if not text:
+        return False
+    text_lower = text.lower()
+    patterns = ['family owned', 'family-owned', 'family business', 'family run', 'family operated']
+    return any(p in text_lower for p in patterns)
+
+
+def detect_years_in_business(text: str) -> int:
+    """Extract years in business from 'Since 1962', 'Est. 1985', etc."""
+    if not text:
+        return 0
+    import re
+    from datetime import datetime
+    current_year = datetime.now().year
+
+    # Patterns: "Since 1962", "Est. 1985", "Established 1970", "Founded in 1990"
+    patterns = [
+        r'since\s+(\d{4})',
+        r'est\.?\s+(\d{4})',
+        r'established\s+(\d{4})',
+        r'founded\s+(?:in\s+)?(\d{4})',
+        r'serving\s+since\s+(\d{4})',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text.lower())
+        if match:
+            year = int(match.group(1))
+            if 1900 <= year <= current_year:
+                return current_year - year
+    return 0
 
 
 @dataclass
@@ -180,6 +285,13 @@ class DeepScrapeResult:
     new_phone_count: int = 0
     verified_phone_count: int = 0
 
+    # Multi-trade detection (ICP signal)
+    trades_detected: List[str] = field(default_factory=list)  # ['hvac', 'plumbing', 'electrical']
+    is_multi_trade: bool = False  # True if 2+ trades detected
+    trade_count: int = 0
+    family_owned: bool = False  # "Family owned", "Family business"
+    years_in_business: int = 0  # Extracted from "Since 1962", "Est. 1985"
+
     # Meta
     scrape_duration_seconds: float = 0.0
     scrape_errors: List[str] = field(default_factory=list)
@@ -218,27 +330,58 @@ def is_btl(title: str) -> bool:
     return any(t in title_lower for t in BTL_TITLES) and not is_atl(title)
 
 
-async def create_browserbase_session() -> tuple:
-    """Create a Browserbase browser session."""
+async def create_browserbase_session(max_retries: int = 3) -> tuple:
+    """Create a Browserbase browser session with rate limiting and retry on 429."""
     import httpx
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(
-            "https://api.browserbase.com/v1/sessions",
-            headers={
-                "x-bb-api-key": BROWSERBASE_API_KEY,
-                "Content-Type": "application/json"
-            },
-            json={"projectId": BROWSERBASE_PROJECT_ID}
-        )
-        response.raise_for_status()
-        data = response.json()
-        session_id = data["id"]
-        connect_url = data.get("connectUrl")
-        if not connect_url:
-            # SECURITY: Never construct URL with API key - it would appear in logs
-            raise ValueError(f"Browserbase API did not return connectUrl for session {session_id[:8]}...")
-        return session_id, connect_url
+    # Respect rate limit (Developer plan = 25/min, Startup = 50/min)
+    global _rate_limiter
+    if _rate_limiter:
+        await _rate_limiter.acquire()
+
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    "https://api.browserbase.com/v1/sessions",
+                    headers={
+                        "x-bb-api-key": BROWSERBASE_API_KEY,
+                        "Content-Type": "application/json"
+                    },
+                    json={"projectId": BROWSERBASE_PROJECT_ID}
+                )
+
+                # Handle rate limit with exponential backoff
+                if response.status_code == 429:
+                    wait_time = (2 ** attempt) * 5  # 5s, 10s, 20s
+                    logger.warning(f"Rate limited (429), waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
+                    await asyncio.sleep(wait_time)
+                    continue
+
+                response.raise_for_status()
+                data = response.json()
+                session_id = data["id"]
+                connect_url = data.get("connectUrl")
+                if not connect_url:
+                    # SECURITY: Never construct URL with API key - it would appear in logs
+                    raise ValueError(f"Browserbase API did not return connectUrl for session {session_id[:8]}...")
+                return session_id, connect_url
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 429:
+                wait_time = (2 ** attempt) * 5
+                logger.warning(f"Rate limited (429), waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
+                await asyncio.sleep(wait_time)
+                last_error = e
+            else:
+                raise
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2)
+
+    raise last_error or Exception("Failed to create session after retries")
 
 
 async def close_browserbase_session(session_id: str):
@@ -542,13 +685,41 @@ async def scrape_website_pages(page, result: DeepScrapeResult, base_url: str):
             if 'contact' in path:
                 await extract_address_from_page(page, result)
 
-            # Landing page - look for founder/owner mentions
+            # Landing page - also extract people (founder/owner mentions)
             if path == '/':
                 await extract_people_from_page(page, result, full_url)
+
+            # Detect trades and ICP signals from ALL pages (services often mentioned on about/services pages)
+            try:
+                page_text = await page.inner_text('body')
+                trades = detect_trades(page_text)
+                for trade in trades:
+                    if trade not in result.trades_detected:
+                        result.trades_detected.append(trade)
+                # Update counts after each page (accumulative)
+                result.trade_count = len(result.trades_detected)
+                result.is_multi_trade = result.trade_count >= 2
+                # Check for family-owned (only need to find once)
+                if not result.family_owned:
+                    result.family_owned = detect_family_owned(page_text)
+                # Check years in business (take the best value)
+                years = detect_years_in_business(page_text)
+                if years > result.years_in_business:
+                    result.years_in_business = years
+            except Exception:
+                pass
 
         except Exception as e:
             result.scrape_errors.append(f"{page_name}: {str(e)[:50]}")
             continue
+
+    # Log multi-trade summary after all pages scraped
+    if result.is_multi_trade:
+        logger.info(f"    🔧 MULTI-TRADE: {', '.join(result.trades_detected)} ({result.trade_count} trades)")
+    if result.family_owned:
+        logger.info(f"    👨‍👩‍👧 Family-owned business detected")
+    if result.years_in_business > 0:
+        logger.info(f"    📅 {result.years_in_business} years in business")
 
 
 async def scrape_linkedin(page, result: DeepScrapeResult, company_name: str):
@@ -723,14 +894,18 @@ async def deep_scrape_company(
 async def run_deep_scrape(
     df: pd.DataFrame,
     max_concurrent: int = 10,
-    progress_callback=None
+    progress_callback=None,
+    save_every: int = 25,
+    output_file: Path = None
 ) -> List[DeepScrapeResult]:
-    """Run deep scraping on all companies with phone audit trail."""
+    """Run deep scraping on all companies with phone audit trail and incremental saves."""
     results = []
     semaphore = asyncio.Semaphore(max_concurrent)
+    last_save_count = 0
 
     total = len(df)
     logger.info(f"Deep scraping {total} companies (max {max_concurrent} concurrent)")
+    logger.info(f"Incremental save every {save_every} companies to {output_file}")
 
     # Process in batches
     batch_size = max_concurrent * 2
@@ -763,7 +938,22 @@ async def run_deep_scrape(
             existing_phones = [p for p in existing_phones if p]
 
             if domain:
-                tasks.append(deep_scrape_company(company_name, domain, semaphore, existing_phones))
+                # Wrap each scrape in a timeout to prevent hanging
+                async def scrape_with_timeout(name, dom, sem, phones):
+                    try:
+                        return await asyncio.wait_for(
+                            deep_scrape_company(name, dom, sem, phones),
+                            timeout=120  # 2 minute timeout per company
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning(f"[{name}] ⏰ TIMEOUT after 120s")
+                        return DeepScrapeResult(
+                            company_name=name,
+                            domain=dom,
+                            scrape_errors=['TIMEOUT: Scrape took >120s']
+                        )
+
+                tasks.append(scrape_with_timeout(company_name, domain, semaphore, existing_phones))
 
         batch_results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -776,6 +966,15 @@ async def run_deep_scrape(
         # Progress
         pct = (batch_end / total) * 100
         logger.info(f"Progress: {batch_end}/{total} ({pct:.1f}%)")
+
+        # Incremental save every N companies
+        if output_file and len(results) >= last_save_count + save_every:
+            save_deep_scrape_results(results, output_file)
+            # Sync to Supabase on each save
+            new_results = results[last_save_count:]  # Only sync new results
+            sync_results_to_supabase(new_results)
+            logger.info(f"💾 INCREMENTAL SAVE: {len(results)} companies saved to {output_file.name}")
+            last_save_count = len(results)
 
         # Rate limit between batches
         if batch_end < total:
@@ -821,6 +1020,12 @@ def save_deep_scrape_results(results: List[DeepScrapeResult], output_file: Path)
             # Meta
             'scrape_duration_seconds': r.scrape_duration_seconds,
             'scrape_errors': '; '.join(r.scrape_errors),
+            # Multi-trade ICP signals
+            'trades_detected': ', '.join(r.trades_detected),
+            'is_multi_trade': r.is_multi_trade,
+            'trade_count': r.trade_count,
+            'family_owned': r.family_owned,
+            'years_in_business': r.years_in_business,
             # JSON data
             'atl_contacts_json': json.dumps(r.atl_contacts),
             'btl_contacts_json': json.dumps(r.btl_contacts),
@@ -867,6 +1072,12 @@ def save_deep_scrape_results(results: List[DeepScrapeResult], output_file: Path)
                     'ATL Count': r.atl_count,
                     'Extraction Method': atl.get('extraction_method', ''),
                     'Phone Audit': f"{r.new_phone_count} new, {r.verified_phone_count} verified",
+                    # Multi-trade ICP signals
+                    'Trades Detected': ', '.join(r.trades_detected),
+                    'Is Multi-Trade': 'Yes' if r.is_multi_trade else 'No',
+                    'Trade Count': r.trade_count,
+                    'Family Owned': 'Yes' if r.family_owned else 'No',
+                    'Years in Business': r.years_in_business if r.years_in_business > 0 else '',
                 }
                 close_crm_records.append(close_record)
         else:
@@ -888,6 +1099,12 @@ def save_deep_scrape_results(results: List[DeepScrapeResult], output_file: Path)
                 'ATL Count': 0,
                 'Extraction Method': '',
                 'Phone Audit': f"{r.new_phone_count} new, {r.verified_phone_count} verified",
+                # Multi-trade ICP signals
+                'Trades Detected': ', '.join(r.trades_detected),
+                'Is Multi-Trade': 'Yes' if r.is_multi_trade else 'No',
+                'Trade Count': r.trade_count,
+                'Family Owned': 'Yes' if r.family_owned else 'No',
+                'Years in Business': r.years_in_business if r.years_in_business > 0 else '',
             }
             close_crm_records.append(close_record)
 
@@ -913,6 +1130,139 @@ def save_deep_scrape_results(results: List[DeepScrapeResult], output_file: Path)
     logger.info(f"  → {len([r for r in close_crm_records if r['Contact Name']])} leads with ATL contacts")
     logger.info(f"  → {len([r for r in close_crm_records if not r['Contact Name']])} leads without ATL (company only)")
 
+    # === FAILED COMPANIES EXPORT (for re-running with longer timeouts) ===
+    # A company is considered "failed" if:
+    # 1. It has scrape_errors, OR
+    # 2. Website was not reachable AND no data was extracted (ATL=0, phones=0, emails=0)
+    failed_records = []
+    for r in results:
+        has_errors = bool(r.scrape_errors)
+        no_data = (r.atl_count == 0 and r.btl_count == 0 and
+                   r.phone_count == 0 and r.email_count == 0 and
+                   not r.linkedin_found)
+        website_issue = not r.website_reachable
+
+        if has_errors or (website_issue and no_data):
+            failed_records.append({
+                'company_name': r.company_name,
+                'domain': r.domain,
+                'website_reachable': r.website_reachable,
+                'scrape_errors': '; '.join(r.scrape_errors),
+                'scrape_duration_seconds': r.scrape_duration_seconds,
+                'failure_reason': 'scrape_error' if has_errors else 'unreachable_no_data',
+                # Include any partial data we did get
+                'atl_count': r.atl_count,
+                'phone_count': r.phone_count,
+                'email_count': r.email_count,
+                'linkedin_found': r.linkedin_found,
+            })
+
+    if failed_records:
+        failed_file = output_file.parent / f"FAILED_TO_SCRAPE_{output_file.stem.replace('DEEP_SCRAPE_', '')}.csv"
+        failed_df = pd.DataFrame(failed_records)
+        failed_df.to_csv(failed_file, index=False)
+        logger.info(f"⚠️ Saved {len(failed_records)} failed companies for re-run: {failed_file}")
+        logger.info(f"  → Re-run with: python deep_scrape_companies.py --input {failed_file} --concurrent 5 --rate 10")
+    else:
+        logger.info("✅ No failed companies - all scraped successfully!")
+
+
+def sync_results_to_supabase(results: List[DeepScrapeResult]):
+    """Sync deep scrape results to Supabase dim_companies and dim_contacts."""
+    supabase = get_supabase()
+    if not supabase:
+        logger.warning("Supabase not configured - skipping sync")
+        return
+
+    # Normalize company name for matching
+    def normalize_name(name):
+        if not name:
+            return None
+        n = str(name).lower().strip()
+        n = re.sub(r'[^\w\s-]', ' ', n)
+        suffixes = [r'\s+inc\.?\s*$', r'\s+llc\.?\s*$', r'\s+corp\.?\s*$',
+                    r'\s+co\.?\s*$', r'\s+ltd\.?\s*$']
+        for s in suffixes:
+            n = re.sub(s, '', n, flags=re.IGNORECASE)
+        return re.sub(r'\s+', ' ', n).strip()
+
+    # Get existing companies by normalized_name for matching
+    try:
+        existing = supabase.table('dim_companies').select('company_id, normalized_name, linkedin_url').execute()
+        name_to_id = {r['normalized_name']: r['company_id'] for r in existing.data if r['normalized_name']}
+    except Exception as e:
+        logger.error(f"Failed to fetch existing companies: {e}")
+        return
+
+    companies_updated = 0
+    contacts_added = 0
+
+    for r in results:
+        norm_name = normalize_name(r.company_name)
+        company_id = name_to_id.get(norm_name)
+
+        if not company_id:
+            continue  # Company not in our universe
+
+        # Build update data (only non-empty fields)
+        update_data = {}
+        if r.linkedin_url:
+            update_data['linkedin_url'] = r.linkedin_url
+        if r.linkedin_employee_count_numeric and r.linkedin_employee_count_numeric > 0:
+            update_data['employee_count'] = r.linkedin_employee_count_numeric
+        if r.address:
+            update_data['address'] = r.address
+        if r.city:
+            update_data['city'] = r.city
+        if r.state:
+            update_data['state'] = r.state
+        if r.zip_code:
+            update_data['zip_code'] = r.zip_code
+        if r.is_multi_trade:
+            update_data['is_multi_trade'] = True
+            update_data['trades_detected'] = ', '.join(r.trades_detected)
+        if r.family_owned:
+            update_data['family_owned'] = True
+        if r.years_in_business > 0:
+            update_data['years_in_business'] = r.years_in_business
+        # Update last_enriched_at
+        update_data['last_enriched_at'] = datetime.now().isoformat()
+        update_data['enrichment_source'] = 'browserbase_deep_scrape'
+
+        if update_data:
+            try:
+                supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
+                companies_updated += 1
+            except Exception as e:
+                logger.error(f"Failed to update {r.company_name}: {e}")
+
+        # Add ATL contacts to dim_contacts
+        for atl in r.atl_contacts:
+            if not atl.get('name'):
+                continue
+            contact_data = {
+                'company_id': company_id,
+                'name': atl['name'],
+                'title': atl.get('title', ''),
+                'email': atl.get('email'),
+                'is_atl': True,
+                'source': 'browserbase_deep_scrape',
+                'extraction_method': atl.get('extraction_method', ''),
+                'discovered_at': datetime.now().isoformat()
+            }
+            try:
+                # Upsert by company_id + name
+                existing_contact = supabase.table('dim_contacts').select('contact_id').eq('company_id', company_id).eq('name', atl['name']).execute()
+                if existing_contact.data:
+                    supabase.table('dim_contacts').update(contact_data).eq('contact_id', existing_contact.data[0]['contact_id']).execute()
+                else:
+                    supabase.table('dim_contacts').insert(contact_data).execute()
+                    contacts_added += 1
+            except Exception as e:
+                logger.error(f"Failed to add contact {atl['name']}: {e}")
+
+    logger.info(f"☁️ SUPABASE SYNC: {companies_updated} companies updated, {contacts_added} contacts added")
+
 
 def find_latest_input() -> Path:
     """Find the most recent enriched/filtered leads file."""
@@ -929,18 +1279,26 @@ def find_latest_input() -> Path:
 
 
 async def main():
+    global _rate_limiter
+
     parser = argparse.ArgumentParser(description='Deep company scraper using Browserbase')
     parser.add_argument('--test', type=int, help='Test with N companies')
     parser.add_argument('--top', type=int, help='Process top N companies')
     parser.add_argument('--all', action='store_true', help='Process all companies')
     parser.add_argument('--input', type=str, help='Specific input file')
     parser.add_argument('--concurrent', type=int, default=10, help='Max concurrent scrapes')
+    parser.add_argument('--rate', type=int, default=SESSIONS_PER_MINUTE, help='Sessions per minute (rate limit)')
+    parser.add_argument('--skip', type=int, default=0, help='Skip first N companies (for resuming)')
+    parser.add_argument('--save-every', type=int, default=25, help='Save progress every N companies')
 
     args = parser.parse_args()
 
     if not BROWSERBASE_API_KEY or not BROWSERBASE_PROJECT_ID:
         logger.error("BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID must be set!")
         return
+
+    # Initialize rate limiter to prevent 429 errors
+    _rate_limiter = RateLimiter(args.rate)
 
     # Find input file
     if args.input:
@@ -953,6 +1311,7 @@ async def main():
     logger.info(f"{'='*60}")
     logger.info(f"Input: {input_file}")
     logger.info(f"Max concurrent: {args.concurrent}")
+    logger.info(f"Rate limit: {args.rate} sessions/min (~{60.0/args.rate:.1f}s between session starts)")
     logger.info(f"Log: {log_file}")
 
     # Load data
@@ -967,17 +1326,33 @@ async def main():
         df = df.head(args.top)
         logger.info(f"TOP {args.top} companies")
 
-    # Run deep scrape
-    results = await run_deep_scrape(df, max_concurrent=args.concurrent)
+    # Apply skip for resuming
+    if args.skip > 0:
+        df = df.iloc[args.skip:]
+        logger.info(f"RESUMING: Skipping first {args.skip} companies")
+
+    # Output file for incremental saves
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_file = OUTPUT_DIR / f"DEEP_SCRAPE_incremental_{timestamp}.csv"
+
+    # Run deep scrape with incremental saves
+    results = await run_deep_scrape(
+        df,
+        max_concurrent=args.concurrent,
+        save_every=args.save_every,
+        output_file=output_file
+    )
 
     if not results:
         logger.info("No companies scraped")
         return
 
-    # Save results
-    timestamp = datetime.now().strftime('%Y%m%d')
-    output_file = OUTPUT_DIR / f"DEEP_SCRAPE_{len(results)}_{timestamp}.csv"
-    save_deep_scrape_results(results, output_file)
+    # Final save (full results)
+    final_output = OUTPUT_DIR / f"DEEP_SCRAPE_{len(results)}_{datetime.now().strftime('%Y%m%d')}.csv"
+    save_deep_scrape_results(results, final_output)
+
+    # Final sync to Supabase (any remaining that weren't incrementally synced)
+    sync_results_to_supabase(results)
 
     # Summary
     website_ok = sum(1 for r in results if r.website_reachable)
