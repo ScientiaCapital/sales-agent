@@ -15,7 +15,12 @@ CLAUDE.md
 data/
 backend/data/
 backend/test_data/
-backend/docs/
+# Backend docs - ignore generated content, but track plans
+backend/docs/logs/
+backend/docs/temp/
+backend/docs/*.log
+# Explicitly track plans directory
+!backend/docs/plans/
 
 # Database files (may contain lead data)
 *.db

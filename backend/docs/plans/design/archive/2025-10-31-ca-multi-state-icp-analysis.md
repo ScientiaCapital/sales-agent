@@ -658,4 +658,4 @@ Once CA cross-reference complete:
 **Questions or Issues?**
 
 Contact: Sales-agent development team
-Reference: `backend/docs/plans/2025-10-31-ca-multi-state-icp-analysis.md`
+Reference: `backend/docs/plans/design/2025-10-31-ca-multi-state-icp-analysis.md`
