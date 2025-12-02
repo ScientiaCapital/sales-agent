@@ -1,64 +1,41 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-01
+**Last Updated**: 2025-12-02
+
+---
+
+## CURRENT STATUS
+
+| Metric | Count |
+|--------|-------|
+| Total Companies | 8,889 |
+| With Domains | 3,643 |
+| Needing Enrichment | ~3,500 |
+| Already Enriched | ~75 |
 
 ---
 
 ## NEXT ACTION (Dec 2)
 
-### 1. Add API Keys to .env
-
-**Required keys** (see `API_KEYS_VALIDATION_REPORT.md`):
-- CEREBRAS_API_KEY
-- ANTHROPIC_API_KEY
-- BROWSERBASE_API_KEY
-- BROWSERBASE_PROJECT_ID
-- HUNTER_API_KEY
-- CLOSE_API_KEY
-- SUPABASE_URL
-- SUPABASE_SERVICE_KEY
-- CRM_ENCRYPTION_KEY (already generated)
-
-### 2. Deploy Supabase Migrations
+### Run Interactive Enrichment
 
 ```bash
 cd backend
-alembic upgrade head  # Apply migrations 015, 016, 009
+source ../venv/bin/activate
+python run_enrichment.py
 ```
-
-**See**: `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md` for full deployment guide
-
-### 3. Run LinkedIn Enrichment Pipeline (NEW)
-
-```bash
-cd backend
-python run_linkedin_enrichment.py --limit 100  # Test with 100
-./run_linkedin_scrape.sh 1000                  # Full run
-```
-
-**Time**: ~4-5 hours for 1000 companies
-**Output**: LinkedIn URLs + ATL employees synced to Supabase
 
 **What it does**:
-- Scrapes LinkedIn company /people/ pages
-- Extracts employees with ATL classification
-- Searches for personal LinkedIn profiles
-- Syncs all data to dim_companies and dim_contacts
+- Pulls unenriched companies directly from Supabase
+- Scrapes 5 companies at a time
+- Syncs results back to Supabase (dim_companies, dim_contacts)
+- Saves failed companies to `FAILED_ENRICHMENT.csv` for troubleshooting
+- Press Enter to continue, 'q' to quit
 
-### 4. Run Deep Scrape on 1,000 Companies
+**Time**: ~2.5 minutes per batch of 5 (~27s per company)
 
-```bash
-./run_deep_scrape.sh 1000
-```
-
-**Time**: ~2-4 hours (revised from 8 hours)
-**Output**: `backend/data/final_enrichment_output/CLOSE_CRM_IMPORT_1000_*.csv`
-
-**What it does**:
-- Scrapes company websites (landing, team, about, contact pages)
-- Extracts ATL names (CEO, Owner, President, VP, Director)
-- Tracks phone audit trail (NEW vs VERIFIED)
-- Creates Close CRM import file
+**Est. Total**: ~3,500 companies / 5 per batch = 700 batches × 2.5 min = ~30 hours total
+- Can run in sessions of 20-40 batches per day
 
 ---
 
