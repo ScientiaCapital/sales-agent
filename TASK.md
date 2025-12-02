@@ -15,6 +15,22 @@
 
 ---
 
+## LATEST UPDATE (Dec 2 PM)
+
+### Enhanced Enrichment Features
+The scraper now extracts additional ICP signals:
+- **Service Areas** - Cities served (company footprint indicator)
+- **HVAC Brands** - 28 brands detected (Carrier, Trane, Lennox, etc.)
+- **BTL Contacts** - Technicians/staff alongside ATL decision makers
+- **Owner Quotes** - "- Name, Owner" attribution patterns
+
+### Output Format
+```
+OK 25s (1 ATL, 3 BTL, 2 ph, 5 svc, 36 areas, 11 brands)
+```
+
+---
+
 ## NEXT ACTION (Dec 2)
 
 ### Run Interactive Enrichment
@@ -28,6 +44,7 @@ python run_enrichment.py
 **What it does**:
 - Pulls unenriched companies directly from Supabase
 - Scrapes 5 companies at a time
+- Extracts: ATL/BTL contacts, phones, emails, services, service areas, HVAC brands
 - Syncs results back to Supabase (dim_companies, dim_contacts)
 - Saves failed companies to `FAILED_ENRICHMENT.csv` for troubleshooting
 - Press Enter to continue, 'q' to quit

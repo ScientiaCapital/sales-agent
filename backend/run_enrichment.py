@@ -171,6 +171,14 @@ ICP_SERVICES = [
     'plumbing', 'electrical', 'refrigeration'
 ]
 
+# HVAC brands - indicates established contractor with brand partnerships
+HVAC_BRANDS = [
+    'Carrier', 'Trane', 'Lennox', 'Bryant', 'Rheem', 'Ruud', 'Goodman', 'Daikin',
+    'American Standard', 'York', 'Amana', 'Mitsubishi', 'Fujitsu', 'LG', 'Samsung',
+    'Bosch', 'Honeywell', 'Nest', 'Ecobee', 'Aprilaire', 'Coleman', 'Heil',
+    'Payne', 'Comfortmaker', 'Tempstar', 'Day & Night', 'Arcoaire', 'Keeprite'
+]
+
 # Service area page paths to check (with trailing slash variants)
 SERVICE_AREA_PATHS = [
     '/service-area', '/service-area/',
@@ -346,6 +354,45 @@ def extract_services(content):
     return found_services
 
 
+def extract_brands(content):
+    """Extract HVAC brands mentioned - indicates established contractor.
+
+    More brands = likely larger operation with multiple partnerships.
+    Premium brands (Carrier, Trane, Lennox) = quality-focused contractor.
+    """
+    content_lower = content.lower()
+    found_brands = []
+    for brand in HVAC_BRANDS:
+        if brand.lower() in content_lower:
+            found_brands.append(brand)
+    return found_brands
+
+
+def extract_owner_quote(content):
+    """Extract quotes attributed to owner/founder/CEO.
+
+    Patterns:
+    - "quote text" - Name, Owner
+    - "quote text" - Name Lastname, Founder
+    - - Name, Owner (just the attribution without quote)
+    """
+    quotes = []
+
+    # Pattern 1: Look for "- Name, Owner" or "– Name, Founder" etc.
+    owner_pattern = r'[-–—]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+),?\s+(Owner|Founder|Co-[Ff]ounder|CEO|President|Partner)'
+    matches = re.findall(owner_pattern, content)
+    for name, title in matches:
+        quotes.append({'name': name.strip(), 'title': title})
+
+    # Pattern 2: Look for "A Message From Our Owner" style sections
+    message_pattern = r'(?:message from|letter from|note from|word from)\s+(?:our\s+)?(?:the\s+)?(owner|founder|ceo|president)'
+    if re.search(message_pattern, content.lower()):
+        # There's an owner message section - look for the name nearby
+        pass  # The first pattern should catch the attribution
+
+    return quotes
+
+
 def extract_service_areas(content):
     """Extract service areas/cities from content.
 
@@ -467,6 +514,7 @@ async def scrape_one(company_id, company_name, domain):
         'emails': [],
         'atl_contacts': [],
         'services': [],
+        'brands': [],
         'service_areas': [],
         'pages_checked': [],
         'error': '',
@@ -500,6 +548,7 @@ async def scrape_one(company_id, company_name, domain):
                 text = await page.inner_text('body')
                 result['atl_contacts'] = extract_atl(text)
                 result['services'] = extract_services(text)
+                result['brands'] = extract_brands(text)
                 result['service_areas'] = extract_service_areas(text)
 
                 # Discover team links from navigation
@@ -567,6 +616,12 @@ async def scrape_one(company_id, company_name, domain):
                     for area in new_areas:
                         if area not in result['service_areas']:
                             result['service_areas'].append(area)
+
+                    # Extract brands
+                    new_brands = extract_brands(text)
+                    for brand in new_brands:
+                        if brand not in result['brands']:
+                            result['brands'].append(brand)
 
                     # Extract additional phones/emails
                     content = await page.content()
@@ -687,8 +742,9 @@ async def run_batch(supabase, companies):
             phones = len(r['phones'])
             services = len(r.get('services', []))
             areas = len(r.get('service_areas', []))
+            brands = len(r.get('brands', []))
             pages = len(r.get('pages_checked', []))
-            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} phones, {services} services, {areas} areas)")
+            print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands)")
         else:
             print(f"FAIL: {r['error']}")
             # Log to failed companies CSV
