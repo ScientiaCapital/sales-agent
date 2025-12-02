@@ -248,6 +248,10 @@ async def scrape_domain(domain, company_name=None):
     if result.get('brands'):
         print(f"      🏭 {', '.join(result['brands'])}")
 
+    print(f"   Maintenance Plans: {len(result.get('maintenance_plans', []))}")
+    if result.get('maintenance_plans'):
+        print(f"      🎯 {', '.join(result['maintenance_plans'])}")
+
     # Step 4: Sync to Supabase
     print(f"\n☁️  Syncing to Supabase...")
     contacts_added = sync_results_to_supabase(supabase, company_id, result)
