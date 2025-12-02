@@ -1,6 +1,6 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-01
+**Last Updated**: 2025-12-02
 
 ---
 
@@ -14,28 +14,49 @@ Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph | B
 
 ### Data Flow
 ```
-CSV Import → ICP Scoring → Multi-source Enrichment → Deep Scrape → Close CRM Export
-                                                            ↓
-                                              Manual Import to Close CRM
+Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase sync
+                                      ↓
+                          Terminal batch processing
 ```
 
 ### Pipeline Stages
 | Stage | Script | Output |
 |-------|--------|--------|
 | 1. ICP Scoring | `create_gold_standard_lists.py` | Scored leads by tier |
-| 2. Multi-source Enrichment | `enrich_multi_source.py` | Phone/email verification |
-| 3. Deep Scrape (Browserbase) | `deep_scrape_companies.py` | ATL names, addresses |
-| 4. Export | (generated) | `CLOSE_CRM_IMPORT_*.csv` |
+| 2. Interactive Enrichment | `run_enrichment.py` | Phone/email/ATL extraction |
+| 3. Batch Enrichment (alt) | `batch_scrape_runner.py` | Same with CSV input |
+| 4. Supabase Sync | (automatic) | Updates dim_companies, dim_contacts |
 
 ### Key Components
 
 | Component | Purpose | Location |
 |-----------|---------|----------|
 | LangGraph Agents | AI-powered lead processing | `backend/app/services/langgraph/agents/` |
-| Deep Scraper | Website + LinkedIn scraping | `backend/deep_scrape_companies.py` |
+| Enrichment Runner | Interactive batch scraper | `backend/run_enrichment.py` |
 | Lead Scorer | ICP scoring algorithm | `backend/create_gold_standard_lists.py` |
-| Enrichment Pipeline | Hunter.io contact discovery | `backend/enrich_gold_standard_batch.py` |
+| Hunter.io Enrichment | Contact discovery (paid) | `backend/enrich_gold_standard_batch.py` |
 | Supabase Sync | Data warehouse sync | `backend/sync_gold_standard_to_supabase.py` |
+
+### Active Scripts (14 files kept in `/backend/`)
+
+| Script | Purpose |
+|--------|---------|
+| `run_enrichment.py` | **MAIN** - Interactive 5-at-a-time enrichment |
+| `batch_scrape_runner.py` | Alternative batch runner |
+| `create_gold_standard_lists.py` | ICP scoring |
+| `enrich_gold_standard_batch.py` | Hunter.io enrichment |
+| `sync_gold_standard_to_supabase.py` | Supabase sync |
+| `cleanup_output_files.py` | Archive old files |
+
+### Archived Scripts (49 files in `/backend/archive/`)
+
+| Folder | Count | Contents |
+|--------|-------|----------|
+| `archive/tests/` | 10 | Test/debug scripts |
+| `archive/voice_ai/` | 6 | RunPod/voice AI scripts |
+| `archive/old_enrichment/` | 7 | Superseded enrichment pipelines |
+| `archive/old_linkedin/` | 6 | Old LinkedIn scrapers |
+| `archive/one_off_tools/` | 20 | One-time utility scripts |
 
 ---
 

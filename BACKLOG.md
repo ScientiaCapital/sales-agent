@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-01
+**Last Updated**: 2025-12-02
 **Sprint**: Current
 
 ---
@@ -11,9 +11,9 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 2 |
-| 🟢 Ready | 3 |
-| ✅ Done (this sprint) | 15 |
+| 🟡 In Progress | 1 |
+| 🟢 Ready | 2 |
+| ✅ Done (this sprint) | 22 |
 
 ---
 
@@ -29,48 +29,33 @@
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-#### 1. [HIGH] Deploy Supabase Security Migrations
-- **ID**: TASK-009
-- **Assignee**: Team (Dec 2)
-- **Labels**: `security`, `database`, `migrations`
-- **Est. Time**: 1 hour
-- **Dependencies**: API keys in .env
+#### 1. [HIGH] Run Interactive Enrichment on 3,500 Companies
+- **ID**: TASK-010
+- **Assignee**: Team (Dec 2+)
+- **Labels**: `enrichment`, `scraping`, `supabase`
+- **Est. Time**: ~30 hours total (over several days)
+- **Dependencies**: None
 
-**Description**: Deploy RLS security fixes and performance optimizations to Supabase.
-
-**Migrations to Deploy**:
-- `015_enable_rls_security.py` - RLS on 14 tables
-- `016_add_star_schema_performance_indexes.py` - Performance indexes
-- `009_consolidate_duplicate_policies.sql` - Remove duplicates
-
-**Acceptance Criteria**:
-- [ ] Add required API keys to .env
-- [ ] Review `DEPLOYMENT_CHECKLIST_RLS_MIGRATION.md`
-- [ ] Run `alembic upgrade head`
-- [ ] Verify RLS enabled with test queries
-- [ ] Monitor application for 24 hours
-
----
-
-#### 2. [HIGH] Run Deep Scrape on 1,000 Companies
-- **ID**: TASK-007
-- **Assignee**: Team (Dec 2)
-- **Labels**: `enrichment`, `scraping`, `atl-extraction`
-- **Est. Time**: 2-4 hours (revised)
-- **Dependencies**: TASK-009 (migrations deployed)
-
-**Description**: Run Browserbase deep scraper to extract ATL names from company websites.
+**Description**: Run interactive enrichment from Supabase, 5 companies at a time.
 
 **Command**:
 ```bash
-./run_deep_scrape.sh 1000
+cd backend
+source ../venv/bin/activate
+python run_enrichment.py
 ```
 
+**Progress**:
+- [ ] Start enrichment run
+- [ ] Monitor for failures (saved to FAILED_ENRICHMENT.csv)
+- [ ] Continue in daily sessions (20-40 batches/day)
+- [ ] Target: 3,500 companies with domains
+
 **Acceptance Criteria**:
-- [ ] Run `./run_deep_scrape.sh 1000`
-- [ ] Review `CLOSE_CRM_IMPORT_1000_*.csv` in Excel
-- [ ] Remove any bad data
-- [ ] Manual import to Close CRM
+- [ ] All 3,500 companies with domains enriched
+- [ ] Failed companies documented for troubleshooting
+- [ ] dim_companies updated with last_enriched_at
+- [ ] ATL contacts added to dim_contacts
 
 ---
 
@@ -148,6 +133,10 @@
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Code Cleanup (Dec 2)** | | | |
+| TASK-D26 | Archived 49 obsolete Python scripts | 2025-12-02 | Claude |
+| TASK-D27 | Updated CLAUDE.md, PLANNING.md, TASK.md, BACKLOG.md | 2025-12-02 | Claude |
+| TASK-D28 | Created run_enrichment.py (interactive batch runner) | 2025-12-02 | Claude |
 | **Phase 2: Security & Database (Dec 1)** | | | |
 | TASK-D14 | Migration 015: Enable RLS on 14 tables | 2025-12-01 | Agent 7 |
 | TASK-D15 | Migration 016: Performance indexes | 2025-12-01 | Agent 7 |
@@ -197,13 +186,15 @@
 | Missing Indexes | 7+ | 0 (all added) |
 | Code Quality Score | Unknown | 96.5/100 (A+) |
 
-### Data Quality (Dec 1)
+### Data Quality (Dec 2)
 | Metric | Count |
 |--------|-------|
-| Clean Companies | 6,568 |
-| Enriched Leads | 1,000 |
-| Verified Phones | 699 (70%) |
-| ATL Contacts | 14 |
+| Total Companies | 8,889 |
+| With Domains | 3,643 |
+| Needing Enrichment | ~3,500 |
+| Already Enriched | ~75 |
+| Active Scripts | 14 |
+| Archived Scripts | 49 |
 
 ---
 
