@@ -164,13 +164,17 @@ TEAM_PAGE_PATHS = [
 ]
 
 # Services that indicate good ICP fit for Coperniq
-# HIGH VALUE: generators, commercial, maintenance = larger operations
+# HIGH VALUE: generators, commercial, maintenance, solar = larger operations
 ICP_SERVICES = [
     # GOLD signals (larger operations)
     'generator', 'generators', 'standby generator', 'backup generator',
     'commercial', 'commercial hvac', 'commercial refrigeration',
     'maintenance', 'maintenance plan', 'maintenance agreement', 'service agreement',
     'preventative maintenance', 'preventive maintenance',
+    # Solar/Energy (HIGH VALUE - growing market)
+    'solar', 'solar panel', 'solar installation', 'solar energy',
+    'battery storage', 'energy storage', 'powerwall', 'backup battery',
+    'ev charger', 'ev charging', 'electric vehicle', 'charging station',
     # Standard HVAC
     'ac repair', 'air conditioning', 'hvac', 'heating', 'cooling',
     'ductwork', 'furnace', 'heat pump', 'mini split', 'ductless',
@@ -180,8 +184,9 @@ ICP_SERVICES = [
     'residential', 'home comfort'
 ]
 
-# HVAC brands - indicates established contractor with brand partnerships
-HVAC_BRANDS = [
+# OEM Brands - indicates authorized dealer status and company size
+# More brands = larger operation with multiple partnerships
+OEM_BRANDS = [
     # Premium HVAC brands
     'Carrier', 'Trane', 'Lennox', 'Bryant', 'Rheem', 'Ruud', 'Goodman', 'Daikin',
     'American Standard', 'York', 'Amana', 'Mitsubishi', 'Fujitsu', 'LG', 'Samsung',
@@ -190,8 +195,26 @@ HVAC_BRANDS = [
     # Generator brands (HIGH VALUE - indicates larger operation)
     'Generac', 'Kohler', 'Cummins', 'Briggs & Stratton', 'Champion',
     # Water heater brands
-    'Navien', 'Rinnai', 'Noritz', 'Takagi', 'Bradford White', 'A.O. Smith'
+    'Navien', 'Rinnai', 'Noritz', 'Takagi', 'Bradford White', 'A.O. Smith',
+    # Solar/Energy brands (HIGH VALUE - growing market)
+    'Enphase', 'Tesla', 'SolarEdge', 'SunPower', 'LG Solar', 'Panasonic Solar',
+    'Q Cells', 'Canadian Solar', 'JinkoSolar', 'Trina Solar', 'REC Solar',
+    'Silfab', 'Mission Solar', 'Hanwha', 'LONGi', 'JA Solar',
+    # Battery/Storage brands
+    'Tesla Powerwall', 'Enphase IQ', 'LG Chem', 'Sonnen', 'Generac PWRcell',
+    'Franklin WholePower', 'SunVault', 'Panasonic EverVolt',
+    # EV Charger brands
+    'ChargePoint', 'JuiceBox', 'Wallbox', 'Emporia', 'Grizzl-E', 'Tesla Wall Connector',
+    # Ductless/Mini-split specific
+    'Mitsubishi Electric', 'Daikin Mini Split', 'Fujitsu Halcyon', 'LG Art Cool',
+    # Smart home/controls
+    'Honeywell Home', 'Google Nest', 'Ecobee SmartThermostat', 'Sensi',
+    # Air quality
+    'Aprilaire', 'Honeywell', 'Lennox PureAir', 'Trane CleanEffects', 'iWave', 'REME HALO'
 ]
+
+# Keep HVAC_BRANDS as alias for backwards compatibility
+HVAC_BRANDS = OEM_BRANDS
 
 # Service area page paths to check (with trailing slash variants)
 SERVICE_AREA_PATHS = [
