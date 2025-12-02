@@ -18,14 +18,19 @@ Controls:
     - Failed companies logged to FAILED_ENRICHMENT.csv
 """
 
+import argparse
 import asyncio
 import csv
 import os
 import re
 import sys
 import time
+import warnings
 from datetime import datetime
 from pathlib import Path
+
+# Suppress noisy playwright warnings
+warnings.filterwarnings('ignore', message='.*Future exception was never retrieved.*')
 
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent / '.env', override=True)
@@ -133,34 +138,38 @@ BTL_TITLES = [
     'plumber', 'electrician', 'apprentice', 'helper', 'assistant',
     'dispatcher', 'coordinator', 'scheduler', 'admin', 'administrator',
     'permits', 'compliance', 'sales', 'estimator', 'supervisor', 'foreman',
-    'lead', 'senior', 'junior', 'specialist', 'representative', 'rep'
+    'lead', 'senior', 'junior', 'specialist', 'representative', 'rep',
+    # Additional BTL titles
+    'project manager', 'field operations', 'operations', 'commander',
+    'crew', 'team member', 'office', 'bookkeeper', 'accounting',
+    'warehouse', 'inventory', 'logistics', 'fleet', 'driver'
 ]
 
 # All titles combined for detection
 ALL_TITLES = ATL_TITLES + BTL_TITLES
 
 # Team page paths to check (prioritized - best/most common first)
-# Both with and without trailing slashes
 TEAM_PAGE_PATHS = [
     # High priority - most likely to have team info
-    '/meet-the-team', '/meet-the-team/',
-    '/team', '/team/',
-    '/our-team', '/our-team/',
-    '/about-us', '/about-us/',
-    '/about', '/about/',
-    '/staff', '/staff/',
+    '/about',
+    '/about-us',
+    '/about/staff',      # Nested staff pages (Command Comfort style)
+    '/about/team',       # Nested team pages
+    '/about/our-team',
+    '/team',
+    '/our-team',
+    '/meet-the-team',
+    '/staff',
+    '/our-staff',
+    '/leadership',
+    '/management',
     # Medium priority
-    '/meet-our-team', '/meet-our-team/',
-    '/leadership', '/leadership/',
-    '/management', '/management/',
-    '/people', '/people/',
-    '/the-team', '/the-team/',
-    '/our-staff', '/our-staff/',
-    # Lower priority
-    '/who-we-are', '/who-we-are/',
-    '/company', '/company/',
-    '/about/team', '/about/team/',
-    '/aboutus', '/ourteam', '/meettheteam', '/ourstaff'
+    '/meet-our-team',
+    '/people',
+    '/who-we-are',
+    '/company',
+    '/company/team',     # Corporate style
+    '/company/about',
 ]
 
 # Services that indicate good ICP fit for Coperniq
@@ -253,18 +262,13 @@ OEM_BRANDS = [
 # Keep HVAC_BRANDS as alias for backwards compatibility
 HVAC_BRANDS = OEM_BRANDS
 
-# Service area page paths to check (with trailing slash variants)
+# Service area page paths to check
 SERVICE_AREA_PATHS = [
-    '/service-area', '/service-area/',
-    '/service-areas', '/service-areas/',
-    '/areas-served', '/areas-served/',
-    '/areas-we-serve', '/areas-we-serve/',
-    '/locations', '/locations/',
-    '/coverage', '/coverage/',
-    '/service-locations', '/service-locations/',
-    '/where-we-serve', '/where-we-serve/',
-    '/cities-served', '/cities-served/',
-    '/our-service-area', '/our-service-area/'
+    '/service-area',
+    '/service-areas',
+    '/areas-served',
+    '/locations',
+    '/coverage',
 ]
 
 
@@ -343,7 +347,7 @@ def extract_contacts(content):
 
             # Check if this line is ANY title (ATL or BTL)
             for title_keyword in ALL_TITLES:
-                if title_keyword in check_line and len(check_line) < 50:
+                if title_keyword in check_line and len(check_line) < 80:
                     title_found = lines[i + offset].strip().title()
                     is_atl = title_keyword in ATL_TITLES
                     break
@@ -377,30 +381,45 @@ def extract_contacts(content):
                 # Check if words are capitalized (name pattern)
                 if all(w[0].isupper() for w in words if w and len(w) > 0 and w[0].isalpha()):
                     # Exclude common non-name words and menu/service terms
-                    skip_words = {
+                    # Words that should NEVER appear anywhere in the name
+                    skip_words_anywhere = {
                         # Navigation/menu
                         'the', 'our', 'meet', 'about', 'company', 'team', 'staff',
                         'contact', 'home', 'services', 'phone', 'email', 'address',
                         'schedule', 'now', 'call', 'today', 'free', 'quote', 'estimate',
                         'learn', 'more', 'view', 'all', 'read', 'get', 'request', 'from',
-                        # Industry/business terms
-                        'heating', 'cooling', 'hvac', 'air', 'conditioning',
+                        # Industry/business terms - EXPANDED
+                        'heating', 'cooling', 'hvac', 'air', 'conditioning', 'alternative',
                         'residential', 'commercial', 'emergency', 'repair', 'installation',
                         'installations', 'repairs', 'maintenance', 'preventative', 'routine',
-                        'service', 'agreement', 'agreements', 'area', 'areas',
+                        'service', 'agreement', 'agreements', 'area', 'areas', 'energy',
                         'inquiry', 'about', 'new', 'existing', 'customer', 'customers',
-                        # Common false positives
+                        'expert', 'thorough', 'comprehensive', 'professional', 'certified',
+                        'skilled', 'trained', 'licensed', 'insured', 'bonded', 'guaranteed',
+                        # Common false positives - marketing phrases
                         'financing', 'available', 'indoor', 'outdoor', 'quality', 'comfort',
                         'plumbing', 'electrical', 'products', 'systems', 'solutions',
-                        'awards', 'recognition', 'promised', 'spring', 'valley', 'city',
+                        'awards', 'recognition', 'promised', 'valley', 'city',
                         'rating', 'ratings', 'reviews', 'review', 'google', 'yelp',
                         'privacy', 'policy', 'terms', 'conditions', 'copyright',
                         # More false positives from McAllister pattern
                         'full', 'by', 'a', 'an', 'is', 'are', 'was', 'were', 'be',
-                        'membership', 'plan', 'plans', 'club', 'program', 'programs'
+                        'membership', 'plan', 'plans', 'club', 'program', 'programs',
+                        # Marketing buzzwords (skip anywhere)
+                        'why', 'choose', 'us', 'book', 'online', 'your', 'standards',
+                        'guarantee', 'technicians', 'background', 'checked', 'star',
+                        'oriented', 'dealers', 'dealer', 'successful', 'very'
                     }
-                    # Skip if any word is in skip list OR line contains '*' (form fields)
-                    if not any(w.lower() in skip_words for w in words) and '*' not in current_line:
+                    # Words that are only bad if they're the FIRST word (could be surnames!)
+                    # "Tyler Best" = good, "Best Service" = bad
+                    skip_first_word_only = {
+                        'best', 'most', 'highly', 'top', 'premier', 'leading', 'trusted',
+                        'spring'  # Spring Valley but not Mary Spring
+                    }
+                    # Skip if any word is in skip_anywhere list, or first word is in first_word_only list
+                    has_bad_word = any(w.lower() in skip_words_anywhere for w in words)
+                    first_word_bad = words[0].lower() in skip_first_word_only if words else False
+                    if not has_bad_word and not first_word_bad and '*' not in current_line:
                         # Additional validation: first word should look like a first name (3-15 chars)
                         first_word = words[0]
                         if 3 <= len(first_word) <= 15 and first_word.isalpha():
@@ -446,28 +465,64 @@ def extract_brands(content):
 
 
 def extract_owner_quote(content):
-    """Extract quotes attributed to owner/founder/CEO.
+    """Extract quotes and personal bios attributed to owner/founder/CEO.
+
+    These are GOLD for BDR agents - personal details that open doors:
+    - Hobbies (golf, fishing, etc.)
+    - Family info (kids, pets)
+    - Background story (how they started)
+    - Community involvement
 
     Patterns:
     - "quote text" - Name, Owner
-    - "quote text" - Name Lastname, Founder
-    - - Name, Owner (just the attribution without quote)
+    - Bio paragraphs under CEO/Owner headings
     """
-    quotes = []
+    results = []
 
     # Pattern 1: Look for "- Name, Owner" or "– Name, Founder" etc.
     owner_pattern = r'[-–—]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+),?\s+(Owner|Founder|Co-[Ff]ounder|CEO|President|Partner)'
     matches = re.findall(owner_pattern, content)
     for name, title in matches:
-        quotes.append({'name': name.strip(), 'title': title})
+        results.append({'name': name.strip(), 'title': title, 'type': 'quote_attribution'})
 
-    # Pattern 2: Look for "A Message From Our Owner" style sections
-    message_pattern = r'(?:message from|letter from|note from|word from)\s+(?:our\s+)?(?:the\s+)?(owner|founder|ceo|president)'
-    if re.search(message_pattern, content.lower()):
-        # There's an owner message section - look for the name nearby
-        pass  # The first pattern should catch the attribution
+    # Pattern 2: Extract bio paragraphs near ATL titles
+    # Look for personal keywords that indicate a bio section
+    bio_keywords = [
+        'family', 'wife', 'husband', 'kids', 'children', 'son', 'daughter',
+        'dog', 'dogs', 'pet', 'pets', 'cat',
+        'golf', 'fishing', 'hunting', 'hiking', 'beach', 'outdoors',
+        'church', 'community', 'volunteer', 'charity',
+        'started', 'founded', 'began', 'grew up', 'born and raised',
+        'hobby', 'hobbies', 'free time', 'outside of work', 'passion'
+    ]
 
-    return quotes
+    lines = content.split('\n')
+    for i, line in enumerate(lines):
+        line_lower = line.lower().strip()
+        # Check if this line contains bio keywords
+        if any(keyword in line_lower for keyword in bio_keywords):
+            # Get some context (this line + 2 lines after)
+            bio_snippet = line.strip()
+            if len(bio_snippet) > 30 and len(bio_snippet) < 500:
+                # Look for an ATL name nearby (within 10 lines before)
+                atl_name = None
+                for j in range(max(0, i-10), i):
+                    prev_line = lines[j].strip()
+                    # Check if it looks like a name followed by a title
+                    if re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', prev_line):
+                        atl_name = prev_line
+                    elif 'ceo' in lines[j].lower() or 'owner' in lines[j].lower() or 'founder' in lines[j].lower():
+                        # The line before this title might be the name
+                        if j > 0 and re.match(r'^[A-Z][a-z]+\s+[A-Z][a-z]+$', lines[j-1].strip()):
+                            atl_name = lines[j-1].strip()
+
+                results.append({
+                    'name': atl_name or 'Unknown',
+                    'bio_snippet': bio_snippet[:300],  # Truncate long bios
+                    'type': 'bio'
+                })
+
+    return results
 
 
 def extract_maintenance_plans(content):
@@ -556,6 +611,10 @@ def extract_service_areas(content):
         # Brand names (not cities)
         'carrier', 'trane', 'lennox', 'bryant', 'rheem', 'goodman', 'daikin',
         'generac', 'kohler', 'american', 'standard', 'york', 'amana',
+        # Social media / contact (NOT cities!)
+        'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok',
+        'email', 'phone', 'fax', 'address', 'map', 'directions',
+        'yelp', 'google', 'reviews', 'bbb', 'angi', 'angies',
         # Common words that get capitalized
         'county', 'township', 'borough', 'city', 'town', 'village',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
@@ -653,8 +712,15 @@ async def find_team_links(page):
     return list(found_links)
 
 
-async def scrape_one(company_id, company_name, domain):
-    """Scrape one company, return dict of results."""
+async def scrape_one(company_id, company_name, domain, extra_pages=None):
+    """Scrape one company, return dict of results.
+
+    Args:
+        company_id: UUID of the company in Supabase
+        company_name: Name of the company
+        domain: Domain to scrape (e.g. "acmeheating.com")
+        extra_pages: Optional list of specific page URLs to scrape (e.g. ["/about/staff", "/team/leadership"])
+    """
     result = {
         'company_id': company_id,
         'success': False,
@@ -665,6 +731,7 @@ async def scrape_one(company_id, company_name, domain):
         'brands': [],
         'service_areas': [],
         'maintenance_plans': [],  # BDR gold - plan names for openers
+        'owner_bios': [],  # BDR gold - personal details for rapport building
         'pages_checked': [],
         'error': '',
         'duration': 0
@@ -683,12 +750,9 @@ async def scrape_one(company_id, company_name, domain):
         base_url = f"https://{domain}"
         discovered_links = []
 
-        # Landing page
+        # Landing page - use Playwright's native timeout (in ms), not asyncio.wait_for
         try:
-            response = await asyncio.wait_for(
-                page.goto(base_url, wait_until="domcontentloaded"),
-                timeout=15.0
-            )
+            response = await page.goto(base_url, wait_until="domcontentloaded", timeout=30000)
             if response and response.status < 400:
                 result['pages_checked'].append(base_url)
                 content = await page.content()
@@ -700,17 +764,34 @@ async def scrape_one(company_id, company_name, domain):
                 result['brands'] = extract_brands(text)
                 result['service_areas'] = extract_service_areas(text)
                 result['maintenance_plans'] = extract_maintenance_plans(text)
+                result['owner_bios'] = extract_owner_quote(text)
 
                 # Discover team links from navigation
                 discovered_links = await find_team_links(page)
-        except asyncio.TimeoutError:
-            result['error'] = 'Landing timeout'
         except Exception as e:
-            result['error'] = str(e)[:50]
+            error_msg = str(e)[:50]
+            if 'timeout' in error_msg.lower():
+                result['error'] = 'Landing timeout'
+            else:
+                result['error'] = error_msg
 
         # Build list of pages to check in priority order (team pages first)
         pages_to_check = []
         seen_urls = set()
+
+        # HIGHEST PRIORITY: User-specified extra pages (scrape_domain.py passes these)
+        if extra_pages:
+            for page_path in extra_pages:
+                # Convert path to full URL if needed
+                if page_path.startswith('http'):
+                    url = page_path
+                elif page_path.startswith('/'):
+                    url = f"{base_url}{page_path}"
+                else:
+                    url = f"{base_url}/{page_path}"
+                if url not in seen_urls:
+                    pages_to_check.append(url)
+                    seen_urls.add(url)
 
         # Add static team page paths (in priority order)
         for path in TEAM_PAGE_PATHS:
@@ -735,17 +816,14 @@ async def scrape_one(company_id, company_name, domain):
         # Remove landing page (already checked)
         pages_to_check = [p for p in pages_to_check if p not in [base_url, f"{base_url}/"]]
 
-        # Check each page (limit to first 15 to balance coverage vs. time)
-        checked_count = 0
-        for page_url in pages_to_check[:15]:
+        # Check secondary pages - use Playwright's native timeout, not asyncio.wait_for
+        MAX_PAGES = 12  # Check up to 12 pages per company
+        for page_url in pages_to_check[:MAX_PAGES]:
             try:
-                response = await asyncio.wait_for(
-                    page.goto(page_url, wait_until="domcontentloaded"),
-                    timeout=8.0
-                )
+                # Use Playwright's native timeout (15 seconds in ms)
+                response = await page.goto(page_url, wait_until="domcontentloaded", timeout=15000)
                 if response and response.status < 400:
                     result['pages_checked'].append(page_url)
-                    checked_count += 1
                     text = await page.inner_text('body')
 
                     # Extract ATL contacts
@@ -779,6 +857,14 @@ async def scrape_one(company_id, company_name, domain):
                         if plan not in result['maintenance_plans']:
                             result['maintenance_plans'].append(plan)
 
+                    # Extract owner bios (personal details for rapport building)
+                    new_bios = extract_owner_quote(text)
+                    for bio in new_bios:
+                        # Dedupe by bio_snippet if present
+                        existing_snippets = [b.get('bio_snippet', '') for b in result['owner_bios']]
+                        if bio.get('bio_snippet') and bio['bio_snippet'] not in existing_snippets:
+                            result['owner_bios'].append(bio)
+
                     # Extract additional phones/emails
                     content = await page.content()
                     for phone in extract_phones(content):
@@ -788,9 +874,8 @@ async def scrape_one(company_id, company_name, domain):
                         if email not in result['emails']:
                             result['emails'].append(email)
 
-                await asyncio.sleep(0.3)
-            except:
-                pass
+            except Exception:
+                pass  # Page failed (timeout, 404, etc) - skip and continue
 
         await browser.close()
         await playwright.stop()
@@ -925,6 +1010,12 @@ async def run_batch(supabase, companies):
 
 
 async def main():
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Enrich companies from Supabase')
+    parser.add_argument('--auto', action='store_true', help='Run continuously without prompts')
+    parser.add_argument('--limit', type=int, default=0, help='Max companies to process (0=unlimited)')
+    args = parser.parse_args()
+
     # Validate
     if not all([BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, SUPABASE_URL, SUPABASE_SERVICE_KEY]):
         print("ERROR: Missing environment variables")
@@ -935,23 +1026,32 @@ async def main():
     # Get stats
     total = supabase.table('dim_companies').select('company_id', count='exact').not_.is_('domain', 'null').is_('last_enriched_at', 'null').execute()
     print(f"\n{'='*60}")
-    print(f"ENRICHMENT RUNNER")
+    print(f"ENRICHMENT RUNNER {'(AUTO MODE)' if args.auto else ''}")
     print(f"{'='*60}")
     print(f"Companies needing enrichment: {total.count}")
     print(f"Batch size: {BATCH_SIZE}")
     print(f"Estimated batches: {(total.count + BATCH_SIZE - 1) // BATCH_SIZE}")
-    print(f"\nPress Enter to start, 'q' to quit")
+    if args.limit:
+        print(f"Limit: {args.limit} companies")
+
+    if not args.auto:
+        print(f"\nPress Enter to start, 'q' to quit")
 
     batch_num = 0
     total_enriched = 0
     total_atl = 0
 
     while True:
+        # Check limit
+        if args.limit and total_enriched >= args.limit:
+            print(f"\n✅ Reached limit of {args.limit} companies")
+            break
+
         # Get next batch
         companies = get_unenriched_batch(supabase, BATCH_SIZE)
 
         if not companies:
-            print("\n ALL COMPANIES ENRICHED!")
+            print("\n✅ ALL COMPANIES ENRICHED!")
             break
 
         batch_num += 1
@@ -975,20 +1075,24 @@ async def main():
         successful = sum(1 for r in results if r['success'])
         failed = len(results) - successful
         if failed > 0:
-            print(f"  {failed} failed (will retry later)")
+            print(f"  ⚠️  {failed} failed (will retry later)")
 
-        print(f"\n  Session total: {total_enriched} enriched, {total_atl} ATL found")
+        print(f"\n  Session total: {total_enriched} enriched, {total_atl} contacts found")
 
-        # Prompt
-        response = input("\nPress Enter for next batch, 'q' to quit: ")
-        if response.lower() == 'q':
-            break
+        # Prompt (skip in auto mode)
+        if not args.auto:
+            response = input("\nPress Enter for next batch, 'q' to quit: ")
+            if response.lower() == 'q':
+                break
+        else:
+            # Small delay between batches in auto mode
+            await asyncio.sleep(1)
 
     print(f"\n{'='*60}")
     print("SESSION COMPLETE")
     print(f"{'='*60}")
     print(f"Companies enriched: {total_enriched}")
-    print(f"ATL contacts found: {total_atl}")
+    print(f"Contacts found: {total_atl}")
     if FAILED_FILE.exists():
         print(f"\n⚠️  Failed companies logged to: {FAILED_FILE}")
         print("   Review and retry these later")

@@ -125,6 +125,13 @@ from .agent_communication_hub import (
     AgentStatus,
 )
 
+# Phase 3.4: SalesIntelAgent (Sales Intelligence Extraction) ✅ COMPLETE
+from .sales_intel_agent import (
+    SalesIntelAgent,
+    SalesIntelResult,
+    extract_sales_intel,
+)
+
 
 __all__ = [
     # Phase 2.1 - QualificationAgent (LCEL)
@@ -184,4 +191,9 @@ __all__ = [
     "InterAgentMessage",
     "MessageType",
     "AgentStatus",
+
+    # Phase 3.4 - SalesIntelAgent (Sales Intelligence Extraction)
+    "SalesIntelAgent",
+    "SalesIntelResult",
+    "extract_sales_intel",
 ]
