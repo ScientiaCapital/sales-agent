@@ -8,7 +8,7 @@ Provides endpoints to:
 4. Regenerate drafts with fresh AI analysis
 
 Architecture:
-- Uses Supabase for draft storage (ai_outreach_drafts table)
+- Uses Supabase for draft storage (dim_ai_drafts table)
 - Integrates with SalesIntelAgent for content extraction
 - Supports human-in-the-loop approval workflow
 - Tracks draft status: pending -> approved -> sent (or discarded)
@@ -168,7 +168,7 @@ async def _save_drafts_to_supabase(
     contact_name: Optional[str] = None,
     contact_title: Optional[str] = None
 ) -> int:
-    """Save AI-generated drafts to Supabase ai_outreach_drafts table"""
+    """Save AI-generated drafts to Supabase dim_ai_drafts table"""
     _check_supabase()
 
     drafts = []
@@ -227,7 +227,7 @@ async def _save_drafts_to_supabase(
 
     if drafts:
         try:
-            supabase.table('ai_outreach_drafts').insert(drafts).execute()
+            supabase.table('dim_ai_drafts').insert(drafts).execute()
             logger.info(f"Saved {len(drafts)} drafts for {company_name}")
             return len(drafts)
         except Exception as e:
@@ -251,7 +251,7 @@ async def enrich_company(
     1. Fetch company data from Supabase dim_companies
     2. Get scraped content (from request or database)
     3. Run SalesIntelAgent to extract personal hooks + generate drafts
-    4. Save drafts to ai_outreach_drafts table
+    4. Save drafts to dim_ai_drafts table
     5. Return summary
 
     Args:
@@ -274,7 +274,7 @@ async def enrich_company(
 
     # Check if drafts already exist (unless regenerate=True)
     if not request.regenerate:
-        existing = supabase.table('ai_outreach_drafts').select('draft_id').eq('company_id', company_id).execute()
+        existing = supabase.table('dim_ai_drafts').select('draft_id').eq('company_id', company_id).execute()
         if existing.data and len(existing.data) > 0:
             logger.info(f"Drafts already exist for {company_name} - use regenerate=true to override")
             return EnrichmentResponse(
@@ -383,7 +383,7 @@ async def list_drafts(
     _check_supabase()
 
     # Build query
-    query = supabase.table('ai_outreach_drafts').select('*', count='exact')
+    query = supabase.table('dim_ai_drafts').select('*', count='exact')
 
     if status:
         query = query.eq('status', status.value)
@@ -451,7 +451,7 @@ async def get_draft(draft_id: str):
     _check_supabase()
 
     try:
-        result = supabase.table('ai_outreach_drafts').select('*').eq('draft_id', draft_id).execute()
+        result = supabase.table('dim_ai_drafts').select('*').eq('draft_id', draft_id).execute()
 
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=404, detail=f"Draft {draft_id} not found")
@@ -507,7 +507,7 @@ async def update_draft(draft_id: str, request: DraftUpdateRequest):
         update_data['body'] = request.body
 
     try:
-        result = supabase.table('ai_outreach_drafts').update(update_data).eq('draft_id', draft_id).execute()
+        result = supabase.table('dim_ai_drafts').update(update_data).eq('draft_id', draft_id).execute()
 
         if not result.data or len(result.data) == 0:
             raise HTTPException(status_code=404, detail=f"Draft {draft_id} not found")
@@ -561,7 +561,7 @@ async def send_draft(draft_id: str, request: SendDraftRequest):
         logger.warning("CLOSE_WRITE_DISABLED=true - not actually sending to CRM")
 
         # Mark as sent anyway (for testing)
-        supabase.table('ai_outreach_drafts').update({
+        supabase.table('dim_ai_drafts').update({
             'status': DraftStatus.SENT.value,
             'sent_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
@@ -577,7 +577,7 @@ async def send_draft(draft_id: str, request: SendDraftRequest):
     # TODO: Implement actual Close CRM integration
     # For now, just mark as sent
     try:
-        supabase.table('ai_outreach_drafts').update({
+        supabase.table('dim_ai_drafts').update({
             'status': DraftStatus.SENT.value,
             'sent_at': datetime.utcnow().isoformat(),
             'updated_at': datetime.utcnow().isoformat()
@@ -621,7 +621,7 @@ async def regenerate_draft(draft_id: str):
 
     # Delete old draft
     try:
-        supabase.table('ai_outreach_drafts').delete().eq('draft_id', draft_id).execute()
+        supabase.table('dim_ai_drafts').delete().eq('draft_id', draft_id).execute()
         logger.info(f"Deleted old draft {draft_id}")
     except Exception as e:
         logger.error(f"Error deleting old draft: {e}")
@@ -652,7 +652,7 @@ async def discard_draft(draft_id: str):
     _check_supabase()
 
     try:
-        result = supabase.table('ai_outreach_drafts').update({
+        result = supabase.table('dim_ai_drafts').update({
             'status': DraftStatus.DISCARDED.value,
             'updated_at': datetime.utcnow().isoformat()
         }).eq('draft_id', draft_id).execute()

@@ -16,42 +16,35 @@ The AI Outreach Router provides endpoints for AI-powered sales intelligence extr
                              ▼
                     ┌─────────────────┐
                     │    Supabase     │
-                    │ ai_outreach_    │
-                    │     drafts      │
+                    │  dim_ai_drafts  │
+                    │                 │
                     └─────────────────┘
 ```
 
 ## Database Schema
 
-### `ai_outreach_drafts` Table (Supabase)
+### `dim_ai_drafts` Table (Supabase)
+
+See migration: `supabase/migrations/20251202_create_ai_drafts.sql`
 
 ```sql
-CREATE TABLE ai_outreach_drafts (
-    draft_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    company_id UUID NOT NULL REFERENCES dim_companies(company_id),
-    company_name TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS public.dim_ai_drafts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES public.dim_companies(id) ON DELETE CASCADE,
+    contact_id UUID REFERENCES public.dim_contacts(id) ON DELETE SET NULL,
     draft_type TEXT NOT NULL CHECK (draft_type IN ('email', 'sms', 'voice')),
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'sent', 'discarded')),
-
-    -- Content
-    subject TEXT,  -- Email only
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'sent', 'discarded')),
+    subject TEXT,  -- For email only
     body TEXT NOT NULL,
-
-    -- Context
-    contact_name TEXT,
-    contact_title TEXT,
-    personal_hooks JSONB DEFAULT '[]',
-
-    -- Metadata
-    confidence REAL DEFAULT 0.5,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    personal_hooks JSONB DEFAULT '[]'::jsonb,
+    confidence FLOAT DEFAULT 0.5 CHECK (confidence >= 0 AND confidence <= 1),
+    model_used TEXT DEFAULT 'llama-3.3-70b',
+    processing_time_ms INT DEFAULT 0,
     sent_at TIMESTAMPTZ,
-
-    -- Indexes
-    INDEX idx_draft_status (status, draft_type),
-    INDEX idx_draft_company (company_id),
-    INDEX idx_draft_generated (generated_at DESC)
+    close_activity_id TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    created_by TEXT DEFAULT 'system'
 );
 ```
 
@@ -87,7 +80,7 @@ Trigger SalesIntelAgent enrichment for a company.
 1. Fetch company data from `dim_companies`
 2. Get scraped content (from request or `fact_enrichments`)
 3. Run SalesIntelAgent to extract personal hooks + generate drafts
-4. Save 3 drafts (email, SMS, voice) to `ai_outreach_drafts`
+4. Save 3 drafts (email, SMS, voice) to `dim_ai_drafts`
 5. Return summary
 
 **Use Cases:**
