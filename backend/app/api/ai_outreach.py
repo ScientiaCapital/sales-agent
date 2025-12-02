@@ -363,6 +363,7 @@ async def enrich_company(
 async def list_drafts(
     status: Optional[DraftStatus] = Query(None, description="Filter by status"),
     draft_type: Optional[DraftType] = Query(None, description="Filter by type"),
+    company_id: Optional[str] = Query(None, description="Filter by company ID"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page")
 ):
@@ -372,6 +373,7 @@ async def list_drafts(
     Query params:
         status: Filter by draft status (pending, approved, sent, discarded)
         draft_type: Filter by type (email, sms, voice)
+        company_id: Filter by specific company
         page: Page number (1-indexed)
         page_size: Items per page (1-100)
 
@@ -388,6 +390,9 @@ async def list_drafts(
 
     if draft_type:
         query = query.eq('draft_type', draft_type.value)
+
+    if company_id:
+        query = query.eq('company_id', company_id)
 
     # Order by newest first
     query = query.order('generated_at', desc=True)

@@ -156,7 +156,7 @@ export function DraftReviewQueue() {
 
     try {
       await fetch(`${apiUrl}/api/ai/drafts/${draftId}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: editedBody }),
       });
@@ -200,12 +200,12 @@ export function DraftReviewQueue() {
   // Approve and send single draft
   const approveAndSend = async (draftId: string) => {
     try {
-      await fetch(`${apiUrl}/api/ai/drafts/${draftId}/approve`, {
+      await fetch(`${apiUrl}/api/ai/drafts/${draftId}/send`, {
         method: "POST",
       });
       mutate(); // Refresh data
     } catch (err) {
-      console.error("Failed to approve:", err);
+      console.error("Failed to send:", err);
     }
   };
 
@@ -226,7 +226,7 @@ export function DraftReviewQueue() {
     try {
       await Promise.all(
         Array.from(selectedDrafts).map((id) =>
-          fetch(`${apiUrl}/api/ai/drafts/${id}/approve`, { method: "POST" })
+          fetch(`${apiUrl}/api/ai/drafts/${id}/send`, { method: "POST" })
         )
       );
       setSelectedDrafts(new Set());
