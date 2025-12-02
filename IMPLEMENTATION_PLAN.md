@@ -2,7 +2,7 @@
 
 **Feature Branch**: `feature/social-intelligence`
 **Worktree Location**: `.worktrees/social-intelligence`
-**Design Doc**: `docs/plans/2025-11-16-social-intelligence-serverless.md`
+**Design Doc**: `backend/docs/plans/design/2025-11-16-social-intelligence-serverless.md`
 **Estimated Timeline**: 4 weeks
 **Owner**: Tim Kipper
 

@@ -47,7 +47,7 @@ This document summarizes the documentation cleanup performed on January 16, 2025
 
 ### Organized Documentation
 - ✅ `docs/` folder - Organized documentation structure
-  - `docs/plans/` - Implementation plans (review individually)
+  - `backend/docs/plans/` - Implementation plans (review individually)
   - `docs/security/` - Security documentation
   - `docs/cost-tracking-guide.md` - Cost tracking guide
 
@@ -64,7 +64,7 @@ This document summarizes the documentation cleanup performed on January 16, 2025
 
 ## Recommendations
 
-1. **Review `docs/plans/` folder**: Some implementation plans may be outdated if features are already implemented
+1. **Review `backend/docs/plans/` folder**: Some implementation plans may be outdated if features are already implemented
 2. **Keep feature docs current**: Update feature documentation as features evolve
 3. **Archive old plans**: Move completed implementation plans to an archive folder if needed for reference
 
@@ -72,7 +72,7 @@ This document summarizes the documentation cleanup performed on January 16, 2025
 
 ## Next Steps
 
-- Review `docs/plans/` folder for outdated implementation plans
+- Review `backend/docs/plans/` folder for outdated implementation plans
 - Consider creating a `docs/archive/` folder for historical reference
 - Update feature documentation as needed
 

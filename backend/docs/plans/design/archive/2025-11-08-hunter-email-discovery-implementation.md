@@ -1382,8 +1382,8 @@ This maximizes email discovery while minimizing API costs.
 - `backend/app/services/hunter_service.py` (HunterService implementation)
 - `backend/tests/services/test_hunter_service.py` (unit tests)
 - `backend/tests/services/langgraph/test_hunter_integration.py` (integration tests)
-- `docs/plans/2025-11-08-hunter-email-discovery-design.md` (design doc)
-- `docs/plans/2025-11-08-hunter-email-discovery-implementation.md` (implementation plan)
+- `backend/docs/plans/design/2025-11-08-hunter-email-discovery-design.md` (design doc)
+- `backend/docs/plans/design/2025-11-08-hunter-email-discovery-implementation.md` (implementation plan)
 
 **Modified**:
 - `backend/app/services/langgraph/agents/qualification_agent.py` (Hunter.io integration)

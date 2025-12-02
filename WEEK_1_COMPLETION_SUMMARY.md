@@ -77,7 +77,7 @@ All 4 required secrets configured:
 - **requirements-serverless.txt**: Python dependencies
 
 ### 7. Documentation
-- **Architecture Design**: `docs/plans/2025-11-16-social-intelligence-serverless.md` (796 lines)
+- **Architecture Design**: `backend/docs/plans/design/2025-11-16-social-intelligence-serverless.md` (796 lines)
 - **Context Tracking**: `.claude/context.md` (updated with 100% completion)
 - **Setup Scripts**: All documented and ready for Week 2
 
