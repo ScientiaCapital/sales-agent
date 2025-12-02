@@ -1,6 +1,6 @@
 # Design Plans - Consolidated Summary
 
-**Last Updated**: 2025-12-02  
+**Last Updated**: 2025-12-02 (Evening)
 **Purpose**: Single source of truth for all design plans and their implementation status
 
 ---
@@ -9,9 +9,9 @@
 
 This document consolidates all design plans from `backend/docs/plans/design/` and tracks implementation status against the codebase.
 
-**Total Design Plans**: 12  
-**Fully Implemented**: 9  
-**Partially Implemented**: 2  
+**Total Design Plans**: 13
+**Fully Implemented**: 10
+**Partially Implemented**: 2
 **Not Started**: 1
 
 ---
@@ -235,9 +235,46 @@ This document consolidates all design plans from `backend/docs/plans/design/` an
 
 ---
 
+### 10. Coperniq ICP Enrichment Pipeline (Dec 2, 2025)
+**File**: `ADR-008/009 in PLANNING.md`
+**Status**: ✅ **COMPLETE**
+
+**Implementation**:
+- ✅ `backend/run_enrichment.py` - Interactive 5-at-a-time enrichment from Supabase
+- ✅ `backend/batch_scrape_runner.py` - Alternative batch runner with CSV input
+- ✅ `backend/scrape_domain.py` - Single domain quick scraper
+- ✅ Browserbase cloud browser integration (avoids bot detection)
+- ✅ Supabase sync (dim_companies, dim_contacts)
+
+**Features Working**:
+- **OEM Brand Detection (100+ brands)**:
+  - HVAC: Carrier, Trane, Lennox, Mitsubishi, Daikin, Goodman, York
+  - Solar Inverters (Resi): Enphase IQ7/IQ8, SolarEdge, Hoymiles
+  - Solar Inverters (Commercial): SMA Sunny Tripower, Fronius Eco, Sungrow
+  - Battery Storage (Resi): Tesla Powerwall, Generac PWRcell, Sonnen
+  - Battery Storage (Commercial): Tesla Megapack, BYD, Fluence
+  - EV Chargers (Resi): ChargePoint Home, JuiceBox, Wallbox
+  - EV Chargers (Commercial): ABB Terra, Tritium, Kempower
+  - VRF/Commercial HVAC: Daikin VRV, Mitsubishi City Multi
+  - Generators: Generac, Kohler, Cummins
+- **Service Area Extraction**: Cities served from service-area pages
+- **Maintenance Plan Detection**: BDR opener gold (Comfort Club, Service Agreement)
+- **ATL/BTL Contact Extraction**: Decision makers + staff
+- **Owner Quote Attribution**: "- Name, Owner" patterns
+- **False Positive Filtering**: Expanded skip_words for menu items, legal text
+
+**Performance**:
+- ~27 seconds per company
+- 5 companies per batch
+- ~3,500 companies to process
+
+**Remaining Work**: None (continue running enrichment)
+
+---
+
 ## ❌ Not Started / Needs Implementation
 
-### 10. LinkedIn ATL Discovery Pipeline
+### 11. LinkedIn ATL Discovery Pipeline
 **File**: `linkedin-atl-discovery-pipeline.md` (in execution folder, but is a design doc)  
 **Status**: ❌ **NOT STARTED**
 
@@ -270,8 +307,8 @@ This document consolidates all design plans from `backend/docs/plans/design/` an
 
 | Status | Count | Percentage |
 |--------|-------|------------|
-| ✅ Complete | 9 | 75% |
-| ⚠️ Partial | 2 | 17% |
+| ✅ Complete | 10 | 77% |
+| ⚠️ Partial | 2 | 15% |
 | ❌ Not Started | 1 | 8% |
 
 ---
