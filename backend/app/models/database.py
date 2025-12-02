@@ -118,6 +118,7 @@ from app.models.analytics_models import (
     AnalyticsUserSession, AnalyticsLeadMetrics, AnalyticsCampaignMetrics,
     AnalyticsSystemMetrics, AnalyticsABTest, AnalyticsReport
 )
+from app.models.batch_job import BatchJob, BatchJobLead
 
 def get_db():
     """
