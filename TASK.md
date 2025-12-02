@@ -15,18 +15,29 @@
 
 ---
 
-## LATEST UPDATE (Dec 2 PM)
+## LATEST UPDATE (Dec 2 Evening)
 
-### Enhanced Enrichment Features
-The scraper now extracts additional ICP signals:
+### Comprehensive OEM Brand Coverage (100+ brands)
+The scraper now detects contractors across ALL Coperniq verticals:
+- **HVAC**: Carrier, Trane, Lennox, Mitsubishi, Daikin, York, Goodman, etc.
+- **Solar Inverters**: Enphase, SMA, Fronius, SolarEdge (resi vs commercial)
+- **Battery Storage**: Tesla Powerwall/Megapack, Generac, BYD, Sonnen
+- **EV Chargers**: ChargePoint, JuiceBox, ABB Terra, Tritium, Kempower
+- **VRF Commercial**: Daikin VRV, Mitsubishi City Multi, LG Multi V
+- **Generators**: Generac, Kohler, Cummins
+
+### BDR Opener Gold - Maintenance Plans
+Now extracts membership/subscription names:
+- Comfort Club, Service Agreement, Maintenance Plan, Annual Tune-Up, VIP Program
+
+### Additional Extractions
 - **Service Areas** - Cities served (company footprint indicator)
-- **HVAC Brands** - 28 brands detected (Carrier, Trane, Lennox, etc.)
 - **BTL Contacts** - Technicians/staff alongside ATL decision makers
 - **Owner Quotes** - "- Name, Owner" attribution patterns
 
 ### Output Format
 ```
-OK 25s (1 ATL, 3 BTL, 2 ph, 5 svc, 36 areas, 11 brands)
+OK 25s (1 ATL, 3 BTL, 2 ph, 5 svc, 36 areas, 11 brands, 2 plans)
 ```
 
 ---
@@ -44,7 +55,7 @@ python run_enrichment.py
 **What it does**:
 - Pulls unenriched companies directly from Supabase
 - Scrapes 5 companies at a time
-- Extracts: ATL/BTL contacts, phones, emails, services, service areas, HVAC brands
+- Extracts: ATL/BTL contacts, phones, emails, services, service areas, OEM brands (100+), maintenance plans
 - Syncs results back to Supabase (dim_companies, dim_contacts)
 - Saves failed companies to `FAILED_ENRICHMENT.csv` for troubleshooting
 - Press Enter to continue, 'q' to quit
