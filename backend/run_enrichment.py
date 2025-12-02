@@ -55,7 +55,7 @@ BROWSERBASE_PROJECT_ID = os.getenv('BROWSERBASE_PROJECT_ID')
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
 
-BATCH_SIZE = 5
+BATCH_SIZE = 5  # Default batch size (can be overridden with --batch-size)
 OUTPUT_DIR = Path(__file__).parent / 'data' / 'final_enrichment_output'
 FAILED_FILE = OUTPUT_DIR / 'FAILED_ENRICHMENT.csv'
 
@@ -1307,12 +1307,107 @@ def get_unenriched_batch(supabase, batch_size):
     return result.data
 
 
-async def run_batch(supabase, companies):
+def normalize_domain(domain):
+    """Normalize domain (remove http/https/www, lowercase)."""
+    domain = domain.lower().strip()
+    if domain.startswith('http'):
+        domain = domain.split('//')[1].split('/')[0]
+    if domain.startswith('www.'):
+        domain = domain[4:]
+    return domain
+
+
+def normalize_name(name):
+    """Normalize company name for matching."""
+    import re
+    name = name.lower().strip()
+    name = re.sub(r'[^\w\s]', '', name)
+    name = re.sub(r'\s+', ' ', name)
+    # Remove common suffixes
+    for suffix in ['llc', 'inc', 'corp', 'co', 'ltd', 'company']:
+        name = re.sub(rf'\s+{suffix}$', '', name)
+    return name.strip()
+
+
+def find_or_create_company_by_domain(supabase, domain, company_name=None):
+    """Find company by domain, or create if not found. Returns company dict."""
+    domain = normalize_domain(domain)
+    
+    # Try to find by domain
+    result = supabase.table('dim_companies')\
+        .select('company_id, company_name, domain')\
+        .eq('domain', domain)\
+        .execute()
+    
+    if result.data:
+        return result.data[0]
+    
+    # Try to find by name if provided
+    if company_name:
+        normalized = normalize_name(company_name)
+        result = supabase.table('dim_companies')\
+            .select('company_id, company_name, domain')\
+            .ilike('company_name', f'%{company_name[:30]}%')\
+            .limit(5)\
+            .execute()
+        
+        for r in result.data:
+            if normalize_name(r['company_name']) == normalized:
+                # Update domain if missing
+                if not r.get('domain'):
+                    supabase.table('dim_companies').update({'domain': domain}).eq('company_id', r['company_id']).execute()
+                return r
+    
+    # Create new company
+    if not company_name:
+        # Guess name from domain
+        company_name = domain.replace('.com', '').replace('.net', '').replace('.org', '')
+        company_name = company_name.replace('-', ' ').replace('_', ' ').title()
+    
+    data = {
+        'company_name': company_name,
+        'domain': domain,
+        'normalized_name': normalize_name(company_name),
+        'source': 'test_enrichment',
+        'created_at': datetime.now().isoformat()
+    }
+    result = supabase.table('dim_companies').insert(data).execute()
+    return result.data[0] if result.data else None
+
+
+def get_companies_for_test(supabase, domains=None, limit=None):
+    """Get companies for test mode - by domain(s) or random."""
+    companies = []
+    
+    if domains:
+        # Process specific domains
+        domain_list = [d.strip() for d in domains.split(',')]
+        # Enforce max 5 domains
+        domain_list = domain_list[:5]
+        
+        for domain in domain_list:
+            company = find_or_create_company_by_domain(supabase, domain)
+            if company:
+                companies.append(company)
+    else:
+        # Get random companies from Supabase (limit enforced)
+        batch_size = min(limit or 3, 5)  # Max 5 for test mode
+        companies = get_unenriched_batch(supabase, batch_size)
+    
+    return companies
+
+
+async def run_batch(supabase, companies, test_mode=False):
     """Run one batch."""
     results = []
     failed_count = 0
 
     for i, company in enumerate(companies, 1):
+        # Rate limiting in test mode: 2-3 second delay before each company (except first)
+        if test_mode and i > 1:
+            delay = 2.5  # 2.5 seconds between companies
+            await asyncio.sleep(delay)
+        
         company_id = company['company_id']
         name = company['company_name']
         domain = company['domain']
@@ -1320,6 +1415,7 @@ async def run_batch(supabase, companies):
         print(f"  [{i}/{len(companies)}] {name} ({domain})...", end=" ", flush=True)
 
         r = await scrape_one(company_id, name, domain)
+        
         # Store company info in result for failed logging
         r['company_name'] = name
         r['domain'] = domain
@@ -1371,6 +1467,10 @@ async def main():
     parser = argparse.ArgumentParser(description='Enrich companies from Supabase')
     parser.add_argument('--auto', action='store_true', help='Run continuously without prompts')
     parser.add_argument('--limit', type=int, default=0, help='Max companies to process (0=unlimited)')
+    parser.add_argument('--batch-size', type=int, default=5, help='Batch size (5-10 recommended, default: 5)')
+    parser.add_argument('--test', action='store_true', help='Test mode: max 5 companies, adds rate limiting')
+    parser.add_argument('--domain', type=str, help='Test single domain (e.g., acmeheating.com)')
+    parser.add_argument('--domains', type=str, help='Test multiple domains, comma-separated (max 5, e.g., acme.com,techcorp.com)')
     args = parser.parse_args()
 
     # Validate
@@ -1380,14 +1480,68 @@ async def main():
 
     supabase = get_supabase()
 
+    # Test mode handling
+    if args.test:
+        print(f"\n{'='*60}")
+        print(f"ENRICHMENT RUNNER (TEST MODE)")
+        print(f"{'='*60}")
+        print(f"Rate limiting: 2.5s delay between companies")
+        print(f"Max companies: 5")
+        
+        # Get companies for test
+        if args.domain:
+            print(f"Testing single domain: {args.domain}")
+            companies = get_companies_for_test(supabase, domains=args.domain)
+        elif args.domains:
+            print(f"Testing multiple domains: {args.domains}")
+            companies = get_companies_for_test(supabase, domains=args.domains)
+        else:
+            # Default to 3 random companies if no domain specified
+            test_limit = min(args.limit or 3, 5)
+            print(f"Testing {test_limit} random companies from Supabase")
+            companies = get_companies_for_test(supabase, limit=test_limit)
+        
+        if not companies:
+            print("\n❌ No companies found to test")
+            return
+        
+        # Limit to max 5
+        companies = companies[:5]
+        print(f"Processing {len(companies)} companies...\n")
+        
+        # Run test batch
+        results = await run_batch(supabase, companies, test_mode=True)
+        
+        # Sync
+        print("\n  Syncing to Supabase...", end=" ")
+        updated, contacts = sync_to_supabase(supabase, results)
+        print(f"{updated} companies, {contacts} contacts")
+        
+        # Stats
+        successful = sum(1 for r in results if r['success'])
+        failed = len(results) - successful
+        if failed > 0:
+            print(f"  ⚠️  {failed} failed")
+        
+        print(f"\n{'='*60}")
+        print("TEST COMPLETE")
+        print(f"{'='*60}")
+        print(f"Companies enriched: {updated}")
+        print(f"Contacts found: {contacts}")
+        if FAILED_FILE.exists() and failed > 0:
+            print(f"\n⚠️  Failed companies logged to: {FAILED_FILE}")
+        return
+
+    # Normal mode (existing logic)
     # Get stats
+    batch_size = min(max(args.batch_size, 1), 10)  # Clamp between 1 and 10
     total = supabase.table('dim_companies').select('company_id', count='exact').not_.is_('domain', 'null').is_('last_enriched_at', 'null').execute()
     print(f"\n{'='*60}")
     print(f"ENRICHMENT RUNNER {'(AUTO MODE)' if args.auto else ''}")
     print(f"{'='*60}")
     print(f"Companies needing enrichment: {total.count}")
-    print(f"Batch size: {BATCH_SIZE}")
-    print(f"Estimated batches: {(total.count + BATCH_SIZE - 1) // BATCH_SIZE}")
+    print(f"Batch size: {batch_size}")
+    print(f"Estimated batches: {(total.count + batch_size - 1) // batch_size}")
     if args.limit:
         print(f"Limit: {args.limit} companies")
 
@@ -1405,7 +1559,7 @@ async def main():
             break
 
         # Get next batch
-        companies = get_unenriched_batch(supabase, BATCH_SIZE)
+        companies = get_unenriched_batch(supabase, batch_size)
 
         if not companies:
             print("\n✅ ALL COMPANIES ENRICHED!")
@@ -1418,7 +1572,7 @@ async def main():
         print(f"{'='*60}")
 
         # Run batch
-        results = await run_batch(supabase, companies)
+        results = await run_batch(supabase, companies, test_mode=False)
 
         # Sync
         print("\n  Syncing to Supabase...", end=" ")
