@@ -33,11 +33,10 @@ Usage:
     )
 """
 
-import os
 import shutil
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any, BinaryIO
+from typing import Optional
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 

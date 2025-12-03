@@ -1,7 +1,7 @@
 """
 Authentication API endpoints for user registration, login, and token management.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response, BackgroundTasks
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr, Field, validator
 
 from app.models.database import get_db
-from app.models.security import User, EventType
+from app.models.security import EventType
 from app.services.auth import AuthService
 from app.middleware.audit import log_security_event
 from app.core.logging import setup_logging

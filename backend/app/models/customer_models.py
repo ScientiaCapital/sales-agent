@@ -1,7 +1,7 @@
 """
 Customer and knowledge base models for multi-tenant platform
 """
-from sqlalchemy import Column, Integer, String, Text, Float, DateTime, Boolean, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Float, DateTime, JSON, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -11,7 +11,8 @@ try:
     PGVECTOR_AVAILABLE = True
 except ImportError:
     # Fallback: Use Text for embedding storage if pgvector not available
-    Vector = lambda size: Text  # type: ignore
+    def Vector(size):
+        return Text  # type: ignore
     PGVECTOR_AVAILABLE = False
 
 from app.models.database import Base

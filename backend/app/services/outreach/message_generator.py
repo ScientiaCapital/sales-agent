@@ -11,7 +11,7 @@ from openai import OpenAI
 import re
 
 from app.core.logging import setup_logging
-from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError, MissingAPIKeyError, ValidationError
+from app.core.exceptions import CerebrasAPIError, MissingAPIKeyError
 from app.models.campaign import MessageTone
 
 logger = setup_logging(__name__)

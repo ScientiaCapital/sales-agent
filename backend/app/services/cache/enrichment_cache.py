@@ -12,7 +12,6 @@ Caching saves:
 - Plus 1.5-3 seconds per cache hit
 """
 
-import hashlib
 import logging
 from typing import Optional, Dict, Any
 from urllib.parse import urlparse

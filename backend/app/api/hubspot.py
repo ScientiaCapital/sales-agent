@@ -18,8 +18,8 @@ import logging
 import hmac
 import hashlib
 
-from app.services.crm.hubspot import HubSpotService, get_hubspot_service, HubSpotContact, HubSpotCompany, HubSpotDeal
-from app.services.crm.base import Contact, SyncResult, WebhookEvent, CRMAuthenticationError, CRMNotFoundError, CRMRateLimitError
+from app.services.crm.hubspot import HubSpotService, get_hubspot_service, HubSpotCompany, HubSpotDeal
+from app.services.crm.base import Contact, WebhookEvent, CRMNotFoundError, CRMRateLimitError
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)

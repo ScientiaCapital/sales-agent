@@ -35,7 +35,6 @@ Usage:
 
 import httpx
 import base64
-import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from difflib import SequenceMatcher

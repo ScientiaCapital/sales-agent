@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from app.services.crm.base import (
     CRMProvider, CRMCredentials, Contact, SyncResult, WebhookEvent,
     CRMAuthenticationError, CRMRateLimitError, CRMNotFoundError,
-    CRMValidationError, CRMNetworkError, CRMWebhookError
+    CRMValidationError, CRMNetworkError
 )
 from app.core.config import settings
 
@@ -824,7 +824,7 @@ class HubSpotService(CRMProvider):
         Returns Close lead ID if created/updated.
         """
         # Get HubSpot contact
-        contact = await self.get_contact(hubspot_contact_id)
+        await self.get_contact(hubspot_contact_id)
 
         # This would call Close CRM service to create/update lead
         # For now, returning None as Close writes are disabled

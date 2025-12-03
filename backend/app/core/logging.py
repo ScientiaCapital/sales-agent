@@ -5,7 +5,7 @@ Uses structlog for rich contextual logging with performance metrics.
 import logging
 import sys
 import os
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 import structlog
 
 

@@ -7,7 +7,6 @@ These templates can be loaded into the database on startup or via CLI command.
 
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-import uuid
 
 from app.models.report_template import ReportTemplate
 

@@ -8,7 +8,7 @@ Provides comprehensive cost analytics including:
 - Time-series data for visualization
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Optional
 from datetime import datetime, timedelta
 from decimal import Decimal
 from fastapi import APIRouter, Depends, Query, HTTPException
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
 # Pydantic schemas for response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class AgentCostBreakdown(BaseModel):
@@ -274,7 +274,7 @@ def _get_cache_statistics(db: Session, filters: List) -> CacheStats:
     # Get total requests and cache hits
     query = db.query(
         func.count(AICostTracking.id).label("total_requests"),
-        func.sum(case((AICostTracking.cache_hit == True, 1), else_=0)).label("cache_hits")
+        func.sum(case((AICostTracking.cache_hit, 1), else_=0)).label("cache_hits")
     )
 
     if filters:
@@ -292,7 +292,7 @@ def _get_cache_statistics(db: Session, filters: List) -> CacheStats:
     avg_cost_query = db.query(
         func.avg(AICostTracking.cost_usd).label("avg_cost")
     ).filter(
-        AICostTracking.cache_hit == False
+        not AICostTracking.cache_hit
     )
 
     if filters:

@@ -14,8 +14,7 @@ import json
 
 from app.services.research_pipeline import (
     ResearchPipeline,
-    ResearchResult,
-    AgentExecution
+    ResearchResult
 )
 from app.services.cerebras_routing import CerebrasAccessMethod
 

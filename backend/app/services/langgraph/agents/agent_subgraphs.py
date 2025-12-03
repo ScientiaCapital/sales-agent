@@ -22,15 +22,11 @@ Usage:
     ```
 """
 
-import os
-import asyncio
 from typing import Dict, Any, List, Optional, TypedDict, Annotated
 from datetime import datetime
 
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.redis import RedisSaver as RedisCheckpointer
-from langgraph.channels import Topic, LastValue
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langgraph.channels import Topic
 
 from app.core.logging import setup_logging as get_logger
 
@@ -796,7 +792,6 @@ async def _analyze_violations_node(state: LicenseAuditorAgentState) -> Dict[str,
     logger.info("License Auditor: Analyzing violations")
     
     # Mock violation analysis
-    violations = []  # No violations found
     
     return {
         "current_check": "recommendations"

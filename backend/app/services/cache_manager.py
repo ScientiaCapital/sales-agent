@@ -4,7 +4,7 @@ Redis Cache Manager for Lead Qualifications
 Implements cache-aside pattern with graceful degradation and monitoring.
 """
 
-from typing import Optional, Any
+from typing import Optional
 from redis import asyncio as aioredis
 import json
 import hashlib

@@ -3,23 +3,18 @@ CSV Import API Endpoints
 
 Handles file upload, background processing, and status tracking for CSV lead imports.
 """
-import logging
-import asyncio
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.models.csv_import import CSVImport
 from app.schemas.csv_import import (
     CSVUploadResponse,
-    CSVImportStatus,
-    CSVProcessingOptions
+    CSVImportStatus
 )
 from app.services.csv_manager import CSVManager
 from app.core.exceptions import (
     InvalidFileFormatError,
-    FileSizeExceededError,
-    InvalidInputError
+    FileSizeExceededError
 )
 from app.core.logging import setup_logging
 

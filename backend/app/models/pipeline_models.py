@@ -6,7 +6,6 @@ Models for tracking end-to-end pipeline test executions.
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, JSON, Text, Index
 from sqlalchemy.sql import func
-from datetime import datetime
 
 from app.models.database import Base
 

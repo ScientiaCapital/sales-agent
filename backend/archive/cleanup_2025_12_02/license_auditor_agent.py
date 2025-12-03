@@ -40,21 +40,16 @@ Usage:
 
 import os
 import time
-import asyncio
 from typing import Dict, Any, List, Optional, Literal
-from datetime import datetime, timedelta
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.redis import RedisSaver as RedisCheckpointer
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.tools import tool
 
 from app.services.langgraph.tools.license_audit_tools import (
     search_contractor_license_tool,
     search_company_licenses_tool,
-    check_license_compliance_tool,
-    STATE_DATABASES
+    check_license_compliance_tool
 )
 from app.services.cerebras import CerebrasService
 from app.core.logging import setup_logging

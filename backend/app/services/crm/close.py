@@ -8,7 +8,7 @@ API Documentation: https://developer.close.com/
 """
 
 from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 import httpx
 import logging
 import base64
@@ -785,7 +785,7 @@ class CloseProvider(CRMProvider):
                         f"Failed to update contact: {error_data.get('error', response.status_code)}"
                     )
 
-                updated_data = response.json()
+                response.json()
 
                 # Fetch full contact details with lead context
                 return await self.get_contact(contact_id)
@@ -1044,7 +1044,7 @@ class CloseProvider(CRMProvider):
                 logger.debug(f"Close rate limit: {parts}")
 
                 # Store in Redis for monitoring
-                key = f"close:rate_limit:current"
+                key = "close:rate_limit:current"
                 await self.redis.set(
                     key,
                     str(parts.get("remaining", 0)),
@@ -1101,7 +1101,7 @@ class CloseProvider(CRMProvider):
             }
 
         try:
-            current_key = f"close:rate_limit:current"
+            current_key = "close:rate_limit:current"
             remaining = await self.redis.get(current_key)
 
             minute_key = f"close:rate_limit:{datetime.utcnow().strftime('%Y-%m-%d:%H:%M')}"

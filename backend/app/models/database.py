@@ -104,21 +104,6 @@ async def get_async_db():
             await session.close()
 
 # Import all models to ensure they are registered with SQLAlchemy
-from app.models.lead import Lead
-from app.models.api_call import CerebrasAPICall
-from app.models.ai_cost_tracking import AICostTracking
-from app.models.agent_models import (
-    AgentExecution, AgentWorkflow, EnrichedLead,
-    MarketingCampaign, BookedMeeting
-)
-from app.models.campaign import Campaign, CampaignMessage
-from app.models.crm import CRMCredential, CRMContact, CRMSyncLog
-from app.models.langgraph_models import LangGraphExecution, LangGraphCheckpoint, LangGraphToolCall
-from app.models.analytics_models import (
-    AnalyticsUserSession, AnalyticsLeadMetrics, AnalyticsCampaignMetrics,
-    AnalyticsSystemMetrics, AnalyticsABTest, AnalyticsReport
-)
-from app.models.batch_job import BatchJob, BatchJobLead
 
 def get_db():
     """
@@ -147,7 +132,6 @@ async def check_database_health() -> dict:
         }
     """
     import time
-    from sqlalchemy.pool import NullPool
     
     start_time = time.time()
     

@@ -10,7 +10,7 @@ Strategy: Google search "site:linkedin.com/company {domain|name}"
 
 from typing import Optional
 import httpx
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 import logging
 import re
 from bs4 import BeautifulSoup

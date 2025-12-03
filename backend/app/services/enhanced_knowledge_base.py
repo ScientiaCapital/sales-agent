@@ -11,15 +11,13 @@ Based on LangChain integrations for retrievers, splitters, and embeddings.
 """
 
 import os
-import asyncio
-from typing import Dict, Any, List, Optional, Union
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 from dataclasses import dataclass, field
 
 from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
-    MarkdownHeaderTextSplitter,
-    CharacterTextSplitter
+    MarkdownHeaderTextSplitter
 )
 from langchain_community.retrievers import (
     TavilySearchAPIRetriever,
@@ -29,12 +27,8 @@ from langchain_community.retrievers import (
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
 from langchain_ollama import OllamaEmbeddings
-from langchain.retrievers import EnsembleRetriever
-from langchain_core.documents import Document
-from langchain_core.retrievers import BaseRetriever
 
 from app.core.logging import setup_logging
-from app.core.config import settings
 from app.services.knowledge_base import KnowledgeBaseService
 
 logger = setup_logging(__name__)
@@ -492,7 +486,7 @@ class EnhancedKnowledgeBase:
             
             # Check embedding model
             try:
-                test_embedding = await self.embeddings.aembed_query("test")
+                await self.embeddings.aembed_query("test")
                 health_status["components"]["embeddings"] = "healthy"
             except Exception as e:
                 health_status["components"]["embeddings"] = f"error: {str(e)}"
@@ -502,7 +496,7 @@ class EnhancedKnowledgeBase:
             for name, retriever in self.retrievers.items():
                 try:
                     # Test with a simple query
-                    test_results = await retriever.ainvoke("test")
+                    await retriever.ainvoke("test")
                     health_status["components"][f"retriever_{name}"] = "healthy"
                 except Exception as e:
                     health_status["components"][f"retriever_{name}"] = f"error: {str(e)}"

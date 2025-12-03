@@ -7,12 +7,11 @@ including streaming, callbacks, and cost tracking.
 
 import os
 import time
-import logging
 from typing import Any, AsyncIterator, Dict, Iterator, List, Optional
 
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun, AsyncCallbackManagerForLLMRun
 from langchain_core.language_models.llms import LLM
-from langchain_core.outputs import GenerationChunk, LLMResult, Generation
+from langchain_core.outputs import GenerationChunk
 from pydantic import Field, SecretStr, field_validator
 from openai import OpenAI, AsyncOpenAI
 

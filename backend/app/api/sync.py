@@ -244,7 +244,7 @@ async def trigger_sync(
         # Check if credentials exist for platform
         credential = db.query(CRMCredential).filter(
             CRMCredential.platform == request.platform.lower(),
-            CRMCredential.is_active == True
+            CRMCredential.is_active
         ).first()
 
         if not credential:
@@ -365,7 +365,7 @@ async def sync_health_check(db: Session = Depends(get_db)):
     try:
         # Check configured platforms
         configured_platforms = db.query(CRMCredential.platform).filter(
-            CRMCredential.is_active == True
+            CRMCredential.is_active
         ).distinct().all()
 
         platforms_configured = [p[0] for p in configured_platforms]

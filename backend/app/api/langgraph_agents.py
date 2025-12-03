@@ -25,13 +25,12 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, AsyncGenerator
 import json
-import logging
 import time
 import uuid
 from datetime import datetime
 
 from app.models.database import get_db
-from app.models.langgraph_models import LangGraphExecution, LangGraphCheckpoint, LangGraphToolCall
+from app.models.langgraph_models import LangGraphExecution
 from app.services.langgraph import (
     get_redis_checkpointer,
     create_streaming_config,
@@ -193,7 +192,7 @@ async def invoke_agent(
         thread_id = await get_or_create_thread_id(request)
 
         # Initialize Redis checkpointer
-        checkpointer = await get_redis_checkpointer()
+        await get_redis_checkpointer()
 
         # Create streaming configuration
         config = create_streaming_config(
@@ -478,10 +477,10 @@ async def stream_agent(
         thread_id = await get_or_create_thread_id(request)
 
         # Initialize Redis checkpointer
-        checkpointer = await get_redis_checkpointer()
+        await get_redis_checkpointer()
 
         # Create streaming configuration
-        config = create_streaming_config(
+        create_streaming_config(
             thread_id=thread_id,
             stream_mode=request.stream_mode,
             recursion_limit=25

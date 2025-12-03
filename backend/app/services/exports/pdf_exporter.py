@@ -19,11 +19,10 @@ from reportlab.platypus import (
     TableStyle,
     Paragraph,
     Spacer,
-    PageBreak,
-    Image
+    PageBreak
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER
 
 
 logger = logging.getLogger(__name__)

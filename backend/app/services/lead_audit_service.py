@@ -28,7 +28,7 @@ from decimal import Decimal
 from typing import Optional, List, Dict, Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.lead_audit import (

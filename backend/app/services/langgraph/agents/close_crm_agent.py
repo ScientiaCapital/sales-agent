@@ -39,13 +39,10 @@ Integration:
 - Caches duplicate checks in Redis (reduces API calls)
 """
 
-import os
 import time
-import logging
 from typing import Dict, Any, List, Optional
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
 
 from app.services.langgraph.agents.base_agent import (

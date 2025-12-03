@@ -9,7 +9,7 @@ import asyncio
 import logging
 import os
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any
 
 import httpx
 import psycopg

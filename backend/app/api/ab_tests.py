@@ -13,7 +13,7 @@ from datetime import datetime
 
 from app.models.database import get_db
 from app.models.analytics_models import AnalyticsABTest
-from app.services.analytics.ab_test_service import ABTestAnalyticsService, ABTestAnalysis
+from app.services.analytics.ab_test_service import ABTestAnalyticsService
 
 
 router = APIRouter(prefix="/ab-tests", tags=["A/B Tests"])

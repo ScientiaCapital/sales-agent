@@ -10,7 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional, Any, AsyncIterator
+from typing import Dict, Optional, Any, AsyncIterator
 
 from app.core.exceptions import ProviderError
 

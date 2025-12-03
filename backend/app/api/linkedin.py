@@ -13,10 +13,9 @@ Endpoints:
 - GET /linkedin/token-status - Check token expiration and refresh availability
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from datetime import datetime
 import os
 import logging

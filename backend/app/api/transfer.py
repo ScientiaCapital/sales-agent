@@ -119,7 +119,7 @@ async def execute_transfer(
         try:
             source_agent = AgentRole(from_agent)
             target_agent = AgentRole(to_agent)
-        except ValueError as e:
+        except ValueError:
             valid_agents = [a.value for a in AgentRole]
             raise HTTPException(
                 status_code=400,
@@ -320,7 +320,7 @@ async def get_transfer_history(
             ]
         }
 
-    except ValueError as e:
+    except ValueError:
         valid_agents = [a.value for a in AgentRole]
         raise HTTPException(
             status_code=400,

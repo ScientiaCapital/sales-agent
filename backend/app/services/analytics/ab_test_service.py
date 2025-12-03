@@ -7,7 +7,7 @@ Uses scipy for chi-square tests, confidence intervals, and sample size calculati
 
 from typing import Dict, Any, Optional, Tuple, List
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 import math
 
 from scipy import stats
@@ -15,10 +15,8 @@ from scipy.stats import chi2_contingency
 import numpy as np
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.models.analytics_models import AnalyticsABTest
-from app.models.campaign import MessageVariantAnalytics, Campaign
 
 
 @dataclass

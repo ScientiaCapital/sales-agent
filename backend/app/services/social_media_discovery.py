@@ -17,9 +17,8 @@ import re
 import logging
 import asyncio
 from typing import Optional, Dict, List, Any
-from urllib.parse import quote_plus, urlparse
+from urllib.parse import quote_plus
 from dataclasses import dataclass, field, asdict
-from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 

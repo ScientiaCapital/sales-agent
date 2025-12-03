@@ -4,9 +4,8 @@ Cost Reporting Pydantic Schemas
 Response models for the cost reporting API endpoints.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 
 # ============================================================================

@@ -17,8 +17,7 @@ from app.services.metrics_service import MetricsService
 from app.schemas.metrics import (
     MetricsSummaryResponse,
     AgentMetricResponse,
-    ProviderCostMetrics,
-    SystemMetricResponse
+    ProviderCostMetrics
 )
 import logging
 

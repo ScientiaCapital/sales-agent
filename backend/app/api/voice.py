@@ -4,19 +4,17 @@ Voice API endpoints for real-time voice interaction
 Provides WebSocket and REST endpoints for voice sessions with <2000ms turn latency.
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Depends, UploadFile, File
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from typing import Dict, Optional, List
+from typing import Dict, Optional
 import asyncio
-import json
 import base64
-from datetime import datetime
 from uuid import uuid4
 import io
 
 from app.models import get_db, Lead
-from app.services.voice_agent import VoiceAgent, VoiceEmotion, ConversationState
+from app.services.voice_agent import VoiceAgent, VoiceEmotion
 from app.services.cartesia_service import VoiceSpeed
 from app.core.logging import setup_logging
 from app.core.exceptions import LeadNotFoundError, VoiceSessionNotFoundError
@@ -169,7 +167,7 @@ async def websocket_voice_endpoint(websocket: WebSocket, session_id: str):
 
     # Validate session exists
     try:
-        metrics = await agent.get_session_metrics(session_id)
+        await agent.get_session_metrics(session_id)
         logger.info(f"WebSocket connected to voice session {session_id}")
     except ValueError:
         await websocket.send_json({

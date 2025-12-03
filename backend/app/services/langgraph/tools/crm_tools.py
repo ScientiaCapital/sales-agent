@@ -855,7 +855,7 @@ async def check_duplicate_leads_tool(
             result_text += f"   Confidence: {match.confidence:.1f}%\n"
             result_text += f"   Phone: {match.contact.phone or 'N/A'}\n"
             result_text += f"   LinkedIn: {match.contact.linkedin_url or 'N/A'}\n"
-            result_text += f"   Match reasons:\n"
+            result_text += "   Match reasons:\n"
 
             for detail in match.match_details:
                 result_text += f"     • {detail.reason} ({detail.confidence:.0f}%)\n"

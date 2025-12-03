@@ -7,7 +7,7 @@ reasoning-intensive tasks and content generation.
 
 import asyncio
 import logging
-from typing import Dict, Any, AsyncIterator
+from typing import AsyncIterator
 from datetime import datetime
 
 from anthropic import AsyncAnthropic

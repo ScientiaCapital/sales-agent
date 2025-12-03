@@ -9,7 +9,7 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 # Bad email patterns to filter out (Wix tracking pixels, placeholders, etc.)
 BAD_EMAIL_PATTERNS = [
@@ -298,7 +298,7 @@ class PipelineOrchestrator:
         """
         lead_name = request.lead.get("name") or request.lead.get("company") or "Unknown Lead"
         stages: Dict[str, PipelineStageResult] = {}
-        pipeline_start = time.time()
+        time.time()
 
         try:
             # Stage 1: Qualification

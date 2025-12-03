@@ -6,7 +6,7 @@ Handles customer registration, authentication, agent deployment, and quota enfor
 import secrets
 import hashlib
 from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models import Customer, CustomerAgent, CustomerQuota
@@ -60,7 +60,7 @@ class CustomerService:
         """
         try:
             # Hash password securely
-            password_hashed = password_hash.hash(password)
+            password_hash.hash(password)
 
             # Generate API key
             api_key = self._generate_api_key()

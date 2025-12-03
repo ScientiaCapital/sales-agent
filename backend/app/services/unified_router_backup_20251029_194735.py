@@ -20,13 +20,12 @@ Performance:
 - Ollama: 500ms local latency (free)
 """
 
-import asyncio
 import logging
 import random
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any, AsyncIterator
+from typing import Dict, Optional, Any, AsyncIterator
 import os
 
 from anthropic import AsyncAnthropic

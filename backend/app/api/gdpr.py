@@ -2,14 +2,12 @@
 GDPR compliance API endpoints for data export, deletion, and consent management.
 Implements GDPR Articles 15 (Right of Access), 17 (Right to Erasure), 20 (Data Portability).
 """
-import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from enum import Enum
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from pydantic import BaseModel, Field
 
 from app.models.database import get_db
@@ -19,10 +17,6 @@ from app.middleware.audit import log_security_event
 from app.core.logging import setup_logging
 
 # Import all models to gather user data
-from app.models.lead import Lead
-from app.models.campaign import Campaign, CampaignMessage
-from app.models.crm import CRMCredential, CRMSyncLog
-from app.models.report import Report
 
 logger = setup_logging(__name__)
 

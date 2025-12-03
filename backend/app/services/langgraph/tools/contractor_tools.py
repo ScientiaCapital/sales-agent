@@ -22,9 +22,7 @@ Usage:
     ```
 """
 
-import os
 import logging
-import asyncio
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
@@ -37,7 +35,6 @@ class ToolException(ValueError):
     pass
 
 from app.services.cerebras import CerebrasService
-from app.core.exceptions import MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 

@@ -10,7 +10,7 @@ Consumes research and analysis data to generate:
 
 import logging
 import markdown
-from typing import Dict, Optional
+from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
 

@@ -12,7 +12,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.database import get_db
-from app.models.campaign import Campaign, CampaignMessage, CampaignStatus, CampaignChannel, MessageStatus
 from app.services.outreach import CampaignService
 from app.core.logging import setup_logging
 from app.core.exceptions import (

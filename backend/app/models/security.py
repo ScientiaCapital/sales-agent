@@ -1,7 +1,6 @@
 """
 Security-related database models for audit logging, RBAC, and GDPR compliance.
 """
-from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Boolean, JSON,
     ForeignKey, Table, Index, UniqueConstraint, Enum as SQLEnum

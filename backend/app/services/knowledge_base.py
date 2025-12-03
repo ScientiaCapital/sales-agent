@@ -334,7 +334,7 @@ class KnowledgeBaseService:
         """
         try:
             # Generate query embedding
-            query_embedding = self._generate_embedding(query_text)
+            self._generate_embedding(query_text)
 
             # Query PostgreSQL for customer documents
             # Using pgvector for similarity search

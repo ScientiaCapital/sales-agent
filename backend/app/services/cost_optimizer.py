@@ -9,8 +9,6 @@ Features:
 - Daily and monthly budget tracking with atomic Redis operations
 """
 
-import asyncio
-import json
 import logging
 from datetime import datetime, date
 from enum import Enum
@@ -431,7 +429,7 @@ class CostOptimizer:
         await self.redis.expire(monthly_key, 90 * 24 * 3600)
 
         # Clear status cache
-        cache_pattern = f"budget:status:*"
+        cache_pattern = "budget:status:*"
         async for key in self.redis.scan_iter(match=cache_pattern):
             await self.redis.delete(key)
 

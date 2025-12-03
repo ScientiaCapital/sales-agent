@@ -3,7 +3,6 @@ Pydantic schemas for customer and knowledge base APIs
 """
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Dict
-from datetime import datetime
 
 
 # === Customer Registration Schemas ===

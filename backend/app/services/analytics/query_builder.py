@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import logging
 
-from sqlalchemy import select, func, and_, or_, desc, asc, cast, String, Integer, Float, Date
+from sqlalchemy import select, func, and_, desc, asc
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import Select
 

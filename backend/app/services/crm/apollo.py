@@ -9,7 +9,6 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime, timedelta
 import httpx
 import logging
-import json
 
 from app.services.crm.base import (
     CRMProvider,

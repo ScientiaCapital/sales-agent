@@ -13,10 +13,8 @@ Key Features:
 """
 
 import pandas as pd
-import asyncio
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from datetime import datetime
-import logging
 
 from app.core.logging import setup_logging
 from app.services.leads import LeadService

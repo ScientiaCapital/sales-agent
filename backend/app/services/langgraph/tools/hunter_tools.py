@@ -12,7 +12,7 @@ Integration:
 """
 
 import logging
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple
 from pydantic import BaseModel, Field
 
 from langchain_core.tools import tool, ToolException

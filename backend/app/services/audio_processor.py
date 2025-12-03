@@ -4,12 +4,10 @@ Real-time audio processing service for conversation intelligence
 Handles audio buffering, format conversion, and coordination with transcription service.
 """
 
-import asyncio
 import logging
 import time
 from typing import Optional, Dict, Any, List, Callable
 from collections import deque
-import io
 
 logger = logging.getLogger(__name__)
 

@@ -10,10 +10,9 @@ Implements a 4-step refinement loop targeting 40% quality improvement:
 Uses Cerebras routing for ultra-fast iterations (<1s per step).
 """
 
-import asyncio
 import logging
 from typing import Dict, Any, List, Optional, AsyncIterator
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 

@@ -4,12 +4,10 @@ Uses FastAPI background tasks for non-blocking database writes.
 """
 import time
 import uuid
-import json
 from typing import Optional, Callable
 from fastapi import Request, Response, BackgroundTasks
 from fastapi.routing import APIRoute
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.types import ASGIApp
 
 from app.models.security import SecurityEvent, EventType
 from app.models.database import SessionLocal

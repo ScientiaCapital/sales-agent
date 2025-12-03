@@ -3,7 +3,6 @@ Pydantic schemas for pipeline testing API
 """
 from pydantic import BaseModel, Field, field_validator
 from typing import Dict, Any, Optional, List
-from datetime import datetime
 
 
 class PipelineTestOptions(BaseModel):

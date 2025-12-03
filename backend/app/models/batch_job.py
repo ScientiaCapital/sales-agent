@@ -8,7 +8,7 @@ Tracks batch processing jobs and individual lead status for:
 - Priority queuing based on ICP tier
 """
 from sqlalchemy import (
-    Column, String, Integer, Float, DateTime, Text,
+    Column, String, Integer, DateTime, Text,
     JSON, ForeignKey, Index, CheckConstraint, Numeric
 )
 from sqlalchemy.dialects.postgresql import UUID

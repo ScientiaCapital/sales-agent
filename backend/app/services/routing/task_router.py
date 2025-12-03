@@ -5,7 +5,6 @@ This module handles routing decisions based on task type and requirements,
 providing intelligent provider selection for different AI tasks.
 """
 
-import asyncio
 import logging
 from typing import Dict, List, Optional, Any, AsyncIterator
 from datetime import datetime
@@ -93,7 +92,7 @@ class TaskRouter(BaseRouter):
             )
             
             logger.info(
-                f"Task routed successfully",
+                "Task routed successfully",
                 extra={
                     "task_type": request.task_type.value,
                     "provider": provider_type.value,

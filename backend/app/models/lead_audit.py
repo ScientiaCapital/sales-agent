@@ -11,9 +11,7 @@ Event types track the full pipeline:
 import → qualification → crm_check → enrichment → deduplication → export
 """
 from enum import Enum
-from datetime import datetime
-from decimal import Decimal
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 from uuid import uuid4
 
 from sqlalchemy import Column, String, Integer, DateTime, Numeric, Index

@@ -2,7 +2,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig

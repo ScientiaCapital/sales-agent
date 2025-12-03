@@ -30,14 +30,11 @@ Usage:
     ```
 """
 
-import os
 import logging
 import httpx
-import asyncio
 from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime
 from pydantic import BaseModel, Field
-import re
 
 from langchain.tools import tool
 
@@ -431,7 +428,7 @@ async def _search_state_database(
     # This is a simplified implementation
     # In production, you would implement actual web scraping for each state
     
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=30.0):
         try:
             # Simulate database search (replace with actual scraping logic)
             # Each state would have different scraping logic

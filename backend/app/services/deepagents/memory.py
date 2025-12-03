@@ -12,12 +12,11 @@ Based on LangChain Deep Agents memory framework.
 
 import json
 import time
-from typing import Dict, Any, List, Optional, Union
-from datetime import datetime, timedelta
+from typing import Dict, Any, List, Optional
+from datetime import datetime
 from dataclasses import dataclass, asdict
 
 import redis.asyncio as redis
-from langchain_core.messages import BaseMessage
 
 from app.core.logging import setup_logging
 from app.core.config import settings

@@ -64,12 +64,10 @@ Usage:
     ```
 """
 
-import os
 import time
 import uuid
 from typing import Dict, Any, Optional, List, Union
 from dataclasses import dataclass
-from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -83,7 +81,7 @@ from app.services.langgraph.llm_selector import get_llm_for_capability
 from app.services.cartesia_service import CartesiaService, VoiceConfig, VoiceSpeed, VoiceEmotion
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
-from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 
 logger = setup_logging(__name__)
 
