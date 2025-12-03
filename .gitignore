@@ -4,6 +4,9 @@
 
 # Claude Code project context (contains internal details)
 .claude/
+# But track slash commands (useful across machines)
+!.claude/commands/
+!.claude/commands/**
 CLAUDE.md
 
 # Company/Lead Data - CSV files with business info
