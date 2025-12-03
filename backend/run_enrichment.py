@@ -1178,6 +1178,125 @@ def extract_service_areas(content):
     return sorted(list(areas))
 
 
+def extract_events_attended(content):
+    """Extract industry events/trade shows mentioned on website.
+
+    Looks for mentions of HVAC industry events like:
+    - AHR Expo, ACCA, HARDI, PHCC
+    - State/regional HVAC associations
+    - Training conferences, manufacturer events
+
+    Returns list of events found.
+    """
+    events = set()
+    content_lower = content.lower()
+
+    # Major HVAC industry events
+    event_patterns = [
+        # National trade shows
+        (r'ahr\s*expo', 'AHR Expo'),
+        (r'ahr\s*\d{4}', 'AHR Expo'),
+        (r'acca\s*conference', 'ACCA Conference'),
+        (r'hardi\s*conference', 'HARDI Conference'),
+        (r'phcc\s*connect', 'PHCC Connect'),
+        (r'service\s*world\s*expo', 'Service World Expo'),
+        (r'comfortech', 'Comfortech'),
+        # Associations
+        (r'acca\s*member', 'ACCA Member'),
+        (r'hardi\s*member', 'HARDI Member'),
+        (r'phcc\s*member', 'PHCC Member'),
+        (r'nate\s*certified', 'NATE Certified'),
+        (r'bpi\s*certified', 'BPI Certified'),
+        # Manufacturer events
+        (r'carrier\s*(?:dealer|conference|summit)', 'Carrier Event'),
+        (r'trane\s*(?:dealer|conference|summit|comfort)', 'Trane Event'),
+        (r'lennox\s*(?:dealer|conference|summit)', 'Lennox Event'),
+        (r'daikin\s*(?:dealer|conference|summit)', 'Daikin Event'),
+        # Solar/renewable events
+        (r'solar\s*power\s*international', 'Solar Power International'),
+        (r'intersolar', 'Intersolar'),
+        (r'nabcep\s*certified', 'NABCEP Certified'),
+        # Regional patterns
+        (r'(?:state|regional)\s*hvac\s*(?:conference|expo|convention)', 'Regional HVAC Event'),
+    ]
+
+    for pattern, event_name in event_patterns:
+        if re.search(pattern, content_lower):
+            events.add(event_name)
+
+    # Look for year-specific mentions like "2024 AHR Expo" or "attended AHR 2023"
+    year_events = re.findall(r'(?:attended|exhibited|presented|speaker)\s+(?:at\s+)?(.+?)\s*(?:20\d{2}|\'?\d{2})', content_lower)
+    for event in year_events:
+        event_clean = event.strip()[:50]  # Limit length
+        if len(event_clean) > 3:
+            events.add(event_clean.title())
+
+    return sorted(list(events))
+
+
+def extract_google_reviews(content):
+    """Extract Google review info displayed on website.
+
+    Looks for patterns like:
+    - "4.8 stars" or "4.8/5 rating"
+    - "200+ reviews" or "200 Google reviews"
+    - "Rated 4.8 on Google"
+
+    Returns dict with rating and review_count if found.
+    """
+    result = {'rating': None, 'review_count': None, 'source': None}
+    content_lower = content.lower()
+
+    # Look for star ratings (4.5, 4.8, 5.0 etc.)
+    rating_patterns = [
+        r'(\d\.\d)\s*(?:stars?|\/\s*5|out\s*of\s*5)',
+        r'rated\s*(\d\.\d)',
+        r'rating[:\s]+(\d\.\d)',
+        r'(\d\.\d)\s*star\s*rating',
+        r'google[:\s]+(\d\.\d)',
+    ]
+
+    for pattern in rating_patterns:
+        match = re.search(pattern, content_lower)
+        if match:
+            try:
+                rating = float(match.group(1))
+                if 1.0 <= rating <= 5.0:
+                    result['rating'] = rating
+                    break
+            except ValueError:
+                pass
+
+    # Look for review counts
+    count_patterns = [
+        r'(\d{1,4})\+?\s*(?:google\s*)?reviews?',
+        r'(\d{1,4})\+?\s*(?:5[- ]star|five[- ]star)\s*reviews?',
+        r'over\s*(\d{1,4})\s*reviews?',
+        r'(\d{1,4})\s*customer\s*reviews?',
+    ]
+
+    for pattern in count_patterns:
+        match = re.search(pattern, content_lower)
+        if match:
+            try:
+                count = int(match.group(1))
+                if count > 0:
+                    result['review_count'] = count
+                    break
+            except ValueError:
+                pass
+
+    # Determine source
+    if 'google' in content_lower and (result['rating'] or result['review_count']):
+        result['source'] = 'Google'
+    elif 'yelp' in content_lower and (result['rating'] or result['review_count']):
+        result['source'] = 'Yelp'
+    elif result['rating'] or result['review_count']:
+        result['source'] = 'Website'
+
+    return result if result['rating'] or result['review_count'] else None
+
+
 async def find_team_links(page):
     """Find team/about page links in navigation."""
     team_keywords = ['team', 'about', 'staff', 'leadership', 'people', 'management', 'who we are', 'meet']
@@ -1281,6 +1400,10 @@ async def scrape_one(company_id, company_name, domain, extra_pages=None):
                 emergency = extract_emergency_services(text)
                 result['has_emergency_services'] = emergency['has_emergency_services']
                 result['emergency_phone'] = emergency['emergency_phone']
+
+                # NEW: Events and reviews
+                result['events_attended'] = extract_events_attended(text)
+                result['google_reviews'] = extract_google_reviews(text)
 
                 # Discover team links from navigation
                 discovered_links = await find_team_links(page)
@@ -1480,6 +1603,15 @@ def sync_to_supabase(supabase, results):
             update_data['maintenance_plans'] = r['maintenance_plans']
         if r.get('services'):
             update_data['services_offered'] = r['services']
+
+        # NEW: Events attended and Google reviews (Dec 3, 2025)
+        if r.get('events_attended'):
+            update_data['events_attended'] = r['events_attended']
+        if r.get('google_reviews'):
+            reviews = r['google_reviews']
+            # Store as JSON-compatible format
+            update_data['google_rating'] = reviews.get('rating')
+            update_data['google_review_count'] = reviews.get('review_count')
 
         # Owner bios → ai_personal_hooks (BDR gold - personal details for rapport)
         if r.get('owner_bios'):
@@ -1750,6 +1882,14 @@ async def run_batch(supabase, companies, test_mode=False):
                 info_parts.append(f"🏅{certs}cert")
             if r.get('maintenance_plans'):
                 info_parts.append(f"🎯{r['maintenance_plans'][0][:15]}")
+            if r.get('events_attended'):
+                info_parts.append(f"📅{len(r['events_attended'])}ev")
+            if r.get('google_reviews'):
+                reviews = r['google_reviews']
+                if reviews.get('rating'):
+                    info_parts.append(f"⭐{reviews['rating']}")
+                if reviews.get('review_count'):
+                    info_parts.append(f"💬{reviews['review_count']}rev")
 
             extra = f" [{' '.join(info_parts)}]" if info_parts else ""
             print(f"OK {r['duration']:.0f}s ({atl_count} ATL, {btl_count} BTL, {phones} ph, {services} svc, {areas} areas, {brands} brands){extra}")
