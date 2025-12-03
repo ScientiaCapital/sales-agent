@@ -127,8 +127,15 @@ class ApolloService:
             params["linkedin_url"] = linkedin_url
         if reveal_personal_email:
             params["reveal_personal_emails"] = "true"
+        # Phone reveal requires webhook URL for async delivery (Apollo API requirement)
         if reveal_phone:
-            params["reveal_phone_number"] = "true"
+            webhook_base = os.getenv('APOLLO_WEBHOOK_BASE_URL')
+            if webhook_base:
+                params["reveal_phone_number"] = "true"
+                params["webhook_url"] = f"{webhook_base}/api/v1/apollo/webhooks/phone-reveal"
+                logger.info(f"Phone reveal enabled with webhook: {params['webhook_url']}")
+            else:
+                logger.warning("Phone reveal requested but APOLLO_WEBHOOK_BASE_URL not configured")
         
         # Make API request
         try:

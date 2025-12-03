@@ -59,6 +59,7 @@ class Settings(BaseSettings):
 
     # Apollo.io (Enrichment)
     APOLLO_API_KEY: Optional[str] = None  # Apollo API Key
+    APOLLO_WEBHOOK_BASE_URL: Optional[str] = None  # Base URL for Apollo webhooks (e.g., https://api.yourdomain.com)
 
     # Hunter.io (Email Discovery)
     HUNTER_API_KEY: Optional[str] = None  # Hunter.io API Key

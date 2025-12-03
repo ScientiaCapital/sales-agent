@@ -59,6 +59,40 @@ BATCH_SIZE = 5  # Default batch size (can be overridden with --batch-size)
 OUTPUT_DIR = Path(__file__).parent / 'data' / 'final_enrichment_output'
 FAILED_FILE = OUTPUT_DIR / 'FAILED_ENRICHMENT.csv'
 
+# Load contact blocklist for garbage filtering
+BLOCKLIST_FILE = Path(__file__).parent / 'data' / 'contact_blocklist.txt'
+CONTACT_BLOCKLIST = set()
+
+def load_contact_blocklist():
+    """Load blocklist patterns from file."""
+    global CONTACT_BLOCKLIST
+    if BLOCKLIST_FILE.exists():
+        with open(BLOCKLIST_FILE, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    CONTACT_BLOCKLIST.add(line.lower())
+        print(f"  📋 Loaded {len(CONTACT_BLOCKLIST)} blocklist patterns")
+    else:
+        print(f"  ⚠️ Blocklist not found: {BLOCKLIST_FILE}")
+
+# Load blocklist on import
+load_contact_blocklist()
+
+
+def is_garbage_contact(name: str, title: str = '') -> bool:
+    """Check if a contact name or title matches blocklist patterns.
+
+    Returns True if this is garbage (should be filtered out).
+    """
+    name_lower = (name or '').lower()
+    title_lower = (title or '').lower()
+
+    for pattern in CONTACT_BLOCKLIST:
+        if pattern in name_lower or pattern in title_lower:
+            return True
+    return False
+
 
 def log_failed_company(company_name, domain, error, company_id):
     """Append failed company to CSV for later troubleshooting."""
@@ -508,7 +542,19 @@ def extract_contacts(content):
                     seen.add(full_name.lower())
                 break
 
-    return contacts
+    # Filter out garbage contacts using blocklist (Dec 3, 2025)
+    filtered_contacts = []
+    filtered_count = 0
+    for c in contacts:
+        if is_garbage_contact(c.get('name', ''), c.get('title', '')):
+            filtered_count += 1
+        else:
+            filtered_contacts.append(c)
+
+    if filtered_count > 0:
+        print(f"    🗑️  Filtered {filtered_count} garbage contacts via blocklist")
+
+    return filtered_contacts
 
 
 # Keep extract_atl as alias for backwards compatibility
@@ -1003,7 +1049,14 @@ def extract_service_areas(content):
         'yelp', 'google', 'reviews', 'bbb', 'angi', 'angies',
         # Common words that get capitalized
         'county', 'township', 'borough', 'city', 'town', 'village',
-        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
+        'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+        # NEW: More false positives (Dec 3, 2025 - Beverly Services)
+        'electricians', 'plumbers', 'technicians', 'contractors', 'specialists',
+        'same', 'day', 'next', 'satisfaction', 'guaranteed', 'serving', 'western',
+        'eastern', 'northern', 'southern', 'central', 'greater', 'metro', 'area',
+        'professionals', 'experts', 'certified', 'licensed', 'insured', 'bonded',
+        'quality', 'trusted', 'reliable', 'affordable', 'best', 'top', 'premier',
+        'family', 'owned', 'operated', 'local', 'nearby', 'near', 'surrounding'
     }
 
     for i, line in enumerate(lines):
@@ -1381,10 +1434,24 @@ def sync_to_supabase(supabase, results):
         # OEM Brands and maintenance plans (Dec 3, 2025)
         if r.get('brands'):
             update_data['oem_brands'] = r['brands']  # Column name in Supabase
+            update_data['oem_count'] = len(r['brands'])  # Track count for ICP scoring
         if r.get('maintenance_plans'):
             update_data['maintenance_plans'] = r['maintenance_plans']
         if r.get('services'):
             update_data['services_offered'] = r['services']
+
+        # Owner bios → ai_personal_hooks (BDR gold - personal details for rapport)
+        if r.get('owner_bios'):
+            # Convert owner_bios to personal hooks format
+            personal_hooks = []
+            for bio in r['owner_bios']:
+                if bio.get('type') == 'quote_attribution':
+                    personal_hooks.append(f"Quote from {bio.get('name', 'owner')}, {bio.get('title', '')}")
+                elif bio.get('bio_snippet'):
+                    # Extract key personal details from bio
+                    personal_hooks.append(bio['bio_snippet'][:200])  # Truncate long bios
+            if personal_hooks:
+                update_data['ai_personal_hooks'] = personal_hooks
 
         try:
             supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
@@ -1415,13 +1482,27 @@ def sync_to_supabase(supabase, results):
 
             # Skip menu/service items that got picked up as contacts
             garbage_words = {
+                # Services/products (not names)
                 'whole house', 'duct design', 'installation', 'repair',
                 'solar thermal', 'radiant', 'hot water', 'heater', 'heaters',
                 'humidifier', 'dehumidifier', 'cleaning', 'sealing', 'insulation',
                 'air conditioning', 'heating', 'cooling', 'hvac',
                 'financing', 'rebates', 'specials', 'products', 'reviews',
                 'contact us', 'about us', 'our team', 'meet the', 'learn more',
-                'indoor air', 'air quality', 'ductless', 'heat pump', 'furnace'
+                'indoor air', 'air quality', 'ductless', 'heat pump', 'furnace',
+                # NEW: More garbage patterns (Dec 3, 2025)
+                'ac services', 'plumbing services', 'electrical services',
+                'business hours', 'year established', 'years established',
+                'emergency service', '24/7', 'same day', 'next day',
+                'aqua pure', 'water heater', 'water softener',
+                'rinnai', 'generac', 'carrier', 'trane', 'lennox',  # Brand names not people
+                'rheem', 'goodman', 'daikin', 'york', 'bryant',
+                'service area', 'areas served', 'we serve',
+                'satisfaction guaranteed', 'free estimate', 'free quote',
+                'licensed', 'insured', 'bonded', 'certified',
+                'residential', 'commercial', 'industrial',
+                'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+                'hours of operation', 'open', 'closed'
             }
             name_lower = name.lower()
             if any(garbage in name_lower for garbage in garbage_words):
@@ -1772,6 +1853,53 @@ async def main():
             print(f"  ⚠️  {failed} failed (will retry later)")
 
         print(f"\n  Session total: {total_enriched} enriched, {total_atl} contacts found")
+
+        # Show ATL contacts found in this batch
+        batch_atl = []
+        batch_domains = []
+        for r in results:
+            if r['success']:
+                batch_domains.append(r.get('domain', ''))
+                for contact in r.get('atl_contacts', []):
+                    if contact.get('is_atl', True):
+                        batch_atl.append({
+                            'name': contact['name'],
+                            'title': contact.get('title', 'Unknown'),
+                            'company': r.get('company_name', 'Unknown')
+                        })
+
+        if batch_atl:
+            print("\n" + "="*50)
+            print(f"🎯 ATL CONTACTS FOUND ({len(batch_atl)}):")
+            for c in batch_atl[:10]:  # Show max 10
+                print(f"  • {c['name']} - {c['title']} ({c['company'][:25]})")
+            if len(batch_atl) > 10:
+                print(f"  ... and {len(batch_atl) - 10} more")
+            print("="*50)
+
+            # Apollo Paid prompt - default NO to prevent accidental credit usage
+            apollo_response = input("\n🔥 Run Apollo Paid to get verified emails/phones? [y/N]: ").strip().lower()
+            if apollo_response == 'y':
+                # Build domain list for Apollo
+                domains_str = ','.join([d for d in batch_domains if d])
+                if domains_str:
+                    print(f"\n  Running Apollo Paid on {len(batch_domains)} domains...")
+                    print("  (Apollo syncs to Supabase automatically)")
+                    import subprocess
+                    try:
+                        result = subprocess.run(
+                            ['python', 'enrich_apollo_paid.py', '--test', '--domains', domains_str],
+                            cwd=str(Path(__file__).parent),
+                            check=False,
+                            capture_output=False  # Show Apollo output in real-time
+                        )
+                        print("  ✅ Apollo Paid complete - contacts synced to Supabase")
+                    except Exception as e:
+                        print(f"  ❌ Apollo Paid error: {e}")
+            else:
+                print("  ⏭️  Skipped Apollo Paid")
+        else:
+            print("\n  ℹ️  No ATL contacts found in this batch")
 
         # Prompt (skip in auto mode)
         if not args.auto:
