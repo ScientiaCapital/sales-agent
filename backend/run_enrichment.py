@@ -129,7 +129,8 @@ def extract_emails(content):
 ATL_TITLES = [
     'owner', 'co-owner', 'founder', 'co-founder', 'president', 'ceo', 'chief executive',
     'general manager', 'gm', 'director', 'vp', 'vice president', 'partner',
-    'principal', 'managing', 'office manager', 'operations manager'
+    'principal', 'managing', 'office manager', 'operations manager',
+    'head of', 'division head', 'department head', 'branch manager', 'regional manager'
 ]
 
 # BTL titles (technicians, installers, staff - still valuable contacts)
@@ -170,6 +171,13 @@ TEAM_PAGE_PATHS = [
     '/company',
     '/company/team',     # Corporate style
     '/company/about',
+    # Commercial pages - often have OEM brands/logos at bottom
+    '/commercial',
+    '/commercial-projects',
+    '/commercial-services',
+    '/our-work',
+    '/projects',
+    '/portfolio',
 ]
 
 # Services that indicate good ICP fit for Coperniq
@@ -267,8 +275,14 @@ SERVICE_AREA_PATHS = [
     '/service-area',
     '/service-areas',
     '/areas-served',
+    '/areas-we-serve',
     '/locations',
     '/coverage',
+    '/cities-served',
+    '/cities-we-serve',
+    '/where-we-serve',
+    '/communities',
+    '/neighborhoods',
 ]
 
 
@@ -303,12 +317,13 @@ def extract_contacts(content):
                     contacts.append({'name': name, 'title': title, 'is_atl': True})
                     seen.add(name.lower())
 
-    # Method 2: Look for "Name - Title" or "Name, Title" patterns with ALL titles
+    # Method 2: Look for "Name - Title" or "Name, Title" or "Name / Title" patterns with ALL titles
     for title_keyword in ALL_TITLES:
         is_atl = title_keyword in ATL_TITLES
 
-        # Pattern: "John Smith - Owner" or "John Smith, General Manager"
-        pattern = rf'([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*[-–,]\s*{title_keyword}'
+        # Pattern: "John Smith - Owner" or "John Smith, General Manager" or "John Smith / President"
+        # Added forward slash (/) which is common on team pages
+        pattern = rf'([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*[-–,/]\s*{title_keyword}'
         for match in re.findall(pattern, content, re.IGNORECASE):
             name = match.strip()
             if name and 5 <= len(name) <= 40 and name.lower() not in seen:
@@ -317,8 +332,8 @@ def extract_contacts(content):
                     contacts.append({'name': name, 'title': title_keyword.title(), 'is_atl': is_atl})
                     seen.add(name.lower())
 
-        # Pattern: "Owner: John Smith" or "General Manager - John Smith"
-        pattern = rf'{title_keyword}\s*[-–:]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)'
+        # Pattern: "Owner: John Smith" or "General Manager - John Smith" or "President / John Smith"
+        pattern = rf'{title_keyword}\s*[-–:/]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)'
         for match in re.findall(pattern, content, re.IGNORECASE):
             name = match.strip()
             if name and 5 <= len(name) <= 40 and name.lower() not in seen:
@@ -430,6 +445,68 @@ def extract_contacts(content):
                                 if name.lower() not in seen:
                                     contacts.append({'name': name, 'title': title_found, 'is_atl': is_atl})
                                     seen.add(name.lower())
+
+    # Method 4: Handle name split across lines (First\nLast\nTitle)
+    # Common on team pages where first name and last name are separate headings
+    for i in range(len(lines) - 2):
+        line1 = lines[i].strip()
+        line2 = lines[i + 1].strip()
+
+        # Check if line1 and line2 could be first/last name (single capitalized words)
+        if not line1 or not line2:
+            continue
+
+        # Both should be single capitalized words (first name, last name)
+        if ' ' in line1 or ' ' in line2:
+            continue
+
+        if not (line1[0].isupper() and line2[0].isupper()):
+            continue
+
+        if not (line1.isalpha() and line2.replace("'", "").isalpha()):
+            continue
+
+        if not (3 <= len(line1) <= 15 and 2 <= len(line2) <= 20):
+            continue
+
+        # Skip common non-name words
+        skip_singles = {'the', 'our', 'meet', 'about', 'home', 'hvac', 'air', 'call', 'view',
+                        'heating', 'cooling', 'repair', 'service', 'contact', 'team', 'staff'}
+        if line1.lower() in skip_singles or line2.lower() in skip_singles:
+            continue
+
+        # Now look for a title within the next 3 lines
+        for offset in range(2, 5):
+            if i + offset >= len(lines):
+                break
+            check_line = lines[i + offset].strip().lower()
+            if not check_line:
+                continue
+
+            # Check if this is a title
+            title_found = None
+            is_atl = False
+
+            for title_keyword in ALL_TITLES:
+                if title_keyword in check_line and len(check_line) < 100:
+                    title_found = lines[i + offset].strip().title()
+                    is_atl = title_keyword in ATL_TITLES
+                    break
+
+            # Also check exact matches
+            exact_atl = ['owner', 'president', 'ceo', 'founder', 'vice president', 'vp', 'general manager']
+            for exact in exact_atl:
+                if check_line == exact or check_line.startswith(exact + ' '):
+                    title_found = lines[i + offset].strip().title()
+                    is_atl = True
+                    break
+
+            if title_found:
+                full_name = f"{line1} {line2}"
+                if full_name.lower() not in seen:
+                    contacts.append({'name': full_name, 'title': title_found, 'is_atl': is_atl})
+                    seen.add(full_name.lower())
+                break
 
     return contacts
 
@@ -756,21 +833,31 @@ def extract_certifications(content):
 
     # Known certifications and accreditations (from Brandon Clark example)
     cert_patterns = {
-        # Industry accreditations
-        'EASA Accredited': ['easa', 'easa accredited', 'easa certified'],
-        'NATE Certified': ['nate', 'nate certified', 'nate certification'],
-        'EPA Certified': ['epa certified', 'epa certification', 'section 608'],
+        # Major HVAC industry certifications (HIGH VALUE)
+        'NATE Certified': ['nate', 'nate certified', 'nate certification', 'north american technician excellence'],
+        'EPA 608 Certified': ['epa certified', 'epa certification', 'section 608', 'epa 608', '608 certified'],
+        'HVAC Excellence': ['hvac excellence', 'hvac excellence certified'],
+        'ICE Certified': ['ice certified', 'industry competency exam'],
+        'R-410A Certified': ['r-410a certified', 'r410a certified', '410a certified'],
+
+        # Safety certifications
         'OSHA Certified': ['osha', 'osha certified', 'osha 10', 'osha 30'],
+        'EASA Accredited': ['easa', 'easa accredited', 'easa certified'],
 
         # Manufacturer partnerships (HIGH VALUE - indicates quality)
         'Siemens Warranty Center': ['siemens warranty', 'siemens certified', 'siemens partner'],
         'Koyo Certified': ['koyo certified', 'koyo partner'],
         'Carrier Factory Authorized': ['carrier factory', 'carrier authorized'],
-        'Trane Comfort Specialist': ['trane comfort specialist', 'trane certified'],
+        'Carrier Diamond Dealer': ['carrier diamond', 'diamond dealer'],  # Top-tier Carrier status
+        'Trane Comfort Specialist': ['trane comfort specialist', 'trane certified', 'trane dealer'],
         'Lennox Premier Dealer': ['lennox premier', 'lennox dealer'],
         'Bryant Factory Authorized': ['bryant factory', 'bryant authorized'],
         'Rheem Pro Partner': ['rheem pro', 'rheem partner'],
         'Mitsubishi Diamond Contractor': ['mitsubishi diamond', 'diamond contractor'],
+        'Daikin Comfort Pro': ['daikin comfort pro', 'daikin pro dealer'],
+        'York Certified Comfort Expert': ['york certified', 'york comfort expert'],
+        'Goodman Factory Authorized': ['goodman factory', 'goodman authorized'],
+        'American Standard Customer Care': ['american standard customer care', 'american standard dealer'],
 
         # Solar/Energy certifications
         'NABCEP Certified': ['nabcep', 'nabcep certified'],
@@ -782,6 +869,25 @@ def extract_certifications(content):
         'BBB Accredited': ['bbb accredited', 'better business bureau', 'bbb a+'],
         'Licensed & Insured': ['licensed and insured', 'licensed & insured', 'fully licensed'],
         'Bonded': ['fully bonded', 'licensed bonded'],
+
+        # Industry associations
+        'ACCA Member': ['acca member', 'acca certified', 'air conditioning contractors'],
+        'PHCC Member': ['phcc member', 'plumbing heating cooling contractors'],
+        'ASHRAE Member': ['ashrae member', 'ashrae certified'],
+
+        # Review/award platforms (indicates quality/reputation)
+        "Angie's List Super Service": ["angie's list", "angies list", "angi super service", "super service award"],
+        'HomeAdvisor Top Rated': ['homeadvisor', 'home advisor', 'top rated pro'],
+        'Yelp Top Rated': ['yelp top rated', 'yelp certified'],
+        'Google Guaranteed': ['google guaranteed', 'google screened'],
+
+        # Energy/green certifications (HIGH VALUE for solar/energy companies)
+        'Energy Upgrade CA': ['energy upgrade california', 'energy upgrade ca', 'energyupgradeca'],
+        'BPI Certified': ['bpi certified', 'building performance institute', 'bpi building analyst'],
+        'RESNET Certified': ['resnet', 'hers rater', 'home energy rating'],
+        'Build It Green': ['build it green', 'green certified', 'green building professional'],
+        'LEED Certified': ['leed certified', 'leed ap', 'leed accredited'],
+        'Energy Star Partner': ['energy star partner', 'energy star certified'],
 
         # ISO certifications
         'ISO 9001': ['iso 9001', 'iso 9001:2015'],
@@ -957,6 +1063,23 @@ def extract_service_areas(content):
                     continue
                 if 3 <= len(city) <= 25:
                     areas.add(city)
+
+        # Look for comma-separated city lists (common in footers)
+        # Pattern: "City1, City2, City3, ..." with at least 3 cities
+        comma_cities = re.findall(r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*,', line_clean)
+        if len(comma_cities) >= 3:  # At least 3 cities suggests a service area list
+            for city in comma_cities:
+                city_lower = city.lower()
+                if city_lower in skip_words or any(w in skip_words for w in city_lower.split()):
+                    continue
+                if 3 <= len(city) <= 25 and not any(c.isdigit() for c in city):
+                    areas.add(city)
+            # Also get the last city after final comma (if ends with "and City")
+            last_match = re.search(r',\s*(?:and\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*$', line_clean)
+            if last_match:
+                last_city = last_match.group(1)
+                if last_city.lower() not in skip_words and 3 <= len(last_city) <= 25:
+                    areas.add(last_city)
 
     return sorted(list(areas))
 
@@ -1255,6 +1378,14 @@ def sync_to_supabase(supabase, results):
         if r.get('emergency_phone'):
             update_data['emergency_phone'] = r['emergency_phone']
 
+        # OEM Brands and maintenance plans (Dec 3, 2025)
+        if r.get('brands'):
+            update_data['oem_brands'] = r['brands']  # Column name in Supabase
+        if r.get('maintenance_plans'):
+            update_data['maintenance_plans'] = r['maintenance_plans']
+        if r.get('services'):
+            update_data['services_offered'] = r['services']
+
         try:
             supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
             companies_updated += 1
@@ -1271,10 +1402,62 @@ def sync_to_supabase(supabase, results):
         for contact in r['atl_contacts']:
             # Skip contacts with invalid names (too long, contains bad chars)
             name = contact['name'].strip()
-            if len(name) > 60 or '-' in name or '\n' in name:
-                continue  # Skip garbage contacts like "agreements Full - Service"
+            title = contact.get('title', '').lower()
 
+            # Skip garbage contacts - names too long or with newlines
+            if len(name) > 60 or '\n' in name:
+                continue
+
+            # Allow hyphens in names (Mary-Jane, O'Brien) but skip obvious garbage
+            # Garbage pattern: "Something - Something else" (menu item separators)
+            if ' - ' in name or ' – ' in name:
+                continue
+
+            # Skip menu/service items that got picked up as contacts
+            garbage_words = {
+                'whole house', 'duct design', 'installation', 'repair',
+                'solar thermal', 'radiant', 'hot water', 'heater', 'heaters',
+                'humidifier', 'dehumidifier', 'cleaning', 'sealing', 'insulation',
+                'air conditioning', 'heating', 'cooling', 'hvac',
+                'financing', 'rebates', 'specials', 'products', 'reviews',
+                'contact us', 'about us', 'our team', 'meet the', 'learn more',
+                'indoor air', 'air quality', 'ductless', 'heat pump', 'furnace'
+            }
+            name_lower = name.lower()
+            if any(garbage in name_lower for garbage in garbage_words):
+                continue
+
+            # Skip if title looks like a service description, not a job title
+            # But allow words like "service manager" and "maintenance supervisor"
+            service_garbage = {
+                'installation', 'repair', 'heating', 'cooling', 'air conditioning',
+                'hvac system', 'ductwork', 'refrigerant', 'compressor'
+            }
+            if any(garbage in title for garbage in service_garbage):
+                continue
+
+            # Names should be 2-4 words and look like actual names
             name_parts = name.split()
+            if not (2 <= len(name_parts) <= 4):
+                continue
+
+            # Each word should start with uppercase (can have apostrophes, hyphens)
+            # Allow: O'Brien, Mary-Jane, José, etc.
+            valid_name = True
+            for word in name_parts:
+                if not word:
+                    continue
+                # First letter should be uppercase
+                if not word[0].isupper():
+                    valid_name = False
+                    break
+                # Rest should be letters, apostrophes, or hyphens
+                cleaned = word.replace("'", "").replace("-", "").replace(".", "")
+                if not cleaned.isalpha():
+                    valid_name = False
+                    break
+            if not valid_name:
+                continue
             # Truncate to fit DB columns (varchar 255)
             contact_data = {
                 'company_id': company_id,
@@ -1368,8 +1551,6 @@ def find_or_create_company_by_domain(supabase, domain, company_name=None):
         'company_name': company_name,
         'domain': domain,
         'normalized_name': normalize_name(company_name),
-        'source': 'test_enrichment',
-        'created_at': datetime.now().isoformat()
     }
     result = supabase.table('dim_companies').insert(data).execute()
     return result.data[0] if result.data else None
@@ -1480,13 +1661,15 @@ async def main():
 
     supabase = get_supabase()
 
-    # Test mode handling
-    if args.test:
+    # Test mode handling - also triggered by --domain or --domains
+    if args.test or args.domain or args.domains:
+        is_single_domain = args.domain is not None
         print(f"\n{'='*60}")
-        print(f"ENRICHMENT RUNNER (TEST MODE)")
+        print(f"ENRICHMENT RUNNER {'(SINGLE DOMAIN)' if is_single_domain else '(TEST MODE)'}")
         print(f"{'='*60}")
-        print(f"Rate limiting: 2.5s delay between companies")
-        print(f"Max companies: 5")
+        if not is_single_domain:
+            print(f"Rate limiting: 2.5s delay between companies")
+            print(f"Max companies: 5")
         
         # Get companies for test
         if args.domain:

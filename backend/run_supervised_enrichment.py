@@ -20,8 +20,8 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import List, Dict, Any
+from datetime import datetime, timezone
 import uuid
 
 # Load environment variables
@@ -32,7 +32,6 @@ load_dotenv(Path(__file__).parent.parent / '.env', override=True)
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 # Redis and Supabase clients
 from redis.asyncio import from_url as redis_from_url
@@ -58,13 +57,26 @@ async def get_unenriched_companies(supabase, limit: int) -> List[Dict[str, Any]]
     """
     console.print("[cyan]Querying Supabase for unenriched companies...[/cyan]")
 
+    # Use actual column names from dim_companies schema
+    # Only get companies that have a website (required for enrichment)
     result = supabase.table("dim_companies").select(
-        "id", "name", "domain", "linkedin_url", "icp_tier"
-    ).is_("enrichment_status", "null").order(
+        "company_id", "company_name", "website", "icp_tier"
+    ).is_("last_enriched_at", "null").not_.is_(
+        "website", "null"
+    ).order(
         "icp_tier", desc=False  # Prioritize PLATINUM > GOLD > SILVER > BRONZE
     ).limit(limit).execute()
 
-    companies = result.data or []
+    # Map to expected field names for orchestrator compatibility
+    companies = []
+    for row in (result.data or []):
+        companies.append({
+            "id": row.get("company_id"),
+            "name": row.get("company_name"),
+            "domain": row.get("website"),
+            "icp_tier": row.get("icp_tier"),
+        })
+
     console.print(f"[green]Found {len(companies)} companies needing enrichment[/green]")
 
     return companies
@@ -151,7 +163,6 @@ def display_budget_status(budget_tracker, budget_limit: float, processed: int, t
     # In practice, call: status = asyncio.run(budget_tracker.get_status())
 
     spent = 0.0  # Placeholder - would be from budget_tracker.get_status()
-    remaining = budget_limit - spent
     percent_used = (spent / budget_limit * 100) if budget_limit > 0 else 0
 
     status_text = (
@@ -284,7 +295,7 @@ async def main():
         sys.exit(1)
 
     # Create batch ID
-    batch_id = f"batch_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+    batch_id = f"batch_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
     console.print(f"[cyan]Batch ID: {batch_id}[/cyan]\n")
 
     # Initialize pipeline components
@@ -297,12 +308,12 @@ async def main():
         companies = await get_unenriched_companies(supabase, args.limit)
     except Exception as e:
         console.print(f"[red]✗ Failed to fetch companies: {e}[/red]")
-        await redis.close()
+        await redis.aclose()
         sys.exit(1)
 
     if not companies:
         console.print("[yellow]No companies found needing enrichment. Exiting.[/yellow]")
-        await redis.close()
+        await redis.aclose()
         sys.exit(0)
 
     # Initialize batch in budget tracker
@@ -393,7 +404,7 @@ async def main():
         elif action == "q":
             # Quit immediately
             console.print("\n[red]Quitting without save.[/red]")
-            await redis.close()
+            await redis.aclose()
             sys.exit(0)
 
     # Final summary
@@ -418,7 +429,7 @@ async def main():
     console.print(summary_table)
 
     # Cleanup
-    await redis.close()
+    await redis.aclose()
     console.print("\n[green]✓ Session complete[/green]")
 
 
