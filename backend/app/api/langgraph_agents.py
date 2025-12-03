@@ -1212,6 +1212,771 @@ async def get_latest_report():
         )
 
 
+# ========== Sales Intel Endpoints ==========
+
+class SalesIntelRunRequest(BaseModel):
+    """Request schema for running SalesIntel analysis."""
+    limit: int = Field(
+        default=10,
+        description="Number of leads to analyze (1-50)"
+    )
+    async_mode: bool = Field(
+        default=False,
+        description="Run via Celery task (returns task_id) or inline (returns results)"
+    )
+
+
+class SalesIntelRunResponse(BaseModel):
+    """Response for SalesIntel run."""
+    status: str
+    task_id: Optional[str] = None
+    leads_processed: Optional[int] = None
+    hooks_extracted: Optional[int] = None
+    duration_ms: Optional[int] = None
+    results: Optional[list] = None
+    errors: Optional[list] = None
+
+
+@router.post("/intel/run", response_model=SalesIntelRunResponse, status_code=200)
+async def run_sales_intel(request: SalesIntelRunRequest):
+    """
+    Run SalesIntelAgent to extract personal hooks from scouted leads.
+
+    The Sales Intel agent:
+    1. Queries leads that have been scouted (have ai_company_story) but lack personal hooks
+    2. Analyzes scraped website content for personal details (hobbies, family, pets, background)
+    3. Generates personalized openers based on extracted hooks
+    4. Saves hooks and drafts back to Supabase (ai_personal_hooks, ai_pain_points)
+
+    Scheduled to run every hour at :30 via Celery Beat.
+
+    Args:
+        request: Config (limit, async_mode)
+
+    Returns:
+        SalesIntelRunResponse with results or task_id (if async)
+
+    Example:
+        ```bash
+        # Run inline
+        curl -X POST http://localhost:8001/api/v1/langgraph/intel/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"limit": 5}'
+
+        # Run via Celery
+        curl -X POST http://localhost:8001/api/v1/langgraph/intel/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"limit": 10, "async_mode": true}'
+        ```
+    """
+    try:
+        if request.async_mode:
+            # Run via Celery task
+            from app.tasks.agent_tasks import run_sales_intel_batch_task
+
+            task = run_sales_intel_batch_task.delay(limit=request.limit)
+
+            logger.info(f"SalesIntel task queued: {task.id}")
+
+            return SalesIntelRunResponse(
+                status="queued",
+                task_id=task.id
+            )
+        else:
+            # Run inline (synchronous)
+            from app.services.langgraph.agents.sales_intel_agent import SalesIntelAgent
+            from app.services.langgraph.tools.supabase_tools import (
+                query_leads_for_sales_intel,
+                save_sales_intel
+            )
+            import time as time_module
+
+            start_time = time_module.time()
+
+            # Get leads needing intel analysis
+            leads = query_leads_for_sales_intel(limit=request.limit)
+
+            if not leads:
+                return SalesIntelRunResponse(
+                    status="success",
+                    leads_processed=0,
+                    hooks_extracted=0,
+                    duration_ms=0,
+                    results=[],
+                    errors=[]
+                )
+
+            agent = SalesIntelAgent(provider='cerebras')
+            results = []
+            errors = []
+            total_hooks = 0
+
+            for lead in leads:
+                try:
+                    # Run SalesIntelAgent on each lead
+                    intel_result = await agent.analyze(
+                        company_name=lead.get('company_name', ''),
+                        contact_name=lead.get('contact_name'),
+                        contact_title=lead.get('contact_title'),
+                        scraped_content=lead.get('ai_company_story', ''),
+                        services=lead.get('service_areas'),
+                        brands=lead.get('oem_brands'),
+                        location=f"{lead.get('city', '')}, {lead.get('state', '')}"
+                    )
+
+                    # Save to Supabase
+                    save_sales_intel(
+                        company_id=lead['company_id'],
+                        personal_hooks=intel_result.personal_hooks,
+                        company_story=intel_result.company_story,
+                        pain_points=intel_result.pain_points,
+                        email_draft=intel_result.email_body,
+                        sms_draft=intel_result.sms_draft,
+                        voice_opener=intel_result.voice_opener
+                    )
+
+                    hook_count = len(intel_result.personal_hooks) if intel_result.personal_hooks else 0
+                    total_hooks += hook_count
+
+                    results.append({
+                        "company_id": lead['company_id'],
+                        "company_name": lead.get('company_name'),
+                        "hooks_found": hook_count,
+                        "has_email_draft": bool(intel_result.email_body),
+                        "has_sms_draft": bool(intel_result.sms_draft)
+                    })
+
+                except Exception as e:
+                    errors.append({
+                        "company_id": lead.get('company_id'),
+                        "error": str(e)
+                    })
+                    logger.error(f"SalesIntel failed for {lead.get('company_id')}: {e}")
+
+            duration_ms = int((time_module.time() - start_time) * 1000)
+
+            logger.info(
+                f"SalesIntel completed: {len(results)} leads, "
+                f"{total_hooks} hooks in {duration_ms}ms"
+            )
+
+            return SalesIntelRunResponse(
+                status="success",
+                leads_processed=len(results),
+                hooks_extracted=total_hooks,
+                duration_ms=duration_ms,
+                results=results,
+                errors=errors if errors else None
+            )
+
+    except Exception as e:
+        logger.error(f"Error running SalesIntel: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"SalesIntel failed: {str(e)}"
+        )
+
+
+@router.get("/intel/results", status_code=200)
+async def get_sales_intel_results(
+    limit: int = 20,
+    has_hooks: bool = True
+):
+    """
+    Get leads with extracted personal hooks.
+
+    Args:
+        limit: Maximum results (1-100)
+        has_hooks: Only return leads with personal hooks extracted
+
+    Returns:
+        List of leads with personal hooks and drafts
+
+    Example:
+        ```bash
+        curl http://localhost:8001/api/v1/langgraph/intel/results?limit=10
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+        limit = max(1, min(limit, 100))
+
+        query = supabase.table('dim_companies').select(
+            'company_id, company_name, domain, '
+            'icp_tier, icp_score, current_stage, '
+            'ai_personal_hooks, ai_pain_points, ai_company_story, '
+            'phone, state, city, ai_enriched_at'
+        )
+
+        if has_hooks:
+            query = query.not_.is_('ai_personal_hooks', 'null')
+
+        query = query.order('ai_enriched_at', desc=True).limit(limit)
+
+        result = query.execute()
+
+        return {
+            "status": "success",
+            "count": len(result.data),
+            "results": result.data
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting intel results: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get intel results: {str(e)}"
+        )
+
+
+# ========== Growth Campaign Endpoints ==========
+
+class GrowthCampaignRequest(BaseModel):
+    """Request schema for running growth campaigns."""
+    goal: str = Field(
+        default="book_meeting",
+        description="Campaign goal: book_meeting, get_reply, engagement"
+    )
+    max_leads: int = Field(
+        default=5,
+        description="Maximum leads to run campaigns for (1-20)"
+    )
+    max_cycles: int = Field(
+        default=5,
+        description="Maximum optimization cycles per lead (1-10)"
+    )
+    async_mode: bool = Field(
+        default=False,
+        description="Run via Celery task (returns task_id) or inline (returns results)"
+    )
+
+
+class GrowthCampaignResponse(BaseModel):
+    """Response for growth campaign run."""
+    status: str
+    task_id: Optional[str] = None
+    campaigns_run: Optional[int] = None
+    goals_met: Optional[int] = None
+    total_cycles: Optional[int] = None
+    duration_ms: Optional[int] = None
+    results: Optional[list] = None
+    errors: Optional[list] = None
+
+
+@router.post("/growth/run", response_model=GrowthCampaignResponse, status_code=200)
+async def run_growth_campaigns(request: GrowthCampaignRequest):
+    """
+    Run GrowthAgent multi-touch campaigns for HOT leads.
+
+    The Growth Agent:
+    1. Queries HOT leads with ICP score >= 75
+    2. For each lead, runs a 5-cycle optimization loop:
+       - Analyze current state
+       - Strategize next touch
+       - Execute outreach
+       - Measure results
+       - Learn and adapt
+    3. Goals: book_meeting, get_reply, or engagement
+    4. Operates autonomously (no human approval needed)
+
+    Scheduled to run daily at 10 AM EST (15:00 UTC) via Celery Beat.
+
+    Args:
+        request: Campaign config (goal, max_leads, max_cycles, async_mode)
+
+    Returns:
+        GrowthCampaignResponse with results or task_id (if async)
+
+    Example:
+        ```bash
+        # Run inline
+        curl -X POST http://localhost:8001/api/v1/langgraph/growth/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"goal": "book_meeting", "max_leads": 3}'
+
+        # Run via Celery
+        curl -X POST http://localhost:8001/api/v1/langgraph/growth/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"goal": "engagement", "max_leads": 5, "async_mode": true}'
+        ```
+    """
+    try:
+        if request.async_mode:
+            # Run via Celery task
+            from app.tasks.agent_tasks import run_growth_campaigns_task
+
+            task = run_growth_campaigns_task.delay(
+                goal=request.goal,
+                max_leads=request.max_leads
+            )
+
+            logger.info(f"Growth campaign task queued: {task.id}")
+
+            return GrowthCampaignResponse(
+                status="queued",
+                task_id=task.id
+            )
+        else:
+            # Run inline (synchronous)
+            from app.services.langgraph.agents.growth_agent import GrowthAgent
+            from app.services.langgraph.tools.supabase_tools import query_hot_leads
+            import time as time_module
+
+            start_time = time_module.time()
+
+            # Get HOT leads
+            leads = query_hot_leads(limit=request.max_leads)
+
+            if not leads:
+                return GrowthCampaignResponse(
+                    status="success",
+                    campaigns_run=0,
+                    goals_met=0,
+                    total_cycles=0,
+                    duration_ms=0,
+                    results=[],
+                    errors=[]
+                )
+
+            agent = GrowthAgent(provider='cerebras')
+            results = []
+            errors = []
+            goals_met = 0
+            total_cycles = 0
+
+            for lead in leads:
+                try:
+                    # Run campaign for each lead
+                    campaign_result = await agent.run_campaign(
+                        lead_id=lead['company_id'],
+                        goal=request.goal,
+                        max_cycles=request.max_cycles
+                    )
+
+                    if campaign_result.goal_met:
+                        goals_met += 1
+
+                    total_cycles += campaign_result.cycle_count
+
+                    results.append({
+                        "company_id": lead['company_id'],
+                        "company_name": lead.get('company_name'),
+                        "goal": campaign_result.goal,
+                        "goal_met": campaign_result.goal_met,
+                        "cycles": campaign_result.cycle_count,
+                        "response_rate": campaign_result.response_rate,
+                        "engagement_score": campaign_result.engagement_score,
+                        "learnings": campaign_result.learnings[:3] if campaign_result.learnings else []
+                    })
+
+                except Exception as e:
+                    errors.append({
+                        "company_id": lead.get('company_id'),
+                        "error": str(e)
+                    })
+                    logger.error(f"Growth campaign failed for {lead.get('company_id')}: {e}")
+
+            duration_ms = int((time_module.time() - start_time) * 1000)
+
+            logger.info(
+                f"Growth campaigns completed: {len(results)} campaigns, "
+                f"{goals_met} goals met in {duration_ms}ms"
+            )
+
+            return GrowthCampaignResponse(
+                status="success",
+                campaigns_run=len(results),
+                goals_met=goals_met,
+                total_cycles=total_cycles,
+                duration_ms=duration_ms,
+                results=results,
+                errors=errors if errors else None
+            )
+
+    except Exception as e:
+        logger.error(f"Error running Growth campaigns: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Growth campaigns failed: {str(e)}"
+        )
+
+
+@router.get("/growth/status", status_code=200)
+async def get_growth_status():
+    """
+    Get Growth campaign status and statistics.
+
+    Returns counts of HOT leads available and campaign history.
+
+    Example:
+        ```bash
+        curl http://localhost:8001/api/v1/langgraph/growth/status
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+
+        # Get HOT lead counts
+        hot_total = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'HOT').execute()
+
+        hot_high_icp = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'HOT').gte('icp_score', 75).execute()
+
+        # Get leads with AI drafts (indicates campaign run)
+        with_drafts = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'HOT').not_.is_('ai_personal_hooks', 'null').execute()
+
+        return {
+            "status": "success",
+            "hot_leads": {
+                "total": hot_total.count or 0,
+                "high_icp": hot_high_icp.count or 0,
+                "with_campaigns": with_drafts.count or 0
+            },
+            "next_scheduled": "Daily at 10 AM EST (15:00 UTC)"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting growth status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get growth status: {str(e)}"
+        )
+
+
+# ========== BDR Outreach Endpoints ==========
+
+class BDRRunRequest(BaseModel):
+    """Request schema for running BDR outreach."""
+    company_id: Optional[str] = Field(
+        default=None,
+        description="UUID of a specific company to target"
+    )
+    limit: int = Field(
+        default=3,
+        description="Number of leads to process in batch (1-10)"
+    )
+    async_mode: bool = Field(
+        default=True,
+        description="Run via Celery task (recommended for Slack notifications)"
+    )
+
+
+class BDRRunResponse(BaseModel):
+    """Response for BDR outreach."""
+    status: str
+    task_id: Optional[str] = None
+    draft_id: Optional[str] = None
+    company_name: Optional[str] = None
+    leads_queued: Optional[int] = None
+    message: Optional[str] = None
+
+
+class BDRApprovalRequest(BaseModel):
+    """Request schema for approving/rejecting a BDR draft."""
+    draft_id: str = Field(
+        ...,
+        description="UUID of the draft in dim_ai_drafts"
+    )
+    action: str = Field(
+        ...,
+        description="Action: approve, reject, revise"
+    )
+    feedback: Optional[str] = Field(
+        default=None,
+        description="Feedback for revision (required if action=revise)"
+    )
+    approved_by: Optional[str] = Field(
+        default="API",
+        description="Name of the person taking the action"
+    )
+
+
+@router.post("/bdr/run", response_model=BDRRunResponse, status_code=200)
+async def run_bdr_outreach(request: BDRRunRequest):
+    """
+    Run BDR outreach for a specific company or batch of HOT leads.
+
+    The BDR Agent:
+    1. Researches the prospect using existing AI intel
+    2. Drafts a personalized email with subject line
+    3. Saves draft to dim_ai_drafts with status="pending_approval"
+    4. Sends Slack notification with Approve/Reject buttons
+    5. PAUSES until human approves via Slack or API
+
+    When approved, the email is marked as "sent" (integrate with SendGrid for actual sending).
+
+    Scheduled to run every hour via Celery Beat (3 leads per batch).
+
+    Args:
+        request: BDR config (company_id for single, or limit for batch)
+
+    Returns:
+        BDRRunResponse with task_id or draft_id
+
+    Example:
+        ```bash
+        # Single company
+        curl -X POST http://localhost:8001/api/v1/langgraph/bdr/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"company_id": "abc-123-uuid"}'
+
+        # Batch (3 leads)
+        curl -X POST http://localhost:8001/api/v1/langgraph/bdr/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"limit": 3}'
+        ```
+    """
+    try:
+        if request.company_id:
+            # Single company outreach
+            from app.tasks.agent_tasks import run_bdr_outreach_task
+
+            if request.async_mode:
+                task = run_bdr_outreach_task.delay(request.company_id)
+                logger.info(f"BDR outreach task queued: {task.id}")
+                return BDRRunResponse(
+                    status="queued",
+                    task_id=task.id,
+                    message=f"BDR outreach queued for company_id={request.company_id}"
+                )
+            else:
+                # For sync mode, we'd run inline but BDR requires Slack so async is recommended
+                return BDRRunResponse(
+                    status="error",
+                    message="BDR requires async_mode=true for Slack notification workflow"
+                )
+        else:
+            # Batch outreach
+            from app.tasks.agent_tasks import run_bdr_batch_task
+
+            task = run_bdr_batch_task.delay(limit=request.limit)
+            logger.info(f"BDR batch task queued: {task.id}")
+
+            return BDRRunResponse(
+                status="queued",
+                task_id=task.id,
+                leads_queued=request.limit,
+                message=f"BDR batch queued for up to {request.limit} leads"
+            )
+
+    except Exception as e:
+        logger.error(f"Error running BDR outreach: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"BDR outreach failed: {str(e)}"
+        )
+
+
+@router.post("/bdr/approve", status_code=200)
+async def approve_bdr_draft(request: BDRApprovalRequest):
+    """
+    Approve, reject, or request revision for a BDR draft.
+
+    This endpoint provides API access to the same actions available
+    via Slack buttons. Use this for programmatic approvals or
+    when Slack is not configured.
+
+    Args:
+        request: Approval request with draft_id and action
+
+    Returns:
+        Status of the draft after action
+
+    Example:
+        ```bash
+        # Approve
+        curl -X POST http://localhost:8001/api/v1/langgraph/bdr/approve \\
+          -H "Content-Type: application/json" \\
+          -d '{"draft_id": "abc-123", "action": "approve", "approved_by": "Tim"}'
+
+        # Reject
+        curl -X POST http://localhost:8001/api/v1/langgraph/bdr/approve \\
+          -H "Content-Type: application/json" \\
+          -d '{"draft_id": "abc-123", "action": "reject"}'
+
+        # Request revision
+        curl -X POST http://localhost:8001/api/v1/langgraph/bdr/approve \\
+          -H "Content-Type: application/json" \\
+          -d '{"draft_id": "abc-123", "action": "revise", "feedback": "Make it shorter"}'
+        ```
+    """
+    try:
+        from app.tasks.agent_tasks import resume_bdr_outreach_task
+
+        if request.action not in ["approve", "reject", "revise"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid action. Must be: approve, reject, or revise"
+            )
+
+        if request.action == "revise" and not request.feedback:
+            raise HTTPException(
+                status_code=400,
+                detail="Feedback is required for revision action"
+            )
+
+        # Trigger the resume task
+        task = resume_bdr_outreach_task.delay(
+            draft_id=request.draft_id,
+            action=request.action,
+            feedback=request.feedback,
+            approved_by=request.approved_by
+        )
+
+        logger.info(f"BDR resume task queued: {task.id} for {request.action}")
+
+        return {
+            "status": "processing",
+            "task_id": task.id,
+            "draft_id": request.draft_id,
+            "action": request.action,
+            "message": f"Draft {request.action} processing"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error approving BDR draft: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Approval failed: {str(e)}"
+        )
+
+
+@router.get("/bdr/drafts", status_code=200)
+async def get_bdr_drafts(
+    status: Optional[str] = None,
+    limit: int = 20
+):
+    """
+    Get BDR drafts from dim_ai_drafts.
+
+    Args:
+        status: Filter by status (pending_approval, sent, rejected)
+        limit: Maximum results (1-100)
+
+    Returns:
+        List of drafts with their status
+
+    Example:
+        ```bash
+        # Get pending drafts
+        curl http://localhost:8001/api/v1/langgraph/bdr/drafts?status=pending_approval
+
+        # Get all recent drafts
+        curl http://localhost:8001/api/v1/langgraph/bdr/drafts?limit=50
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+        limit = max(1, min(limit, 100))
+
+        query = supabase.table('dim_ai_drafts').select(
+            'draft_id, company_id, contact_email, draft_type, '
+            'subject, body, status, approved_by, created_at, sent_at'
+        )
+
+        if status:
+            query = query.eq('status', status)
+
+        query = query.order('created_at', desc=True).limit(limit)
+
+        result = query.execute()
+
+        # Enrich with company names
+        drafts = result.data or []
+        if drafts:
+            company_ids = list(set(d['company_id'] for d in drafts if d.get('company_id')))
+            if company_ids:
+                companies = supabase.table('dim_companies').select(
+                    'company_id, company_name'
+                ).in_('company_id', company_ids).execute()
+                company_map = {c['company_id']: c['company_name'] for c in (companies.data or [])}
+
+                for draft in drafts:
+                    draft['company_name'] = company_map.get(draft.get('company_id'), 'Unknown')
+
+        return {
+            "status": "success",
+            "count": len(drafts),
+            "drafts": drafts
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting BDR drafts: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get drafts: {str(e)}"
+        )
+
+
+@router.get("/bdr/status", status_code=200)
+async def get_bdr_status():
+    """
+    Get BDR status and statistics.
+
+    Returns counts of drafts by status and leads available.
+
+    Example:
+        ```bash
+        curl http://localhost:8001/api/v1/langgraph/bdr/status
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+
+        # Get draft counts by status
+        pending = supabase.table('dim_ai_drafts').select(
+            'draft_id', count='exact'
+        ).eq('status', 'pending_approval').execute()
+
+        sent = supabase.table('dim_ai_drafts').select(
+            'draft_id', count='exact'
+        ).eq('status', 'sent').execute()
+
+        rejected = supabase.table('dim_ai_drafts').select(
+            'draft_id', count='exact'
+        ).eq('status', 'rejected').execute()
+
+        # Get HOT leads available for BDR
+        available = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'HOT').gte('icp_score', 70).not_.is_(
+            'ai_company_story', 'null'
+        ).execute()
+
+        return {
+            "status": "success",
+            "drafts": {
+                "pending_approval": pending.count or 0,
+                "sent": sent.count or 0,
+                "rejected": rejected.count or 0
+            },
+            "leads_available": available.count or 0,
+            "next_scheduled": "Every hour at :00 (3 leads per batch)"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting BDR status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get BDR status: {str(e)}"
+        )
+
+
 # ========== Exports ==========
 
 __all__ = [
@@ -1223,4 +1988,11 @@ __all__ = [
     "ScoutRunResponse",
     "ReportRunRequest",
     "ReportRunResponse",
+    "SalesIntelRunRequest",
+    "SalesIntelRunResponse",
+    "GrowthCampaignRequest",
+    "GrowthCampaignResponse",
+    "BDRRunRequest",
+    "BDRRunResponse",
+    "BDRApprovalRequest",
 ]
