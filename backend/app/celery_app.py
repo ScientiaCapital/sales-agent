@@ -3,6 +3,16 @@ Celery application configuration for async task processing
 
 This module sets up the Celery application for multi-agent workflow orchestration,
 lead processing, and background job execution.
+
+Queue Structure:
+    - default: General tasks
+    - workflows: Multi-agent workflows
+    - enrichment: Lead enrichment tasks
+    - crm_sync: CRM synchronization
+    - batch_priority_high: High priority batch leads (ICP Platinum/Gold)
+    - batch_priority_medium: Medium priority batch leads (ICP Silver)
+    - batch_priority_low: Low priority batch leads (ICP Bronze)
+    - batch_dlq: Dead letter queue for failed batch leads
 """
 import os
 from celery import Celery
@@ -16,7 +26,10 @@ celery_app = Celery(
     "sales_agent",
     broker=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
     backend=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-    include=["app.tasks.agent_tasks"]
+    include=[
+        "app.tasks.agent_tasks",
+        "app.tasks.batch_tasks",
+    ]
 )
 
 # Celery configuration
@@ -60,6 +73,7 @@ celery_app.conf.update(
     
     # Routing
     task_routes={
+        # Agent tasks
         "app.tasks.agent_tasks.execute_agent_task": {"queue": "default"},
         "app.tasks.agent_tasks.execute_workflow_task": {"queue": "workflows"},
         "app.tasks.agent_tasks.qualify_lead_async": {"queue": "default"},
@@ -67,12 +81,33 @@ celery_app.conf.update(
         "app.tasks.agent_tasks.generate_report_async": {"queue": "workflows"},
         "app.tasks.agent_tasks.batch_generate_reports": {"queue": "workflows"},
         "app.tasks.agent_tasks.sync_crm_contacts": {"queue": "crm_sync"},
+        # Batch tasks - routed by priority
+        "app.tasks.batch_tasks.start_batch": {"queue": "default"},
+        "app.tasks.batch_tasks.process_single_lead": {"queue": "batch_priority_medium"},
+        "app.tasks.batch_tasks.batch_finalize": {"queue": "default"},
+        "app.tasks.batch_tasks.pause_batch": {"queue": "default"},
+        "app.tasks.batch_tasks.resume_batch": {"queue": "default"},
+        "app.tasks.batch_tasks.cancel_batch": {"queue": "default"},
     },
-    
+
     # Rate limiting (prevent API quota exhaustion)
     task_annotations={
         "app.tasks.agent_tasks.execute_agent_task": {"rate_limit": "10/m"},  # 10 per minute
         "app.tasks.agent_tasks.qualify_lead_async": {"rate_limit": "20/m"},
+        # Batch tasks - strict rate limits to protect Apollo/Hunter quotas
+        "app.tasks.batch_tasks.process_single_lead": {"rate_limit": "5/m"},  # 5 leads per minute max
+    },
+
+    # Queue definitions for batch processing
+    task_queues={
+        "default": {},
+        "workflows": {},
+        "enrichment": {},
+        "crm_sync": {},
+        "batch_priority_high": {"x-max-priority": 10},
+        "batch_priority_medium": {"x-max-priority": 5},
+        "batch_priority_low": {"x-max-priority": 1},
+        "batch_dlq": {},
     },
 
     # Periodic task schedule (Celery Beat)

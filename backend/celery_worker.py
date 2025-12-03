@@ -7,10 +7,10 @@ This script launches Celery workers for background task processing.
 Usage:
     # Development (single-threaded, easier debugging)
     python celery_worker.py
-    
+
     # Production (multi-process with autoscaling)
     celery -A app.celery_app worker --loglevel=info --concurrency=8 --pool=prefork
-    
+
     # With Flower monitoring
     celery -A app.celery_app flower --port=5555
 """
@@ -19,6 +19,10 @@ import os
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables from .env file
+from dotenv import load_dotenv
+load_dotenv()
 
 from app.celery_app import celery_app
 from app.core.logging import setup_logging
@@ -58,7 +62,8 @@ def main():
         "--loglevel=info",
         "--concurrency=4",
         "--pool=solo",  # Use solo for development, prefork for production
-        "--queues=default,workflows,enrichment,crm_sync",  # Listen to all queues
+        # Listen to all queues including batch priority queues
+        "--queues=default,workflows,enrichment,crm_sync,batch_priority_high,batch_priority_medium,batch_priority_low,batch_dlq",
         "--hostname=worker@sales-agent",
         "--without-gossip",  # Disable gossip protocol for development
         "--without-mingle",  # Disable mingle for faster startup
