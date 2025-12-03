@@ -636,17 +636,48 @@ class CloseProvider(CRMProvider):
                 else:
                     priority_label = "📋 BTL"
 
+                # Build description with enrichment data (Dec 3, 2025)
+                description_parts = [
+                    priority_label,
+                    "",
+                    f"Qualification Score: {qualification_score}/100",
+                    f"Hunter.io ATL Contacts: {len(discovered_contacts)}"
+                ]
+
+                # Add enrichment signals to description (visible in Close)
+                if lead.get("oem_brands"):
+                    brands = ", ".join(lead["oem_brands"][:5])
+                    description_parts.append(f"OEM Brands: {brands}")
+                if lead.get("maintenance_plans"):
+                    plans = ", ".join(lead["maintenance_plans"][:2])
+                    description_parts.append(f"Maintenance Plans: {plans}")
+                if lead.get("certifications"):
+                    certs = ", ".join(lead["certifications"][:3])
+                    description_parts.append(f"Certifications: {certs}")
+                if lead.get("service_areas"):
+                    areas = ", ".join(lead["service_areas"][:5])
+                    description_parts.append(f"Service Areas: {areas}")
+                if lead.get("years_in_business"):
+                    description_parts.append(f"Years in Business: {lead['years_in_business']}")
+                if lead.get("has_emergency_services"):
+                    description_parts.append("24/7 Emergency Service: Yes")
+
                 # Build lead data with ALL contacts
                 lead_data = {
                     "name": lead_name,
                     "contacts": contacts_data,
                     "status_id": status_id,  # Always "Raw"
-                    "description": f"{priority_label}\n\nQualification Score: {qualification_score}/100\nHunter.io ATL Contacts: {len(discovered_contacts)}",
+                    "description": "\n".join(description_parts),
                     "custom": {
                         "qualification_score": qualification_score,
                         "is_atl": "Yes" if first_contact_is_atl else "No",  # Close uses choices field (Yes/No)
                         "priority_label": priority_label,
-                        "tier": lead.get("tier", "unknown")  # hot/warm/cold/unqualified
+                        "tier": lead.get("tier", "unknown"),  # hot/warm/cold/unqualified
+                        # NEW: Enrichment fields for filtering in Close (Dec 3, 2025)
+                        "oem_count": len(lead.get("oem_brands", [])),
+                        "has_maintenance_plan": "Yes" if lead.get("maintenance_plans") else "No",
+                        "years_in_business": lead.get("years_in_business"),
+                        "has_24_7_service": "Yes" if lead.get("has_emergency_services") else "No"
                     }
                 }
 

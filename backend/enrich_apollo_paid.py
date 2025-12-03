@@ -109,9 +109,10 @@ async def enrich_contacts_with_apollo_paid(
     domain: str,
     contacts: List[Dict]
 ) -> Dict[str, Any]:
-    """Enrich contacts with Apollo PAID reveal.
-    
+    """Enrich ALL contacts with Apollo PAID reveal.
+
     Uses Apollo's paid reveal APIs to get verified emails and phones.
+    Enriches EVERY contact found (ATL and BTL) - Dec 3, 2025 update.
     """
     result = {
         'company_id': company_id,
@@ -121,53 +122,78 @@ async def enrich_contacts_with_apollo_paid(
         'credits_used': 0,
         'error': ''
     }
-    
+
     try:
-        # Focus on contacts without verified emails/phones
-        contacts_to_enrich = [
-            c for c in contacts
-            if not c.get('email') or not c.get('phone')
-        ][:10]  # Limit to 10 contacts per company to control costs
-        
+        # Enrich ALL contacts found (ATL + BTL) - no filtering
+        # User wants complete enrichment of any name found
+        # Up to 10 ATL + 10 BTL = 20 max per company
+        contacts_to_enrich = contacts[:20]
+
         if not contacts_to_enrich:
-            result['error'] = 'No contacts need enrichment'
+            result['error'] = 'No contacts to enrich'
             return result
-        
+
         enriched = []
         credits = 0
-        
+
+        print(f"\n    Enriching {len(contacts_to_enrich)} contacts:")
         for contact in contacts_to_enrich:
+            name = contact.get('full_name', contact.get('name', 'Unknown'))
+            title = contact.get('title', '')
+            is_atl = contact.get('is_atl', False)
+            contact_type = "ATL" if is_atl else "BTL"
+
+            print(f"      • {name} ({title}) [{contact_type}]...", end=" ", flush=True)
+
             try:
                 # Use Apollo's search_and_enrich_contacts with reveal
+                # Search by name + domain for better matching
                 enriched_contact = await apollo.search_and_enrich_contacts(
                     domain=domain,
-                    job_titles=[contact.get('title', '')] if contact.get('title') else None,
+                    job_titles=[title] if title else None,
                     max_results=1,
                     reveal_emails=True,   # PAID - costs credits
                     reveal_phones=True    # PAID - costs credits
                 )
-                
+
                 if enriched_contact:
+                    new_email = enriched_contact.get('email')
+                    new_phone = enriched_contact.get('phone')
                     enriched.append({
-                        'name': contact.get('name'),
-                        'email': enriched_contact.get('email'),
-                        'phone': enriched_contact.get('phone'),
-                        'title': contact.get('title'),
+                        'contact_id': contact.get('contact_id'),
+                        'name': name,
+                        'email': new_email,
+                        'phone': new_phone,
+                        'title': title,
+                        'is_atl': is_atl,
                         'linkedin_url': enriched_contact.get('linkedin_url')
                     })
                     credits += 2  # Estimate: ~2 credits per contact reveal
-                
+
+                    # Show what was found
+                    found = []
+                    if new_email:
+                        found.append(f"📧 {new_email}")
+                    if new_phone:
+                        found.append(f"📱 {new_phone}")
+                    if found:
+                        print(f"✅ {', '.join(found)}")
+                    else:
+                        print("⚠️ No new info")
+                else:
+                    print("❌ Not found")
+
             except Exception as e:
-                # Continue with other contacts if one fails
+                print(f"❌ Error: {str(e)[:30]}")
                 continue
-        
+
         result['enriched_contacts'] = enriched
         result['credits_used'] = credits
         result['success'] = len(enriched) > 0
-        
+
     except Exception as e:
         result['error'] = str(e)[:100]
-    
+
     return result
 
 
@@ -190,11 +216,11 @@ async def enrich_company_with_apollo_paid(
     }
     
     try:
-        # Get existing contacts for this company
+        # Get existing contacts for this company (ATL AND BTL - Dec 3, 2025)
+        # Changed from ATL-only to ALL contacts per user request
         contacts_result = supabase.table('dim_contacts')\
-            .select('contact_id, full_name, email, phone, title, linkedin_url')\
+            .select('contact_id, full_name, email, phone, title, linkedin_url, is_atl')\
             .eq('company_id', company_id)\
-            .is_('is_atl', 'true')\
             .limit(20)\
             .execute()
         
@@ -211,29 +237,42 @@ async def enrich_company_with_apollo_paid(
         
         if enrich_result['success']:
             # Update contacts in Supabase with verified emails/phones
+            # Apollo data is VERIFIED - always prefer it over existing data
+            updated_count = 0
             for enriched in enrich_result['enriched_contacts']:
-                # Find matching contact
-                matching = [c for c in contacts if c.get('full_name') == enriched.get('name')]
-                if matching:
-                    contact_id = matching[0]['contact_id']
-                    update_data = {}
-                    
-                    if enriched.get('email') and not matching[0].get('email'):
+                # Use contact_id directly if available (more reliable)
+                contact_id = enriched.get('contact_id')
+                if not contact_id:
+                    # Fallback: match by name
+                    matching = [c for c in contacts if c.get('full_name') == enriched.get('name')]
+                    if matching:
+                        contact_id = matching[0]['contact_id']
+
+                if contact_id:
+                    update_data = {
+                        'apollo_enriched_at': datetime.now().isoformat()
+                    }
+
+                    # Apollo data is verified - update even if we have existing data
+                    if enriched.get('email'):
                         update_data['email'] = enriched['email']
-                    if enriched.get('phone') and not matching[0].get('phone'):
+                        update_data['email_verified'] = True
+                    if enriched.get('phone'):
                         update_data['phone'] = enriched['phone']
-                    if enriched.get('linkedin_url') and not matching[0].get('linkedin_url'):
+                        update_data['phone_verified'] = True
+                    if enriched.get('linkedin_url'):
                         update_data['linkedin_url'] = enriched['linkedin_url']
-                    
-                    if update_data:
-                        supabase.table('dim_contacts')\
-                            .update(update_data)\
-                            .eq('contact_id', contact_id)\
-                            .execute()
-            
-            result['contacts_enriched'] = len(enrich_result['enriched_contacts'])
+
+                    supabase.table('dim_contacts')\
+                        .update(update_data)\
+                        .eq('contact_id', contact_id)\
+                        .execute()
+                    updated_count += 1
+
+            result['contacts_enriched'] = updated_count
             result['credits_used'] = enrich_result['credits_used']
             result['success'] = True
+            print(f"\n    ✅ Updated {updated_count} contacts in Supabase")
         else:
             result['error'] = enrich_result['error']
     

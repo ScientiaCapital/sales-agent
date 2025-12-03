@@ -4,7 +4,7 @@ Apollo.io Contact Enrichment API Endpoints
 Provides REST API for Apollo.io contact and company enrichment.
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -371,6 +371,138 @@ async def bulk_enrich_contacts(
     
     finally:
         await apollo.close()
+
+
+# ============================================================================
+# WEBHOOK ENDPOINTS (for async phone reveal callbacks)
+# ============================================================================
+
+class PhoneRevealWebhookPayload(BaseModel):
+    """Payload from Apollo's async phone reveal webhook."""
+
+    person_id: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    phone_numbers: Optional[List[Dict[str, str]]] = Field(default_factory=list)
+    mobile_phone: Optional[str] = None
+    organization_name: Optional[str] = None
+    domain: Optional[str] = None
+
+
+class PhoneRevealWebhookResponse(BaseModel):
+    """Response for phone reveal webhook."""
+
+    status: str
+    contacts_updated: int = 0
+    message: str = ""
+
+
+@router.post(
+    "/webhooks/phone-reveal",
+    response_model=PhoneRevealWebhookResponse,
+    summary="Apollo Phone Reveal Webhook",
+    description="Receives async phone number data from Apollo after reveal_phone_number=true requests"
+)
+async def apollo_phone_reveal_webhook(
+    request: Request
+) -> PhoneRevealWebhookResponse:
+    """
+    Webhook endpoint for Apollo's async phone number reveals.
+
+    When reveal_phone_number=true is used in Apollo API calls, phone numbers
+    are delivered asynchronously to this webhook (can take 5-15 minutes).
+
+    This endpoint:
+    1. Receives the phone data from Apollo
+    2. Matches contacts in dim_contacts by email/name
+    3. Updates phone numbers and marks as Apollo verified
+    """
+    try:
+        # Get raw JSON data
+        data = await request.json()
+        logger.info(f"Apollo phone webhook received: {data}")
+
+        # Parse the payload (Apollo sends various formats)
+        phone_numbers = []
+        contact_email = None
+        contact_name = None
+        domain = None
+
+        # Handle different Apollo response formats
+        if isinstance(data, dict):
+            # Direct phone data
+            phone_numbers = data.get('phone_numbers', [])
+            if data.get('mobile_phone'):
+                phone_numbers.append({'phone_number': data['mobile_phone'], 'type': 'mobile'})
+            contact_email = data.get('email')
+            contact_name = f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
+            domain = data.get('domain')
+
+        if not phone_numbers:
+            logger.warning("Apollo webhook received but no phone numbers found")
+            return PhoneRevealWebhookResponse(
+                status="received",
+                contacts_updated=0,
+                message="No phone numbers in payload"
+            )
+
+        # Update contacts in Supabase
+        import os
+        from supabase import create_client
+
+        supabase_url = os.getenv('SUPABASE_URL')
+        supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+
+        if not supabase_url or not supabase_key:
+            logger.error("Supabase credentials not configured for webhook")
+            return PhoneRevealWebhookResponse(
+                status="error",
+                contacts_updated=0,
+                message="Supabase not configured"
+            )
+
+        supabase = create_client(supabase_url, supabase_key)
+
+        # Find matching contact by email or name
+        updated = 0
+        if contact_email:
+            # Match by email
+            result = supabase.table('dim_contacts')\
+                .select('contact_id, full_name')\
+                .eq('email', contact_email)\
+                .limit(1)\
+                .execute()
+
+            if result.data:
+                contact_id = result.data[0]['contact_id']
+                phone = phone_numbers[0].get('phone_number') if phone_numbers else None
+
+                if phone:
+                    supabase.table('dim_contacts')\
+                        .update({
+                            'phone': phone,
+                            'phone_verified': True,
+                            'apollo_enriched_at': datetime.utcnow().isoformat()
+                        })\
+                        .eq('contact_id', contact_id)\
+                        .execute()
+                    updated = 1
+                    logger.info(f"Updated phone for {contact_email}: {phone}")
+
+        return PhoneRevealWebhookResponse(
+            status="success",
+            contacts_updated=updated,
+            message=f"Processed {len(phone_numbers)} phone numbers"
+        )
+
+    except Exception as e:
+        logger.error(f"Apollo phone webhook error: {e}", exc_info=True)
+        return PhoneRevealWebhookResponse(
+            status="error",
+            contacts_updated=0,
+            message=str(e)[:100]
+        )
 
 
 @router.get(
