@@ -21,6 +21,7 @@ load_dotenv(Path(__file__).parent.parent.parent / '.env', override=True)
 
 import os
 from celery import Celery
+from celery.schedules import crontab
 from celery.signals import task_prerun, task_postrun, task_failure
 from app.core.logging import setup_logging
 
@@ -124,6 +125,13 @@ celery_app.conf.update(
             "schedule": 1800.0,  # 30 minutes in seconds
             "args": (10, True, None),  # limit=10, require_domain=True, icp_tier=None
             "options": {"queue": "default"},
+        },
+        # Morning Report - daily at 9 AM EST (14:00 UTC)
+        "morning-report-9am-est": {
+            "task": "generate_morning_report",
+            "schedule": crontab(hour=14, minute=0),  # 9 AM EST = 14:00 UTC
+            "args": (24, 10, True),  # hours_back=24, top_n=10, save_to_file=True
+            "options": {"queue": "workflows"},
         },
         # Close CRM - sync every 2 hours
         "sync-close-hourly": {
