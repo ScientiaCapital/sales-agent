@@ -218,7 +218,7 @@ class HunterService:
                     return contacts if contacts else None
 
                 elif response.status_code == 429:
-                    logger.warning(f"Hunter.io API rate limit exceeded")
+                    logger.warning("Hunter.io API rate limit exceeded")
                     return None
                 else:
                     logger.warning(

@@ -14,8 +14,7 @@ import json
 
 from app.services.iterative_refinement import (
     IterativeRefinementEngine,
-    RefinementResult,
-    RefinementStep
+    RefinementResult
 )
 from app.services.cerebras_routing import CerebrasAccessMethod
 

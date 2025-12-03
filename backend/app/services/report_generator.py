@@ -11,8 +11,6 @@ Target: <10s total execution time using ultra-fast Cerebras inference
 
 import logging
 import time
-from typing import Dict, Any, Optional
-from datetime import datetime
 
 from app.models.lead import Lead
 from app.models.report import Report

@@ -1,11 +1,8 @@
 """
 Multi-factor lead scoring service for intelligent lead qualification
 """
-import logging
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, List
 from pydantic import BaseModel, Field, validator
-import numpy as np
-from datetime import datetime, timedelta
 
 from app.core.logging import setup_logging
 

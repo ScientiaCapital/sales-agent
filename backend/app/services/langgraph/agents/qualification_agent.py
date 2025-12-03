@@ -59,7 +59,6 @@ from langchain_cerebras import ChatCerebras
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI  # For DeepSeek (OpenAI-compatible API)
 from langchain_community.chat_models import ChatOllama
-from langchain_core.messages import SystemMessage, HumanMessage
 from langchain_core.language_models import BaseChatModel
 
 from app.core.logging import setup_logging
@@ -76,9 +75,7 @@ from app.services.hunter_service import HunterService, extract_domain
 from app.services.apollo import ApolloService
 from app.services.website_discovery import get_website_discovery_service
 from app.services.browserbase_team_scraper import get_browserbase_team_scraper
-from app.services.apollo_enrichment_queue import get_apollo_queue, QueuePriority
 from app.services.contact_discovery_audit import (
-    ContactDiscoveryAudit,
     DiscoveryMethod,
     get_discovery_audit
 )
@@ -339,7 +336,7 @@ class QualificationAgent:
                 return ""
             return re.sub(r'\D', '', str(p))[-10:]  # Last 10 digits
 
-        company_phone_normalized = normalize_phone(company_phone) if company_phone else ""
+        normalize_phone(company_phone) if company_phone else ""
 
         # Collect all phones from contacts (from Hunter.io)
         hunter_phones = {}
@@ -352,7 +349,7 @@ class QualificationAgent:
 
         # Determine if phones are shared (main_office) or unique (direct_line)
         unique_phones = set(hunter_phones.keys())
-        total_with_phone = sum(hunter_phones.values())
+        sum(hunter_phones.values())
 
         for contact in contacts:
             hunter_phone = contact.get('phone')
@@ -1040,7 +1037,7 @@ Respond with JSON only."""
 
                 # Add review data to context for scoring
                 notes = notes or ""
-                notes += f"\n\nREPUTATION DATA:\n"
+                notes += "\n\nREPUTATION DATA:\n"
                 notes += f"- Overall Reputation Score: {review_result.overall_reputation_score}/100\n"
                 notes += f"- Average Rating: {review_result.average_rating}/5.0\n"
                 notes += f"- Total Reviews: {review_result.total_reviews}\n"
@@ -1274,7 +1271,7 @@ Respond with JSON only."""
                     "metadata": metadata
                 }
                 await self.cache.set_qualification(company_name, industry, cache_data)
-                logger.info(f"💾 Cached qualification for future use")
+                logger.info("💾 Cached qualification for future use")
 
             # Cost tracking is now handled by CostOptimizedLLMProvider
             # No legacy tracking needed

@@ -15,7 +15,6 @@ from datetime import datetime
 from pydantic import BaseModel, Field, validator
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
-from app.core.exceptions import ValidationError
 from .search_agent import CompanyResearch
 
 logger = logging.getLogger(__name__)

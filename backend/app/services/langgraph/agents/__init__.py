@@ -76,29 +76,11 @@ from .conversation_agent import (
     ConversationTurnResult,
 )
 
-# Phase 2.7: LicenseAuditorAgent (Compliance StateGraph) ✅ COMPLETE
-from .license_auditor_agent import (
-    LicenseAuditorAgent,
-    LicenseAuditResult,
-)
-
-# Phase 2.8: LinkedInPostWriterAgent (Content Generation StateGraph) ✅ COMPLETE
-from .linkedin_post_writer import (
-    LinkedInPostWriter,
-    LinkedInPostResult,
-)
-
-# Phase 2.9: SocialResearchAgent (Social Media StateGraph) ✅ COMPLETE
-from .social_research_agent import (
-    SocialResearchAgent,
-    SocialResearchResult,
-)
-
-# Phase 3.0: Advanced Agentic Agents (DeepSeek-based) ✅ COMPLETE
-from .reasoner_agent import (
-    ReasonerAgent,
-    ReasoningResult,
-)
+# ARCHIVED 2025-12-02: Moved to backend/archive/cleanup_2025_12_02/
+# - license_auditor_agent.py (unused compliance agent)
+# - linkedin_post_writer.py (unused content generation)
+# - social_research_agent.py (unused social media agent)
+# - reasoner_agent.py (experimental DeepSeek agent)
 
 from .orchestrator_agent import (
     OrchestratorAgent,
@@ -109,12 +91,12 @@ from .orchestrator_agent import (
 
 # Phase 3.2: Agent Subgraphs (Modular Composition) ✅ COMPLETE
 from .agent_subgraphs import (
-    create_reasoner_subgraph,
     create_orchestrator_subgraph,
-    create_social_research_subgraph,
-    create_linkedin_content_subgraph,
-    create_contractor_reviews_subgraph,
-    create_license_auditor_subgraph,
+    # ARCHIVED 2025-12-02: Subgraphs for archived agents
+    # create_reasoner_subgraph,
+    # create_social_research_subgraph,
+    # create_linkedin_content_subgraph,
+    # create_license_auditor_subgraph,
 )
 
 # Phase 3.3: Agent Communication Hub (Inter-Agent Communication) ✅ COMPLETE
@@ -158,33 +140,12 @@ __all__ = [
     "ConversationAgent",
     "ConversationTurnResult",
 
-    # Phase 2.7 - LicenseAuditorAgent (Compliance)
-    "LicenseAuditorAgent",
-    "LicenseAuditResult",
-
-    # Phase 2.8 - LinkedInPostWriterAgent (Content Generation)
-    "LinkedInPostWriter",
-    "LinkedInPostResult",
-
-    # Phase 2.9 - SocialResearchAgent (Social Media)
-    "SocialResearchAgent",
-    "SocialResearchResult",
-
-    # Phase 3.0 - Advanced Agentic Agents (DeepSeek-based)
-    "ReasonerAgent",
-    "ReasoningResult",
+    # Phase 3.0 - OrchestratorAgent (still active)
     "OrchestratorAgent",
     "OrchestrationResult",
 
-    # Phase 3.1 - Master Agent System (LangGraph-based)
-
     # Phase 3.2 - Agent Subgraphs (Modular Composition)
-    "create_reasoner_subgraph",
     "create_orchestrator_subgraph",
-    "create_social_research_subgraph",
-    "create_linkedin_content_subgraph",
-    "create_contractor_reviews_subgraph",
-    "create_license_auditor_subgraph",
 
     # Phase 3.3 - Agent Communication Hub (Inter-Agent Communication)
     "AgentCommunicationHub",

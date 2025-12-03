@@ -10,7 +10,6 @@ Implements the TalkingNode architecture for sub-2000ms voice turns:
 Based on Cerebras's ReasoningNode pattern for minimal latency.
 """
 
-import asyncio
 import json
 import logging
 import time
@@ -291,7 +290,7 @@ class VoiceAgent:
             }
 
             # 1. Speech-to-Text (target: 150ms)
-            stt_start = time.perf_counter()
+            time.perf_counter()
             stt_result = await self.cartesia.speech_to_text(
                 audio_data=audio_data,
                 sample_rate=sample_rate,

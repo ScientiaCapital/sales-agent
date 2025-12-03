@@ -12,7 +12,7 @@ Integration:
 """
 
 import logging
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple
 from pydantic import BaseModel, Field
 
 from langchain_core.tools import tool, ToolException
@@ -80,8 +80,8 @@ async def scrape_company_team_tool(
         # PHASE 2: Browserbase fallback if BeautifulSoup found nothing
         if not contacts and validation_result.has_team_page:
             logger.info(
-                f"BeautifulSoup found team page but no contacts. "
-                f"Trying Browserbase fallback for JavaScript-rendered content..."
+                "BeautifulSoup found team page but no contacts. "
+                "Trying Browserbase fallback for JavaScript-rendered content..."
             )
 
             try:

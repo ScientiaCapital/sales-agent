@@ -56,9 +56,7 @@ Usage:
     ```
 """
 
-import os
 import time
-import operator
 from typing import Dict, Any, List, Optional, Annotated, Union
 
 
@@ -69,19 +67,18 @@ def merge_dicts(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
     if right is None:
         return left or {}
     return {**left, **right}
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph import StateGraph, START, END
 from typing_extensions import TypedDict
 
 from app.services.langgraph.llm_selector import get_llm_for_capability, get_best_provider_for_capability
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
-from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 from app.services.cost_tracking import get_cost_optimizer
 # Lazy import to avoid circular dependency
 # from app.services.langgraph.tools import get_transfer_tools

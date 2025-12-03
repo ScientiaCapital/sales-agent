@@ -7,10 +7,9 @@ maintainable implementation that uses the new modular structure.
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, AsyncIterator
-from datetime import datetime
+from typing import Dict, List, Any, AsyncIterator
 
-from .base_router import BaseRouter, RoutingRequest, RoutingResponse, TaskType, ProviderType, ProviderConfig
+from .base_router import RoutingRequest, RoutingResponse, TaskType, ProviderType, ProviderConfig
 from .task_router import TaskRouter
 from .cost_router import CostRouter
 from app.core.exceptions import RoutingError
@@ -133,7 +132,7 @@ class UnifiedRouter:
         try:
             # Get health status from both routers
             task_health = await self.task_router.health_check()
-            cost_health = await self.cost_router.health_check()
+            await self.cost_router.health_check()
             
             # Combine health statuses
             combined_health = {}

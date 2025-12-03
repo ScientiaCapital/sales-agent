@@ -8,7 +8,6 @@ import time
 import hashlib
 from typing import Optional, Dict, Tuple
 from dataclasses import dataclass
-from enum import Enum
 
 import redis.asyncio as redis
 from redis.exceptions import RedisError, ConnectionError as RedisConnectionError

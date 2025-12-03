@@ -5,7 +5,7 @@ Provides comprehensive tracking and aggregation for all LLM providers
 with Redis caching for real-time metrics and PostgreSQL for long-term analytics.
 """
 from typing import Optional, Dict, Any, List
-from sqlalchemy import select, func as sql_func, and_, or_, text
+from sqlalchemy import select, func as sql_func, and_, text, Integer
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import json

@@ -11,10 +11,9 @@ Based on LangChain integrations for vector stores, stores, and document loaders.
 """
 
 import os
-import asyncio
-from typing import Dict, Any, List, Optional, Union, Literal
+from typing import Dict, Any, List, Optional
 from datetime import datetime
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 
 from langchain_core.documents import Document
@@ -37,7 +36,6 @@ from langchain_core.stores import BaseStore
 from langchain_community.stores import RedisStore, InMemoryStore
 
 from app.core.logging import setup_logging
-from app.core.config import settings
 
 logger = setup_logging(__name__)
 
@@ -538,7 +536,7 @@ class EnhancedVectorStore:
             # Check vector store
             try:
                 # Test with a simple search
-                test_results = await self.search_similar("test", k=1)
+                await self.search_similar("test", k=1)
                 health_status["components"]["vector_store"] = "healthy"
             except Exception as e:
                 health_status["components"]["vector_store"] = f"error: {str(e)}"
@@ -546,7 +544,7 @@ class EnhancedVectorStore:
             
             # Check embeddings
             try:
-                test_embedding = await self.embeddings.aembed_query("test")
+                await self.embeddings.aembed_query("test")
                 health_status["components"]["embeddings"] = "healthy"
             except Exception as e:
                 health_status["components"]["embeddings"] = f"error: {str(e)}"

@@ -14,7 +14,6 @@ from sqlalchemy.orm import Session
 
 from app.models.security import User, Role, Permission
 from app.core.logging import setup_logging
-from app.core.exceptions import APIAuthenticationError
 
 logger = setup_logging(__name__)
 

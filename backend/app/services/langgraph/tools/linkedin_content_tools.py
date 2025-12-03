@@ -22,11 +22,9 @@ Usage:
     ```
 """
 
-import os
 import logging
-import asyncio
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import Dict, Any, List, Tuple
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 from langchain.tools import tool
@@ -38,7 +36,6 @@ class ToolException(ValueError):
 
 from app.services.linkedin_scraper import LinkedInScraper
 from app.services.cerebras import CerebrasService
-from app.core.exceptions import MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
 

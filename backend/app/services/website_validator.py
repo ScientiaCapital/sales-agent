@@ -13,7 +13,7 @@ Used as early ICP filter in pipeline.
 import httpx
 import time
 import re
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Optional, List, Tuple
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
 import logging

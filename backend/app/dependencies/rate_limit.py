@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import Request, HTTPException, status
 import redis.asyncio as redis
 
-from app.services.rate_limiter import RateLimiter, RateLimitExceeded
+from app.services.rate_limiter import RateLimiter
 from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)

@@ -7,8 +7,7 @@ Supports resume parsing, job matching, and skill extraction.
 
 import io
 import logging
-import re
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, Optional
 from datetime import datetime
 
 # PDF processing - using pdfplumber (best for text extraction per Context7)
@@ -251,32 +250,6 @@ class DocumentProcessor:
             Dictionary with analysis results
         """
         # Build AI prompt
-        system_prompt = """You are an expert HR assistant analyzing resumes.
-Extract and structure information from the resume in this exact JSON format:
-
-{
-    "contact_info": {
-        "name": "Full name",
-        "email": "email@example.com",
-        "phone": "+1234567890",
-        "linkedin": "linkedin.com/in/profile"
-    },
-    "skills": ["skill1", "skill2", "skill3"],
-    "experience_years": <number>,
-    "education": [
-        {"degree": "Degree name", "institution": "School", "year": 2020}
-    ],
-    "work_experience": [
-        {"title": "Job Title", "company": "Company", "years": 2}
-    ],
-    "key_strengths": ["strength1", "strength2"],
-    "summary": "2-3 sentence professional summary"
-}
-
-If job description provided, also include:
-    "job_fit_score": <0-100>,
-    "job_fit_reasoning": "Why this candidate matches/doesn't match"
-"""
 
         user_prompt = f"Resume:\n\n{text[:4000]}"  # Limit to prevent token overflow
 

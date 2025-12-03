@@ -4,14 +4,13 @@ Metrics collection and aggregation service.
 Provides business logic for querying and aggregating metrics from analytics tables.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Dict, Optional, Any
 from sqlalchemy.orm import Session
-from sqlalchemy import func, case, and_, or_
+from sqlalchemy import func, case, and_
 from app.models.analytics_models import (
     AnalyticsSystemMetrics,
-    AnalyticsLeadMetrics,
-    AnalyticsCampaignMetrics
+    AnalyticsLeadMetrics
 )
 from app.models.agent_models import AgentExecution
 from app.models.api_call import CerebrasAPICall
@@ -150,7 +149,7 @@ class MetricsService:
                     and_(
                         CerebrasAPICall.created_at >= start_date,
                         CerebrasAPICall.created_at <= end_date,
-                        CerebrasAPICall.success == True
+                        CerebrasAPICall.success
                     )
                 )
                 .group_by(func.date(CerebrasAPICall.created_at))

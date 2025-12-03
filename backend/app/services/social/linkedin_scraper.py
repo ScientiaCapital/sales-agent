@@ -10,9 +10,8 @@ import logging
 import re
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Any
-from urllib.parse import urlparse
 
-from playwright.async_api import async_playwright, Page, Browser, BrowserContext
+from playwright.async_api import async_playwright, Browser, BrowserContext
 import psycopg
 from psycopg.rows import dict_row
 

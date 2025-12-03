@@ -144,7 +144,7 @@ CURRENT MESSAGE ({speaker}): "{current_text}"
 
         # Add lead context
         if lead_data:
-            prompt += f"\n\nLEAD INFO:"
+            prompt += "\n\nLEAD INFO:"
             if lead_data.get("company_name"):
                 prompt += f"\nCompany: {lead_data['company_name']}"
             if lead_data.get("industry"):

@@ -16,7 +16,6 @@ Integration:
 
 import os
 import asyncio
-import logging
 from typing import Any, Dict, Optional, Callable, TypeVar, Literal
 from functools import wraps
 

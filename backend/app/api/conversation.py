@@ -8,7 +8,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPExce
 from sqlalchemy.orm import Session
 from typing import Optional, Dict, Any
 import logging
-import json
 import asyncio
 
 from app.models.database import get_db

@@ -7,7 +7,6 @@ Platforms: Twitter/X, Reddit, Instagram, Facebook/Meta
 
 import logging
 import os
-import re
 import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta

@@ -6,19 +6,21 @@ for 21% faster TTFT compared to OpenAI SDK wrapper.
 """
 import os
 import time
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 import json
 
 from app.core.logging import setup_logging
-from app.core.exceptions import CerebrasAPIError, CerebrasTimeoutError, MissingAPIKeyError
+from app.core.exceptions import CerebrasAPIError, MissingAPIKeyError
 
 logger = setup_logging(__name__)
 
 # Make cerebras import optional - lazy load when needed
 Cerebras = None
 CEREBRAS_AVAILABLE = False
+cerebras = None  # Module reference for exception handling
 
 try:
+    import cerebras.cloud.sdk
     from cerebras.cloud.sdk import Cerebras as _Cerebras
     Cerebras = _Cerebras
     CEREBRAS_AVAILABLE = True

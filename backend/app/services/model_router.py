@@ -4,7 +4,6 @@ Routes AI requests to optimal models based on task type, latency, and cost const
 Implements resilience patterns to handle service failures gracefully.
 """
 
-import asyncio
 import json
 import logging
 import os
@@ -14,7 +13,7 @@ from enum import Enum
 from typing import Optional, List, Dict, Any, AsyncIterator
 
 import aiohttp
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI
 
 from .circuit_breaker import CircuitBreaker, CircuitBreakerError
 from .retry_handler import RetryWithBackoff, RetryStrategies, RetryExhaustedError

@@ -46,10 +46,6 @@ from sqlalchemy import text
 from app.models.database import engine
 from app.core.exceptions import (
     SalesAgentException,
-    ValidationError,
-    ResourceNotFoundError,
-    ExternalAPIException,
-    ConfigurationError,
 )
 
 # Configure logging

@@ -7,10 +7,9 @@ This module defines async tasks for agent-based lead processing, including:
 - Batch lead processing
 - Background enrichment tasks
 """
-import time
 from typing import Dict, List, Any
-from celery import group, chain, chord
-from celery.exceptions import SoftTimeLimitExceeded, Retry
+from celery import group, chain
+from celery.exceptions import SoftTimeLimitExceeded
 from sqlalchemy.orm import Session
 
 from app.celery_app import celery_app
@@ -283,7 +282,7 @@ def generate_report_async(
         
         # Import here to avoid circular dependencies
         from app.services.report_generator import ReportGenerator
-        from app.models import Lead, Report
+        from app.models import Lead
         from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
         from sqlalchemy.orm import sessionmaker
         from app.core.config import settings

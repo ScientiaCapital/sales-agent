@@ -34,15 +34,12 @@ Usage:
 """
 
 import re
-import logging
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass, field
-from datetime import datetime
+from typing import Optional, List, Dict
+from dataclasses import dataclass
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import func
 
 from app.models.crm import CRMContact
-from app.models.lead import Lead
 from app.core.logging import setup_logging
 
 logger = setup_logging(__name__)

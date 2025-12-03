@@ -14,7 +14,7 @@ Target: <10s total execution time using Cerebras ultra-fast inference.
 import asyncio
 import logging
 from typing import List, Dict, Any, Optional, AsyncIterator
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 import json
@@ -613,7 +613,7 @@ Provide the formatted output:"""
                 pass
 
         # Fallback: split by lines
-        logger.warning(f"Could not parse JSON array, using fallback")
+        logger.warning("Could not parse JSON array, using fallback")
         return [text]
 
     def _record_execution(

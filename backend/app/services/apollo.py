@@ -14,7 +14,6 @@ import os
 import re
 import httpx
 from typing import Dict, Any, Optional, List
-from datetime import datetime
 
 from app.core.logging import setup_logging
 from app.core.exceptions import (
@@ -169,7 +168,7 @@ class ApolloService:
                     context={"status_code": response.status_code, "response": response.text}
                 )
         
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException:
             raise APITimeoutError(
                 f"Apollo API request timed out after {self.TIMEOUT}s",
                 context={"timeout": self.TIMEOUT, "params": params}
@@ -271,7 +270,7 @@ class ApolloService:
                     context={"status_code": response.status_code, "response": response.text}
                 )
         
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException:
             raise APITimeoutError(
                 f"Apollo API request timed out after {self.TIMEOUT}s",
                 context={"timeout": self.TIMEOUT, "domain": clean_domain}
@@ -514,7 +513,7 @@ class ApolloService:
                     context={"status_code": response.status_code, "response": response.text}
                 )
         
-        except httpx.TimeoutException as e:
+        except httpx.TimeoutException:
             raise APITimeoutError(
                 f"Apollo search request timed out after {self.TIMEOUT}s",
                 context={"timeout": self.TIMEOUT, "domain": clean_domain}

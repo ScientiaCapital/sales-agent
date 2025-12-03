@@ -7,7 +7,7 @@ comprehensive research and analysis tasks.
 
 import asyncio
 import logging
-from typing import Dict, Any, AsyncIterator
+from typing import AsyncIterator
 from datetime import datetime
 
 from openai import AsyncOpenAI

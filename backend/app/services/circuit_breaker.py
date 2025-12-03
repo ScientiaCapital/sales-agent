@@ -6,9 +6,9 @@ cascading failures when external services are unavailable.
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Callable, Any, TypeVar, Optional
+from typing import Callable, TypeVar, Optional
 
 logger = logging.getLogger(__name__)
 

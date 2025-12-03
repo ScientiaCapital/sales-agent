@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from typing import Dict, Any, List
 
 from app.models.database import get_db
-from app.schemas.pipeline import PipelineTestRequest, PipelineTestResponse
+from app.schemas.pipeline import PipelineTestRequest
 from app.services.pipeline_orchestrator import PipelineOrchestrator
 
 logger = logging.getLogger(__name__)

@@ -10,13 +10,10 @@ Implements 4 routing strategies with automatic fallback cascade:
 Automatic fallback: Primary fails → Secondary → Error
 """
 
-import os
 import random
 import logging
-import time
 from enum import Enum
-from typing import Dict, Any, List, Optional, AsyncIterator
-import asyncio
+from typing import Dict, Any, AsyncIterator
 
 # Import both services
 from app.services.cerebras import CerebrasService

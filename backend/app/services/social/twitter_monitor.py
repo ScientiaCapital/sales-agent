@@ -7,7 +7,7 @@ Implements rate limiting, error handling, and efficient API usage.
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Any
 
 import tweepy
 import psycopg
@@ -74,7 +74,7 @@ class TwitterMonitor:
                 all_tweets.extend(tweets)
 
             except tweepy.errors.TooManyRequests:
-                logger.warning(f"Rate limit reached. Pausing Twitter monitoring.")
+                logger.warning("Rate limit reached. Pausing Twitter monitoring.")
                 break
 
             except Exception as e:

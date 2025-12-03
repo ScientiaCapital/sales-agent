@@ -8,14 +8,13 @@ with flexible query configurations and SQL injection prevention.
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
 from pydantic import BaseModel, Field
 from datetime import datetime
 import uuid
 
 from app.models.database import get_db
 from app.models.report_template import ReportTemplate
-from app.services.analytics.query_builder import QueryBuilder, QueryResult, QueryValidationError
+from app.services.analytics.query_builder import QueryBuilder, QueryValidationError
 
 
 router = APIRouter(prefix="/report-templates", tags=["Report Templates"])

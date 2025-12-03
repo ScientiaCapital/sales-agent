@@ -2,7 +2,7 @@
 Pydantic schemas for lead qualification requests and responses
 """
 from pydantic import BaseModel, Field, EmailStr
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from datetime import datetime
 
 

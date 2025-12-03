@@ -20,7 +20,6 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 import os
-import logging
 
 from app.services.langgraph.agents import extract_sales_intel
 from app.core.logging import setup_logging
@@ -283,7 +282,7 @@ async def enrich_company(
                 drafts_generated=0,
                 processing_time_ms=0,
                 confidence=1.0,
-                message=f"Drafts already exist. Use regenerate=true to recreate."
+                message="Drafts already exist. Use regenerate=true to recreate."
             )
 
     # Get contact info (from request or database)
@@ -570,7 +569,7 @@ async def send_draft(draft_id: str, request: SendDraftRequest):
         return SendDraftResponse(
             draft_id=draft_id,
             status="simulated",
-            message=f"CLOSE_WRITE_DISABLED - draft marked as sent but not actually sent",
+            message="CLOSE_WRITE_DISABLED - draft marked as sent but not actually sent",
             close_activity_id=None
         )
 
@@ -588,7 +587,7 @@ async def send_draft(draft_id: str, request: SendDraftRequest):
         return SendDraftResponse(
             draft_id=draft_id,
             status="sent",
-            message=f"Draft sent successfully",
+            message="Draft sent successfully",
             close_activity_id="mock_activity_123"  # TODO: Real Close CRM activity ID
         )
 

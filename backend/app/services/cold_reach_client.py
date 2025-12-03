@@ -11,7 +11,6 @@ Flow: Qualifier → cold_reach_client → cold-reach API
 import os
 import logging
 from typing import Optional, List, Dict, Any
-from datetime import datetime
 
 import httpx
 from pydantic import BaseModel, Field, EmailStr
@@ -224,7 +223,7 @@ class ColdReachClient:
                 error="Connection failed - cold-reach service unavailable",
             )
         except httpx.TimeoutException:
-            logger.error(f"Timeout connecting to cold-reach")
+            logger.error("Timeout connecting to cold-reach")
             return EnrollmentResult(
                 success=False,
                 error="Request timeout",
@@ -331,7 +330,7 @@ class ColdReachClient:
                         results=skipped_results + api_results,
                     )
                 else:
-                    error_detail = response.text[:200]
+                    response.text[:200]
                     logger.error(
                         f"Cold-reach batch enrollment failed: {response.status_code}"
                     )

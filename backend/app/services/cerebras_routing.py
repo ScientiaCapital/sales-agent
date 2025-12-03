@@ -10,17 +10,14 @@ Provides 4 different access methods to Cerebras ultra-fast inference:
 Each method includes circuit breaker protection and exponential backoff retry.
 """
 
-import asyncio
-import json
 import logging
 import os
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, Any, AsyncIterator, List
+from typing import Optional, Dict, Any, AsyncIterator
 
-from openai import AsyncOpenAI, OpenAI
-from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 
 from .circuit_breaker import CircuitBreaker, CircuitBreakerError
 from .retry_handler import RetryWithBackoff, RetryStrategies, RetryExhaustedError

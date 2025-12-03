@@ -5,18 +5,17 @@ This module provides the foundation for all routing implementations,
 including common patterns, error handling, and performance monitoring.
 """
 
-import asyncio
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Any, AsyncIterator, Union
+from typing import Dict, Optional, Any, AsyncIterator
 from contextlib import asynccontextmanager
 
 from app.core.exceptions import RoutingError, ProviderError
-from app.services.circuit_breaker import CircuitBreaker
-from app.services.retry_handler import RetryWithBackoff
+from app.services.circuit_breaker import CircuitBreaker, CircuitBreakerError
+from app.services.retry_handler import RetryWithBackoff, RetryExhaustedError
 
 logger = logging.getLogger(__name__)
 

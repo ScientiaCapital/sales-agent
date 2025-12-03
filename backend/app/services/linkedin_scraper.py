@@ -7,8 +7,6 @@ No Selenium setup required - Browserbase handles browser infrastructure.
 
 import logging
 import os
-import json
-import asyncio
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 

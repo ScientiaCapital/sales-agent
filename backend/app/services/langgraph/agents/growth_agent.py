@@ -59,7 +59,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage
 from langchain_anthropic import ChatAnthropic
 from langchain_cerebras import ChatCerebras
 from langgraph.graph import StateGraph, END
@@ -67,7 +67,7 @@ from langgraph.graph import StateGraph, END
 from app.services.langgraph.state_schemas import GrowthAgentState
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
-from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 from app.services.cost_tracking import get_cost_optimizer
 # Lazy import to avoid circular dependency
 # from app.services.langgraph.tools import get_transfer_tools
@@ -339,7 +339,7 @@ Provide strategy in 2-3 sentences."""
         """
         current_strategy = state.get("current_strategy", "No strategy set")
         cycle_count = state.get("cycle_count", 1)
-        lead_id = state.get("lead_id")
+        state.get("lead_id")
 
         # Simulate touch execution
         touch_record = {

@@ -173,7 +173,7 @@ async def get_cache_hit_rate(
         # Query cache statistics
         result = db.query(
             func.count(AICostTracking.id).label("total_requests"),
-            func.sum(case((AICostTracking.cache_hit == True, 1), else_=0)).label("cache_hits")
+            func.sum(case((AICostTracking.cache_hit, 1), else_=0)).label("cache_hits")
         ).filter(
             and_(
                 AICostTracking.timestamp >= start_time,

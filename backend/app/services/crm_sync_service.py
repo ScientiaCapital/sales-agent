@@ -12,10 +12,9 @@ Features:
 - Dead letter queue for failed syncs
 """
 
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+from datetime import datetime
 from sqlalchemy.orm import Session
-import logging
 
 from app.services.crm import (
     CRMProvider,
@@ -26,7 +25,6 @@ from app.services.crm import (
     CRMCredentials,
     SyncResult,
     WebhookEvent,
-    CRMException,
     CRMRateLimitError,
 )
 from app.services.circuit_breaker import CircuitBreaker
@@ -133,7 +131,7 @@ class CRMSyncService:
             # Get active credentials for platform
             credential_record = self.db.query(CRMCredential).filter(
                 CRMCredential.platform == platform.lower(),
-                CRMCredential.is_active == True
+                CRMCredential.is_active
             ).first()
 
             if not credential_record:
@@ -324,7 +322,7 @@ class CRMSyncService:
 
         # Default to remote if no clear timestamp
         if not local_updated and not remote_updated:
-            logger.warning(f"No timestamps for conflict resolution - using remote data")
+            logger.warning("No timestamps for conflict resolution - using remote data")
             return self._merge_contact(local_contact, remote_contact)
 
         # Last-write-wins
@@ -394,7 +392,7 @@ class CRMSyncService:
             # Get credentials
             credential_record = self.db.query(CRMCredential).filter(
                 CRMCredential.platform == platform.lower(),
-                CRMCredential.is_active == True
+                CRMCredential.is_active
             ).first()
 
             if not credential_record:

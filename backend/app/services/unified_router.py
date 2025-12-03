@@ -6,7 +6,6 @@ from the old unified_router.py. It redirects to the new modular implementation.
 """
 
 import warnings
-from typing import Dict, List, Optional, Any, AsyncIterator
 
 # Import the new modular implementation
 from app.services.routing.unified_router import UnifiedRouter

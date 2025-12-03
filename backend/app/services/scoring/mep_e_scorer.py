@@ -19,7 +19,6 @@ Tier Classification:
 
 from typing import Dict, List, Any
 from app.config.oem_taxonomy import (
-    categorize_oems,
     count_oems_by_category,
     get_oem_tier_points,
 )

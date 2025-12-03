@@ -35,7 +35,6 @@ from app.services.crm.base import (
     WebhookEvent,
     CRMAuthenticationError,
     CRMRateLimitError,
-    CRMNotFoundError,
     CRMValidationError,
     CRMNetworkError,
     CRMWebhookError,

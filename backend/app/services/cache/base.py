@@ -13,7 +13,6 @@ import json
 import hashlib
 import logging
 from typing import Optional, Dict, Any
-from functools import lru_cache
 import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)

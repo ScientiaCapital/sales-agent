@@ -5,7 +5,7 @@ Provides request/response models for querying and returning metrics data.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
 
 

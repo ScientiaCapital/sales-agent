@@ -4,11 +4,9 @@ Campaign Orchestration Service
 Manages campaign lifecycle, message generation, A/B testing, and analytics.
 """
 
-import os
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.models.campaign import (
     Campaign, 

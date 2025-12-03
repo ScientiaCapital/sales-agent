@@ -60,7 +60,7 @@ from app.services.langgraph.tools import (
 from app.services.cache.enrichment_cache import get_enrichment_cache
 from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
-from app.core.cost_optimized_llm import CostOptimizedLLMProvider, LLMConfig
+from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 from app.services.cost_tracking import get_cost_optimizer
 # Lazy import to avoid circular dependency
 # from app.services.langgraph.tools import get_transfer_tools
@@ -561,7 +561,7 @@ Provide final summary with:
                         latency_saved_ms=3000,  # Avg scrape time
                         agent_name="enrichment"
                     )
-                    logger.info(f"💾 LinkedIn cache hit saved $0.10 + 3s")
+                    logger.info("💾 LinkedIn cache hit saved $0.10 + 3s")
                 
                 # Return cached result immediately
                 return EnrichmentResult(
@@ -586,7 +586,7 @@ Provide final summary with:
             request_parts.append(f"CRM Lead ID: {lead_id}")
 
         request_message = (
-            f"Enrich this contact using all available tools:\n" +
+            "Enrich this contact using all available tools:\n" +
             "\n".join(request_parts) +
             "\n\nUse tools strategically to gather comprehensive professional data."
         )
@@ -689,7 +689,7 @@ Provide final summary with:
                 linkedin_data = tool_results["get_linkedin_profile_tool"]
                 if linkedin_data and linkedin_data.get("found") is not False:
                     await self.cache.set_profile(linkedin_url, linkedin_data)
-                    logger.info(f"💾 Cached LinkedIn profile for future use")
+                    logger.info("💾 Cached LinkedIn profile for future use")
 
             logger.info(
                 f"Enrichment complete: sources={data_sources}, "

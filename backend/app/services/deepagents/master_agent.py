@@ -19,18 +19,15 @@ The Master Agent provides:
 - Enhanced human-in-the-loop coordination
 """
 
-import asyncio
 import time
-from typing import Dict, Any, List, Optional, Union, Literal
+from typing import Dict, Any, List, Optional, Literal
 from datetime import datetime
 from dataclasses import dataclass, field
 
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.tools import BaseTool
 
-from .base import BaseDeepAgent, DeepAgentConfig, DeepAgentState
+from .base import BaseDeepAgent, DeepAgentConfig
 from .subagents import SubagentCoordinator, SubagentTask, SubagentResult, SubagentStatus
-from .memory import LongTermMemory
 # Human-in-the-loop functionality will be implemented later
 
 # Import your existing agents

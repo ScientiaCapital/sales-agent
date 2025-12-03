@@ -19,7 +19,7 @@ Safety:
 import httpx
 import logging
 import base64
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import os
 
 logger = logging.getLogger(__name__)

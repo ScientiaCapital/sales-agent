@@ -28,8 +28,6 @@ Environment Variables:
     REDIS_URL: Redis connection for distributed tracking
 """
 
-import os
-import asyncio
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 from functools import wraps
@@ -39,8 +37,6 @@ from app.core.exceptions import APIRateLimitError, ValidationError
 from app.services.apollo import ApolloService
 from app.services.batch_rate_limiter import (
     BatchRateLimiter,
-    RateLimitConfig,
-    ApolloRateLimitConfig,
     create_rate_limiter,
 )
 from app.services.crm.base import Contact

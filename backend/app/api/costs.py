@@ -15,15 +15,15 @@ import os
 import csv
 import json
 import io
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, text
+from sqlalchemy import func, and_
 
 from app.models.database import get_db
-from app.models.unified_api_call import APICallLog, ProviderType, OperationType
+from app.models.unified_api_call import APICallLog, ProviderType
 from app.services.usage_tracker import UsageTracker
 from app.schemas.costs import (
     CostSummaryResponse,

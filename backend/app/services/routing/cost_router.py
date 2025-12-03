@@ -5,9 +5,8 @@ This module handles routing decisions based on cost optimization and budget cons
 providing intelligent provider selection for cost-sensitive operations.
 """
 
-import asyncio
 import logging
-from typing import Dict, List, Optional, Any, AsyncIterator
+from typing import Dict, Any, AsyncIterator
 from datetime import datetime
 
 from .base_router import BaseRouter, RoutingRequest, RoutingResponse, TaskType, ProviderType
@@ -88,7 +87,7 @@ class CostRouter(BaseRouter):
             )
             
             logger.info(
-                f"Cost-optimized routing successful",
+                "Cost-optimized routing successful",
                 extra={
                     "provider": provider_type.value,
                     "cost_usd": result.cost_usd,

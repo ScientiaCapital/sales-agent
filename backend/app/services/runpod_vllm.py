@@ -13,7 +13,7 @@ import os
 import time
 import asyncio
 import logging
-from typing import AsyncIterator, Dict, List, Any, Optional
+from typing import AsyncIterator, Dict, List, Any
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 

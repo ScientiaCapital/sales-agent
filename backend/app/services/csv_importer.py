@@ -277,7 +277,7 @@ class CSVImportService:
         except SQLAlchemyError as e:
             logger.error(f"SQLAlchemy error during import: {str(e)}", exc_info=True)
             raise DatabaseError(
-                message=f"Database operation failed during lead import",
+                message="Database operation failed during lead import",
                 context={"error": str(e), "imported_so_far": imported_count, "total": total_leads}
             )
         except Exception as e:

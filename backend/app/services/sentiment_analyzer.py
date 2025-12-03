@@ -111,7 +111,7 @@ Message: "{text}"
 """
 
         if context:
-            prompt += f"\nPrevious context:\n" + "\n".join(f"- {msg}" for msg in context[-3:])
+            prompt += "\nPrevious context:\n" + "\n".join(f"- {msg}" for msg in context[-3:])
 
         prompt += """
 

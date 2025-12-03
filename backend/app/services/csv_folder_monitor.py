@@ -14,12 +14,9 @@ Usage:
     await monitor.start()  # Runs indefinitely
 """
 
-import os
 import asyncio
-import logging
 from pathlib import Path
 from typing import Set
-from datetime import datetime
 from dotenv import load_dotenv
 
 # Load environment variables

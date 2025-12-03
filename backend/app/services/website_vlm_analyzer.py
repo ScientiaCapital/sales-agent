@@ -38,10 +38,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 import httpx
-from pydantic import BaseModel, Field
 
 from app.core.logging import setup_logging
-from app.services.llm_providers import get_openrouter_model, ModelTier, MODEL_CONFIGS
 
 logger = setup_logging(__name__)
 

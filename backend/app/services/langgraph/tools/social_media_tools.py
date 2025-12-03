@@ -22,10 +22,9 @@ Usage:
     ```
 """
 
-import os
 import logging
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import datetime, timedelta
+from typing import Dict, Any, List, Tuple
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 from langchain.tools import tool

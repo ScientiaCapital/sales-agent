@@ -265,8 +265,8 @@ async def qualify_lead_tool(
                 exc_info=True
             )
             raise ToolException(
-                f"Unable to qualify lead: both Cerebras and Claude providers unavailable. "
-                f"Please try again later or contact support."
+                "Unable to qualify lead: both Cerebras and Claude providers unavailable. "
+                "Please try again later or contact support."
             )
 
     except ValueError as e:

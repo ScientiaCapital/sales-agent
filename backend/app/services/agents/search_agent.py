@@ -12,11 +12,10 @@ Performs parallel searches for company information including:
 import asyncio
 import json
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel, Field, validator
 import aiohttp
-from bs4 import BeautifulSoup
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
 from app.core.exceptions import ExternalAPIException, ValidationError
@@ -43,17 +42,10 @@ Performs parallel searches for company information including:
 - Growth signal detection
 """
 
-import asyncio
-import json
 import logging
-from typing import Dict, List, Any, Optional, Tuple
-from datetime import datetime, timedelta
-from pydantic import BaseModel, Field, validator
-import aiohttp
-from bs4 import BeautifulSoup
+from typing import Optional
+from pydantic import BaseModel, Field
 
-from app.services.llm_router import LLMRouter, RoutingStrategy
-from app.core.exceptions import ExternalAPIException, ValidationError
 
 logger = logging.getLogger(__name__)
 
