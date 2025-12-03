@@ -413,10 +413,10 @@ async def apollo_phone_reveal_webhook(
     When reveal_phone_number=true is used in Apollo API calls, phone numbers
     are delivered asynchronously to this webhook (can take 5-15 minutes).
 
-    This endpoint:
-    1. Receives the phone data from Apollo
-    2. Matches contacts in dim_contacts by email/name
-    3. Updates phone numbers and marks as Apollo verified
+    Matching priority:
+    1. apollo_person_id (most reliable - stored during enrichment)
+    2. email (good fallback)
+    3. name + company (last resort)
     """
     try:
         # Get raw JSON data
@@ -425,26 +425,66 @@ async def apollo_phone_reveal_webhook(
 
         # Parse the payload (Apollo sends various formats)
         phone_numbers = []
+        apollo_person_id = None
         contact_email = None
         contact_name = None
+        first_name = None
+        last_name = None
         domain = None
+        org_name = None
 
         # Handle different Apollo response formats
         if isinstance(data, dict):
-            # Direct phone data
+            # Extract identifying info
+            apollo_person_id = data.get('id') or data.get('person_id')
+            contact_email = data.get('email')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+            contact_name = f"{first_name} {last_name}".strip() or data.get('name')
+            domain = data.get('domain')
+            org_name = data.get('organization_name') or data.get('organization', {}).get('name')
+
+            # Extract phone numbers from various formats
             phone_numbers = data.get('phone_numbers', [])
             if data.get('mobile_phone'):
                 phone_numbers.append({'phone_number': data['mobile_phone'], 'type': 'mobile'})
-            contact_email = data.get('email')
-            contact_name = f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
-            domain = data.get('domain')
+            if data.get('phone_number'):
+                phone_numbers.append({'phone_number': data['phone_number'], 'type': 'direct'})
+            # Handle nested phone data
+            if data.get('enriched_data', {}).get('phone_numbers'):
+                for pn in data['enriched_data']['phone_numbers']:
+                    if isinstance(pn, dict):
+                        phone_numbers.append(pn)
+                    elif isinstance(pn, str):
+                        phone_numbers.append({'phone_number': pn, 'type': 'unknown'})
 
         if not phone_numbers:
-            logger.warning("Apollo webhook received but no phone numbers found")
+            logger.warning(f"Apollo webhook received but no phone numbers found. Data: {data}")
             return PhoneRevealWebhookResponse(
                 status="received",
                 contacts_updated=0,
                 message="No phone numbers in payload"
+            )
+
+        # Get the best phone number (prefer mobile/direct over work_hq)
+        phone_priority = ['mobile', 'direct', 'work_direct', 'work_hq', 'unknown']
+        best_phone = None
+        for ptype in phone_priority:
+            for pn in phone_numbers:
+                if pn.get('type', 'unknown') == ptype and pn.get('phone_number'):
+                    best_phone = pn['phone_number']
+                    break
+            if best_phone:
+                break
+        if not best_phone and phone_numbers:
+            best_phone = phone_numbers[0].get('phone_number') or phone_numbers[0].get('raw_number')
+
+        if not best_phone:
+            logger.warning(f"Could not extract phone number from: {phone_numbers}")
+            return PhoneRevealWebhookResponse(
+                status="received",
+                contacts_updated=0,
+                message="Could not extract phone number"
             )
 
         # Update contacts in Supabase
@@ -464,10 +504,35 @@ async def apollo_phone_reveal_webhook(
 
         supabase = create_client(supabase_url, supabase_key)
 
-        # Find matching contact by email or name
+        # Try matching strategies in order of reliability
         updated = 0
-        if contact_email:
-            # Match by email
+        match_method = None
+
+        # Strategy 1: Match by Apollo person ID (most reliable)
+        if apollo_person_id and not updated:
+            result = supabase.table('dim_contacts')\
+                .select('contact_id, full_name, email')\
+                .eq('apollo_person_id', apollo_person_id)\
+                .limit(1)\
+                .execute()
+
+            if result.data:
+                match_method = 'apollo_person_id'
+                contact_id = result.data[0]['contact_id']
+                logger.info(f"Matched by apollo_person_id: {apollo_person_id}")
+
+                supabase.table('dim_contacts')\
+                    .update({
+                        'phone': best_phone,
+                        'phone_verified': True,
+                        'apollo_enriched_at': datetime.utcnow().isoformat()
+                    })\
+                    .eq('contact_id', contact_id)\
+                    .execute()
+                updated = 1
+
+        # Strategy 2: Match by email
+        if contact_email and not updated:
             result = supabase.table('dim_contacts')\
                 .select('contact_id, full_name')\
                 .eq('email', contact_email)\
@@ -475,25 +540,63 @@ async def apollo_phone_reveal_webhook(
                 .execute()
 
             if result.data:
+                match_method = 'email'
                 contact_id = result.data[0]['contact_id']
-                phone = phone_numbers[0].get('phone_number') if phone_numbers else None
+                logger.info(f"Matched by email: {contact_email}")
 
-                if phone:
+                supabase.table('dim_contacts')\
+                    .update({
+                        'phone': best_phone,
+                        'phone_verified': True,
+                        'apollo_enriched_at': datetime.utcnow().isoformat()
+                    })\
+                    .eq('contact_id', contact_id)\
+                    .execute()
+                updated = 1
+
+        # Strategy 3: Match by name (fuzzy - could match wrong person)
+        if contact_name and not updated:
+            result = supabase.table('dim_contacts')\
+                .select('contact_id, email, company_id')\
+                .eq('full_name', contact_name)\
+                .limit(5)\
+                .execute()
+
+            if result.data:
+                # If only one match, use it
+                if len(result.data) == 1:
+                    match_method = 'name_exact'
+                    contact_id = result.data[0]['contact_id']
+                    logger.info(f"Matched by name (exact): {contact_name}")
+
                     supabase.table('dim_contacts')\
                         .update({
-                            'phone': phone,
+                            'phone': best_phone,
                             'phone_verified': True,
                             'apollo_enriched_at': datetime.utcnow().isoformat()
                         })\
                         .eq('contact_id', contact_id)\
                         .execute()
                     updated = 1
-                    logger.info(f"Updated phone for {contact_email}: {phone}")
+                else:
+                    # Multiple matches - log for manual review
+                    logger.warning(
+                        f"Multiple contacts match name '{contact_name}'. "
+                        f"Phone {best_phone} not applied. IDs: {[r['contact_id'] for r in result.data]}"
+                    )
+
+        if updated:
+            logger.info(f"Phone webhook success: {best_phone} applied via {match_method}")
+        else:
+            logger.warning(
+                f"Phone webhook: No matching contact found. "
+                f"person_id={apollo_person_id}, email={contact_email}, name={contact_name}"
+            )
 
         return PhoneRevealWebhookResponse(
-            status="success",
+            status="success" if updated else "no_match",
             contacts_updated=updated,
-            message=f"Processed {len(phone_numbers)} phone numbers"
+            message=f"Phone {best_phone} applied via {match_method}" if updated else "No matching contact found"
         )
 
     except Exception as e:

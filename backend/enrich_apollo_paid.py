@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """
-Apollo PAID Enrichment Service
-===============================
+Apollo SMART Enrichment Service
+================================
 
-PAID Apollo enrichment for high-priority leads only.
-Uses Apollo's paid reveal APIs to get:
-- Verified email addresses (real emails, not placeholders)
-- Direct phone numbers
-- Additional contact details
+Credit-efficient Apollo enrichment using a 2-step approach:
+1. FREE SEARCH: Discover contacts at domain (0 credits)
+2. PAID REVEAL: Get emails/phones for ATL contacts only (~2-3 credits each)
 
-Cost: ~1-2 credits per contact (varies by plan)
-⚠️  USE SPARINGLY - Only for high-priority leads!
+This saves 50-80% of credits by only enriching decision-makers.
+
+Flow:
+    FREE Search → Filter ATL → Show Credit Estimate → Confirm → Bulk Enrich → Sync to Supabase
+
+Phone reveals are ASYNC - delivered to webhook 5-15 minutes later.
+Requires APOLLO_WEBHOOK_BASE_URL in .env for phone reveals.
 
 Usage:
     cd backend
     python enrich_apollo_paid.py --test --domain example.com
-    python enrich_apollo_paid.py --test --limit 3
-    python enrich_apollo_paid.py --auto --limit 50 --min-score 80  # Only ICP score 80+
+    python enrich_apollo_paid.py --limit 10 --min-score 50
+    python enrich_apollo_paid.py --auto --limit 50 --min-score 80
 """
 
 import argparse
@@ -51,9 +54,19 @@ from app.core.exceptions import (
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
 APOLLO_API_KEY = os.getenv('APOLLO_API_KEY')
+APOLLO_WEBHOOK_BASE_URL = os.getenv('APOLLO_WEBHOOK_BASE_URL')
 
-BATCH_SIZE = 5
-RATE_LIMIT_DELAY = 6  # 6 seconds between companies
+BATCH_SIZE = 5  # Companies per batch
+BULK_ENRICH_SIZE = 10  # Max contacts per Apollo API call
+RATE_LIMIT_DELAY = 3  # Seconds between API calls
+
+# ATL (Above The Line) title keywords - decision makers only
+ATL_TITLE_KEYWORDS = [
+    'owner', 'ceo', 'president', 'founder', 'principal',
+    'vp', 'vice president', 'director', 'general manager', 'gm',
+    'partner', 'managing', 'chief', 'head of', 'co-founder',
+    'executive', 'chairman', 'cfo', 'coo', 'cto'
+]
 
 
 def get_supabase():
@@ -61,441 +74,451 @@ def get_supabase():
     return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
-def get_companies_for_apollo_paid_enrichment(
+def is_atl_title(title: str) -> bool:
+    """Check if title indicates ATL (decision maker)."""
+    if not title:
+        return False
+    title_lower = title.lower()
+    return any(keyword in title_lower for keyword in ATL_TITLE_KEYWORDS)
+
+
+def get_companies_for_enrichment(
     supabase,
     batch_size: int,
     min_icp_score: int = 0,
     test_domains: Optional[List[str]] = None
-):
+) -> List[Dict]:
     """Get companies that need Apollo PAID enrichment.
-    
+
     Criteria:
     - Have domain (required)
-    - Have been enriched with other services (have last_enriched_at)
-    - Have contacts without verified emails/phones
-    - ICP score >= min_icp_score (if specified)
     - Don't have apollo_paid_enriched_at yet
+    - ICP score >= min_icp_score (if specified)
     """
     if test_domains:
         # Test mode: get specific domains
         companies = []
-        for domain in test_domains[:5]:  # Max 5 for test
+        for domain in test_domains[:5]:
             result = supabase.table('dim_companies')\
-                .select('company_id, company_name, domain, icp_score')\
+                .select('company_id, company_name, domain, icp_score, phone')\
                 .eq('domain', domain)\
                 .limit(1)\
                 .execute()
             if result.data:
                 companies.append(result.data[0])
         return companies
-    
-    # Normal mode: get companies that need Apollo PAID enrichment
+
+    # Normal mode: get companies needing enrichment
     query = supabase.table('dim_companies')\
-        .select('company_id, company_name, domain, icp_score')\
+        .select('company_id, company_name, domain, icp_score, phone')\
         .not_.is_('domain', 'null')\
-        .not_.is_('last_enriched_at', 'null')\
         .is_('apollo_paid_enriched_at', 'null')
-    
+
     if min_icp_score > 0:
         query = query.gte('icp_score', min_icp_score)
-    
-    result = query.limit(batch_size).execute()
+
+    result = query.order('icp_score', desc=True).limit(batch_size).execute()
     return result.data
 
 
-async def enrich_contacts_with_apollo_paid(
-    apollo: ApolloService,
-    company_id: str,
-    domain: str,
-    contacts: List[Dict]
-) -> Dict[str, Any]:
-    """Enrich ALL contacts with Apollo PAID reveal.
-
-    Uses Apollo's paid reveal APIs to get verified emails and phones.
-    Enriches EVERY contact found (ATL and BTL) - Dec 3, 2025 update.
-    """
-    result = {
-        'company_id': company_id,
-        'domain': domain,
-        'success': False,
-        'enriched_contacts': [],
-        'credits_used': 0,
-        'error': ''
-    }
-
-    try:
-        # Enrich ALL contacts found (ATL + BTL) - no filtering
-        # User wants complete enrichment of any name found
-        # Up to 10 ATL + 10 BTL = 20 max per company
-        contacts_to_enrich = contacts[:20]
-
-        if not contacts_to_enrich:
-            result['error'] = 'No contacts to enrich'
-            return result
-
-        enriched = []
-        credits = 0
-
-        print(f"\n    Enriching {len(contacts_to_enrich)} contacts:")
-        for contact in contacts_to_enrich:
-            name = contact.get('full_name', contact.get('name', 'Unknown'))
-            title = contact.get('title', '')
-            is_atl = contact.get('is_atl', False)
-            contact_type = "ATL" if is_atl else "BTL"
-
-            print(f"      • {name} ({title}) [{contact_type}]...", end=" ", flush=True)
-
-            try:
-                # Use Apollo's search_and_enrich_contacts with reveal
-                # Search by name + domain for better matching
-                enriched_contact = await apollo.search_and_enrich_contacts(
-                    domain=domain,
-                    job_titles=[title] if title else None,
-                    max_results=1,
-                    reveal_emails=True,   # PAID - costs credits
-                    reveal_phones=True    # PAID - costs credits
-                )
-
-                if enriched_contact:
-                    new_email = enriched_contact.get('email')
-                    new_phone = enriched_contact.get('phone')
-                    enriched.append({
-                        'contact_id': contact.get('contact_id'),
-                        'name': name,
-                        'email': new_email,
-                        'phone': new_phone,
-                        'title': title,
-                        'is_atl': is_atl,
-                        'linkedin_url': enriched_contact.get('linkedin_url')
-                    })
-                    credits += 2  # Estimate: ~2 credits per contact reveal
-
-                    # Show what was found
-                    found = []
-                    if new_email:
-                        found.append(f"📧 {new_email}")
-                    if new_phone:
-                        found.append(f"📱 {new_phone}")
-                    if found:
-                        print(f"✅ {', '.join(found)}")
-                    else:
-                        print("⚠️ No new info")
-                else:
-                    print("❌ Not found")
-
-            except Exception as e:
-                print(f"❌ Error: {str(e)[:30]}")
-                continue
-
-        result['enriched_contacts'] = enriched
-        result['credits_used'] = credits
-        result['success'] = len(enriched) > 0
-
-    except Exception as e:
-        result['error'] = str(e)[:100]
-
-    return result
-
-
-async def enrich_company_with_apollo_paid(
+async def smart_enrich_company(
     apollo: ApolloService,
     supabase,
-    company_id: str,
-    company_name: str,
-    domain: str
+    company: Dict,
+    auto_confirm: bool = False
 ) -> Dict[str, Any]:
-    """Enrich one company's contacts with Apollo PAID reveal."""
+    """
+    Smart enrichment for one company using the credit-efficient flow.
+
+    Steps:
+    1. FREE search to discover contacts
+    2. Filter to ATL only
+    3. Show credit estimate and confirm
+    4. Bulk enrich with reveal
+    5. Sync to Supabase
+    """
+    company_id = company['company_id']
+    company_name = company['company_name']
+    domain = company['domain']
+    icp_score = company.get('icp_score', 0)
+
     result = {
         'company_id': company_id,
         'company_name': company_name,
         'domain': domain,
         'success': False,
+        'contacts_found': 0,
+        'atl_contacts': 0,
         'contacts_enriched': 0,
         'credits_used': 0,
+        'phone_webhook_pending': False,
         'error': ''
     }
-    
+
+    print(f"\n{'─'*60}")
+    print(f"🏢 {company_name} ({domain})")
+    print(f"   ICP Score: {icp_score}")
+
     try:
-        # Get existing contacts for this company (ATL AND BTL - Dec 3, 2025)
-        # Changed from ATL-only to ALL contacts per user request
-        contacts_result = supabase.table('dim_contacts')\
-            .select('contact_id, full_name, email, phone, title, linkedin_url, is_atl')\
-            .eq('company_id', company_id)\
-            .limit(20)\
-            .execute()
-        
-        contacts = contacts_result.data if contacts_result.data else []
-        
-        if not contacts:
+        # ═══════════════════════════════════════════════════════════════
+        # STEP 1: FREE SEARCH (0 credits)
+        # ═══════════════════════════════════════════════════════════════
+        print(f"\n   📡 Step 1: FREE Search for contacts...")
+
+        all_contacts = await apollo.search_contacts_free(
+            domain=domain,
+            max_results=50
+        )
+
+        result['contacts_found'] = len(all_contacts)
+
+        if not all_contacts:
+            print(f"   ⚠️  No contacts found in Apollo database")
             result['error'] = 'No contacts found'
             return result
-        
-        # Enrich contacts with Apollo PAID reveal
-        enrich_result = await enrich_contacts_with_apollo_paid(
-            apollo, company_id, domain, contacts
-        )
-        
-        if enrich_result['success']:
-            # Update contacts in Supabase with verified emails/phones
-            # Apollo data is VERIFIED - always prefer it over existing data
-            updated_count = 0
-            for enriched in enrich_result['enriched_contacts']:
-                # Use contact_id directly if available (more reliable)
-                contact_id = enriched.get('contact_id')
-                if not contact_id:
-                    # Fallback: match by name
-                    matching = [c for c in contacts if c.get('full_name') == enriched.get('name')]
-                    if matching:
-                        contact_id = matching[0]['contact_id']
 
-                if contact_id:
-                    update_data = {
-                        'apollo_enriched_at': datetime.now().isoformat()
-                    }
+        print(f"   ✅ Found {len(all_contacts)} contacts (FREE)")
 
-                    # Apollo data is verified - update even if we have existing data
-                    if enriched.get('email'):
-                        update_data['email'] = enriched['email']
-                        update_data['email_verified'] = True
-                    if enriched.get('phone'):
-                        update_data['phone'] = enriched['phone']
-                        update_data['phone_verified'] = True
-                    if enriched.get('linkedin_url'):
-                        update_data['linkedin_url'] = enriched['linkedin_url']
+        # ═══════════════════════════════════════════════════════════════
+        # STEP 2: FILTER TO ATL ONLY
+        # ═══════════════════════════════════════════════════════════════
+        print(f"\n   🎯 Step 2: Filtering to ATL (decision makers)...")
 
-                    supabase.table('dim_contacts')\
-                        .update(update_data)\
-                        .eq('contact_id', contact_id)\
-                        .execute()
-                    updated_count += 1
+        atl_contacts = [c for c in all_contacts if is_atl_title(c.get('title', ''))]
+        result['atl_contacts'] = len(atl_contacts)
 
-            result['contacts_enriched'] = updated_count
-            result['credits_used'] = enrich_result['credits_used']
-            result['success'] = True
-            print(f"\n    ✅ Updated {updated_count} contacts in Supabase")
+        if not atl_contacts:
+            # No ATL found - check if we have any with seniority info
+            seniority_contacts = [
+                c for c in all_contacts
+                if c.get('seniority') in ['owner', 'founder', 'c_suite', 'vp', 'director']
+            ]
+            if seniority_contacts:
+                atl_contacts = seniority_contacts
+                result['atl_contacts'] = len(atl_contacts)
+                print(f"   ✅ Found {len(atl_contacts)} ATL via seniority filter")
+            else:
+                print(f"   ⚠️  No ATL contacts found (found {len(all_contacts)} BTL)")
+                # Take top 3 contacts anyway for small companies
+                if len(all_contacts) <= 5:
+                    atl_contacts = all_contacts[:3]
+                    print(f"   📌 Small company - enriching top {len(atl_contacts)} contacts")
+                else:
+                    result['error'] = 'No ATL contacts found'
+                    return result
         else:
-            result['error'] = enrich_result['error']
-    
+            print(f"   ✅ Found {len(atl_contacts)} ATL contacts:")
+            for c in atl_contacts[:5]:  # Show first 5
+                print(f"      • {c.get('name', 'Unknown')} - {c.get('title', 'No title')}")
+            if len(atl_contacts) > 5:
+                print(f"      ... and {len(atl_contacts) - 5} more")
+
+        # ═══════════════════════════════════════════════════════════════
+        # STEP 3: CREDIT ESTIMATE & CONFIRM
+        # ═══════════════════════════════════════════════════════════════
+        contacts_to_enrich = atl_contacts[:BULK_ENRICH_SIZE]  # Max 10
+        estimated_credits = len(contacts_to_enrich) * 2  # ~2 credits per contact
+
+        print(f"\n   💰 Step 3: Credit Estimate")
+        print(f"      Contacts to enrich: {len(contacts_to_enrich)}")
+        print(f"      Estimated credits: ~{estimated_credits}")
+
+        if APOLLO_WEBHOOK_BASE_URL:
+            print(f"      📱 Phone reveals: ENABLED (via webhook)")
+        else:
+            print(f"      📱 Phone reveals: DISABLED (no webhook URL)")
+
+        if not auto_confirm:
+            response = input(f"\n   Proceed? [Y/n/s(kip)]: ").strip().lower()
+            if response == 'n':
+                result['error'] = 'Skipped by user'
+                return result
+            elif response == 's':
+                result['error'] = 'Skipped'
+                return result
+
+        # ═══════════════════════════════════════════════════════════════
+        # STEP 4: BULK ENRICHMENT (PAID)
+        # ═══════════════════════════════════════════════════════════════
+        print(f"\n   🔓 Step 4: Revealing emails & phones (PAID)...")
+
+        # Prepare contacts for bulk enrichment
+        # Use apollo_person_id when available (most reliable matching)
+        enrich_requests = []
+        for c in contacts_to_enrich:
+            req = {
+                'first_name': c.get('first_name'),
+                'last_name': c.get('last_name'),
+                'domain': domain,
+            }
+            # Include Apollo person ID for reliable matching (key for bulk_match)
+            if c.get('apollo_person_id'):
+                req['id'] = c['apollo_person_id']
+            if c.get('linkedin_url'):
+                req['linkedin_url'] = c['linkedin_url']
+            enrich_requests.append(req)
+
+        # Call bulk enrich with reveal
+        enrich_result = await apollo.bulk_enrich_with_reveal(
+            contacts=enrich_requests,
+            reveal_emails=True,
+            reveal_phones=True
+        )
+
+        enriched = enrich_result.get('enriched_contacts', [])
+        credits = enrich_result.get('credits_consumed', 0)
+        phone_pending = enrich_result.get('phone_webhook_pending', False)
+
+        result['credits_used'] = credits
+        result['phone_webhook_pending'] = phone_pending
+
+        if not enriched:
+            print(f"   ⚠️  No contacts enriched")
+            result['error'] = 'Enrichment returned no data'
+            return result
+
+        print(f"   ✅ Enriched {len(enriched)} contacts ({credits} credits)")
+
+        # Show what we got
+        emails_found = sum(1 for e in enriched if e.get('email'))
+        phones_found = sum(1 for e in enriched if e.get('phone'))
+        print(f"      📧 Emails found: {emails_found}")
+        print(f"      📱 Phones found: {phones_found}" + (" (more via webhook)" if phone_pending else ""))
+
+        # ═══════════════════════════════════════════════════════════════
+        # STEP 5: SYNC TO SUPABASE
+        # ═══════════════════════════════════════════════════════════════
+        print(f"\n   💾 Step 5: Syncing to Supabase...")
+
+        updated_count = 0
+        inserted_count = 0
+
+        for contact in enriched:
+            # Check if contact already exists in dim_contacts
+            existing = supabase.table('dim_contacts')\
+                .select('contact_id')\
+                .eq('company_id', company_id)\
+                .or_(
+                    f"email.eq.{contact.get('email')},"
+                    f"full_name.eq.{contact.get('full_name')}"
+                )\
+                .limit(1)\
+                .execute()
+
+            contact_data = {
+                'company_id': company_id,
+                'full_name': contact.get('full_name'),
+                'first_name': contact.get('first_name'),
+                'last_name': contact.get('last_name'),
+                'title': contact.get('title'),
+                'linkedin_url': contact.get('linkedin_url'),
+                'is_atl': is_atl_title(contact.get('title', '')),
+                'seniority': contact.get('seniority'),
+                'source': 'apollo',
+                'apollo_enriched_at': datetime.now().isoformat(),
+                'apollo_person_id': contact.get('apollo_person_id'),
+                'updated_at': datetime.now().isoformat()
+            }
+
+            # Add verified email if found
+            if contact.get('email'):
+                contact_data['email'] = contact['email']
+                contact_data['email_verified'] = contact.get('email_verified', True)
+
+            # Add phone if found (immediate, not webhook)
+            if contact.get('phone'):
+                contact_data['phone'] = contact['phone']
+                contact_data['phone_verified'] = True
+
+            if existing.data:
+                # Update existing contact
+                supabase.table('dim_contacts')\
+                    .update(contact_data)\
+                    .eq('contact_id', existing.data[0]['contact_id'])\
+                    .execute()
+                updated_count += 1
+            else:
+                # Insert new contact
+                contact_data['created_at'] = datetime.now().isoformat()
+                supabase.table('dim_contacts')\
+                    .insert(contact_data)\
+                    .execute()
+                inserted_count += 1
+
+        result['contacts_enriched'] = updated_count + inserted_count
+        print(f"   ✅ Synced: {inserted_count} new, {updated_count} updated")
+
+        # Mark company as apollo_paid_enriched
+        supabase.table('dim_companies')\
+            .update({'apollo_paid_enriched_at': datetime.now().isoformat()})\
+            .eq('company_id', company_id)\
+            .execute()
+
+        result['success'] = True
+
     except Exception as e:
         result['error'] = str(e)[:100]
-    
+        print(f"   ❌ Error: {result['error']}")
+
     return result
 
 
-async def run_apollo_paid_batch(
+async def run_enrichment_batch(
     apollo: ApolloService,
     supabase,
     companies: List[Dict],
-    test_mode: bool = False
+    auto_confirm: bool = False
 ) -> List[Dict[str, Any]]:
-    """Run Apollo PAID enrichment on a batch of companies."""
+    """Run smart enrichment on a batch of companies."""
     results = []
-    
+
     for i, company in enumerate(companies, 1):
-        # Rate limiting: delay between companies
-        if test_mode and i > 1:
-            await asyncio.sleep(RATE_LIMIT_DELAY)
-        elif not test_mode and i > 1:
-            await asyncio.sleep(RATE_LIMIT_DELAY)
-        
-        company_id = company['company_id']
-        name = company['company_name']
-        domain = company['domain']
-        icp_score = company.get('icp_score', 0)
-        
-        print(f"  [{i}/{len(companies)}] {name} ({domain}, ICP: {icp_score})...", end=" ", flush=True)
-        
-        result = await enrich_company_with_apollo_paid(apollo, supabase, company_id, name, domain)
+        print(f"\n{'═'*60}")
+        print(f"  Company {i}/{len(companies)}")
+        print(f"{'═'*60}")
+
+        result = await smart_enrich_company(apollo, supabase, company, auto_confirm)
         results.append(result)
-        
-        if result['success']:
-            contacts = result['contacts_enriched']
-            credits = result['credits_used']
-            print(f"✅ ({contacts} contacts, {credits} credits)")
-        else:
-            print(f"❌ {result['error']}")
-    
+
+        # Rate limiting between companies
+        if i < len(companies):
+            await asyncio.sleep(RATE_LIMIT_DELAY)
+
     return results
 
 
+def print_summary(results: List[Dict[str, Any]]):
+    """Print session summary."""
+    successful = [r for r in results if r['success']]
+    failed = [r for r in results if not r['success']]
+
+    total_found = sum(r.get('contacts_found', 0) for r in results)
+    total_atl = sum(r.get('atl_contacts', 0) for r in results)
+    total_enriched = sum(r.get('contacts_enriched', 0) for r in results)
+    total_credits = sum(r.get('credits_used', 0) for r in results)
+    phone_pending = sum(1 for r in results if r.get('phone_webhook_pending'))
+
+    print(f"\n{'═'*60}")
+    print("SESSION SUMMARY")
+    print(f"{'═'*60}")
+    print(f"Companies processed: {len(results)}")
+    print(f"  ✅ Successful: {len(successful)}")
+    print(f"  ❌ Failed: {len(failed)}")
+    print(f"\nContacts:")
+    print(f"  📡 Found (FREE): {total_found}")
+    print(f"  🎯 ATL filtered: {total_atl}")
+    print(f"  🔓 Enriched (PAID): {total_enriched}")
+    print(f"\nCredits:")
+    print(f"  💰 Total used: {total_credits}")
+    print(f"  📱 Phone webhooks pending: {phone_pending}")
+
+    if failed:
+        print(f"\nFailed companies:")
+        for r in failed:
+            print(f"  • {r['company_name']}: {r.get('error', 'Unknown error')}")
+
+
 async def main():
-    parser = argparse.ArgumentParser(description='Apollo PAID enrichment service')
-    parser.add_argument('--auto', action='store_true', help='Run continuously without prompts')
-    parser.add_argument('--limit', type=int, default=0, help='Max companies to process (0=unlimited)')
-    parser.add_argument('--min-score', type=int, default=0, help='Minimum ICP score (default: 0, use 80+ for high-priority only)')
-    parser.add_argument('--test', action='store_true', help='Test mode: max 5 companies, adds rate limiting')
-    parser.add_argument('--domain', type=str, help='Test single domain (e.g., acmeheating.com)')
-    parser.add_argument('--domains', type=str, help='Test multiple domains, comma-separated (max 5)')
+    parser = argparse.ArgumentParser(
+        description='Apollo SMART Enrichment - Credit-efficient contact discovery'
+    )
+    parser.add_argument('--auto', action='store_true',
+                       help='Auto-confirm all enrichments (no prompts)')
+    parser.add_argument('--limit', type=int, default=5,
+                       help='Max companies to process (default: 5)')
+    parser.add_argument('--min-score', type=int, default=0,
+                       help='Minimum ICP score (default: 0)')
+    parser.add_argument('--test', action='store_true',
+                       help='Test mode with extra logging')
+    parser.add_argument('--domain', type=str,
+                       help='Test single domain (e.g., acmeheating.com)')
+    parser.add_argument('--domains', type=str,
+                       help='Test multiple domains, comma-separated')
     args = parser.parse_args()
-    
-    # Validate
+
+    # Validate environment
     if not all([SUPABASE_URL, SUPABASE_SERVICE_KEY]):
-        print("ERROR: Missing Supabase environment variables")
+        print("❌ ERROR: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         sys.exit(1)
-    
+
     if not APOLLO_API_KEY:
-        print("ERROR: Missing APOLLO_API_KEY environment variable")
+        print("❌ ERROR: Missing APOLLO_API_KEY")
         sys.exit(1)
-    
+
+    # Header
+    print(f"\n{'═'*60}")
+    print("🚀 APOLLO SMART ENRICHMENT")
+    print(f"{'═'*60}")
+    print(f"Strategy: FREE Search → ATL Filter → PAID Reveal")
+    print(f"Expected savings: 50-80% credits")
+    print(f"")
+    print(f"Configuration:")
+    print(f"  • Limit: {args.limit} companies")
+    print(f"  • Min ICP Score: {args.min_score}")
+    print(f"  • Auto-confirm: {'Yes' if args.auto else 'No'}")
+
+    if APOLLO_WEBHOOK_BASE_URL:
+        print(f"  • Phone webhook: ✅ {APOLLO_WEBHOOK_BASE_URL}")
+    else:
+        print(f"  • Phone webhook: ❌ Not configured (phones won't be revealed)")
+        print(f"    Set APOLLO_WEBHOOK_BASE_URL in .env to enable")
+
+    # Initialize clients
     supabase = get_supabase()
     apollo = ApolloService()
-    
-    # Test mode handling
-    if args.test:
-        print(f"\n{'='*60}")
-        print(f"APOLLO PAID ENRICHMENT (TEST MODE)")
-        print(f"{'='*60}")
-        print(f"Rate limiting: {RATE_LIMIT_DELAY}s delay between companies")
-        print(f"Max companies: 5")
-        print(f"💰 Cost: ~1-2 credits per contact (PAID)")
-        print(f"⚠️  WARNING: This uses Apollo credits!")
-        
-        # Get companies for test
-        test_domains = None
-        if args.domain:
-            test_domains = [args.domain]
-            print(f"Testing single domain: {args.domain}")
-        elif args.domains:
-            test_domains = [d.strip() for d in args.domains.split(',')][:5]
-            print(f"Testing multiple domains: {', '.join(test_domains)}")
-        else:
-            test_limit = min(args.limit or 3, 5)
-            print(f"Testing {test_limit} random companies from Supabase")
-        
-        companies = get_companies_for_apollo_paid_enrichment(
-            supabase, BATCH_SIZE, args.min_score, test_domains=test_domains
-        )
-        
-        if not companies:
-            print("\n❌ No companies found to test")
-            return
-        
-        companies = companies[:5]
-        print(f"Processing {len(companies)} companies...\n")
-        
-        # Run batch
-        results = await run_apollo_paid_batch(apollo, supabase, companies, test_mode=True)
-        
-        # Stats
-        successful = sum(1 for r in results if r['success'])
-        failed = len(results) - successful
-        total_contacts = sum(r.get('contacts_enriched', 0) for r in results)
-        total_credits = sum(r.get('credits_used', 0) for r in results)
-        
-        print(f"\n{'='*60}")
-        print("TEST COMPLETE")
-        print(f"{'='*60}")
-        print(f"Companies enriched: {successful}")
-        print(f"Contacts enriched: {total_contacts}")
-        print(f"Credits used: {total_credits}")
-        if failed > 0:
-            print(f"⚠️  {failed} failed")
+
+    # Get companies
+    test_domains = None
+    if args.domain:
+        test_domains = [args.domain]
+    elif args.domains:
+        test_domains = [d.strip() for d in args.domains.split(',')]
+
+    companies = get_companies_for_enrichment(
+        supabase,
+        args.limit,
+        args.min_score,
+        test_domains
+    )
+
+    if not companies:
+        print(f"\n⚠️  No companies found matching criteria")
         return
-    
-    # Normal mode
-    # Get stats
-    query = supabase.table('dim_companies')\
-        .select('company_id', count='exact')\
-        .not_.is_('domain', 'null')\
-        .not_.is_('last_enriched_at', 'null')\
-        .is_('apollo_paid_enriched_at', 'null')
-    
-    if args.min_score > 0:
-        query = query.gte('icp_score', args.min_score)
-    
-    total = query.execute()
-    
-    print(f"\n{'='*60}")
-    print(f"APOLLO PAID ENRICHMENT {'(AUTO MODE)' if args.auto else ''}")
-    print(f"{'='*60}")
-    print(f"Companies needing Apollo PAID enrichment: {total.count}")
-    if args.min_score > 0:
-        print(f"Minimum ICP score: {args.min_score}+")
-    print(f"Batch size: {BATCH_SIZE}")
-    print(f"Rate limiting: {RATE_LIMIT_DELAY}s delay between companies")
-    print(f"💰 Cost: ~1-2 credits per contact (PAID)")
-    print(f"⚠️  WARNING: This uses Apollo credits!")
-    if args.limit:
-        print(f"Limit: {args.limit} companies")
-    
+
+    print(f"\n📋 Found {len(companies)} companies to enrich:")
+    for c in companies[:10]:
+        print(f"   • {c['company_name']} ({c['domain']}) - ICP: {c.get('icp_score', 0)}")
+    if len(companies) > 10:
+        print(f"   ... and {len(companies) - 10} more")
+
     if not args.auto:
-        print(f"\nPress Enter to start, 'q' to quit")
-        response = input()
-        if response.lower() == 'q':
+        response = input(f"\nStart enrichment? [Y/n]: ").strip().lower()
+        if response == 'n':
+            print("Cancelled.")
             return
-    
-    batch_num = 0
-    total_enriched = 0
-    total_contacts = 0
-    total_credits = 0
-    
-    while True:
-        # Check limit
-        if args.limit and total_enriched >= args.limit:
-            print(f"\n✅ Reached limit of {args.limit} companies")
-            break
-        
-        # Get next batch
-        companies = get_companies_for_apollo_paid_enrichment(
-            supabase, BATCH_SIZE, args.min_score
-        )
-        
-        if not companies:
-            print("\n✅ ALL COMPANIES ENRICHED WITH APOLLO PAID!")
-            break
-        
-        batch_num += 1
-        remaining = total.count - total_enriched
-        print(f"\n{'='*60}")
-        print(f"BATCH {batch_num} ({remaining} remaining)")
-        print(f"{'='*60}")
-        
-        # Run batch
-        results = await run_apollo_paid_batch(apollo, supabase, companies, test_mode=False)
-        
-        # Update companies with apollo_paid_enriched_at timestamp
-        for r in results:
-            if r['success']:
-                supabase.table('dim_companies')\
-                    .update({'apollo_paid_enriched_at': datetime.now().isoformat()})\
-                    .eq('company_id', r['company_id'])\
-                    .execute()
-        
-        # Stats
-        successful = sum(1 for r in results if r['success'])
-        batch_contacts = sum(r.get('contacts_enriched', 0) for r in results)
-        batch_credits = sum(r.get('credits_used', 0) for r in results)
-        
-        total_enriched += successful
-        total_contacts += batch_contacts
-        total_credits += batch_credits
-        
-        failed = len(results) - successful
-        if failed > 0:
-            print(f"  ⚠️  {failed} failed (will retry later)")
-        
-        print(f"\n  Session total: {total_enriched} enriched, {total_contacts} contacts, {total_credits} credits")
-        
-        # Prompt (skip in auto mode)
-        if not args.auto:
-            response = input("\nPress Enter for next batch, 'q' to quit: ")
-            if response.lower() == 'q':
-                break
-        else:
-            # Small delay between batches in auto mode
-            await asyncio.sleep(2)
-    
-    print(f"\n{'='*60}")
-    print("SESSION COMPLETE")
-    print(f"{'='*60}")
-    print(f"Companies enriched: {total_enriched}")
-    print(f"Contacts enriched: {total_contacts}")
-    print(f"Total credits used: {total_credits}")
-    
+
+    # Run enrichment
+    results = await run_enrichment_batch(
+        apollo,
+        supabase,
+        companies,
+        auto_confirm=args.auto
+    )
+
+    # Print summary
+    print_summary(results)
+
     # Cleanup
     await apollo.close()
+
+    print(f"\n{'═'*60}")
+    print("✅ ENRICHMENT COMPLETE")
+    print(f"{'═'*60}")
+
+    if any(r.get('phone_webhook_pending') for r in results):
+        print("\n📱 Phone numbers will arrive via webhook in 5-15 minutes.")
+        print(f"   Webhook URL: {APOLLO_WEBHOOK_BASE_URL}/api/v1/apollo/webhooks/phone-reveal")
 
 
 if __name__ == '__main__':
     asyncio.run(main())
-
