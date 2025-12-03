@@ -772,6 +772,266 @@ async def get_agent_state(
         )
 
 
+# ========== Lead Scout Endpoints ==========
+
+class ScoutRunRequest(BaseModel):
+    """Request schema for triggering a scout run."""
+    limit: int = Field(
+        default=10,
+        description="Number of leads to scout (1-50)"
+    )
+    require_domain: bool = Field(
+        default=True,
+        description="Only scout leads with website domains"
+    )
+    icp_tier: Optional[str] = Field(
+        default=None,
+        description="Filter by ICP tier: PLATINUM, GOLD, SILVER, BRONZE"
+    )
+    async_mode: bool = Field(
+        default=False,
+        description="Run via Celery task (returns task_id) or inline (returns results)"
+    )
+
+
+class ScoutResultItem(BaseModel):
+    """Single scout result item."""
+    company_id: str
+    company_name: str
+    domain: Optional[str]
+    icp_score: float
+    priority: str
+    why_call: str
+    scouted_at: str
+
+
+class ScoutRunResponse(BaseModel):
+    """Response for scout run."""
+    status: str
+    task_id: Optional[str] = None
+    total_scouted: Optional[int] = None
+    hot_leads: Optional[int] = None
+    warm_leads: Optional[int] = None
+    cold_leads: Optional[int] = None
+    duration_ms: Optional[int] = None
+    results: Optional[list] = None
+    errors: Optional[list] = None
+
+
+@router.post("/scout/run", response_model=ScoutRunResponse, status_code=200)
+async def run_lead_scout(request: ScoutRunRequest):
+    """
+    Trigger a Lead Scout run to discover and prioritize leads.
+
+    The Lead Scout agent:
+    1. Queries Supabase for unenriched companies with domains
+    2. Scrapes websites for signals (brands, certifications, contacts)
+    3. Scores each lead with QualificationAgent
+    4. Generates "WHY call" recommendations for Tim's calling list
+    5. Saves results back to Supabase
+
+    Args:
+        request: Scout configuration (limit, require_domain, icp_tier, async_mode)
+
+    Returns:
+        ScoutRunResponse with results or task_id (if async)
+
+    Example:
+        ```bash
+        # Inline (wait for results)
+        curl -X POST http://localhost:8001/api/v1/langgraph/scout/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"limit": 5, "require_domain": true}'
+
+        # Async (returns immediately)
+        curl -X POST http://localhost:8001/api/v1/langgraph/scout/run \\
+          -H "Content-Type: application/json" \\
+          -d '{"limit": 10, "async_mode": true}'
+        ```
+    """
+    try:
+        if request.async_mode:
+            # Run via Celery task
+            from app.tasks.agent_tasks import run_lead_scout_task
+
+            task = run_lead_scout_task.delay(
+                limit=request.limit,
+                require_domain=request.require_domain,
+                icp_tier=request.icp_tier
+            )
+
+            logger.info(f"Lead Scout task queued: {task.id}")
+
+            return ScoutRunResponse(
+                status="queued",
+                task_id=task.id
+            )
+        else:
+            # Run inline (synchronous)
+            from app.services.langgraph.agents.lead_scout_agent import LeadScoutAgent
+
+            scout = LeadScoutAgent(provider='cerebras')
+            result = await scout.scout(
+                limit=request.limit,
+                require_domain=request.require_domain,
+                icp_tier=request.icp_tier
+            )
+
+            logger.info(
+                f"Lead Scout completed: {result.total_scouted} scouted, "
+                f"{result.hot_leads} HOT in {result.duration_ms}ms"
+            )
+
+            return ScoutRunResponse(
+                status="success",
+                total_scouted=result.total_scouted,
+                hot_leads=result.hot_leads,
+                warm_leads=result.warm_leads,
+                cold_leads=result.cold_leads,
+                duration_ms=result.duration_ms,
+                results=[
+                    {
+                        "company_id": r.company_id,
+                        "company_name": r.company_name,
+                        "domain": r.domain,
+                        "icp_score": r.icp_score,
+                        "priority": r.priority,
+                        "why_call": r.why_call[:200],
+                        "scouted_at": r.scouted_at
+                    }
+                    for r in result.results
+                ],
+                errors=result.errors
+            )
+
+    except Exception as e:
+        logger.error(f"Error running Lead Scout: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Lead Scout failed: {str(e)}"
+        )
+
+
+@router.get("/scout/results", status_code=200)
+async def get_scout_results(
+    limit: int = 20,
+    priority: Optional[str] = None
+):
+    """
+    Get recent scout results (leads with AI recommendations).
+
+    Returns leads from Supabase that have been scouted and have recommendations.
+
+    Args:
+        limit: Maximum number of results (1-100)
+        priority: Filter by priority (HOT, WARM, COLD)
+
+    Returns:
+        List of scouted leads with recommendations
+
+    Example:
+        ```bash
+        # Get all recent scouts
+        curl http://localhost:8001/api/v1/langgraph/scout/results?limit=10
+
+        # Get only HOT leads
+        curl http://localhost:8001/api/v1/langgraph/scout/results?priority=HOT
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+        limit = max(1, min(limit, 100))
+
+        # Query leads with AI company story (indicates scouted)
+        query = supabase.table('dim_companies').select(
+            'company_id, company_name, domain, '
+            'icp_tier, icp_score, current_stage, '
+            'ai_company_story, ai_personal_hooks, ai_pain_points, '
+            'phone, state, city, ai_enriched_at'
+        ).not_.is_('ai_company_story', 'null')
+
+        if priority:
+            query = query.eq('current_stage', priority.upper())
+
+        query = query.order('ai_enriched_at', desc=True).limit(limit)
+
+        result = query.execute()
+
+        return {
+            "status": "success",
+            "count": len(result.data),
+            "results": result.data
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting scout results: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get scout results: {str(e)}"
+        )
+
+
+@router.get("/scout/status", status_code=200)
+async def get_scout_status():
+    """
+    Get Lead Scout status and statistics.
+
+    Returns counts of scouted leads by priority tier.
+
+    Example:
+        ```bash
+        curl http://localhost:8001/api/v1/langgraph/scout/status
+        ```
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        supabase = get_supabase()
+
+        # Get counts by priority
+        total = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).not_.is_('ai_company_story', 'null').execute()
+
+        hot = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'HOT').not_.is_('ai_company_story', 'null').execute()
+
+        warm = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'WARM').not_.is_('ai_company_story', 'null').execute()
+
+        cold = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).eq('current_stage', 'COLD').not_.is_('ai_company_story', 'null').execute()
+
+        # Get unenriched count (remaining to scout)
+        unenriched = supabase.table('dim_companies').select(
+            'company_id', count='exact'
+        ).not_.is_('domain', 'null').is_('ai_company_story', 'null').execute()
+
+        return {
+            "status": "success",
+            "scouted": {
+                "total": total.count or 0,
+                "hot": hot.count or 0,
+                "warm": warm.count or 0,
+                "cold": cold.count or 0
+            },
+            "remaining": unenriched.count or 0,
+            "next_scheduled": "Every 30 minutes (Celery Beat)"
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting scout status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get scout status: {str(e)}"
+        )
+
+
 # ========== Exports ==========
 
 __all__ = [
@@ -779,4 +1039,6 @@ __all__ = [
     "InvokeAgentRequest",
     "AgentResponse",
     "StateResponse",
+    "ScoutRunRequest",
+    "ScoutRunResponse",
 ]

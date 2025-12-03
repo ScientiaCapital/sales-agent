@@ -538,34 +538,129 @@ def execute_workflow_task(self, workflow_id: str, lead_id: int, workflow_config:
 def batch_process_leads_task(self, lead_ids: List[int], workflow_id: str = "qualify"):
     """
     Process multiple leads in parallel
-    
+
     Uses Celery group to execute workflows for multiple leads concurrently.
-    
+
     Args:
         lead_ids: List of lead database IDs
         workflow_id: Workflow to execute for each lead
-        
+
     Returns:
         Dict with batch processing results
     """
     try:
         logger.info(f"Batch processing {len(lead_ids)} leads with workflow {workflow_id}")
-        
+
         # Create group of workflow tasks
         job = group([
             execute_workflow_task.s(workflow_id, lead_id)
             for lead_id in lead_ids
         ])
-        
+
         # Execute in parallel
         results = job.apply_async().get()
-        
+
         return {
             "batch_size": len(lead_ids),
             "workflow": workflow_id,
             "results": results
         }
-        
+
     except Exception as exc:
         logger.error(f"Error in batch processing: {exc}")
         raise
+
+
+# ============================================================================
+# LEAD SCOUT TASKS (Autonomous Discovery)
+# ============================================================================
+
+@celery_app.task(name="run_lead_scout", bind=True, max_retries=2, soft_time_limit=600)
+def run_lead_scout_task(
+    self,
+    limit: int = 10,
+    require_domain: bool = True,
+    icp_tier: str = None
+):
+    """
+    Autonomous lead discovery task (runs via Celery Beat every 30 minutes)
+
+    This task:
+    1. Queries Supabase for unenriched companies
+    2. Scrapes websites for signals (brands, certifications, contacts)
+    3. Scores with QualificationAgent
+    4. Generates "WHY call" recommendations
+    5. Saves back to Supabase
+
+    Designed for Tim's calling list - prioritizes HOT leads with reasoning.
+
+    Args:
+        limit: Number of leads to scout per run (default: 10)
+        require_domain: Only scout companies with domains (default: True)
+        icp_tier: Filter by ICP tier (PLATINUM, GOLD, SILVER, BRONZE)
+
+    Returns:
+        Dict with scout results and stats
+    """
+    try:
+        logger.info(f"Starting Lead Scout task: limit={limit}, require_domain={require_domain}")
+
+        # Import and run async scout
+        import asyncio
+        from app.services.langgraph.agents.lead_scout_agent import LeadScoutAgent
+
+        async def _scout():
+            scout = LeadScoutAgent(provider='cerebras')
+            return await scout.scout(
+                limit=limit,
+                require_domain=require_domain,
+                icp_tier=icp_tier
+            )
+
+        # Run async function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(_scout())
+        finally:
+            loop.close()
+
+        # Convert result to serializable dict
+        result_dict = {
+            "status": "success",
+            "total_scouted": result.total_scouted,
+            "hot_leads": result.hot_leads,
+            "warm_leads": result.warm_leads,
+            "cold_leads": result.cold_leads,
+            "errors": result.errors,
+            "duration_ms": result.duration_ms,
+            "results": [
+                {
+                    "company_id": r.company_id,
+                    "company_name": r.company_name,
+                    "domain": r.domain,
+                    "icp_score": r.icp_score,
+                    "priority": r.priority,
+                    "why_call": r.why_call[:200],  # Truncate for log readability
+                    "scouted_at": r.scouted_at
+                }
+                for r in result.results
+            ]
+        }
+
+        logger.info(
+            f"Lead Scout completed: {result.total_scouted} scouted, "
+            f"{result.hot_leads} HOT, {result.warm_leads} WARM, {result.cold_leads} COLD, "
+            f"{len(result.errors)} errors in {result.duration_ms}ms"
+        )
+
+        return result_dict
+
+    except SoftTimeLimitExceeded:
+        logger.warning("Lead Scout soft time limit exceeded (10 minutes)")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in Lead Scout task: {exc}", exc_info=True)
+        countdown = 60 * (2 ** self.request.retries)  # 1 min, 2 min backoff
+        raise self.retry(exc=exc, countdown=countdown)

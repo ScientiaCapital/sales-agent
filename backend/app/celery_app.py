@@ -81,6 +81,7 @@ celery_app.conf.update(
         "app.tasks.agent_tasks.generate_report_async": {"queue": "workflows"},
         "app.tasks.agent_tasks.batch_generate_reports": {"queue": "workflows"},
         "app.tasks.agent_tasks.sync_crm_contacts": {"queue": "crm_sync"},
+        "app.tasks.agent_tasks.run_lead_scout_task": {"queue": "default"},
         # Batch tasks - routed by priority
         "app.tasks.batch_tasks.start_batch": {"queue": "default"},
         "app.tasks.batch_tasks.process_single_lead": {"queue": "batch_priority_medium"},
@@ -112,6 +113,13 @@ celery_app.conf.update(
 
     # Periodic task schedule (Celery Beat)
     beat_schedule={
+        # Lead Scout - autonomous discovery every 30 minutes
+        "lead-scout-every-30-min": {
+            "task": "run_lead_scout",
+            "schedule": 1800.0,  # 30 minutes in seconds
+            "args": (10, True, None),  # limit=10, require_domain=True, icp_tier=None
+            "options": {"queue": "default"},
+        },
         # Close CRM - sync every 2 hours
         "sync-close-hourly": {
             "task": "sync_crm_contacts",
