@@ -664,3 +664,95 @@ def run_lead_scout_task(
         logger.error(f"Error in Lead Scout task: {exc}", exc_info=True)
         countdown = 60 * (2 ** self.request.retries)  # 1 min, 2 min backoff
         raise self.retry(exc=exc, countdown=countdown)
+
+
+# ============================================================================
+# MORNING REPORT TASKS (Daily Summary with Outreach Drafts)
+# ============================================================================
+
+@celery_app.task(name="generate_morning_report", bind=True, max_retries=2, soft_time_limit=900)
+def generate_morning_report_task(
+    self,
+    hours_back: int = 24,
+    top_n: int = 10,
+    save_to_file: bool = True
+):
+    """
+    Generate morning report summarizing overnight lead scouting (runs at 9 AM EST / 14:00 UTC)
+
+    This task:
+    1. Queries leads scouted in the last N hours
+    2. Generates summary with HOT/WARM/COLD counts
+    3. Creates personalized outreach drafts for top leads:
+       - Email draft (150-200 words)
+       - SMS draft (under 160 chars)
+       - Call opener (2-3 sentences)
+    4. Optionally saves report to markdown file
+
+    Args:
+        hours_back: Hours to look back for scouted leads (default: 24)
+        top_n: Number of top leads to include with outreach drafts (default: 10)
+        save_to_file: Save report to data/reports/ (default: True)
+
+    Returns:
+        Dict with report summary and file path
+    """
+    try:
+        logger.info(f"Starting Morning Report: hours_back={hours_back}, top_n={top_n}")
+
+        # Import and run async report generation
+        import asyncio
+        from app.services.langgraph.agents.morning_report_agent import MorningReportAgent
+
+        async def _generate():
+            agent = MorningReportAgent(provider='cerebras')
+            report = await agent.generate_report(
+                hours_back=hours_back,
+                top_n=top_n
+            )
+
+            file_path = None
+            if save_to_file:
+                file_path = await agent.save_report_to_file(report)
+
+            return report, file_path
+
+        # Run async function
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            report, file_path = loop.run_until_complete(_generate())
+        finally:
+            loop.close()
+
+        # Convert result to serializable dict
+        result_dict = {
+            "status": "success",
+            "generated_at": report.generated_at,
+            "report_date": report.report_date,
+            "total_scouted": report.total_scouted,
+            "hot_leads": report.hot_leads,
+            "warm_leads": report.warm_leads,
+            "cold_leads": report.cold_leads,
+            "top_leads_count": len(report.top_leads),
+            "signals_summary": report.signals_summary,
+            "summary_preview": report.summary[:500] if report.summary else None,
+            "file_path": file_path
+        }
+
+        logger.info(
+            f"Morning Report generated: {report.total_scouted} leads, "
+            f"{report.hot_leads} HOT, {report.warm_leads} WARM, {report.cold_leads} COLD, "
+            f"{len(report.top_leads)} with outreach drafts"
+        )
+
+        return result_dict
+
+    except SoftTimeLimitExceeded:
+        logger.warning("Morning Report soft time limit exceeded (15 minutes)")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in Morning Report task: {exc}", exc_info=True)
+        countdown = 120 * (2 ** self.request.retries)  # 2 min, 4 min backoff
+        raise self.retry(exc=exc, countdown=countdown)

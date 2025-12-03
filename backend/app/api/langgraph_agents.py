@@ -1032,6 +1032,186 @@ async def get_scout_status():
         )
 
 
+# ========== Morning Report Endpoints ==========
+
+class ReportRunRequest(BaseModel):
+    """Request schema for generating a morning report."""
+    hours_back: int = Field(
+        default=24,
+        description="Hours to look back for scouted leads (default: 24)"
+    )
+    top_n: int = Field(
+        default=10,
+        description="Number of top leads to include with outreach drafts (1-25)"
+    )
+    save_to_file: bool = Field(
+        default=True,
+        description="Save report to data/reports/ as markdown"
+    )
+    async_mode: bool = Field(
+        default=False,
+        description="Run via Celery task (returns task_id) or inline (returns results)"
+    )
+
+
+class ReportRunResponse(BaseModel):
+    """Response for morning report generation."""
+    status: str
+    task_id: Optional[str] = None
+    generated_at: Optional[str] = None
+    report_date: Optional[str] = None
+    total_scouted: Optional[int] = None
+    hot_leads: Optional[int] = None
+    warm_leads: Optional[int] = None
+    cold_leads: Optional[int] = None
+    top_leads_count: Optional[int] = None
+    signals_summary: Optional[dict] = None
+    summary: Optional[str] = None
+    file_path: Optional[str] = None
+
+
+@router.post("/report/generate", response_model=ReportRunResponse, status_code=200)
+async def generate_morning_report(request: ReportRunRequest):
+    """
+    Generate a morning report with overnight scout results and outreach drafts.
+
+    The Morning Report agent:
+    1. Queries leads scouted in the last N hours
+    2. Summarizes HOT/WARM/COLD counts and signal patterns
+    3. For top leads, generates personalized outreach drafts:
+       - Email draft (150-200 words)
+       - SMS draft (under 160 characters)
+       - Call opener (2-3 sentences)
+    4. Optionally saves to markdown file
+
+    Scheduled to run daily at 9 AM EST (14:00 UTC) via Celery Beat.
+
+    Args:
+        request: Report configuration (hours_back, top_n, save_to_file, async_mode)
+
+    Returns:
+        ReportRunResponse with summary or task_id (if async)
+
+    Example:
+        ```bash
+        # Generate report inline
+        curl -X POST http://localhost:8001/api/v1/langgraph/report/generate \\
+          -H "Content-Type: application/json" \\
+          -d '{"hours_back": 24, "top_n": 10}'
+
+        # Generate via Celery
+        curl -X POST http://localhost:8001/api/v1/langgraph/report/generate \\
+          -H "Content-Type: application/json" \\
+          -d '{"async_mode": true}'
+        ```
+    """
+    try:
+        if request.async_mode:
+            # Run via Celery task
+            from app.tasks.agent_tasks import generate_morning_report_task
+
+            task = generate_morning_report_task.delay(
+                hours_back=request.hours_back,
+                top_n=request.top_n,
+                save_to_file=request.save_to_file
+            )
+
+            logger.info(f"Morning Report task queued: {task.id}")
+
+            return ReportRunResponse(
+                status="queued",
+                task_id=task.id
+            )
+        else:
+            # Run inline (synchronous)
+            from app.services.langgraph.agents.morning_report_agent import MorningReportAgent
+
+            agent = MorningReportAgent(provider='cerebras')
+            report = await agent.generate_report(
+                hours_back=request.hours_back,
+                top_n=request.top_n
+            )
+
+            file_path = None
+            if request.save_to_file:
+                file_path = await agent.save_report_to_file(report)
+
+            logger.info(
+                f"Morning Report generated: {report.total_scouted} leads, "
+                f"{report.hot_leads} HOT, {len(report.top_leads)} with outreach drafts"
+            )
+
+            return ReportRunResponse(
+                status="success",
+                generated_at=report.generated_at,
+                report_date=report.report_date,
+                total_scouted=report.total_scouted,
+                hot_leads=report.hot_leads,
+                warm_leads=report.warm_leads,
+                cold_leads=report.cold_leads,
+                top_leads_count=len(report.top_leads),
+                signals_summary=report.signals_summary,
+                summary=report.summary,
+                file_path=file_path
+            )
+
+    except Exception as e:
+        logger.error(f"Error generating Morning Report: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Morning Report failed: {str(e)}"
+        )
+
+
+@router.get("/report/latest", status_code=200)
+async def get_latest_report():
+    """
+    Get the most recent morning report file.
+
+    Returns the content of the latest morning_report_*.md file from data/reports/.
+
+    Example:
+        ```bash
+        curl http://localhost:8001/api/v1/langgraph/report/latest
+        ```
+    """
+    try:
+        from pathlib import Path
+
+        reports_dir = Path("data/reports")
+        if not reports_dir.exists():
+            return {
+                "status": "no_reports",
+                "message": "No reports directory found. Run /report/generate first."
+            }
+
+        # Find most recent report
+        reports = sorted(reports_dir.glob("morning_report_*.md"), reverse=True)
+
+        if not reports:
+            return {
+                "status": "no_reports",
+                "message": "No morning reports found. Run /report/generate first."
+            }
+
+        latest = reports[0]
+        content = latest.read_text()
+
+        return {
+            "status": "success",
+            "file_name": latest.name,
+            "file_path": str(latest),
+            "content": content
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting latest report: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get latest report: {str(e)}"
+        )
+
+
 # ========== Exports ==========
 
 __all__ = [
@@ -1041,4 +1221,6 @@ __all__ = [
     "StateResponse",
     "ScoutRunRequest",
     "ScoutRunResponse",
+    "ReportRunRequest",
+    "ReportRunResponse",
 ]
