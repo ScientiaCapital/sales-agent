@@ -163,12 +163,14 @@ def extract_emails(content):
 ATL_TITLES = [
     'owner', 'co-owner', 'founder', 'co-founder', 'president', 'ceo', 'chief executive',
     'general manager', 'gm', 'director', 'vp', 'vice president', 'partner',
-    'principal', 'managing', 'office manager', 'operations manager',
+    'principal', 'managing', 'operations manager',
     'head of', 'division head', 'department head', 'branch manager', 'regional manager'
 ]
+# Note: 'office manager' moved to BTL - typically admin, not decision maker
 
 # BTL titles (technicians, installers, staff - still valuable contacts)
 BTL_TITLES = [
+    'office manager',  # Admin role, moved from ATL
     'technician', 'tech', 'installer', 'installation', 'service', 'hvac tech',
     'plumber', 'electrician', 'apprentice', 'helper', 'assistant',
     'dispatcher', 'coordinator', 'scheduler', 'admin', 'administrator',
@@ -329,6 +331,47 @@ def is_atl_title(title):
     return False
 
 
+# Garbage name fragments to filter out (partial text matches, not real names)
+GARBAGE_NAME_WORDS = {
+    'as', 'a', 'an', 'the', 'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with',
+    'and', 'or', 'but', 'so', 'co', 'is', 'it', 'we', 'us', 'our', 'be', 'has',
+    'have', 'been', 'was', 'are', 'were', 'will', 'can', 'may', 'must', 'shall',
+    'from', 'into', 'over', 'under', 'about', 'after', 'before', 'between',
+    'click', 'here', 'read', 'more', 'view', 'see', 'learn', 'call', 'contact',
+    'schedule', 'book', 'get', 'your', 'my', 'his', 'her', 'their', 'this', 'that'
+}
+
+
+def is_valid_name(name):
+    """Check if a name looks like a real person's name (not garbage text)."""
+    if not name or len(name) < 5:
+        return False
+
+    words = name.split()
+    if len(words) < 2 or len(words) > 4:
+        return False
+
+    # Check if any word is a common garbage word
+    for word in words:
+        if word.lower() in GARBAGE_NAME_WORDS:
+            return False
+
+    # Check if first word starts with capital (proper name format)
+    # This catches "as a co" style garbage
+    if not name[0].isupper():
+        return False
+
+    # Each word should be at least 2 chars and look like a name
+    for word in words:
+        if len(word) < 2:
+            return False
+        # Names don't usually be all lowercase in original text
+        if word.islower() and len(word) > 2:
+            return False
+
+    return True
+
+
 def extract_contacts(content):
     """Extract ALL contacts (ATL + BTL) using multiple methods."""
     contacts = []
@@ -360,21 +403,17 @@ def extract_contacts(content):
         pattern = rf'([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\s*[-–,/]\s*{title_keyword}'
         for match in re.findall(pattern, content, re.IGNORECASE):
             name = match.strip()
-            if name and 5 <= len(name) <= 40 and name.lower() not in seen:
-                words = name.split()
-                if 2 <= len(words) <= 4:
-                    contacts.append({'name': name, 'title': title_keyword.title(), 'is_atl': is_atl})
-                    seen.add(name.lower())
+            if name and name.lower() not in seen and is_valid_name(name):
+                contacts.append({'name': name, 'title': title_keyword.title(), 'is_atl': is_atl})
+                seen.add(name.lower())
 
         # Pattern: "Owner: John Smith" or "General Manager - John Smith" or "President / John Smith"
         pattern = rf'{title_keyword}\s*[-–:/]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)'
         for match in re.findall(pattern, content, re.IGNORECASE):
             name = match.strip()
-            if name and 5 <= len(name) <= 40 and name.lower() not in seen:
-                words = name.split()
-                if 2 <= len(words) <= 4:
-                    contacts.append({'name': name, 'title': title_keyword.title(), 'is_atl': is_atl})
-                    seen.add(name.lower())
+            if name and name.lower() not in seen and is_valid_name(name):
+                contacts.append({'name': name, 'title': title_keyword.title(), 'is_atl': is_atl})
+                seen.add(name.lower())
 
     # Method 3: Look for Name on one line, Title within next few lines (team page cards)
     lines = [l.strip() for l in content.split('\n')]
