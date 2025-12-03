@@ -1,45 +1,49 @@
 # Retry Failed Enrichments
 
-Retry all companies that failed in previous enrichment batches.
+Retry companies that failed in previous batches.
 
-## Usage
-```
-/enrich-retry-failed [--budget 2.00]
-```
+**Usage**: `/enrich-retry-failed [--budget 2.00]`
 
-## What This Does
+---
 
-1. Find failed companies in Supabase
-2. Reset their enrichment_status to NULL
-3. Re-run through supervised pipeline
-
-## Execution
+## Quick Start
 
 ```bash
-cd backend
-source ../venv/bin/activate
+cd backend && source ../venv/bin/activate
 
-# Reset failed companies
+# Check how many failed
 python -c "
 from supabase import create_client
 import os
 from dotenv import load_dotenv
 load_dotenv('../.env')
+sb = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
+r = sb.table('dim_companies').select('*', count='exact').eq('enrichment_status', 'failed').execute()
+print(f'{r.count} companies failed enrichment')
+"
 
-supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
-result = supabase.table('dim_companies').update({
+# Reset and retry
+python -c "
+from supabase import create_client
+import os
+from dotenv import load_dotenv
+load_dotenv('../.env')
+sb = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
+r = sb.table('dim_companies').update({
     'enrichment_status': None,
     'enrichment_error': None
 }).eq('enrichment_status', 'failed').execute()
-print(f'Reset {len(result.data)} failed companies')
+print(f'Reset {len(r.data)} failed companies')
 "
 
 # Re-run enrichment
-python run_supervised_enrichment.py --budget ${BUDGET:-2.0}
+python run_enrichment.py --limit 50
 ```
+
+---
 
 ## When to Use
 
-- After fixing network/API issues
-- After increasing rate limits
-- To retry transient failures
+- After fixing network issues
+- After API rate limits reset
+- After fixing extraction bugs
