@@ -359,7 +359,226 @@ class ApolloService:
         
         except httpx.RequestError as e:
             raise APIConnectionError(f"Failed to connect to Apollo API: {str(e)}")
-    
+
+    async def bulk_enrich_with_reveal(
+        self,
+        contacts: List[Dict[str, str]],
+        reveal_emails: bool = True,
+        reveal_phones: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Bulk enrich up to 10 contacts with PAID email and phone reveals.
+
+        This is the credit-efficient method for revealing real contact info:
+        - Emails: Returned immediately in response (~1 credit each)
+        - Phones: Delivered async to webhook URL (~1-2 credits each)
+
+        Args:
+            contacts: List of contact dicts with identifying info.
+                     Each dict should have: first_name, last_name, domain
+                     Optional: email, linkedin_url, organization_name
+            reveal_emails: Get verified email addresses (costs credits)
+            reveal_phones: Get phone numbers via webhook (costs credits)
+
+        Returns:
+            Dict with:
+                - enriched_contacts: List of contacts with revealed emails
+                - credits_consumed: Number of credits used
+                - phone_webhook_pending: True if phones will arrive via webhook
+
+        Note:
+            Phone reveals require APOLLO_WEBHOOK_BASE_URL environment variable.
+            Phones are delivered async to /api/v1/apollo/webhooks/phone-reveal
+        """
+        if len(contacts) > 10:
+            raise ValidationError(
+                "Bulk enrichment limited to 10 contacts per request",
+                context={"provided": len(contacts), "max": 10}
+            )
+
+        # Build request params
+        params = {}
+        if reveal_emails:
+            params["reveal_personal_emails"] = "true"
+
+        # Phone reveal requires webhook URL
+        phone_webhook_pending = False
+        if reveal_phones:
+            webhook_base = os.getenv('APOLLO_WEBHOOK_BASE_URL')
+            if webhook_base:
+                params["reveal_phone_number"] = "true"
+                params["webhook_url"] = f"{webhook_base}/api/v1/apollo/webhooks/phone-reveal"
+                phone_webhook_pending = True
+                logger.info(f"Phone reveal enabled with webhook: {params['webhook_url']}")
+            else:
+                logger.warning(
+                    "Phone reveal requested but APOLLO_WEBHOOK_BASE_URL not configured. "
+                    "Phones will NOT be retrieved. Set APOLLO_WEBHOOK_BASE_URL in .env"
+                )
+
+        # Build request body
+        request_body = {"details": contacts}
+
+        try:
+            response = await self.client.post(
+                "/people/bulk_match",
+                params=params,
+                json=request_body
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                enriched_contacts = []
+
+                for match in data.get("matches", []):
+                    # Handle null matches (person not found in Apollo)
+                    if match is None:
+                        continue
+
+                    # bulk_match returns data directly on match object, NOT nested under "person"
+                    # Check for "person" key for backwards compatibility, otherwise use match directly
+                    person = match.get("person") if "person" in match else match
+                    if not person or not person.get("id"):
+                        continue
+
+                    # Extract key fields
+                    email = person.get("email") or person.get("personal_email")
+                    is_real_email = email and "@" in email and "not_unlocked" not in email.lower()
+
+                    contact = {
+                        "apollo_person_id": person.get("id"),
+                        "first_name": person.get("first_name"),
+                        "last_name": person.get("last_name"),
+                        "full_name": person.get("name"),
+                        "email": email if is_real_email else None,
+                        "email_verified": is_real_email,
+                        "email_status": person.get("email_status"),
+                        "phone": person.get("phone_number"),  # May be None if async
+                        "title": person.get("title"),
+                        "linkedin_url": person.get("linkedin_url"),
+                        "seniority": person.get("seniority"),
+                        "departments": person.get("departments", []),
+                    }
+                    enriched_contacts.append(contact)
+
+                credits = data.get("credits_consumed", len(enriched_contacts))
+                logger.info(
+                    f"Bulk enrichment with reveal complete: {len(enriched_contacts)} contacts, "
+                    f"{credits} credits consumed, phone_webhook_pending={phone_webhook_pending}"
+                )
+
+                return {
+                    "enriched_contacts": enriched_contacts,
+                    "credits_consumed": credits,
+                    "phone_webhook_pending": phone_webhook_pending
+                }
+
+            elif response.status_code == 401:
+                raise APIAuthenticationError("Invalid Apollo API key")
+
+            elif response.status_code == 429:
+                error_data = response.json()
+                raise APIRateLimitError(f"Apollo rate limit exceeded: {error_data.get('message')}")
+
+            else:
+                raise APIConnectionError(f"Apollo API error: HTTP {response.status_code}")
+
+        except httpx.TimeoutException:
+            raise APITimeoutError(f"Apollo bulk enrichment timed out after {self.TIMEOUT}s")
+
+        except httpx.RequestError as e:
+            raise APIConnectionError(f"Failed to connect to Apollo API: {str(e)}")
+
+    async def search_contacts_free(
+        self,
+        domain: str,
+        job_titles: Optional[List[str]] = None,
+        max_results: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        FREE search for contacts at a company - NO credits consumed!
+
+        Uses /mixed_people/api_search endpoint which is FREE.
+        Returns names, titles, LinkedIn URLs - but NO emails or phones.
+        Use bulk_enrich_with_reveal() to get actual contact info.
+
+        Args:
+            domain: Company domain (e.g., "acmecompany.com")
+            job_titles: Optional list of titles to filter (e.g., ["CEO", "Owner"])
+            max_results: Max contacts to return (default: 50)
+
+        Returns:
+            List of contact dicts with:
+                - first_name, last_name, name
+                - title, seniority
+                - linkedin_url
+                - apollo_person_id (for matching later)
+                - NO email or phone (these require paid reveal)
+        """
+        clean_domain = domain.replace("www.", "").replace("@", "").strip()
+
+        if not clean_domain:
+            raise ValidationError("Domain cannot be empty", context={"domain": domain})
+
+        # Build search request for FREE /mixed_people/api_search
+        search_body = {
+            "q_organization_domains_list": [clean_domain],
+            "per_page": min(max_results, 100),
+            "page": 1
+        }
+
+        # Add title filters if provided
+        if job_titles:
+            search_body["person_titles"] = job_titles
+
+        try:
+            response = await self.client.post(
+                "/mixed_people/api_search",
+                json=search_body
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                people = data.get("people", [])
+
+                contacts = []
+                for person in people:
+                    contact = {
+                        "apollo_person_id": person.get("id"),
+                        "first_name": person.get("first_name"),
+                        "last_name": person.get("last_name"),
+                        "name": person.get("name"),
+                        "title": person.get("title"),
+                        "seniority": person.get("seniority"),
+                        "linkedin_url": person.get("linkedin_url"),
+                        "organization_name": person.get("organization", {}).get("name"),
+                        # NO email/phone - this is FREE search
+                    }
+                    contacts.append(contact)
+
+                logger.info(
+                    f"FREE search found {len(contacts)} contacts at {clean_domain} "
+                    f"(filtered by titles: {bool(job_titles)})"
+                )
+
+                return contacts
+
+            elif response.status_code == 401:
+                raise APIAuthenticationError("Invalid Apollo API key")
+
+            elif response.status_code == 429:
+                error_data = response.json()
+                raise APIRateLimitError(f"Apollo rate limit exceeded: {error_data.get('message')}")
+
+            else:
+                raise APIConnectionError(f"Apollo API error: HTTP {response.status_code}")
+
+        except httpx.TimeoutException:
+            raise APITimeoutError(f"Apollo search timed out after {self.TIMEOUT}s")
+
+        except httpx.RequestError as e:
+            raise APIConnectionError(f"Failed to connect to Apollo API: {str(e)}")
+
     def _map_person_to_contact(self, person_data: Dict[str, Any]) -> Contact:
         """
         Map Apollo person data to Contact model.
