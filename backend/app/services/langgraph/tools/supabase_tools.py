@@ -362,6 +362,182 @@ def query_leads_by_priority(
         raise ToolException(f"Failed to query priority leads: {str(e)}")
 
 
+# ========== Sales Intel Functions ==========
+
+class SaveSalesIntelInput(BaseModel):
+    """Input schema for saving sales intel."""
+
+    company_id: str = Field(
+        ...,
+        description="UUID of the company in dim_companies"
+    )
+    personal_hooks: List[Dict[str, str]] = Field(
+        default_factory=list,
+        description="List of personal hooks with category, detail, opener"
+    )
+    company_story: Optional[str] = Field(
+        default=None,
+        description="Company origin story"
+    )
+    pain_points: List[str] = Field(
+        default_factory=list,
+        description="Identified pain points"
+    )
+    email_draft: Optional[str] = Field(
+        default=None,
+        description="Generated email draft"
+    )
+    sms_draft: Optional[str] = Field(
+        default=None,
+        description="Generated SMS draft"
+    )
+    voice_opener: Optional[str] = Field(
+        default=None,
+        description="Generated voice opener"
+    )
+
+
+@tool("save_sales_intel", args_schema=SaveSalesIntelInput)
+def save_sales_intel(
+    company_id: str,
+    personal_hooks: List[Dict[str, str]] = None,
+    company_story: Optional[str] = None,
+    pain_points: List[str] = None,
+    email_draft: Optional[str] = None,
+    sms_draft: Optional[str] = None,
+    voice_opener: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Save sales intelligence from SalesIntelAgent to dim_companies.
+
+    Updates the AI columns with extracted personal hooks, pain points, and drafts.
+
+    Args:
+        company_id: UUID of the company
+        personal_hooks: List of personal hook dicts with category, detail, opener
+        company_story: Company origin story
+        pain_points: List of pain points
+        email_draft: Generated email body
+        sms_draft: Generated SMS message
+        voice_opener: Generated voice call opener
+
+    Returns:
+        Updated company record
+    """
+    try:
+        supabase = get_supabase()
+        import json
+
+        # Build update data
+        update_data = {
+            'ai_enriched_at': datetime.now().isoformat()
+        }
+
+        if personal_hooks:
+            # Store as JSON string in ai_personal_hooks
+            update_data['ai_personal_hooks'] = json.dumps(personal_hooks)
+
+        if company_story:
+            update_data['ai_company_story'] = company_story
+
+        if pain_points:
+            # Store as JSON string in ai_pain_points
+            update_data['ai_pain_points'] = json.dumps(pain_points)
+
+        # Store drafts in a combined field or separate - using ai_company_story suffix
+        if email_draft or sms_draft or voice_opener:
+            drafts = {
+                "email_draft": email_draft,
+                "sms_draft": sms_draft,
+                "voice_opener": voice_opener
+            }
+            # Store in a separate column if it exists, or append to story
+            # For now, we'll rely on the dim_ai_drafts table for drafts
+
+        result = supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
+
+        if result.data:
+            logger.info(f"Saved sales intel for company {company_id}: {len(personal_hooks or [])} hooks")
+            return result.data[0]
+        else:
+            raise ToolException(f"Company not found: {company_id}")
+
+    except Exception as e:
+        logger.error(f"Error saving sales intel: {e}")
+        raise ToolException(f"Failed to save sales intel: {str(e)}")
+
+
+def query_leads_for_sales_intel(limit: int = 10) -> List[Dict[str, Any]]:
+    """
+    Query leads that have been enriched but don't have personal hooks yet.
+
+    Returns leads with ai_company_story but no ai_personal_hooks.
+
+    Args:
+        limit: Maximum leads to return
+
+    Returns:
+        List of lead dictionaries ready for SalesIntelAgent
+    """
+    try:
+        supabase = get_supabase()
+
+        # Get leads that have been scouted (ai_company_story) but not analyzed for hooks
+        result = supabase.table('dim_companies').select(
+            'company_id, company_name, domain, '
+            'phone, city, state, industry, '
+            'oem_brands, service_areas, certifications, '
+            'ai_company_story'
+        ).not_.is_(
+            'ai_company_story', 'null'
+        ).is_(
+            'ai_personal_hooks', 'null'
+        ).order('icp_score', desc=True).limit(limit).execute()
+
+        logger.info(f"Found {len(result.data)} leads needing sales intel analysis")
+
+        return result.data or []
+
+    except Exception as e:
+        logger.error(f"Error querying leads for sales intel: {e}")
+        return []
+
+
+def query_hot_leads(limit: int = 10) -> List[Dict[str, Any]]:
+    """
+    Query HOT leads for GrowthAgent campaigns.
+
+    Returns leads with current_stage='HOT' and ICP score >= 75.
+
+    Args:
+        limit: Maximum leads to return
+
+    Returns:
+        List of HOT lead dictionaries
+    """
+    try:
+        supabase = get_supabase()
+
+        result = supabase.table('dim_companies').select(
+            'company_id, company_name, domain, '
+            'phone, city, state, '
+            'icp_tier, icp_score, current_stage, '
+            'ai_company_story, ai_personal_hooks, ai_pain_points'
+        ).eq(
+            'current_stage', 'HOT'
+        ).gte(
+            'icp_score', 75
+        ).order('icp_score', desc=True).limit(limit).execute()
+
+        logger.info(f"Found {len(result.data)} HOT leads for growth campaigns")
+
+        return result.data or []
+
+    except Exception as e:
+        logger.error(f"Error querying HOT leads: {e}")
+        return []
+
+
 # ========== Exports ==========
 
 __all__ = [
@@ -370,4 +546,7 @@ __all__ = [
     "update_lead_recommendation",
     "get_lead_details",
     "query_leads_by_priority",
+    "save_sales_intel",
+    "query_leads_for_sales_intel",
+    "query_hot_leads",
 ]

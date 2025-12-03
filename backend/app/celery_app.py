@@ -88,6 +88,13 @@ celery_app.conf.update(
         "app.tasks.agent_tasks.batch_generate_reports": {"queue": "workflows"},
         "app.tasks.agent_tasks.sync_crm_contacts": {"queue": "crm_sync"},
         "app.tasks.agent_tasks.run_lead_scout_task": {"queue": "default"},
+        # SalesIntel + Growth agent tasks
+        "app.tasks.agent_tasks.run_sales_intel_batch_task": {"queue": "workflows"},
+        "app.tasks.agent_tasks.run_growth_campaigns_task": {"queue": "workflows"},
+        # BDR agent tasks - human-in-loop with Slack
+        "app.tasks.agent_tasks.run_bdr_outreach_task": {"queue": "workflows"},
+        "app.tasks.agent_tasks.resume_bdr_outreach_task": {"queue": "workflows"},
+        "app.tasks.agent_tasks.run_bdr_batch_task": {"queue": "workflows"},
         # Batch tasks - routed by priority
         "app.tasks.batch_tasks.start_batch": {"queue": "default"},
         "app.tasks.batch_tasks.process_single_lead": {"queue": "batch_priority_medium"},
@@ -150,6 +157,31 @@ celery_app.conf.update(
             "task": "sync_crm_contacts",
             "schedule": 86400.0,  # 24 hours in seconds
             "args": ("linkedin", "import", None),
+        },
+        # ========== NEW AGENT SCHEDULES ==========
+        # SalesIntel - extract personal hooks hourly at :30
+        # Runs on leads with ai_company_story but no ai_personal_hooks
+        "sales-intel-hourly": {
+            "task": "run_sales_intel_batch",
+            "schedule": crontab(minute=30),  # :30 past each hour
+            "args": (10,),  # 10 leads per run
+            "options": {"queue": "workflows"},
+        },
+        # Growth Campaigns - daily at 10 AM EST (15:00 UTC)
+        # Runs 5-cycle campaigns for HOT leads with ICP score >= 75
+        "growth-campaigns-daily": {
+            "task": "run_growth_campaigns",
+            "schedule": crontab(hour=15, minute=0),  # 10 AM EST = 15:00 UTC
+            "args": ("book_meeting", 5),  # goal=book_meeting, max_leads=5
+            "options": {"queue": "workflows"},
+        },
+        # BDR Outreach - every hour on the hour
+        # Drafts emails for HOT leads, sends Slack notifications for approval
+        "bdr-outreach-hourly": {
+            "task": "run_bdr_batch",
+            "schedule": crontab(minute=0),  # Top of each hour
+            "args": (3,),  # 3 leads per hour
+            "options": {"queue": "workflows"},
         },
     },
 )

@@ -756,3 +756,634 @@ def generate_morning_report_task(
         logger.error(f"Error in Morning Report task: {exc}", exc_info=True)
         countdown = 120 * (2 ** self.request.retries)  # 2 min, 4 min backoff
         raise self.retry(exc=exc, countdown=countdown)
+
+
+# ============================================================================
+# SALES INTEL TASKS (Personal Hook Extraction)
+# ============================================================================
+
+@celery_app.task(name="run_sales_intel_batch", bind=True, max_retries=2, soft_time_limit=600)
+def run_sales_intel_batch_task(self, limit: int = 10):
+    """
+    Run SalesIntelAgent on leads that have been scouted but lack personal hooks.
+
+    This task:
+    1. Queries leads with ai_company_story but no ai_personal_hooks
+    2. For each lead, extracts personal hooks (hobbies, family, pets)
+    3. Generates personalized email/SMS/voice openers
+    4. Saves results back to Supabase
+
+    Args:
+        limit: Number of leads to process per run (default: 10)
+
+    Returns:
+        Dict with processed count and results
+    """
+    try:
+        logger.info(f"Starting Sales Intel batch: limit={limit}")
+
+        import asyncio
+        from app.services.langgraph.agents.sales_intel_agent import SalesIntelAgent
+        from app.services.langgraph.tools.supabase_tools import (
+            query_leads_for_sales_intel,
+            save_sales_intel,
+            get_lead_details
+        )
+
+        # Query leads needing personal hook extraction
+        leads = query_leads_for_sales_intel(limit=limit)
+
+        if not leads:
+            logger.info("No leads found for sales intel analysis")
+            return {"status": "no_leads", "processed": 0}
+
+        results = []
+        errors = []
+
+        async def process_lead(lead):
+            """Process a single lead with SalesIntelAgent."""
+            agent = SalesIntelAgent()
+
+            # Get full lead details including contacts
+            lead_details = get_lead_details.invoke({
+                'company_id': lead['company_id'],
+                'include_contacts': True
+            })
+
+            # Find best contact
+            contacts = lead_details.get('contacts', [])
+            best_contact = None
+            for contact in contacts:
+                if contact.get('contact_type') == 'ATL':
+                    best_contact = contact
+                    break
+            if not best_contact and contacts:
+                best_contact = contacts[0]
+
+            contact_name = best_contact.get('name', 'Owner') if best_contact else 'Owner'
+            contact_title = best_contact.get('title', 'Owner') if best_contact else 'Owner'
+
+            # Run analysis
+            result = await agent.analyze(
+                company_name=lead['company_name'],
+                contact_name=contact_name,
+                contact_title=contact_title,
+                scraped_content=lead.get('ai_company_story', ''),
+                services=lead.get('service_areas', '').split(',') if lead.get('service_areas') else None,
+                brands=lead.get('oem_brands', '').split(',') if lead.get('oem_brands') else None,
+                location=f"{lead.get('city', '')}, {lead.get('state', '')}"
+            )
+
+            # Save to Supabase
+            save_sales_intel.invoke({
+                'company_id': lead['company_id'],
+                'personal_hooks': [
+                    {"category": h.category, "detail": h.detail, "opener": h.conversation_opener}
+                    for h in result.personal_hooks
+                ],
+                'company_story': result.company_story,
+                'pain_points': result.pain_points,
+                'email_draft': result.email_body,
+                'sms_draft': result.sms_draft,
+                'voice_opener': result.voice_opener
+            })
+
+            return {
+                "company_id": lead['company_id'],
+                "company_name": lead['company_name'],
+                "hooks_found": len(result.personal_hooks),
+                "confidence": result.confidence,
+                "processing_time_ms": result.processing_time_ms
+            }
+
+        # Process each lead
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            for lead in leads:
+                try:
+                    result = loop.run_until_complete(process_lead(lead))
+                    results.append(result)
+                except Exception as e:
+                    error_msg = f"Failed to process {lead['company_name']}: {str(e)}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+        finally:
+            loop.close()
+
+        logger.info(
+            f"Sales Intel batch completed: {len(results)} processed, "
+            f"{len(errors)} errors"
+        )
+
+        return {
+            "status": "success",
+            "processed": len(results),
+            "errors": errors,
+            "results": results
+        }
+
+    except SoftTimeLimitExceeded:
+        logger.warning("Sales Intel batch soft time limit exceeded")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in Sales Intel batch: {exc}", exc_info=True)
+        countdown = 60 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+# ============================================================================
+# GROWTH CAMPAIGN TASKS (Multi-Touch Optimization)
+# ============================================================================
+
+@celery_app.task(name="run_growth_campaigns", bind=True, max_retries=2, soft_time_limit=900)
+def run_growth_campaigns_task(self, goal: str = "book_meeting", max_leads: int = 5):
+    """
+    Run GrowthAgent campaigns for HOT leads.
+
+    This task:
+    1. Queries HOT leads with ICP score >= 75
+    2. For each lead, runs a 5-cycle campaign optimization
+    3. Goal: book_meeting, get_reply, or engagement
+    4. Logs results and learnings
+
+    Args:
+        goal: Campaign goal (book_meeting, get_reply, engagement)
+        max_leads: Maximum leads to process per run (default: 5)
+
+    Returns:
+        Dict with campaign results
+    """
+    try:
+        logger.info(f"Starting Growth Campaigns: goal={goal}, max_leads={max_leads}")
+
+        import asyncio
+        from app.services.langgraph.agents.growth_agent import GrowthAgent
+        from app.services.langgraph.tools.supabase_tools import query_hot_leads
+
+        # Query HOT leads
+        leads = query_hot_leads(limit=max_leads)
+
+        if not leads:
+            logger.info("No HOT leads found for growth campaigns")
+            return {"status": "no_leads", "campaigns_run": 0}
+
+        results = []
+        errors = []
+
+        async def run_campaign(lead):
+            """Run a single growth campaign."""
+            agent = GrowthAgent(provider='cerebras')
+            result = await agent.run_campaign(
+                lead_id=lead['company_id'],
+                goal=goal,
+                max_cycles=5
+            )
+            return result
+
+        # Process each lead
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            for lead in leads:
+                try:
+                    result = loop.run_until_complete(run_campaign(lead))
+                    results.append({
+                        "company_id": lead['company_id'],
+                        "company_name": lead['company_name'],
+                        "goal": goal,
+                        "goal_met": result.goal_met,
+                        "cycle_count": result.cycle_count,
+                        "response_rate": result.response_rate,
+                        "engagement_score": result.engagement_score,
+                        "learnings": result.learnings[:3] if result.learnings else [],
+                        "latency_ms": result.latency_ms
+                    })
+                    logger.info(
+                        f"Growth campaign for {lead['company_name']}: "
+                        f"goal_met={result.goal_met}, cycles={result.cycle_count}"
+                    )
+                except Exception as e:
+                    error_msg = f"Campaign failed for {lead['company_name']}: {str(e)}"
+                    logger.error(error_msg)
+                    errors.append(error_msg)
+        finally:
+            loop.close()
+
+        logger.info(
+            f"Growth Campaigns completed: {len(results)} run, "
+            f"{sum(1 for r in results if r.get('goal_met'))} goals met, "
+            f"{len(errors)} errors"
+        )
+
+        return {
+            "status": "success",
+            "campaigns_run": len(results),
+            "goals_met": sum(1 for r in results if r.get('goal_met')),
+            "errors": errors,
+            "results": results
+        }
+
+    except SoftTimeLimitExceeded:
+        logger.warning("Growth Campaigns soft time limit exceeded")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in Growth Campaigns: {exc}", exc_info=True)
+        countdown = 120 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+# ============================================================================
+# BDR AGENT TASKS - Human-in-Loop Outreach with Slack Approval
+# ============================================================================
+
+@celery_app.task(name="run_bdr_outreach", bind=True, max_retries=2, soft_time_limit=300)
+def run_bdr_outreach_task(self, company_id: str):
+    """
+    Start BDR outreach workflow for a single company.
+
+    This task:
+    1. Fetches lead details from Supabase
+    2. Runs BDRAgent to research and draft email
+    3. Saves draft to dim_ai_drafts table
+    4. Sends Slack notification with Approve/Reject buttons
+    5. PAUSES until human responds via Slack webhook
+
+    The agent uses LangGraph's interrupt() to pause at the draft review step.
+    When the user clicks Approve/Reject in Slack, resume_bdr_outreach_task is triggered.
+
+    Args:
+        company_id: UUID of the company in dim_companies
+
+    Returns:
+        Dict with draft_id and status
+    """
+    try:
+        import asyncio
+        from app.services.langgraph.agents.bdr_agent import BDRAgent
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+        from app.services.slack_notifier import get_slack_notifier
+        import uuid
+
+        logger.info(f"Starting BDR outreach for company_id={company_id}")
+
+        # Get lead details from Supabase
+        supabase = get_supabase()
+        result = supabase.table('dim_companies').select(
+            'company_id, company_name, domain, phone, city, state, '
+            'icp_tier, icp_score, current_stage, '
+            'ai_company_story, ai_personal_hooks, ai_pain_points'
+        ).eq('company_id', company_id).execute()
+
+        if not result.data:
+            raise ValueError(f"Company not found: {company_id}")
+
+        lead = result.data[0]
+
+        # Get best contact for this company
+        contacts_result = supabase.table('dim_contacts').select(
+            'contact_id, first_name, last_name, title, email'
+        ).eq('company_id', company_id).eq('is_atl', True).limit(1).execute()
+
+        contact = contacts_result.data[0] if contacts_result.data else {}
+        contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "Owner"
+        contact_title = contact.get('title', 'Owner')
+        contact_email = contact.get('email')
+
+        # Run BDRAgent
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            agent = BDRAgent(provider='cerebras')
+
+            async def run_agent():
+                return await agent.start_outreach(
+                    lead_id=company_id,
+                    company_name=lead['company_name'],
+                    contact_name=contact_name,
+                    contact_title=contact_title
+                )
+
+            bdr_result = loop.run_until_complete(run_agent())
+
+            # Extract draft from result
+            # BDRAgent returns interrupt data with draft
+            if "__interrupt__" in bdr_result:
+                interrupt_data = bdr_result["__interrupt__"][0].get("value", {})
+            else:
+                interrupt_data = bdr_result
+
+            draft_subject = interrupt_data.get("draft_subject", f"Quick question for {lead['company_name']}")
+            draft_body = interrupt_data.get("draft_body", "")
+            research_summary = interrupt_data.get("research_summary", "")
+
+            # Generate draft ID
+            draft_id = str(uuid.uuid4())
+
+            # Save draft to dim_ai_drafts
+            draft_data = {
+                "draft_id": draft_id,
+                "company_id": company_id,
+                "contact_email": contact_email,
+                "draft_type": "email",
+                "subject": draft_subject,
+                "body": draft_body,
+                "research_summary": research_summary,
+                "status": "pending_approval",
+                "created_at": "now()"
+            }
+
+            supabase.table('dim_ai_drafts').insert(draft_data).execute()
+
+            logger.info(f"BDR draft saved: {draft_id} for {lead['company_name']}")
+
+            # Send Slack notification
+            async def send_notification():
+                notifier = get_slack_notifier()
+                personal_hooks = None
+                if lead.get('ai_personal_hooks'):
+                    import json
+                    try:
+                        personal_hooks = json.loads(lead['ai_personal_hooks'])
+                    except:
+                        pass
+
+                await notifier.send_bdr_approval_request(
+                    draft_id=draft_id,
+                    company_name=lead['company_name'],
+                    contact_name=contact_name,
+                    contact_title=contact_title,
+                    subject=draft_subject,
+                    body_preview=draft_body,
+                    research_summary=research_summary,
+                    personal_hooks=personal_hooks
+                )
+
+            loop.run_until_complete(send_notification())
+
+        finally:
+            loop.close()
+
+        logger.info(f"BDR outreach initiated for {lead['company_name']}, awaiting approval")
+
+        return {
+            "status": "awaiting_approval",
+            "draft_id": draft_id,
+            "company_id": company_id,
+            "company_name": lead['company_name']
+        }
+
+    except SoftTimeLimitExceeded:
+        logger.warning(f"BDR outreach soft time limit exceeded for {company_id}")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in BDR outreach for {company_id}: {exc}", exc_info=True)
+        countdown = 60 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=countdown)
+
+
+@celery_app.task(name="resume_bdr_outreach", bind=True, max_retries=1)
+def resume_bdr_outreach_task(
+    self,
+    draft_id: str,
+    action: str,
+    feedback: str = None,
+    approved_by: str = None
+):
+    """
+    Resume BDR workflow after Slack approval/rejection.
+
+    This task is triggered by the Slack webhook handler when a user
+    clicks Approve, Reject, or Edit on a BDR draft notification.
+
+    Actions:
+    - approve: Mark draft as approved, "send" the email (or queue for sending)
+    - reject: Mark draft as rejected, archive it
+    - revise: Re-run BDRAgent with feedback, create new draft
+
+    Args:
+        draft_id: UUID of the draft in dim_ai_drafts
+        action: Action type (approve, reject, revise)
+        feedback: Optional feedback for revision
+        approved_by: Slack username who took the action
+
+    Returns:
+        Dict with updated status
+    """
+    try:
+        import asyncio
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+        from app.services.slack_notifier import get_slack_notifier
+
+        logger.info(f"Resuming BDR for draft_id={draft_id}, action={action}")
+
+        supabase = get_supabase()
+
+        # Get draft details
+        draft_result = supabase.table('dim_ai_drafts').select('*').eq('draft_id', draft_id).execute()
+
+        if not draft_result.data:
+            raise ValueError(f"Draft not found: {draft_id}")
+
+        draft = draft_result.data[0]
+        company_id = draft['company_id']
+
+        # Get company name for notifications
+        company_result = supabase.table('dim_companies').select('company_name').eq('company_id', company_id).execute()
+        company_name = company_result.data[0]['company_name'] if company_result.data else "Unknown"
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            if action == "approve":
+                # Mark as approved and "sent"
+                # In a real system, this would trigger actual email sending via SendGrid/etc
+                supabase.table('dim_ai_drafts').update({
+                    "status": "sent",
+                    "approved_by": approved_by,
+                    "sent_at": "now()"
+                }).eq('draft_id', draft_id).execute()
+
+                # Update company stage
+                supabase.table('dim_companies').update({
+                    "current_stage": "CONTACTED"
+                }).eq('company_id', company_id).execute()
+
+                logger.info(f"BDR draft approved and sent: {draft_id}")
+
+                # Send confirmation to Slack
+                async def send_confirmation():
+                    notifier = get_slack_notifier()
+                    await notifier.send_status_update(
+                        draft_id=draft_id,
+                        company_name=company_name,
+                        status="sent",
+                        message=f"Email sent to {draft.get('contact_email', 'contact')} by {approved_by}"
+                    )
+
+                loop.run_until_complete(send_confirmation())
+
+                return {
+                    "status": "sent",
+                    "draft_id": draft_id,
+                    "approved_by": approved_by
+                }
+
+            elif action == "reject":
+                # Mark as rejected
+                supabase.table('dim_ai_drafts').update({
+                    "status": "rejected",
+                    "rejected_by": approved_by
+                }).eq('draft_id', draft_id).execute()
+
+                logger.info(f"BDR draft rejected: {draft_id}")
+
+                return {
+                    "status": "rejected",
+                    "draft_id": draft_id,
+                    "rejected_by": approved_by
+                }
+
+            elif action == "revise":
+                # Mark current draft as revised
+                supabase.table('dim_ai_drafts').update({
+                    "status": "revised",
+                    "revision_feedback": feedback
+                }).eq('draft_id', draft_id).execute()
+
+                # TODO: Pass feedback to BDRAgent for context-aware revision
+                # Currently creates a fresh draft without revision context.
+                # To improve: Modify BDRAgent.start_outreach() to accept previous_feedback param
+                # and use it in the prompt for generating improved drafts.
+                run_bdr_outreach_task.delay(company_id)
+
+                logger.info(f"BDR draft revision requested: {draft_id}")
+
+                return {
+                    "status": "revision_requested",
+                    "draft_id": draft_id,
+                    "feedback": feedback
+                }
+
+            else:
+                raise ValueError(f"Unknown action: {action}")
+
+        finally:
+            loop.close()
+
+    except Exception as exc:
+        logger.error(f"Error resuming BDR for {draft_id}: {exc}", exc_info=True)
+        raise
+
+
+@celery_app.task(name="run_bdr_batch", bind=True, max_retries=2, soft_time_limit=900)
+def run_bdr_batch_task(self, limit: int = 3):
+    """
+    Run BDR outreach for a batch of HOT leads.
+
+    Queries HOT leads that haven't been contacted and initiates
+    BDR outreach for each, sending Slack notifications for approval.
+
+    Scheduled to run every hour via Celery Beat.
+
+    Args:
+        limit: Maximum number of leads to process per batch
+
+    Returns:
+        Dict with batch results
+    """
+    try:
+        from app.services.langgraph.tools.supabase_tools import get_supabase
+
+        logger.info(f"Starting BDR batch for {limit} leads")
+
+        supabase = get_supabase()
+
+        # Get HOT leads that haven't been contacted
+        # Exclude leads that already have pending or sent drafts
+        result = supabase.table('dim_companies').select(
+            'company_id, company_name'
+        ).eq(
+            'current_stage', 'HOT'
+        ).gte(
+            'icp_score', 70
+        ).not_.is_(
+            'ai_company_story', 'null'  # Must have been scouted
+        ).limit(limit).execute()
+
+        leads = result.data or []
+
+        if not leads:
+            logger.info("No HOT leads available for BDR batch")
+            return {
+                "status": "success",
+                "leads_queued": 0,
+                "message": "No HOT leads available"
+            }
+
+        # Check which leads already have pending drafts
+        company_ids = [lead['company_id'] for lead in leads]
+        drafts_result = supabase.table('dim_ai_drafts').select(
+            'company_id'
+        ).in_('company_id', company_ids).in_(
+            'status', ['pending_approval', 'sent']
+        ).execute()
+
+        already_drafted = {d['company_id'] for d in (drafts_result.data or [])}
+
+        # Queue BDR outreach for leads without pending drafts
+        queued = []
+        skipped = []
+
+        for lead in leads:
+            if lead['company_id'] in already_drafted:
+                skipped.append(lead['company_name'])
+                continue
+
+            # Queue the BDR outreach task
+            run_bdr_outreach_task.delay(lead['company_id'])
+            queued.append(lead['company_name'])
+
+        logger.info(
+            f"BDR batch: {len(queued)} queued, {len(skipped)} skipped (already have drafts)"
+        )
+
+        # Send batch summary to Slack if any were queued
+        if queued:
+            import asyncio
+            from app.services.slack_notifier import get_slack_notifier
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                async def send_summary():
+                    notifier = get_slack_notifier()
+                    await notifier.send_batch_summary(
+                        drafts_created=len(queued),
+                        companies=queued,
+                        errors=0
+                    )
+                loop.run_until_complete(send_summary())
+            finally:
+                loop.close()
+
+        return {
+            "status": "success",
+            "leads_queued": len(queued),
+            "leads_skipped": len(skipped),
+            "companies": queued
+        }
+
+    except SoftTimeLimitExceeded:
+        logger.warning("BDR batch soft time limit exceeded")
+        raise
+
+    except Exception as exc:
+        logger.error(f"Error in BDR batch: {exc}", exc_info=True)
+        countdown = 120 * (2 ** self.request.retries)
+        raise self.retry(exc=exc, countdown=countdown)

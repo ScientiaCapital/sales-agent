@@ -43,6 +43,7 @@ from app.api import hubspot  # HubSpot for GTM marketing (Close = Sales)
 from app.api import audit  # Lead audit trail for GTM agents
 from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import batch  # Batch processing with parallel execution
+from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -224,6 +225,7 @@ app.include_router(csv_import.router, prefix=settings.API_V1_PREFIX)  # CSV uplo
 app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit trail for GTM agents
 app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outreach draft management
 app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch processing with parallel execution
+app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
 
 
 @app.get("/")
