@@ -14,6 +14,11 @@ Queue Structure:
     - batch_priority_low: Low priority batch leads (ICP Bronze)
     - batch_dlq: Dead letter queue for failed batch leads
 """
+# Load environment variables FIRST
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).parent.parent.parent / '.env', override=True)
+
 import os
 from celery import Celery
 from celery.signals import task_prerun, task_postrun, task_failure
