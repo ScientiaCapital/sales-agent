@@ -1,76 +1,68 @@
+# Generate PRP
+
+Create an implementation plan (PRP document).
+
+**Usage**: `/generate-prp [feature-name]`
+
 ---
-description: "Create implementation blueprints (PRPs)"
----
-
-# Generate PRP for sales-agent
-
-## Usage
-
-```
-/generate-prp <feature-name>
-```
 
 ## Process
 
-### 1. Load Context
+### 1. Gather Requirements
+Ask about:
+- What does it do?
+- How do we know it works?
+- External dependencies?
+- Constraints?
 
-Read these files first:
-- `CLAUDE.md` - Project rules and patterns
-- `.claude/CLAUDE.md` - Detailed technical guide
-- `PLANNING.md` - Architecture decisions
-- `.claude/PROJECT_CONTEXT.md` - Current status
+### 2. Research Codebase
+```bash
+# Find similar patterns
+ls backend/app/services/
+ls backend/app/api/
+ls backend/tests/
+```
 
-### 2. Gather Requirements
+### 3. Create PRP
+Save to `PRPs/PRP-<NNN>-<feature-name>.md`
 
-Ask the user for:
-- **Feature description**: What does it do?
-- **Success criteria**: How do we know it works?
-- **Dependencies**: External APIs, libraries?
-- **Constraints**: Performance, security, compatibility?
+Template:
+```markdown
+# PRP-<NNN>: Feature Name
 
-### 3. Research Codebase
+## Summary
+Brief description
 
-Search for similar patterns:
-- Check `backend/app/services/` for service patterns
-- Check `backend/app/services/langgraph/agents/` for agent patterns
-- Check `backend/tests/` for test patterns
+## Success Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
 
-### 4. Generate PRP
+## Implementation Steps
+1. Step 1
+2. Step 2
 
-Create `PRPs/PRP-<NNN>-<feature-name>.md` using template at `PRPs/templates/prp_base.md`
+## Files to Modify
+- `backend/app/...`
 
-### 5. Add to TASK.md
-
-Link new PRP in task list.
+## Tests Required
+- Test case 1
+```
 
 ---
 
-## Key Patterns to Follow
+## Key Patterns
 
-### Supabase Pattern (Check-Then-Insert)
+### Supabase (Check-Then-Insert)
 ```python
 existing = supabase.table('dim_companies').select('normalized_name').execute()
 existing_map = {r['normalized_name'] for r in existing.data}
 if normalized not in existing_map:
     # INSERT
-else:
-    # UPDATE
 ```
 
-### LangGraph Agent Pattern
+### Lead Scoring
 ```python
-class MyAgent:
-    def __init__(self, llm_service: LLMService):
-        self.llm = llm_service
-
-    async def run(self, state: AgentState) -> AgentState:
-        # Process and return updated state
-        pass
-```
-
-### Lead Scoring Pattern
-```python
-# 1 company = 1 lead (don't inflate with multiple contacts)
+# 1 company = 1 lead (don't inflate with contacts)
 score = icp_score + phone_bonus + email_bonus
 ```
 
@@ -78,7 +70,5 @@ score = icp_score + phone_bonus + email_bonus
 
 ## Critical Rules
 
-- **NO OpenAI models** - Use Cerebras, Claude, DeepSeek only
-- Include validation gates in every PRP
-- Reference existing patterns, don't invent new ones
+- **NO OpenAI** - Cerebras, Claude, DeepSeek only
 - API keys in `.env` only

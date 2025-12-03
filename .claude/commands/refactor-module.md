@@ -1,95 +1,79 @@
-# Refactor Module Workflow
+# Refactor Module
 
-Quick 4-phase refactor workflow for cleaning up technical debt.
+4-phase workflow for cleaning up technical debt.
 
 **Usage**: `/refactor-module [module_path]`
 
 ---
 
-## PHASE 1: PLAN & BASELINE
+## Phase 1: Plan & Baseline
 
-### 1.1 Brainstorm Refactor Plan
-Use the brainstorming skill to identify:
+### Brainstorm
 - Code bloat and duplicates
 - Dependency issues
 - Anti-patterns to fix
 - Test strategy
 
-### 1.2 Create Baseline Snapshot
+### Baseline Snapshot
 ```bash
-git add -A && git commit -m "baseline: before refactor of $ARGUMENTS"
+git add -A && git commit -m "baseline: before refactor"
 ```
 
 ---
 
-## PHASE 2: REFACTOR + TEST (Parallel)
+## Phase 2: Refactor + Test
 
-### 2a. Main Refactor Work
-Analyze the module at `$ARGUMENTS`:
-- Identify legacy patterns to modernize
-- Remove dead code and duplicates
+### Refactor Work
+- Remove dead code
 - Simplify complex logic
-- Apply current project patterns
+- Apply project patterns
 
-### 2b. Generate/Update Tests
-Ensure test coverage:
+### Update Tests
 - Unit tests for refactored functions
-- Integration tests if boundaries changed
-- Edge cases for new logic
+- Integration tests if needed
+- Edge cases
 
-### 2c. Performance Check (if applicable)
-- Profile if performance-critical code
-- Check for N+1 queries, unnecessary loops
-- Verify no memory leaks introduced
+### Performance Check
+- Check for N+1 queries
+- Remove unnecessary loops
+- Verify no memory leaks
 
 ---
 
-## PHASE 3: VALIDATE
+## Phase 3: Validate
 
-### 3.1 Run Tests
 ```bash
 cd backend && source ../venv/bin/activate
+
+# Tests
 pytest tests/ -v --tb=short
-```
 
-### 3.2 Check Diff
-```bash
+# Diff
 git diff --stat
-git diff $ARGUMENTS
-```
 
-### 3.3 Lint Check
-```bash
-ruff check $ARGUMENTS
+# Lint
+ruff check app/
 ```
 
 ---
 
-## PHASE 4: SHIP IF CLEAN
+## Phase 4: Ship
 
-### 4.1 Code Review
+### Code Review
 Launch code-reviewer agent to verify:
-- No regressions introduced
-- Tests actually test behavior
-- Code follows project patterns
+- No regressions
+- Tests cover behavior
+- Follows patterns
 
-### 4.2 Commit & Push
-**IF CLEAN** (all tests pass, no lint errors):
+### Commit
 ```bash
 git add -A
-git commit -m "refactor: modernize $ARGUMENTS
+git commit -m "refactor: modernize [module]
 
-- [list key changes]
-- [improved X]
-- [removed Y]"
+- Key change 1
+- Key change 2"
 git push origin main
 ```
-
-**IF ISSUES FOUND**:
-1. Fix the issues
-2. Re-run tests
-3. Re-review
-4. Then commit
 
 ---
 
@@ -100,6 +84,5 @@ git push origin main
 | Tests | All pass |
 | Lint | No errors |
 | Review | No critical issues |
-| Diff | Changes make sense |
 
-**No exceptions. Fix before shipping.**
+**Fix before shipping.**

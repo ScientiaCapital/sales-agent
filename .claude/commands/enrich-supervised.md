@@ -1,41 +1,43 @@
-# Supervised Enrichment Pipeline
+# Supervised Enrichment
 
-Start the supervised enrichment pipeline with Claude guidance.
+Interactive enrichment with manual checkpoints.
 
-## Usage
-```
-/enrich-supervised [--budget 5.00] [--batch-size 2]
-```
+**Usage**: `/enrich-supervised [--budget 5.00] [--batch-size 2]`
 
-## What This Does
+---
 
-1. Query Supabase for unenriched companies
-2. Launch interactive terminal pipeline
-3. Process batches with manual checkpoints
-4. Guide you through results and next actions
-
-## Execution
+## Quick Start
 
 ```bash
-cd backend
-source ../venv/bin/activate
-python run_supervised_enrichment.py --budget ${BUDGET:-5.0} --batch-size ${BATCH_SIZE:-2}
+cd backend && source ../venv/bin/activate
+python run_supervised_enrichment.py --budget 5.0 --batch-size 2
 ```
+
+---
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| c | Continue to next batch |
-| s | Stop and save progress |
-| v | View detailed results |
-| q | Quit immediately |
+| `c` | Continue to next batch |
+| `s` | Stop and save progress |
+| `v` | View detailed results |
+| `q` | Quit immediately |
 
-## Budget Guidelines
+---
 
-- Apollo Free: $0.00/company
-- LinkedIn scrape: $0.03/company (Browserbase)
-- Hunter.io: $0.01/email lookup
-- Apollo Paid: ~$1.00/contact (only if needed)
+## Cost Estimates
 
-Typical cost: $0.05-0.15 per company
+| Service | Cost |
+|---------|------|
+| Website scrape | $0.03/company |
+| Hunter.io | $0.01/email |
+| **Typical total** | $0.05-0.15/company |
+
+---
+
+## When to Use
+
+- Verifying enrichment quality
+- Testing new extraction logic
+- Processing high-value leads manually
