@@ -1,7 +1,7 @@
 """Apollo Paid Tier Stage - Email reveals and phone numbers."""
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from app.core.logging import setup_logging
 from app.services.apollo_rate_limited import ApolloRateLimitedService
@@ -50,7 +50,6 @@ class ApolloPaidStage(BaseStage):
         """
         start_time = time.time()
         domain = company.get("domain")
-        company_id = company.get("company_id")
         existing_contacts = company.get("contacts", [])
 
         if not domain:

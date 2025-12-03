@@ -2,8 +2,7 @@
 
 import asyncio
 import logging
-from typing import Dict, List, Any, Optional
-from datetime import datetime
+from typing import Dict, List, Any
 
 from .stages.apollo_free import ApolloFreeStage
 from .stages.linkedin import LinkedInStage

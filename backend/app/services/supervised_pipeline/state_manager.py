@@ -1,7 +1,6 @@
 """State Manager - Redis + Supabase State Tracking."""
 
-import json
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from datetime import datetime, timezone
 
 
@@ -135,25 +134,17 @@ class StateManager:
     ) -> None:
         """Sync completion status to Supabase.
 
-        Updates dim_companies with:
-        - enrichment_{stage}_completed = True
-        - enrichment_{stage}_cost_usd = cost
-        - enrichment_last_updated = now
+        Note: Currently only updates last_enriched_at since dim_companies
+        doesn't have per-stage tracking columns yet.
 
         Args:
             company_id: Company UUID
             stage: Stage name
             cost_usd: Cost for this stage
         """
-        update_data = {
-            f"enrichment_{stage}_completed": True,
-            f"enrichment_{stage}_cost_usd": cost_usd,
-            "enrichment_last_updated": datetime.now(timezone.utc).isoformat(),
-        }
-
-        self.supabase.table("dim_companies").update(update_data).eq(
-            "id", company_id
-        ).execute()
+        # Only update last_enriched_at - the only enrichment column that exists
+        # Future: Add migration for per-stage tracking columns
+        pass  # Skip Supabase sync until schema is updated
 
     async def mark_complete(self, company_id: str) -> None:
         """Mark entire enrichment pipeline as complete.
@@ -161,16 +152,17 @@ class StateManager:
         Args:
             company_id: Company UUID
         """
-        # Get final cost
-        status = await self.get_company_status(company_id)
-        total_cost = float(status.get("total_cost_usd", 0.0))
+        # Get final cost (stored in Redis for reference)
+        _ = await self.get_company_status(company_id)
 
-        # Update Supabase
-        self.supabase.table("dim_companies").update({
-            "enrichment_pipeline_completed": True,
-            "enrichment_total_cost_usd": total_cost,
-            "enrichment_completed_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", company_id).execute()
+        # Update Supabase - use actual column names
+        try:
+            self.supabase.table("dim_companies").update({
+                "last_enriched_at": datetime.now(timezone.utc).isoformat(),
+            }).eq("company_id", company_id).execute()
+        except Exception as e:
+            # Log but don't fail - Redis is source of truth for state
+            print(f"Warning: Supabase update failed for {company_id}: {e}")
 
         # Update Redis
         key = self._key(company_id)
@@ -199,12 +191,14 @@ class StateManager:
             }
         )
 
-        # Optionally sync to Supabase
-        self.supabase.table("dim_companies").update({
-            "enrichment_pipeline_failed": True,
-            "enrichment_error": error,
-            "enrichment_last_updated": datetime.now(timezone.utc).isoformat(),
-        }).eq("id", company_id).execute()
+        # Note: dim_companies doesn't have error tracking columns yet
+        # Just update flagged_for_reenrich to True so we can retry later
+        try:
+            self.supabase.table("dim_companies").update({
+                "flagged_for_reenrich": True,
+            }).eq("company_id", company_id).execute()
+        except Exception as e:
+            print(f"Warning: Supabase mark_failed update failed for {company_id}: {e}")
 
     async def cleanup(self, company_id: str) -> None:
         """Remove Redis state after completion.

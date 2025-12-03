@@ -1,6 +1,6 @@
 """Budget Tracker - Per-Batch Cost Limits."""
 
-from typing import Dict, Optional
+from typing import Dict
 from redis.asyncio import Redis
 
 
