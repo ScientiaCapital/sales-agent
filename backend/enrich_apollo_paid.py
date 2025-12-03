@@ -61,11 +61,13 @@ BULK_ENRICH_SIZE = 10  # Max contacts per Apollo API call
 RATE_LIMIT_DELAY = 3  # Seconds between API calls
 
 # ATL (Above The Line) title keywords - decision makers only
+# IMPORTANT: Keep in sync with run_enrichment.py ATL_TITLES
 ATL_TITLE_KEYWORDS = [
-    'owner', 'ceo', 'president', 'founder', 'principal',
-    'vp', 'vice president', 'director', 'general manager', 'gm',
-    'partner', 'managing', 'chief', 'head of', 'co-founder',
-    'executive', 'chairman', 'cfo', 'coo', 'cto'
+    'owner', 'co-owner', 'founder', 'co-founder', 'president', 'ceo', 'chief executive',
+    'chairman', 'cfo', 'coo', 'cto', 'executive',
+    'general manager', 'gm', 'director', 'vp', 'vice president', 'partner',
+    'principal', 'managing', 'operations manager',
+    'head of', 'division head', 'department head', 'branch manager', 'regional manager'
 ]
 
 
