@@ -7,6 +7,17 @@ This module defines async tasks for agent-based lead processing, including:
 - Batch lead processing
 - Background enrichment tasks
 """
+# Disable LangSmith tracing BEFORE any langchain/langgraph imports
+import os
+os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
+os.environ.setdefault("LANGSMITH_TRACING", "false")
+os.environ.setdefault("LANGCHAIN_TRACING", "false")
+
+# Suppress LangSmith warning logs (they're noisy when API key is missing)
+import logging
+logging.getLogger("langsmith.client").setLevel(logging.ERROR)
+logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
+
 from typing import Dict, List, Any
 from celery import group, chain
 from celery.exceptions import SoftTimeLimitExceeded

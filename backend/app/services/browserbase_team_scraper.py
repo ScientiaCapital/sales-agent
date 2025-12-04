@@ -186,9 +186,14 @@ class BrowserbaseTeamScraper:
 
         try:
             # Team page paths to try
+            # Optimized path list - prioritized by frequency, reduced from 8 to 5
+            # Most HVAC/contractor sites use /about or /about-us, rarely /leadership
             team_paths = [
-                "/team", "/about/team", "/our-team", "/leadership",
-                "/about-us", "/about", "/company/team", "/people"
+                "/about-us",    # Most common for small businesses
+                "/about",       # Second most common
+                "/team",        # Explicit team page
+                "/our-team",    # Alternative team naming
+                "/leadership",  # Larger companies only (skip /about/team, /company/team, /people)
             ]
 
             async with async_playwright() as p:
@@ -211,6 +216,11 @@ class BrowserbaseTeamScraper:
                     page = pages[0]
 
                 # Try each team page path
+                # Smart early exit: stop after 2 successful page loads with no team cards
+                # Most sites that have team info will have it on /about-us or /about
+                successful_loads_without_contacts = 0
+                MAX_EMPTY_PAGES = 2  # Stop after 2 pages load but have no team content
+
                 for team_path in team_paths:
                     try:
                         # Construct full URL
@@ -220,7 +230,8 @@ class BrowserbaseTeamScraper:
                         logger.info(f"Navigating to: {team_url}")
 
                         # Navigate to team page
-                        response = await page.goto(team_url, wait_until="networkidle", timeout=15000)
+                        # Reduced timeout from 15s to 8s - most pages load in <5s
+                        response = await page.goto(team_url, wait_until="networkidle", timeout=8000)
 
                         # Check if page loaded successfully
                         if not response or response.status >= 400:
@@ -279,6 +290,15 @@ class BrowserbaseTeamScraper:
                         if contacts:
                             logger.info(f"Found {len(contacts)} ATL contacts on {team_url}")
                             break
+                        else:
+                            # Page loaded but no team cards - count it
+                            successful_loads_without_contacts += 1
+                            if successful_loads_without_contacts >= MAX_EMPTY_PAGES:
+                                logger.info(
+                                    f"Early exit: {successful_loads_without_contacts} pages loaded "
+                                    f"without team cards - site likely has no team page"
+                                )
+                                break
 
                     except Exception as nav_error:
                         logger.debug(f"Failed to load {team_url}: {nav_error}")

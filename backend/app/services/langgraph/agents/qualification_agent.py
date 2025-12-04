@@ -227,13 +227,19 @@ class QualificationAgent:
         # Initialize Hunter.io service
         self.hunter_service = HunterService()
 
-        # Initialize Apollo service (optional - if API key configured)
-        try:
-            self.apollo_service = ApolloService()
-            logger.info("Apollo service initialized")
-        except Exception as e:
+        # Initialize Apollo service (optional - controlled by APOLLO_ENABLED env var)
+        # Set APOLLO_ENABLED=true in .env when credits are purchased
+        apollo_enabled = os.getenv("APOLLO_ENABLED", "false").lower() == "true"
+        if apollo_enabled:
+            try:
+                self.apollo_service = ApolloService()
+                logger.info("Apollo service initialized (APOLLO_ENABLED=true)")
+            except Exception as e:
+                self.apollo_service = None
+                logger.warning(f"Apollo service not available: {e}")
+        else:
             self.apollo_service = None
-            logger.warning(f"Apollo service not available: {e}")
+            logger.info("Apollo service DISABLED (set APOLLO_ENABLED=true to enable)")
 
         logger.info(
             f"QualificationAgent initialized: provider={provider}, model={model}, "
@@ -665,7 +671,7 @@ Respond with JSON only."""
                         discovery_service = get_website_discovery_service()
                         discovered_website = await discovery_service.discover_website(
                             company_name=company_name,
-                            industry=company_industry,
+                            industry=industry or "",
                             state=""  # NOTE: Address field not in current schema - would need usaddress library + parameter addition
                         )
                         if discovered_website:
@@ -792,7 +798,7 @@ Respond with JSON only."""
                     # Log Apollo as disabled for audit visibility
                     discovery_audit.log_disabled_method(
                         DiscoveryMethod.APOLLO_DOMAIN_SEARCH,
-                        "No Apollo credits (Nov 26, 2025) - re-enable when purchased"
+                        "DISABLED: Set APOLLO_ENABLED=true in .env when credits are purchased"
                     )
 
                     # ===== QUEUE FOR APOLLO ENRICHMENT =====

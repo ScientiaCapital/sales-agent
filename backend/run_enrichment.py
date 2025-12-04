@@ -80,17 +80,72 @@ def load_contact_blocklist():
 load_contact_blocklist()
 
 
+# Words that are DEFINITELY garbage when they appear as names
+# (Not real names, these should never be in dim_contacts)
+DEFINITELY_GARBAGE_NAMES = {
+    # Website navigation elements that got parsed as names
+    'log in', 'login', 'sign up', 'signup', 'sign in', 'check continue',
+    'apply now', 'get started', 'read more', 'learn more', 'click here',
+    'view all', 'see all', 'show more', 'load more', 'submit',
+    # Membership/account terms
+    'membership careers', 'create account', 'my account', 'forgot password',
+    # Common city names that get parsed as person names
+    'los angeles', 'new york', 'san francisco', 'san diego', 'san jose',
+    'las vegas', 'santa monica', 'santa ana', 'long beach', 'fort worth',
+    'salt lake', 'palm springs', 'palm beach', 'newport beach',
+    # Service area terms that look like names
+    'service area', 'areas served', 'cities served', 'we serve',
+    # Industry terms that look like "First Last" names
+    'preventative maintenance', 'preventive maintenance', 'routine maintenance',
+    'customer service', 'technical support', 'emergency service',
+    'free estimate', 'free quote', 'contact us', 'about us',
+}
+
+# Common first name prefixes that indicate a city, not a person
+CITY_NAME_PREFIXES = {'los', 'las', 'san', 'santa', 'new', 'fort', 'palm', 'salt', 'long', 'newport'}
+
+
 def is_garbage_contact(name: str, title: str = '') -> bool:
     """Check if a contact name or title matches blocklist patterns.
 
     Returns True if this is garbage (should be filtered out).
-    """
-    name_lower = (name or '').lower()
-    title_lower = (title or '').lower()
 
+    Uses three layers of defense:
+    1. DEFINITELY_GARBAGE_NAMES - exact matches for known bad patterns
+    2. CONTACT_BLOCKLIST - substring matches for blocklist patterns
+    3. Structural checks - city name detection, too-short names, etc.
+    """
+    name_lower = (name or '').strip().lower()
+    title_lower = (title or '').strip().lower()
+
+    # Layer 1: Exact match against DEFINITELY_GARBAGE
+    if name_lower in DEFINITELY_GARBAGE_NAMES:
+        return True
+
+    # Layer 2: Check blocklist patterns (substring match)
     for pattern in CONTACT_BLOCKLIST:
         if pattern in name_lower or pattern in title_lower:
             return True
+
+    # Layer 3: Structural checks
+    words = name_lower.split()
+
+    # Check if name looks like a city (e.g., "Los Angeles", "San Diego")
+    if len(words) >= 2 and words[0] in CITY_NAME_PREFIXES:
+        return True
+
+    # Reject very short "names" (likely garbage)
+    if len(name_lower) < 5:
+        return True
+
+    # Reject names with only one word (need at least first + last)
+    if len(words) < 2:
+        return True
+
+    # Reject if name contains numbers (not a real name)
+    if any(c.isdigit() for c in name_lower):
+        return True
+
     return False
 
 
@@ -334,13 +389,33 @@ def is_atl_title(title):
 
 
 # Garbage name fragments to filter out (partial text matches, not real names)
+# IMPORTANT: These words appearing ANYWHERE in a name disqualify it
 GARBAGE_NAME_WORDS = {
+    # Articles/prepositions
     'as', 'a', 'an', 'the', 'to', 'of', 'in', 'on', 'at', 'by', 'for', 'with',
     'and', 'or', 'but', 'so', 'co', 'is', 'it', 'we', 'us', 'our', 'be', 'has',
     'have', 'been', 'was', 'are', 'were', 'will', 'can', 'may', 'must', 'shall',
     'from', 'into', 'over', 'under', 'about', 'after', 'before', 'between',
+    # Website navigation/actions
     'click', 'here', 'read', 'more', 'view', 'see', 'learn', 'call', 'contact',
-    'schedule', 'book', 'get', 'your', 'my', 'his', 'her', 'their', 'this', 'that'
+    'schedule', 'book', 'get', 'your', 'my', 'his', 'her', 'their', 'this', 'that',
+    'log', 'login', 'sign', 'check', 'continue', 'apply', 'submit', 'search',
+    'menu', 'home', 'back', 'next', 'previous', 'load', 'show',
+    # Membership/account terms (often parsed as names)
+    'membership', 'careers', 'account', 'password', 'register', 'subscribe',
+    'newsletter', 'join', 'now',
+    # Service/industry terms that appear as "names"
+    'maintenance', 'preventative', 'preventive', 'routine', 'customer', 'service',
+    'support', 'financing', 'options', 'available', 'specials', 'offers',
+    'commercial', 'residential', 'emergency', 'repair', 'installation',
+    # Marketing buzzwords
+    'satisfaction', 'guaranteed', 'certified', 'licensed', 'insured', 'bonded',
+    'family', 'owned', 'locally', 'proudly', 'serving', 'years', 'experience',
+    # Social media / footer terms
+    'follow', 'connect', 'find', 'like', 'share', 'privacy', 'policy', 'terms',
+    'conditions', 'copyright', 'reserved', 'rights', 'powered', 'website',
+    # Common false positive words from data audit
+    'based', 'both', 'conditions', 'each', 'every', 'all', 'any', 'some',
 }
 
 
@@ -1068,10 +1143,12 @@ def extract_service_areas(content):
     service_section_lines = 0
 
     # Filter out non-city words that appear in service sections
+    # IMPORTANT: Keep comprehensive to avoid garbage like "Based", "Blake", "Both Juan"
     skip_words = {
-        # Navigation
+        # Navigation/action words
         'home', 'about', 'contact', 'services', 'team', 'blog', 'news',
         'call', 'today', 'now', 'free', 'estimate', 'quote', 'schedule',
+        'click', 'here', 'view', 'read', 'more', 'see', 'learn', 'get',
         # Industry terms (NOT cities!)
         'heating', 'cooling', 'hvac', 'air', 'conditioning', 'repair',
         'service', 'areas', 'we', 'serve', 'our', 'the', 'and', 'or',
@@ -1091,14 +1168,31 @@ def extract_service_areas(content):
         # Common words that get capitalized
         'county', 'township', 'borough', 'city', 'town', 'village',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-        # NEW: More false positives (Dec 3, 2025 - Beverly Services)
+        # Marketing/descriptive terms
         'electricians', 'plumbers', 'technicians', 'contractors', 'specialists',
         'same', 'day', 'next', 'satisfaction', 'guaranteed', 'serving', 'western',
         'eastern', 'northern', 'southern', 'central', 'greater', 'metro', 'area',
         'professionals', 'experts', 'certified', 'licensed', 'insured', 'bonded',
         'quality', 'trusted', 'reliable', 'affordable', 'best', 'top', 'premier',
-        'family', 'owned', 'operated', 'local', 'nearby', 'near', 'surrounding'
+        'family', 'owned', 'operated', 'local', 'nearby', 'near', 'surrounding',
+        # === GARBAGE FROM DATA AUDIT (Dec 3, 2025) ===
+        # These capitalized words appeared as "cities" but are not geographic
+        'based', 'both', 'conditions', 'blake', 'teal', 'juan', 'each', 'every',
+        'all', 'any', 'some', 'many', 'few', 'most', 'other', 'such', 'only',
+        # Common first names that appeared in service areas (names ≠ cities!)
+        'john', 'mike', 'david', 'james', 'robert', 'michael', 'william',
+        'mary', 'patricia', 'jennifer', 'linda', 'elizabeth', 'barbara',
+        # Common action/state words
+        'continue', 'check', 'start', 'finish', 'complete', 'available',
+        'open', 'closed', 'new', 'old', 'current', 'previous', 'following',
+        # Common articles/prepositions that get capitalized
+        'for', 'with', 'from', 'into', 'over', 'under', 'after', 'before',
+        # Common modifiers
+        'entire', 'whole', 'full', 'partial', 'various', 'multiple',
     }
+
+    # Minimum length for a valid city name (catches single short words like "Al", "Ed")
+    MIN_CITY_LENGTH = 4
 
     for i, line in enumerate(lines):
         line_clean = line.strip()
@@ -1133,11 +1227,14 @@ def extract_service_areas(content):
                 # Also check if any word in the phrase is a skip word
                 if any(w in skip_words for w in word_lower.split()):
                     continue
-                # Skip very short or very long
-                if len(word) < 3 or len(word) > 30:
+                # Skip very short or very long (MIN_CITY_LENGTH = 4)
+                if len(word) < MIN_CITY_LENGTH or len(word) > 30:
                     continue
                 # Skip if contains numbers
                 if any(c.isdigit() for c in word):
+                    continue
+                # Skip single-word entries that are just 1-2 syllables (likely garbage)
+                if ' ' not in word and len(word) < 5:
                     continue
                 areas.add(word)
 
@@ -1155,7 +1252,11 @@ def extract_service_areas(content):
                 # Skip if any word in the phrase is a skip word
                 if city_lower in skip_words or any(w in skip_words for w in city_lower.split()):
                     continue
-                if 3 <= len(city) <= 25:
+                # Use MIN_CITY_LENGTH for validation
+                if MIN_CITY_LENGTH <= len(city) <= 25:
+                    # Skip single-word entries that are too short
+                    if ' ' not in city and len(city) < 5:
+                        continue
                     areas.add(city)
 
         # Look for comma-separated city lists (common in footers)
@@ -1166,14 +1267,22 @@ def extract_service_areas(content):
                 city_lower = city.lower()
                 if city_lower in skip_words or any(w in skip_words for w in city_lower.split()):
                     continue
-                if 3 <= len(city) <= 25 and not any(c.isdigit() for c in city):
+                if MIN_CITY_LENGTH <= len(city) <= 25 and not any(c.isdigit() for c in city):
+                    # Skip single-word entries that are too short
+                    if ' ' not in city and len(city) < 5:
+                        continue
                     areas.add(city)
             # Also get the last city after final comma (if ends with "and City")
             last_match = re.search(r',\s*(?:and\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*$', line_clean)
             if last_match:
                 last_city = last_match.group(1)
-                if last_city.lower() not in skip_words and 3 <= len(last_city) <= 25:
-                    areas.add(last_city)
+                last_city_lower = last_city.lower()
+                if last_city_lower not in skip_words and MIN_CITY_LENGTH <= len(last_city) <= 25:
+                    # Skip single-word entries that are too short
+                    if ' ' not in last_city and len(last_city) < 5:
+                        pass  # Skip this one
+                    else:
+                        areas.add(last_city)
 
     return sorted(list(areas))
 
