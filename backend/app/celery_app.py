@@ -20,6 +20,17 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent.parent.parent / '.env', override=True)
 
 import os
+
+# Disable LangSmith tracing BEFORE any langchain/langgraph imports
+# This prevents the 403 errors from langsmith trying to upload traces without an API key
+os.environ["LANGCHAIN_TRACING_V2"] = "false"
+os.environ["LANGSMITH_TRACING"] = "false"
+os.environ["LANGCHAIN_TRACING"] = "false"
+
+# Suppress LangSmith warning logs (they're noisy when API key is missing)
+import logging
+logging.getLogger("langsmith.client").setLevel(logging.ERROR)
+logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import task_prerun, task_postrun, task_failure
@@ -35,6 +46,8 @@ celery_app = Celery(
     include=[
         "app.tasks.agent_tasks",
         "app.tasks.batch_tasks",
+        "app.tasks.icp_tasks",
+        "app.tasks.prediction_tasks",
     ]
 )
 
@@ -102,6 +115,15 @@ celery_app.conf.update(
         "app.tasks.batch_tasks.pause_batch": {"queue": "default"},
         "app.tasks.batch_tasks.resume_batch": {"queue": "default"},
         "app.tasks.batch_tasks.cancel_batch": {"queue": "default"},
+        # ICP Checker tasks
+        "app.tasks.icp_tasks.run_icp_checker_task": {"queue": "default"},
+        "app.tasks.icp_tasks.recheck_icp_for_company_task": {"queue": "default"},
+        "app.tasks.icp_tasks.get_icp_stats_task": {"queue": "default"},
+        # Prediction Market tasks
+        "app.tasks.prediction_tasks.run_prediction_market_task": {"queue": "default"},
+        "app.tasks.prediction_tasks.run_morning_briefing_task": {"queue": "workflows"},
+        "app.tasks.prediction_tasks.log_lead_signal_task": {"queue": "default"},
+        "app.tasks.prediction_tasks.get_prediction_stats_task": {"queue": "default"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -181,6 +203,32 @@ celery_app.conf.update(
             "task": "run_bdr_batch",
             "schedule": crontab(minute=0),  # Top of each hour
             "args": (3,),  # 3 leads per hour
+            "options": {"queue": "workflows"},
+        },
+        # ========== ICP CHECKER SCHEDULE ==========
+        # ICP Checker - every 15 minutes
+        # Recalculates ICP scores for companies with updated data
+        "icp-checker-every-15-min": {
+            "task": "run_icp_checker",
+            "schedule": 900.0,  # 15 minutes in seconds
+            "args": (100,),  # Check up to 100 companies per run
+            "options": {"queue": "default"},
+        },
+        # ========== PREDICTION MARKET SCHEDULE ==========
+        # Prediction Market - every 5 minutes
+        # Updates prediction rankings for all active leads
+        "prediction-market-every-5-min": {
+            "task": "run_prediction_market",
+            "schedule": 300.0,  # 5 minutes in seconds
+            "args": (1000,),  # Rank up to 1000 companies per run
+            "options": {"queue": "default"},
+        },
+        # Morning Briefing - 7 AM EST (12:00 UTC)
+        # Generates "why call now" reasoning for top leads
+        "morning-briefing-7am-est": {
+            "task": "run_morning_briefing",
+            "schedule": crontab(hour=12, minute=0),  # 7 AM EST = 12:00 UTC
+            "args": (10,),  # Top 10 leads
             "options": {"queue": "workflows"},
         },
     },
