@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-04
 
 ---
 
@@ -8,14 +8,40 @@
 
 | Metric | Count |
 |--------|-------|
-| Total Companies | 8,889 |
-| With Domains | 3,643 |
-| Needing Enrichment | ~3,500 |
-| Already Enriched | ~75 |
+| Total Companies | 8,891 |
+| With Domains | 3,511 |
+| ATL Contacts | 476 |
+| Legit ATLs | 469 |
+| Companies with 2+ ATLs | 64 |
+| Exported for Outreach | 15 |
 
 ---
 
-## LATEST UPDATE (Dec 2 Night)
+## LATEST UPDATE (Dec 4 Evening)
+
+### ICP Scoring + CRM Export Pipeline - COMPLETE
+
+| Deliverable | Status | Location |
+|-------------|--------|----------|
+| Close CRM exclusion (5,926 leads) | DONE | Built into export scripts |
+| Customer exclusion (63 Won deals) | DONE | Built into export scripts |
+| ATL contact quality audit | DONE | 7 garbage filtered |
+| FINAL_CLEAN export (15 co, 69 ATLs) | DONE | `backend/data/final_enrichment_output/` |
+| TOP30_FINAL export (30 co, 30 ATLs) | DONE | `backend/data/final_enrichment_output/` |
+
+**New Scripts Created**:
+- `score_and_export_top30.py` - Main ICP scoring + export
+- `export_hot_leads_top30.py` - Hot leads filter
+- `export_non_close_hot_leads.py` - Close CRM exclusion logic
+
+**Ready for CTO Import**:
+```
+CLOSE_CRM_IMPORT_FINAL_CLEAN_20251204.csv  <- 15 companies, 69 ATL contacts
+```
+
+---
+
+## PREVIOUS UPDATE (Dec 2 Night)
 
 ### AI Command Center - COMPLETE
 Full-stack AI outreach system merged to main:
