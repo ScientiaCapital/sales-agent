@@ -14,7 +14,7 @@ Architecture:
 - Tracks draft status: pending -> approved -> sent (or discarded)
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -23,6 +23,7 @@ import os
 
 from app.services.langgraph.agents import extract_sales_intel
 from app.core.logging import setup_logging
+from app.auth.dependencies import get_current_user, require_admin
 
 logger = setup_logging(__name__)
 
@@ -241,7 +242,8 @@ async def _save_drafts_to_supabase(
 @router.post("/enrich/{company_id}", response_model=EnrichmentResponse)
 async def enrich_company(
     company_id: str,
-    request: EnrichmentRequest
+    request: EnrichmentRequest,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Trigger SalesIntelAgent enrichment for a company.
@@ -364,7 +366,8 @@ async def list_drafts(
     draft_type: Optional[DraftType] = Query(None, description="Filter by type"),
     company_id: Optional[str] = Query(None, description="Filter by company ID"),
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(50, ge=1, le=100, description="Items per page")
+    page_size: int = Query(50, ge=1, le=100, description="Items per page"),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     List pending outreach drafts with pagination and filtering.
@@ -437,7 +440,10 @@ async def list_drafts(
 
 
 @router.get("/drafts/{draft_id}", response_model=OutreachDraft)
-async def get_draft(draft_id: str):
+async def get_draft(
+    draft_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get a single draft by ID.
 
@@ -482,7 +488,11 @@ async def get_draft(draft_id: str):
 
 
 @router.put("/drafts/{draft_id}", response_model=OutreachDraft)
-async def update_draft(draft_id: str, request: DraftUpdateRequest):
+async def update_draft(
+    draft_id: str,
+    request: DraftUpdateRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Update draft content (subject/body).
 
@@ -524,7 +534,11 @@ async def update_draft(draft_id: str, request: DraftUpdateRequest):
 
 
 @router.post("/drafts/{draft_id}/send", response_model=SendDraftResponse)
-async def send_draft(draft_id: str, request: SendDraftRequest):
+async def send_draft(
+    draft_id: str,
+    request: SendDraftRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Approve and send draft via Close CRM.
 
@@ -597,7 +611,10 @@ async def send_draft(draft_id: str, request: SendDraftRequest):
 
 
 @router.post("/drafts/{draft_id}/regenerate", response_model=EnrichmentResponse)
-async def regenerate_draft(draft_id: str):
+async def regenerate_draft(
+    draft_id: str,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Regenerate draft with fresh AI analysis.
 
@@ -638,7 +655,10 @@ async def regenerate_draft(draft_id: str):
 
 
 @router.delete("/drafts/{draft_id}")
-async def discard_draft(draft_id: str):
+async def discard_draft(
+    draft_id: str,
+    current_user: dict = Depends(require_admin),
+):
     """
     Discard/delete a draft (mark as discarded).
 

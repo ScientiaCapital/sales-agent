@@ -55,7 +55,9 @@ class Settings(BaseSettings):
 
     # Close CRM (Sales Team)
     CLOSE_API_KEY: Optional[str] = None  # Close API Key
+    CLOSE_API_URL: str = "https://api.close.com/api/v1"  # Close API Base URL
     CLOSE_WRITE_DISABLED: bool = True  # Safety switch - keep True unless testing
+    CLOSE_DEFAULT_OWNER_USER_ID: Optional[str] = None  # Default owner for new leads
 
     # Apollo.io (Enrichment)
     APOLLO_API_KEY: Optional[str] = None  # Apollo API Key
@@ -68,6 +70,18 @@ class Settings(BaseSettings):
     LINKEDIN_CLIENT_ID: Optional[str] = None
     LINKEDIN_CLIENT_SECRET: Optional[str] = None
     LINKEDIN_ACCESS_TOKEN: Optional[str] = None
+
+    # Supabase Configuration (for authentication and social intelligence)
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""  # Public anon key for client-side operations
+    SUPABASE_SERVICE_KEY: str = ""  # Service role key for server-side operations
+
+    # JWT Configuration for Supabase
+    SUPABASE_JWT_SECRET: Optional[str] = None  # For validating Supabase JWTs
+    JWT_SECRET_KEY: Optional[str] = None  # For custom JWT tokens
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # Environment
     ENVIRONMENT: str = "development"

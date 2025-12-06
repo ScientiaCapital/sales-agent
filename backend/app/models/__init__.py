@@ -67,6 +67,11 @@ from .lead_audit import (
     LeadAuditEventType,
     LeadAuditStage
 )
+from .domain import Domain
+from .mailbox import Mailbox
+from .sequence import Sequence
+from .sequence_entry import SequenceEntry
+from .signal import Signal
 
 __all__ = [
     "Base",
@@ -119,5 +124,10 @@ __all__ = [
     "CSVImport",
     "LeadAuditLog",
     "LeadAuditEventType",
-    "LeadAuditStage"
+    "LeadAuditStage",
+    "Domain",
+    "Mailbox",
+    "Sequence",
+    "SequenceEntry",
+    "Signal"
 ]

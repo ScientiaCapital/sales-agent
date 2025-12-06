@@ -5,15 +5,21 @@ Connects Qualifier (sales-agent) to Sender (cold-reach) for:
 - Enrolling qualified leads (Tier A/B) in email sequences
 - Checking enrollment status
 - Processing sequence webhooks
+- Triggering voice calls via Close CRM for interested replies
 
-Flow: Qualifier → cold_reach_client → cold-reach API
+Flow: Qualifier → cold_reach_client → SequenceEngine (direct)
+      Interested Reply → Close CRM Call Trigger
+
+UPDATED: Now uses direct imports instead of HTTP calls for better performance.
 """
 import os
 import logging
 from typing import Optional, List, Dict, Any
 
-import httpx
 from pydantic import BaseModel, Field, EmailStr
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.services.sequences.engine import SequenceEngine
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +27,6 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-
-COLD_REACH_API_URL = os.getenv("COLD_REACH_API_URL", "http://localhost:8002")
-COLD_REACH_API_KEY = os.getenv("COLD_REACH_API_KEY", "")
 
 # Default sequences for different lead tiers
 DEFAULT_SEQUENCES = {
@@ -88,10 +91,12 @@ class BatchEnrollmentResult(BaseModel):
 
 class ColdReachClient:
     """
-    HTTP client for cold-reach API.
+    Direct client for sequence enrollment using SequenceEngine.
+
+    UPDATED: Now uses direct imports instead of HTTP calls.
 
     Usage:
-        client = ColdReachClient()
+        client = ColdReachClient(db_session)
 
         # Single enrollment
         result = await client.enroll_lead(lead_data)
@@ -102,33 +107,19 @@ class ColdReachClient:
 
     def __init__(
         self,
-        base_url: str = COLD_REACH_API_URL,
-        api_key: str = COLD_REACH_API_KEY,
+        session: AsyncSession,
         default_mailbox_id: int = DEFAULT_MAILBOX_ID,
-        timeout: float = 30.0,
     ):
         """
         Initialize client.
 
         Args:
-            base_url: cold-reach API base URL
-            api_key: API key for authentication
+            session: Database session for SequenceEngine
             default_mailbox_id: Default mailbox for sending
-            timeout: Request timeout in seconds
         """
-        self.base_url = base_url.rstrip("/")
-        self.api_key = api_key
+        self.session = session
         self.default_mailbox_id = default_mailbox_id
-        self.timeout = timeout
-
-    def _get_headers(self) -> Dict[str, str]:
-        """Get request headers."""
-        headers = {
-            "Content-Type": "application/json",
-        }
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
+        self.engine = SequenceEngine(session)
 
     def _get_sequence_for_tier(self, tier: str) -> Optional[str]:
         """Get default sequence ID for a qualification tier."""
@@ -173,66 +164,34 @@ class ColdReachClient:
             # Remove None values
             custom_fields = {k: v for k, v in custom_fields.items() if v is not None}
 
-            # Build request payload
-            payload = {
-                "email": request.email,
-                "sequence_id": sequence_id,
-                "mailbox_id": request.mailbox_id or self.default_mailbox_id,
-                "company": request.company,
-                "first_name": request.first_name,
-                "last_name": request.last_name,
-                "tier": request.tier,
-                "icp_score": request.icp_score,
-                "custom_fields": custom_fields,
-            }
-
-            # Call cold-reach API
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/api/prospects/enroll",
-                    json=payload,
-                    headers=self._get_headers(),
-                    timeout=self.timeout,
-                )
-
-                if response.status_code == 200:
-                    data = response.json()
-                    return EnrollmentResult(
-                        success=data.get("success", False),
-                        entry_id=data.get("entry_id"),
-                        prospect_id=data.get("prospect_id"),
-                        sequence_id=sequence_id,
-                        status=data.get("status"),
-                        first_step_due=data.get("first_step_due"),
-                        error=data.get("error"),
-                    )
-                else:
-                    error_detail = response.text[:200]
-                    logger.error(
-                        f"Cold-reach enrollment failed: {response.status_code} - {error_detail}"
-                    )
-                    return EnrollmentResult(
-                        success=False,
-                        error=f"API error: {response.status_code}",
-                    )
-
-        except httpx.ConnectError:
-            logger.error(f"Cannot connect to cold-reach at {self.base_url}")
-            return EnrollmentResult(
-                success=False,
-                error="Connection failed - cold-reach service unavailable",
+            # Call SequenceEngine directly
+            result = await self.engine.enroll_prospect(
+                prospect_email=request.email,
+                sequence_id=sequence_id,
+                mailbox_id=request.mailbox_id or self.default_mailbox_id,
+                custom_fields=custom_fields,
+                company_name=request.company,
+                first_name=request.first_name,
+                last_name=request.last_name,
+                tier=request.tier,
+                icp_score=request.icp_score,
             )
-        except httpx.TimeoutException:
-            logger.error("Timeout connecting to cold-reach")
+
             return EnrollmentResult(
-                success=False,
-                error="Request timeout",
+                success=result.get("success", False),
+                entry_id=result.get("entry_id"),
+                prospect_id=result.get("prospect_id"),
+                sequence_id=sequence_id,
+                status=result.get("status"),
+                first_step_due=result.get("first_step_due"),
+                error=result.get("error"),
             )
+
         except Exception as e:
-            logger.error(f"Enrollment error: {e}")
+            logger.error(f"Enrollment failed: {e}")
             return EnrollmentResult(
                 success=False,
-                error=str(e),
+                error=f"Enrollment failed: {str(e)}",
             )
 
     async def enroll_leads_batch(
@@ -282,66 +241,68 @@ class ColdReachClient:
                     results=skipped_results,
                 )
 
-            # Build batch payload
-            batch_sequence_id = sequence_id or eligible_leads[0].sequence_id
-            batch_mailbox_id = mailbox_id or eligible_leads[0].mailbox_id
+            # Enroll each lead directly using SequenceEngine
+            enrollment_results = []
+            enrolled = 0
+            errors = 0
 
-            payload = {
-                "prospects": [
-                    {
-                        "email": l.email,
-                        "company": l.company,
-                        "first_name": l.first_name,
-                        "last_name": l.last_name,
-                        "tier": l.tier,
-                        "icp_score": l.icp_score,
-                        "custom_fields": {
-                            "coperniq_score": l.coperniq_score,
-                            "oem_certifications": l.oem_certifications,
-                            "state": l.state,
-                        },
+            for lead in eligible_leads:
+                try:
+                    custom_fields = {
+                        "coperniq_score": lead.coperniq_score,
+                        "oem_certifications": lead.oem_certifications,
+                        "state": lead.state,
+                        "phone": lead.phone,
+                        "decision_maker_email": lead.decision_maker_email,
+                        "decision_maker_name": lead.decision_maker_name,
                     }
-                    for l in eligible_leads
-                ],
-                "sequence_id": batch_sequence_id,
-                "mailbox_id": batch_mailbox_id,
-            }
+                    custom_fields = {k: v for k, v in custom_fields.items() if v is not None}
 
-            # Call batch endpoint
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.base_url}/api/prospects/enroll/batch",
-                    json=payload,
-                    headers=self._get_headers(),
-                    timeout=self.timeout * 2,  # Longer timeout for batch
-                )
+                    result = await self.engine.enroll_prospect(
+                        prospect_email=lead.email,
+                        sequence_id=lead.sequence_id,
+                        mailbox_id=lead.mailbox_id,
+                        custom_fields=custom_fields,
+                        company_name=lead.company,
+                        first_name=lead.first_name,
+                        last_name=lead.last_name,
+                        tier=lead.tier,
+                        icp_score=lead.icp_score,
+                    )
 
-                if response.status_code == 200:
-                    data = response.json()
-                    api_results = [
-                        EnrollmentResult(**r) for r in data.get("results", [])
-                    ]
-                    return BatchEnrollmentResult(
-                        success=data.get("success", False),
-                        total=len(leads),
-                        enrolled=data.get("enrolled", 0),
-                        skipped=len(skipped_results) + data.get("skipped", 0),
-                        errors=data.get("errors", 0),
-                        results=skipped_results + api_results,
+                    enrollment_result = EnrollmentResult(
+                        success=result.get("success", False),
+                        entry_id=result.get("entry_id"),
+                        prospect_id=result.get("prospect_id"),
+                        sequence_id=lead.sequence_id,
+                        status=result.get("status"),
+                        first_step_due=result.get("first_step_due"),
+                        error=result.get("error"),
                     )
-                else:
-                    response.text[:200]
-                    logger.error(
-                        f"Cold-reach batch enrollment failed: {response.status_code}"
-                    )
-                    return BatchEnrollmentResult(
+
+                    enrollment_results.append(enrollment_result)
+
+                    if enrollment_result.success:
+                        enrolled += 1
+                    else:
+                        errors += 1
+
+                except Exception as e:
+                    logger.error(f"Failed to enroll {lead.email}: {e}")
+                    enrollment_results.append(EnrollmentResult(
                         success=False,
-                        total=len(leads),
-                        enrolled=0,
-                        skipped=len(skipped_results),
-                        errors=len(eligible_leads),
-                        results=skipped_results,
-                    )
+                        error=str(e)
+                    ))
+                    errors += 1
+
+            return BatchEnrollmentResult(
+                success=True,
+                total=len(leads),
+                enrolled=enrolled,
+                skipped=len(skipped_results),
+                errors=errors,
+                results=skipped_results + enrollment_results,
+            )
 
         except Exception as e:
             logger.error(f"Batch enrollment error: {e}")
@@ -364,43 +325,45 @@ class ColdReachClient:
             Status dict with sequence enrollments
         """
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/api/prospects/status/{email}",
-                    headers=self._get_headers(),
-                    timeout=self.timeout,
-                )
+            from sqlalchemy import select
+            from app.models.lead import Lead
+            from app.models.sequence_entry import SequenceEntry
 
-                if response.status_code == 200:
-                    return response.json()
-                elif response.status_code == 404:
-                    return {"error": "Prospect not found"}
-                else:
-                    return {"error": f"API error: {response.status_code}"}
+            # Find prospect
+            query = select(Lead).where(Lead.contact_email == email)
+            result = await self.session.execute(query)
+            prospect = result.scalar_one_or_none()
+
+            if not prospect:
+                return {"error": "Prospect not found"}
+
+            # Get all sequence entries
+            entry_query = select(SequenceEntry).where(SequenceEntry.lead_id == prospect.id)
+            entry_result = await self.session.execute(entry_query)
+            entries = entry_result.scalars().all()
+
+            enrollments = [
+                {
+                    "entry_id": entry.id,
+                    "sequence_id": entry.sequence_id,
+                    "status": entry.status,
+                    "current_step": entry.current_step,
+                    "emails_sent": entry.emails_sent,
+                    "reply_received": entry.reply_received.isoformat() if entry.reply_received else None,
+                    "reply_intent": entry.reply_intent,
+                }
+                for entry in entries
+            ]
+
+            return {
+                "email": email,
+                "prospect_id": prospect.id,
+                "enrollments": enrollments,
+            }
 
         except Exception as e:
             logger.error(f"Get status error: {e}")
             return {"error": str(e)}
-
-    async def health_check(self) -> Dict[str, Any]:
-        """Check if cold-reach service is available."""
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/health",
-                    timeout=5.0,
-                )
-                return {
-                    "available": response.status_code == 200,
-                    "status_code": response.status_code,
-                    "base_url": self.base_url,
-                }
-        except Exception as e:
-            return {
-                "available": False,
-                "error": str(e),
-                "base_url": self.base_url,
-            }
 
 
 # ============================================================================
@@ -408,6 +371,7 @@ class ColdReachClient:
 # ============================================================================
 
 async def enroll_qualified_lead(
+    session: AsyncSession,
     email: str,
     company: str,
     tier: str,
@@ -421,13 +385,14 @@ async def enroll_qualified_lead(
 
     Usage:
         result = await enroll_qualified_lead(
+            session=db,
             email="john@solar.com",
             company="Solar Electric",
             tier="A",
             coperniq_score=92,
         )
     """
-    client = ColdReachClient()
+    client = ColdReachClient(session)
     request = EnrollmentRequest(
         email=email,
         company=company,
@@ -441,6 +406,7 @@ async def enroll_qualified_lead(
 
 
 async def enroll_pipeline_leads_batch(
+    session: AsyncSession,
     leads: List[Dict[str, Any]],
     min_tier: str = "B",
 ) -> BatchEnrollmentResult:
@@ -485,7 +451,115 @@ async def enroll_pipeline_leads_batch(
             enrolled=0,
             skipped=len(leads),
             errors=0,
+            results=[],
         )
 
-    client = ColdReachClient()
+    client = ColdReachClient(session)
     return await client.enroll_leads_batch(requests)
+
+
+# ============================================================================
+# CLOSE CRM INTEGRATION (Voice Call Triggers)
+# ============================================================================
+
+async def trigger_interested_reply_call(
+    email: str,
+    lead_id: str,
+    phone: str,
+    reply_text: Optional[str] = None,
+    qualification_score: Optional[int] = None,
+) -> Dict[str, Any]:
+    """
+    Trigger a voice call via Close CRM for an interested email reply.
+
+    This function is called when cold-reach detects an interested reply
+    (e.g., "Yes, I'm interested" or "Tell me more") and wants to escalate
+    to a phone call.
+
+    Replaces VozLux integration with native Close CRM call tracking.
+
+    Args:
+        email: Prospect email address
+        lead_id: Close CRM lead ID
+        phone: Phone number to call
+        reply_text: The prospect's reply text (optional)
+        qualification_score: Lead qualification score (optional)
+
+    Returns:
+        Dict with call trigger result:
+        {
+            "success": True,
+            "activity_id": "acti_xxx",
+            "status": "scheduled",
+            "phone": "+1234567890"
+        }
+
+    Example:
+        # Prospect replied "Yes, let's schedule a call"
+        result = await trigger_interested_reply_call(
+            email="john@solarpros.com",
+            lead_id="lead_xxx123",
+            phone="+12125551234",
+            reply_text="Yes, let's schedule a call to discuss pricing",
+            qualification_score=85
+        )
+    """
+    try:
+        # Import here to avoid circular dependency
+        from app.services.crm.close_calling import CloseCallingClient
+
+        # Build call script notes
+        script_notes_parts = [
+            "INTERESTED REPLY - High Priority Call",
+            f"Prospect Email: {email}",
+        ]
+
+        if reply_text:
+            script_notes_parts.append(f"\nProspect Reply:\n{reply_text[:500]}")
+
+        if qualification_score:
+            script_notes_parts.append(f"\nQualification Score: {qualification_score}/100")
+
+        script_notes_parts.extend([
+            "\nSuggested Discussion Points:",
+            "- Thank them for their interest",
+            "- Understand their timeline and requirements",
+            "- Discuss pricing and ROI",
+            "- Schedule next steps (demo, site visit, proposal)",
+        ])
+
+        script_notes = "\n".join(script_notes_parts)
+
+        # Initialize Close calling client
+        calling_client = CloseCallingClient()
+
+        # Trigger call via Close CRM
+        result = await calling_client.trigger_call(
+            phone=phone,
+            lead_id=lead_id,
+            script_notes=script_notes,
+        )
+
+        logger.info(
+            f"Voice call triggered for interested reply: {email} -> {phone} "
+            f"(activity_id: {result.get('id')})"
+        )
+
+        return {
+            "success": True,
+            "activity_id": result.get("id"),
+            "status": result.get("status"),
+            "phone": phone,
+            "lead_id": lead_id,
+            "method": "close_crm",
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to trigger call via Close CRM for {email}: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "phone": phone,
+            "lead_id": lead_id,
+            "method": "close_crm",
+        }

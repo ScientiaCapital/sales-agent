@@ -27,6 +27,7 @@ from app.api import linkedin
 from app.api import campaigns
 from app.api import sync
 from app.api import auth
+from app.api import supabase_auth  # Supabase authentication
 from app.api import gdpr
 from app.api import costs
 from app.api import analytics
@@ -45,6 +46,9 @@ from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import batch  # Batch processing with parallel execution
 from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.api import rankings  # Lead prediction market rankings
+from app.api import close_outreach  # Close CRM SMS/Voice integration (replaces VozLux)
+from app.api import sequences  # Email sequence management
+from app.api import prospects  # Prospect enrollment and execution
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -195,7 +199,8 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers with API version prefix
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
-app.include_router(auth.router, prefix=settings.API_V1_PREFIX)  # Task 9.5: Authentication & authorization
+app.include_router(auth.router, prefix=settings.API_V1_PREFIX)  # Legacy JWT authentication
+app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
 app.include_router(gdpr.router, prefix=settings.API_V1_PREFIX)  # Task 9.1: GDPR compliance
 app.include_router(leads.router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
@@ -228,6 +233,9 @@ app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outr
 app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch processing with parallel execution
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
+app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach (replaces VozLux)
+app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management (cold-reach integration)
+app.include_router(prospects.router, prefix=settings.API_V1_PREFIX)  # Prospect enrollment and execution (cold-reach integration)
 
 
 @app.get("/")
