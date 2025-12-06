@@ -10,6 +10,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError, HTTPException
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from app.api import health
 from app.api import leads
@@ -66,6 +68,47 @@ from app.core.exceptions import (
 
 # Configure logging
 logger = setup_logging(__name__)
+
+
+# Security Headers Middleware
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to add security headers to all HTTP responses.
+
+    Headers added:
+    - X-Frame-Options: Prevent clickjacking attacks
+    - X-Content-Type-Options: Prevent MIME type sniffing
+    - X-XSS-Protection: Legacy XSS protection (still useful for older browsers)
+    - Strict-Transport-Security: Enforce HTTPS (production only)
+    - Content-Security-Policy: Control resource loading to prevent XSS
+    """
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+
+        # Prevent clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Prevent MIME type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # XSS Protection (legacy but still useful)
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Only add HSTS in production (when not localhost)
+        if "localhost" not in str(request.url):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Content Security Policy
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' data:; "
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co"
+        )
+
+        return response
 
 # Initialize Sentry error tracking (optional - only if SENTRY_DSN is set)
 sentry_dsn = os.getenv("SENTRY_DSN")
@@ -135,6 +178,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Explicit methods only
     allow_headers=["Content-Type", "Authorization"],  # Required headers only
 )
+
+# Add Security Headers Middleware (after CORS)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Add Audit Logging Middleware
 from app.middleware.audit import AuditLoggingMiddleware
