@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # Close CRM (Sales Team)
     CLOSE_API_KEY: Optional[str] = None  # Close API Key
     CLOSE_API_URL: str = "https://api.close.com/api/v1"  # Close API Base URL
-    CLOSE_WRITE_DISABLED: bool = True  # Safety switch - keep True unless testing
+    CLOSE_WRITE_DISABLED: bool = True  # Default: True. Set False in .env for GTM automation
     CLOSE_DEFAULT_OWNER_USER_ID: Optional[str] = None  # Default owner for new leads
 
     # Apollo.io (Enrichment)

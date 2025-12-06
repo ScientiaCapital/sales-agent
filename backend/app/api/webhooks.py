@@ -3,7 +3,7 @@ Webhook Handlers for External Services
 
 Handles incoming webhooks from:
 - Slack: Interactive message button callbacks (BDR approval workflow)
-- Future: Apollo, Close CRM, etc.
+- Close CRM: Email reply notifications (via /webhooks/close/*)
 
 Security:
 - Slack signature verification using SLACK_SIGNING_SECRET
@@ -11,6 +11,7 @@ Security:
 
 Endpoints:
 - POST /webhooks/slack/bdr-approval - Handle BDR draft approve/reject buttons
+- POST /webhooks/close/* - Close CRM webhooks (see webhooks/close_reply.py)
 """
 
 import os
@@ -28,6 +29,8 @@ from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
+# Main router for Slack webhooks (legacy compatibility)
+# Close CRM webhooks are in app.api.webhooks package
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 

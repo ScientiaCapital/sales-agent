@@ -1,8 +1,10 @@
 """
 Close CRM Outreach API
 
-FastAPI endpoints for SMS and voice call outreach via Close CRM.
-Replaces VozLux integration with native Close CRM communication tracking.
+FastAPI endpoints for Email, SMS, and voice call outreach via Close CRM.
+Full GTM automation using Close's connected accounts (tim@coperniq.io).
+
+API Docs: https://developer.close.com/resources/activities/
 """
 
 from typing import Optional, List, Dict, Any
@@ -12,6 +14,7 @@ import logging
 
 from app.services.crm.close_sms import CloseSMSClient
 from app.services.crm.close_calling import CloseCallingClient
+from app.services.crm.close_email import CloseEmailClient
 from app.services.crm.close import CloseProvider
 from app.core.config import settings
 from app.auth.dependencies import get_current_user
@@ -102,9 +105,56 @@ class LeadSyncResponse(BaseModel):
 class ActivityHistoryResponse(BaseModel):
     """Response containing activity history."""
     lead_id: str
-    activity_type: str  # "sms" or "call"
+    activity_type: str  # "sms" or "call" or "email"
     count: int
     activities: List[Dict[str, Any]]
+
+
+# Email Models
+class EmailRequest(BaseModel):
+    """Request to send email via Close CRM."""
+    to_email: EmailStr = Field(..., description="Recipient email address")
+    subject: str = Field(..., description="Email subject line", max_length=500)
+    body_text: str = Field(..., description="Plain text email body")
+    lead_id: str = Field(..., description="Close lead ID (required)")
+    body_html: Optional[str] = Field(None, description="HTML email body")
+    contact_id: Optional[str] = Field(None, description="Close contact ID")
+    user_id: Optional[str] = Field(None, description="Close user ID")
+    template_id: Optional[str] = Field(None, description="Close email template ID")
+
+
+class EmailDraftRequest(BaseModel):
+    """Request to create email draft for review."""
+    to_email: EmailStr = Field(..., description="Recipient email address")
+    subject: str = Field(..., description="Email subject line")
+    body_text: str = Field(..., description="Plain text email body")
+    lead_id: str = Field(..., description="Close lead ID")
+    body_html: Optional[str] = Field(None, description="HTML email body")
+    contact_id: Optional[str] = Field(None, description="Close contact ID")
+
+
+class EmailScheduleRequest(BaseModel):
+    """Request to schedule email for future delivery."""
+    to_email: EmailStr = Field(..., description="Recipient email address")
+    subject: str = Field(..., description="Email subject line")
+    body_text: str = Field(..., description="Plain text email body")
+    lead_id: str = Field(..., description="Close lead ID")
+    scheduled_time: str = Field(..., description="ISO format datetime (UTC)")
+    body_html: Optional[str] = Field(None, description="HTML email body")
+    contact_id: Optional[str] = Field(None, description="Close contact ID")
+
+
+class EmailResponse(BaseModel):
+    """Response from email operation."""
+    success: bool
+    activity_id: Optional[str] = None
+    status: Optional[str] = None
+    to: Optional[str] = None
+    subject: Optional[str] = None
+    lead_id: Optional[str] = None
+    created_at: Optional[str] = None
+    scheduled_for: Optional[str] = None
+    error: Optional[str] = None
 
 
 # ============================================================================
@@ -141,6 +191,284 @@ def get_close_provider() -> CloseProvider:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Close CRM provider initialization failed: {str(e)}"
+        )
+
+
+def get_email_client() -> CloseEmailClient:
+    """Get Close email client instance."""
+    try:
+        return CloseEmailClient(api_key=settings.CLOSE_API_KEY)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Close email client initialization failed: {str(e)}"
+        )
+
+
+# ============================================================================
+# EMAIL ENDPOINTS
+# ============================================================================
+
+@router.post("/email", response_model=EmailResponse)
+async def send_email(
+    request: EmailRequest,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Send email via Close CRM using connected account (tim@coperniq.io).
+
+    Creates an email activity in Close CRM and sends immediately.
+    Automatically logs the communication in the lead's timeline.
+
+    **Example:**
+    ```json
+    {
+        "to_email": "owner@hvacpros.com",
+        "subject": "Quick question about your HVAC business",
+        "body_text": "Hi John, I noticed you work with Carrier...",
+        "lead_id": "lead_xxx123"
+    }
+    ```
+
+    **Returns:**
+    - `success`: Whether the email was sent
+    - `activity_id`: Close CRM activity ID for tracking
+    - `status`: Send status (outbox, sent, etc.)
+    """
+    try:
+        result = await email_client.send_email(
+            to_email=request.to_email,
+            subject=request.subject,
+            body_text=request.body_text,
+            lead_id=request.lead_id,
+            body_html=request.body_html,
+            contact_id=request.contact_id,
+            user_id=request.user_id,
+            template_id=request.template_id,
+        )
+
+        return EmailResponse(
+            success=True,
+            activity_id=result.get("id"),
+            status=result.get("status"),
+            to=request.to_email,
+            subject=request.subject,
+            lead_id=request.lead_id,
+            created_at=result.get("created_at"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to send email via Close: {e}")
+        return EmailResponse(
+            success=False,
+            to=request.to_email,
+            subject=request.subject,
+            lead_id=request.lead_id,
+            error=str(e),
+        )
+
+
+@router.post("/email/draft", response_model=EmailResponse)
+async def create_email_draft(
+    request: EmailDraftRequest,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Create email draft in Close CRM for review before sending.
+
+    Drafts appear in Close UI for manual review by Tim.
+    Use PUT /email/{id}/send to send the draft.
+
+    **Returns:**
+    - `activity_id`: Draft ID for later sending
+    - `status`: "draft"
+    """
+    try:
+        result = await email_client.create_draft(
+            to_email=request.to_email,
+            subject=request.subject,
+            body_text=request.body_text,
+            lead_id=request.lead_id,
+            body_html=request.body_html,
+            contact_id=request.contact_id,
+        )
+
+        return EmailResponse(
+            success=True,
+            activity_id=result.get("id"),
+            status="draft",
+            to=request.to_email,
+            subject=request.subject,
+            lead_id=request.lead_id,
+            created_at=result.get("created_at"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to create email draft: {e}")
+        return EmailResponse(
+            success=False,
+            to=request.to_email,
+            subject=request.subject,
+            error=str(e),
+        )
+
+
+@router.put("/email/{email_id}/send", response_model=EmailResponse)
+async def send_draft_email(
+    email_id: str,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Send a previously created draft email.
+
+    **Path Parameters:**
+    - `email_id`: Close email activity ID from create_draft
+
+    **Returns:**
+    - `status`: Updated status (outbox/sent)
+    """
+    try:
+        result = await email_client.send_draft(email_id)
+
+        return EmailResponse(
+            success=True,
+            activity_id=result.get("id"),
+            status=result.get("status"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to send draft email {email_id}: {e}")
+        return EmailResponse(
+            success=False,
+            activity_id=email_id,
+            error=str(e),
+        )
+
+
+@router.post("/email/schedule", response_model=EmailResponse)
+async def schedule_email(
+    request: EmailScheduleRequest,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Schedule email for future delivery.
+
+    **Example:**
+    ```json
+    {
+        "to_email": "owner@hvacpros.com",
+        "subject": "Following up on solar installation",
+        "body_text": "Hi John...",
+        "lead_id": "lead_xxx123",
+        "scheduled_time": "2024-12-09T09:00:00Z"
+    }
+    ```
+
+    **Returns:**
+    - `scheduled_for`: When the email will be sent
+    - `status`: "scheduled"
+    """
+    try:
+        from datetime import datetime
+        scheduled_dt = datetime.fromisoformat(request.scheduled_time.replace('Z', '+00:00'))
+
+        result = await email_client.schedule_email(
+            to_email=request.to_email,
+            subject=request.subject,
+            body_text=request.body_text,
+            lead_id=request.lead_id,
+            scheduled_time=scheduled_dt,
+            body_html=request.body_html,
+            contact_id=request.contact_id,
+        )
+
+        return EmailResponse(
+            success=True,
+            activity_id=result.get("id"),
+            status="scheduled",
+            to=request.to_email,
+            subject=request.subject,
+            lead_id=request.lead_id,
+            scheduled_for=result.get("scheduled_for"),
+            created_at=result.get("created_at"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to schedule email: {e}")
+        return EmailResponse(
+            success=False,
+            to=request.to_email,
+            subject=request.subject,
+            error=str(e),
+        )
+
+
+@router.get("/email/history/{lead_id}", response_model=ActivityHistoryResponse)
+async def get_email_history(
+    lead_id: str,
+    limit: int = 50,
+    offset: int = 0,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Get email activity history for a lead.
+
+    Retrieves all email activities (inbound and outbound) from Close CRM.
+
+    **Query Parameters:**
+    - `limit`: Max number of emails to return (default: 50)
+    - `offset`: Pagination offset (default: 0)
+
+    **Returns:**
+    - List of email activities with subject, body, status, timestamps
+    """
+    try:
+        emails = await email_client.get_email_history(
+            lead_id=lead_id,
+            limit=limit,
+            offset=offset,
+        )
+
+        return ActivityHistoryResponse(
+            lead_id=lead_id,
+            activity_type="email",
+            count=len(emails),
+            activities=emails,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get email history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve email history: {str(e)}"
+        )
+
+
+@router.delete("/email/{email_id}")
+async def delete_email(
+    email_id: str,
+    email_client: CloseEmailClient = Depends(get_email_client),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete an email activity (draft or scheduled).
+
+    Cannot delete already-sent emails.
+    """
+    try:
+        await email_client.delete_email(email_id)
+        return {"success": True, "deleted_id": email_id}
+
+    except Exception as e:
+        logger.error(f"Failed to delete email {email_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete email: {str(e)}"
         )
 
 

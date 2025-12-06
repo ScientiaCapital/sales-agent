@@ -114,6 +114,12 @@ from .sales_intel_agent import (
     extract_sales_intel,
 )
 
+# Phase 3.5: OutreachAgent (Multi-Channel GTM via Close CRM) ✅ COMPLETE
+from .outreach_agent import OutreachAgent
+
+# Phase 3.6: CloseCRMAgent (Lead Management with Deduplication) ✅ COMPLETE
+from .close_crm_agent import CloseCRMAgent
+
 
 __all__ = [
     # Phase 2.1 - QualificationAgent (LCEL)
@@ -157,4 +163,10 @@ __all__ = [
     "SalesIntelAgent",
     "SalesIntelResult",
     "extract_sales_intel",
+
+    # Phase 3.5 - OutreachAgent (Multi-Channel GTM via Close CRM)
+    "OutreachAgent",
+
+    # Phase 3.6 - CloseCRMAgent (Lead Management with Deduplication)
+    "CloseCRMAgent",
 ]
