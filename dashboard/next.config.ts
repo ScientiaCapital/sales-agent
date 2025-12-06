@@ -1,13 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Explicitly set Turbopack root to avoid confusion with parent lockfiles
-  // This tells Turbopack to use the dashboard directory as the monorepo root
-  turbopack: {
-    root: __dirname,
-  },
+  // Note: Don't set turbopack.root - Vercel manages outputFileTracingRoot automatically
+  // Setting it causes conflicts in Vercel's monorepo build environment
+
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+    // Get backend URL and clean any whitespace/newlines (env vars can have trailing \n)
+    const rawUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    const backendUrl = rawUrl.trim();
+
+    // Only enable rewrites if we have a valid backend URL
+    // In production without a backend proxy, return empty rewrites
+    if (!backendUrl || (!backendUrl.startsWith("http://") && !backendUrl.startsWith("https://"))) {
+      return [];
+    }
+
     return [
       // Routes that already include /v1/ - pass through directly
       {
