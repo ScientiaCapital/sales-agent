@@ -12,8 +12,8 @@
 |--------|-------|
 | 🔴 Blocked | 0 |
 | 🟡 In Progress | 1 |
-| 🟢 Ready | 2 |
-| ✅ Done (this sprint) | 40 |
+| 🟢 Ready | 13 |
+| ✅ Done (this sprint) | 47 |
 
 ---
 
@@ -104,7 +104,372 @@ python run_enrichment.py
 
 ---
 
-#### 4. [HIGH] Review & Import Close CRM Data
+## 🚀 Close CRM GTM Automation (Dec 6+)
+
+> **MAJOR DISCOVERY**: 95% of Close CRM infrastructure is already built! Just needs enabling.
+
+| Capability | Status | File |
+|------------|--------|------|
+| SMS Sending | ✅ ENABLED | `close_sms.py` (368 lines) |
+| Calling | ✅ ENABLED | `close_calling.py` (404 lines) |
+| Lead Management | ✅ ENABLED | `close.py` |
+| API Endpoints | ✅ 14 endpoints ready | `close_outreach.py` |
+| **Email via Close** | ✅ BUILT Dec 6 | `close_email.py` (544 lines) |
+| **OutreachAgent** | ✅ BUILT Dec 6 | `outreach_agent.py` (310 lines) |
+| **Outreach Tools** | ✅ BUILT Dec 6 | `outreach_tools.py` (443 lines) |
+
+**Tim's Close CRM Configuration** (VERIFIED Dec 6):
+- ✅ `Tim Kipper <tim@coperniq.io>` - Default for automated workflows
+- ✅ BCC: `coperniq_inc-5rskqabn@leads.close.com`
+- ✅ 4 phone numbers (Primary: +1 415-430-9565)
+- ✅ Signature with photo configured
+
+---
+
+## 🎯 GTM Automation Implementation Plan (Dec 6+)
+
+> **Implementation Strategy**: 3 Phases with parallelization + code review gates
+> **Code Review**: `superpowers:code-reviewer` agent after each phase before advancing
+
+### Phase 1: Reply Processing + Celery (PARALLEL)
+
+| Task | Agent | Files | Est. |
+|------|-------|-------|------|
+| TASK-021a | `feature-dev:code-architect` | `reply_classifier.py`, `reply_router.py` | 2h |
+| TASK-021b | `api-scaffolding:fastapi-pro` | `close_reply_webhook.py` | 1.5h |
+| TASK-022 | `general-purpose` | `celery_app.py`, `tasks/close_sync.py` | 2h |
+
+**→ CODE REVIEW GATE: `superpowers:code-reviewer` before Phase 2**
+
+### Phase 2: Close Sequences (SEQUENTIAL)
+
+| Task | Agent | Files | Est. |
+|------|-------|-------|------|
+| TASK-023 | `api-scaffolding:backend-architect` | `close_sequences.py`, update `outreach_tools.py` | 3h |
+
+**→ CODE REVIEW GATE: `superpowers:code-reviewer` before Phase 3**
+
+### Phase 3: BDR Cockpit (TIM'S CONTROL CENTER)
+
+| Task | Agent | Files | Est. |
+|------|-------|-------|------|
+| TASK-024 | `application-performance:frontend-developer` | `CockpitDashboard.tsx`, `AgentStatusPanel.tsx` | 3h |
+| TASK-025 | `api-scaffolding:fastapi-pro` | Agent control endpoints, WebSocket | 2h |
+| TASK-026 | `application-performance:frontend-developer` | `AlertFeed.tsx`, `SequenceManager.tsx` | 2h |
+
+**→ FINAL CODE REVIEW: `superpowers:code-reviewer`**
+
+---
+
+#### 3. ✅ [HIGH] Enable Close CRM Writes - DONE
+- **ID**: TASK-017
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025)
+- **Completed By**: Claude
+
+**Changes Made**:
+- [x] Set `CLOSE_WRITE_DISABLED=False` in `.env`
+- [x] Close CRM writes now enabled for GTM automation
+
+---
+
+#### 4. ✅ [HIGH] Create CloseEmailClient - DONE
+- **ID**: TASK-018
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025)
+- **Completed By**: Claude
+
+**Files Created**:
+- `backend/app/services/crm/close_email.py` (544 lines)
+- 7 email endpoints added to `close_outreach.py`
+
+**Methods Implemented**:
+- [x] `send_email()` - Send via tim@coperniq.io
+- [x] `create_draft()` - Draft for review
+- [x] `send_draft()` - Send existing draft
+- [x] `schedule_email()` - Future delivery
+- [x] `get_email_history()` - Lead email history
+- [x] `cancel_scheduled()` - Cancel scheduled email
+- [x] `delete_email()` - Delete draft/scheduled
+
+---
+
+#### ✅ [HIGH] Connect tim@coperniq in Close - ALREADY DONE
+- **ID**: TASK-019
+- **Status**: ✅ **COMPLETE** (verified from screenshots Dec 6)
+
+**Verified Configuration**:
+- ✅ `Tim Kipper <tim@coperniq.io>` is DEFAULT for automated workflows
+- ✅ BCC: `coperniq_inc-5rskqabn@leads.close.com`
+- ✅ Signature with photo configured
+- ✅ 4 phone numbers ready (Primary: +1 415-430-9565)
+
+---
+
+#### 5. ✅ [HIGH] Create OutreachAgent - DONE
+- **ID**: TASK-020
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025)
+- **Completed By**: Claude
+
+**Files Created**:
+- `backend/app/services/langgraph/tools/outreach_tools.py` (443 lines)
+- `backend/app/services/langgraph/agents/outreach_agent.py` (310 lines)
+
+**Tools Implemented**:
+- [x] `send_email_tool` - Send email via Close
+- [x] `create_email_draft_tool` - Create draft for review
+- [x] `send_sms_tool` - Send SMS via Close
+- [x] `log_call_tool` - Log completed calls
+- [x] `get_outreach_history_tool` - Get all outreach history
+
+---
+
+#### 6. ✅ [HIGH] Reply Processing (Webhook + Polling) - PHASE 1 COMPLETE
+- **ID**: TASK-021
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025 Evening)
+- **Completed By**: Claude
+
+**Files Created**:
+- `backend/app/services/outreach/reply_classifier.py` (207 lines) - Claude AI classification
+- `backend/app/services/outreach/reply_router.py` (452 lines) - 8 intent handlers + Slack alerts
+- `backend/app/api/webhooks/close_reply.py` (199 lines) - Webhook endpoint
+
+**Reply Intents Implemented**:
+| Intent | Handler | Action |
+|--------|---------|--------|
+| `interested` | `_handle_interested()` | 🔥 HOT Slack alert, stop sequence |
+| `meeting_request` | `_handle_meeting_request()` | 📅 Calendar link, create opportunity |
+| `question` | `_handle_question()` | ❓ Pause sequence, queue human response |
+| `not_interested` | `_handle_not_interested()` | Stop sequence, schedule nurture 6mo |
+| `unsubscribe` | `_handle_unsubscribe()` | 🚫 COMPLIANCE: Stop all, mark DNC |
+| `out_of_office` | `_handle_out_of_office()` | Pause 7 days, auto-resume |
+| `auto_reply` | `_handle_auto_reply()` | Continue sequence |
+| `unknown` | `_handle_unknown()` | Queue for human review |
+
+---
+
+#### 7. ✅ [HIGH] Celery Beat Schedules for Close - PHASE 1 COMPLETE
+- **ID**: TASK-022
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025 Evening)
+- **Completed By**: Claude
+
+**Files Created/Updated**:
+- `backend/app/tasks/close_sync.py` (119 lines) - 3 Celery tasks
+- `backend/app/celery_app.py` - Added sync schedules
+
+**Tasks Implemented**:
+| Task | Schedule | Purpose |
+|------|----------|---------|
+| `sync_close_activities` | Every 15 min | Sync email/SMS/call data |
+| `poll_email_replies` | Every 5 min | Polling fallback for replies |
+| `advance_sequences` | Hourly | Move leads through sequences |
+
+---
+
+#### 8. ✅ [HIGH] Close Sequences Integration - PHASE 2 COMPLETE
+- **ID**: TASK-023
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025 Evening)
+- **Completed By**: Claude
+
+**Files Created**:
+- `backend/app/services/crm/close_sequences.py` (545 lines) - CloseSequencesClient
+- `backend/app/services/langgraph/tools/sequence_tools.py` (403 lines) - 8 LangGraph tools
+- Updated `outreach_agent.py` with combined tools (13 total)
+
+**Sequence Tools Implemented**:
+| Tool | Purpose |
+|------|---------|
+| `list_sequences_tool` | List available sequences |
+| `subscribe_to_sequence_tool` | Enroll contact by sequence ID |
+| `enroll_in_sequence_by_name_tool` | Find by name and enroll |
+| `pause_sequence_tool` | Pause subscription (OOO) |
+| `resume_sequence_tool` | Resume paused subscription |
+| `stop_sequence_tool` | Stop individual subscription |
+| `stop_all_sequences_tool` | Stop ALL sequences (compliance) |
+| `get_contact_sequence_status_tool` | Check progress |
+
+**OutreachAgent Now Has**:
+- 5 outreach tools (email, SMS, call, draft, history)
+- 8 sequence tools (list, enroll, pause, resume, stop, status)
+- 13 total tools for complete GTM automation
+
+---
+
+## 🎛️ BDR Cockpit - Tim's GTM Control Center (PHASE 3) - READY TO START
+
+> **Status**: ✅ Phase 1 & 2 COMPLETE - Phase 3 READY
+> **Code Review Gate**: Passed (Dec 6 Evening)
+> **Location**: Existing dashboard (`dashboard-scientia-capital.vercel.app`)
+> **Purpose**: Full control center for monitoring, alerts, triggers, and real-time intervention
+
+### Cockpit Capabilities
+
+| Category | Features |
+|----------|----------|
+| **Monitor** | Agent status (running/idle/error), outreach metrics, sequence progress, reply signals |
+| **Alerts** | Slack notifications for hot leads, errors, approvals needed; in-dashboard alert feed |
+| **Trigger** | Manually kick off any agent, approve/reject BDR drafts, enroll leads in sequences |
+| **Control** | Pause/resume agents, override decisions, stop sequences, mark DNC, real-time intervention |
+
+### Phase 3 Implementation Strategy
+
+> **Parallelization Plan**: 2 agents can work simultaneously
+> **Agent Matching**: Frontend + Backend in parallel
+> **Code Review**: `superpowers:code-reviewer` after all tasks before merge
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    PHASE 3: PARALLEL EXECUTION                  │
+├────────────────────────────────────────────────────────────────┤
+│  Agent A (Frontend)              │  Agent B (Backend)          │
+│  application-performance:        │  api-scaffolding:           │
+│  frontend-developer              │  fastapi-pro                │
+├──────────────────────────────────┼─────────────────────────────┤
+│  TASK-024a: CockpitDashboard.tsx │  TASK-025a: agents.py       │
+│  TASK-024b: AgentStatusPanel.tsx │  TASK-025b: websocket.py    │
+│  TASK-024c: OutreachMetrics.tsx  │  TASK-025c: alerts.py       │
+├──────────────────────────────────┴─────────────────────────────┤
+│                    INTEGRATION PHASE                            │
+├────────────────────────────────────────────────────────────────┤
+│  TASK-026a: AlertFeed.tsx (needs websocket.py)                 │
+│  TASK-026b: SequenceManager.tsx (needs agents.py)              │
+│  TASK-026c: LeadInterventionPanel.tsx                          │
+├────────────────────────────────────────────────────────────────┤
+│  → FINAL CODE REVIEW: superpowers:code-reviewer                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 9. [HIGH] Cockpit Dashboard + Agent Status - PHASE 3 (PARALLEL A)
+- **ID**: TASK-024
+- **Assignee**: Agent A
+- **Labels**: `frontend`, `cockpit`, `phase-3`, `parallel-a`
+- **Est. Time**: 3 hours
+- **Dependencies**: TASK-023 ✅ (Phase 2 complete)
+- **Agent**: `application-performance:frontend-developer`
+
+**Description**: Main BDR Cockpit view with agent status monitoring. Can run in PARALLEL with TASK-025.
+
+**Files to Create**:
+```
+frontend/src/components/Cockpit/
+├── CockpitDashboard.tsx      # Main control center view (TASK-024a)
+├── AgentStatusPanel.tsx      # Live agent status + health (TASK-024b)
+├── OutreachMetrics.tsx       # Emails sent, replies, conversion (TASK-024c)
+└── AgentControls.tsx         # Start/stop/pause agents (TASK-024d)
+```
+
+**Subtasks** (can be parallelized within agent):
+- [ ] TASK-024a: CockpitDashboard.tsx - Main layout with 4 panels
+- [ ] TASK-024b: AgentStatusPanel.tsx - 11 agents with status indicators
+- [ ] TASK-024c: OutreachMetrics.tsx - Email/SMS/call counters
+- [ ] TASK-024d: AgentControls.tsx - Start/stop/pause buttons
+
+**Acceptance Criteria**:
+- [ ] CockpitDashboard layout with 4 panels
+- [ ] AgentStatusPanel shows all 11 agents with status
+- [ ] OutreachMetrics shows email/SMS/call counts
+- [ ] AgentControls can start/stop agents
+- [ ] Responsive design for Tim's workflow
+
+---
+
+#### 10. [HIGH] Agent Control API + WebSocket - PHASE 3 (PARALLEL B)
+- **ID**: TASK-025
+- **Assignee**: Agent B
+- **Labels**: `backend`, `api`, `websocket`, `phase-3`, `parallel-b`
+- **Est. Time**: 2 hours
+- **Dependencies**: TASK-023 ✅ (Phase 2 complete)
+- **Agent**: `api-scaffolding:fastapi-pro`
+
+**Description**: Backend endpoints for agent control and real-time updates. Can run in PARALLEL with TASK-024.
+
+**Files to Create**:
+```
+backend/app/api/
+├── agents.py                 # Agent control endpoints (TASK-025a)
+├── websocket.py              # WebSocket for live updates (TASK-025b)
+└── alerts.py                 # Alert CRUD endpoints (TASK-025c)
+```
+
+**Subtasks** (can be parallelized within agent):
+- [ ] TASK-025a: agents.py - Start/stop/status endpoints
+- [ ] TASK-025b: websocket.py - Real-time cockpit connection
+- [ ] TASK-025c: alerts.py - Alert history and acknowledgment
+
+**New Endpoints**:
+```
+# Agent Control (agents.py)
+POST   /api/v1/agents/{name}/start      # Trigger agent
+POST   /api/v1/agents/{name}/stop       # Stop agent
+GET    /api/v1/agents/status            # All agent statuses
+
+# Real-time (websocket.py)
+WS     /api/v1/ws/cockpit               # WebSocket for live updates
+
+# Alerts (alerts.py)
+GET    /api/v1/alerts                   # Alert history
+POST   /api/v1/alerts/{id}/acknowledge  # Mark alert handled
+
+# Intervention (agents.py)
+POST   /api/v1/leads/{id}/override      # Override lead handling
+POST   /api/v1/sequences/{id}/pause     # Pause sequence for lead
+```
+
+**Acceptance Criteria**:
+- [ ] Agent start/stop endpoints working
+- [ ] WebSocket broadcasting agent status changes
+- [ ] Alert CRUD endpoints
+- [ ] Lead override endpoint
+- [ ] Sequence pause endpoint
+
+---
+
+#### 11. [HIGH] Alert Feed + Sequence Manager UI - PHASE 3 (INTEGRATION)
+- **ID**: TASK-026
+- **Assignee**: After TASK-024 + TASK-025
+- **Labels**: `frontend`, `cockpit`, `phase-3`, `integration`
+- **Est. Time**: 2 hours
+- **Dependencies**: TASK-024 ✅, TASK-025 ✅
+- **Agent**: `application-performance:frontend-developer`
+
+**Description**: Real-time alert feed and sequence management UI. Requires backend endpoints from TASK-025.
+
+**Files to Create**:
+```
+frontend/src/components/Cockpit/
+├── AlertFeed.tsx             # Real-time alert stream (TASK-026a)
+├── SequenceManager.tsx       # View/manage active sequences (TASK-026b)
+└── LeadInterventionPanel.tsx # Override lead handling (TASK-026c)
+```
+
+**Subtasks**:
+- [ ] TASK-026a: AlertFeed.tsx - WebSocket-connected alert stream
+- [ ] TASK-026b: SequenceManager.tsx - Sequence list with pause/resume
+- [ ] TASK-026c: LeadInterventionPanel.tsx - Manual lead overrides
+
+**Acceptance Criteria**:
+- [ ] AlertFeed shows real-time alerts via WebSocket
+- [ ] Alerts can be acknowledged/dismissed
+- [ ] SequenceManager shows all active sequences
+- [ ] Can pause/resume sequences from UI
+- [ ] LeadInterventionPanel allows manual overrides
+
+---
+
+### Phase 3 Execution Plan
+
+**Tomorrow Start Here**:
+1. Launch 2 agents in parallel:
+   - Agent A: `application-performance:frontend-developer` → TASK-024
+   - Agent B: `api-scaffolding:fastapi-pro` → TASK-025
+2. After both complete → TASK-026 (integration)
+3. Final code review: `superpowers:code-reviewer`
+
+**Estimated Total Time**: 7 hours (but only ~4 hours wall-clock with parallelization)
+
+---
+
+#### 12. [HIGH] Review & Import Close CRM Data
 - **ID**: TASK-008
 - **Assignee**: Tim
 - **Labels**: `crm`, `manual-review`
@@ -175,6 +540,14 @@ python run_enrichment.py
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Close CRM GTM Automation - Phases 1 & 2 (Dec 6 Evening)** | | | |
+| TASK-021 | Reply Processing (classifier + router + webhook) | 2025-12-06 | Claude |
+| TASK-022 | Celery Beat Schedules for Close sync | 2025-12-06 | Claude |
+| TASK-023 | Close Sequences Integration (8 tools + OutreachAgent) | 2025-12-06 | Claude |
+| **Close CRM GTM Automation - Foundation (Dec 6)** | | | |
+| TASK-017 | Enable Close CRM Writes (`CLOSE_WRITE_DISABLED=False`) | 2025-12-06 | Claude |
+| TASK-018 | Create CloseEmailClient (`close_email.py` - 544 lines) | 2025-12-06 | Claude |
+| TASK-020 | Create OutreachAgent + Tools (753 lines total) | 2025-12-06 | Claude |
 | **Cold-Reach Integration (Dec 6)** | | | |
 | TASK-011 | User Authentication (Supabase) - 11 endpoints, JWT validation | 2025-12-06 | Claude |
 | TASK-012 | Close CRM SMS/Voice Integration - 7 endpoints, 2,269 lines | 2025-12-06 | Claude |
@@ -330,7 +703,7 @@ Ready → In Progress → Review → Done
 
 - **NO OpenAI** - Use Cerebras, Claude, DeepSeek only
 - **API keys in .env only** - Never hardcode
-- **Close CRM WRITE DISABLED** - Read-only for safety
+- **Close CRM WRITES ENABLED** - ✅ Dec 6: `CLOSE_WRITE_DISABLED=False` for GTM automation
 - **Manual import only** - Review CSV before importing
 - **Run `/validate` before marking tasks done**
 

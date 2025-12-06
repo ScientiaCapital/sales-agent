@@ -97,6 +97,28 @@ from .qualification_tools import (
     get_qualification_tools as _get_qualification_tools_impl,
 )
 
+from .outreach_tools import (
+    send_email_tool,
+    create_email_draft_tool,
+    send_sms_tool,
+    log_call_tool,
+    get_outreach_history_tool,
+    OUTREACH_TOOLS,
+)
+
+from .sequence_tools import (
+    list_sequences_tool,
+    subscribe_to_sequence_tool,
+    enroll_in_sequence_by_name_tool,
+    pause_sequence_tool,
+    resume_sequence_tool,
+    stop_sequence_tool,
+    stop_all_sequences_tool,
+    get_contact_sequence_status_tool,
+    get_sequence_tools as _get_sequence_tools_impl,
+    SEQUENCE_TOOLS,
+)
+
 
 # ========== Convenience Functions ==========
 
@@ -385,6 +407,59 @@ def get_qualification_tools():
     return _get_qualification_tools_impl()
 
 
+def get_outreach_tools():
+    """
+    Get all outreach tools for multi-channel GTM via Close CRM.
+
+    Returns:
+        List of outreach tools: [send_email_tool, create_email_draft_tool,
+                                 send_sms_tool, log_call_tool, get_outreach_history_tool]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_outreach_tools
+        from langgraph.prebuilt import create_react_agent
+
+        outreach_tools = get_outreach_tools()
+        agent = create_react_agent(llm, outreach_tools)
+
+        # Agent can now send emails, SMS, and log calls via Close CRM
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Send email to john@acme.com about solar partnership"
+            )]
+        })
+        ```
+    """
+    return OUTREACH_TOOLS
+
+
+def get_sequence_tools():
+    """
+    Get all Close CRM sequence tools for drip campaigns.
+
+    Returns:
+        List of sequence tools for enrollment, pause, resume, stop
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_sequence_tools
+        from langgraph.prebuilt import create_react_agent
+
+        sequence_tools = get_sequence_tools()
+        agent = create_react_agent(llm, sequence_tools)
+
+        # Agent can now manage sequences
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Enroll contact in 'Cold Outreach' sequence"
+            )]
+        })
+        ```
+    """
+    return _get_sequence_tools_impl()
+
+
 def get_all_integration_tools():
     """
     Get all CRM integration tools (CRM + Apollo + LinkedIn).
@@ -478,6 +553,25 @@ __all__ = [
     "is_transfer_allowed",
     "DEFAULT_TRANSFER_TOOLS",
 
+    # Outreach Tools (Email, SMS, Calling via Close CRM)
+    "send_email_tool",
+    "create_email_draft_tool",
+    "send_sms_tool",
+    "log_call_tool",
+    "get_outreach_history_tool",
+    "OUTREACH_TOOLS",
+
+    # Sequence Tools (Drip Campaigns via Close CRM)
+    "list_sequences_tool",
+    "subscribe_to_sequence_tool",
+    "enroll_in_sequence_by_name_tool",
+    "pause_sequence_tool",
+    "resume_sequence_tool",
+    "stop_sequence_tool",
+    "stop_all_sequences_tool",
+    "get_contact_sequence_status_tool",
+    "SEQUENCE_TOOLS",
+
     # Convenience Functions
     "get_crm_tools",
     "get_apollo_tools",
@@ -487,6 +581,8 @@ __all__ = [
     "get_website_scraping_tools",
     "get_cartesia_tools",
     "get_transfer_tools",
+    "get_outreach_tools",
+    "get_sequence_tools",
     "get_all_integration_tools",
     "get_all_tools",
 ]
