@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Explicitly set Turbopack root to dashboard directory
-  // This prevents Next.js 16 from inferring wrong workspace root from parent lockfiles
-  // See: https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory
-  turbopack: {
-    root: process.cwd(),
-  },
+  // Note: Production builds use --webpack flag (see package.json) to avoid
+  // Turbopack's workspace inference issues in monorepo setups.
+  // Development uses Turbopack for faster HMR.
 
   async rewrites() {
     // Get backend URL and clean any whitespace/newlines (env vars can have trailing \n)
