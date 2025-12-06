@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
-  // Note: Don't set turbopack.root - Vercel manages outputFileTracingRoot automatically
-  // Setting it causes conflicts in Vercel's monorepo build environment
+  // Set turbopack root for local development to avoid conflicts with parent-level lockfiles
+  // In production (Vercel), this is managed automatically
+  ...(process.env.NODE_ENV === "development" && {
+    turbopack: {
+      root: path.resolve(__dirname),
+    },
+  }),
 
   async rewrites() {
     // Get backend URL and clean any whitespace/newlines (env vars can have trailing \n)
