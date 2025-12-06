@@ -48,6 +48,7 @@ class Lead(Base):
     # Additional Data
     notes = Column(Text)
     additional_data = Column(JSON)  # Flexible field for additional data
+    tier = Column(String(50))  # Lead tier: "tier_1", "tier_2", "tier_3", etc.
 
     # ============================================================================
     # OEM Tracking Fields (Multi-OEM Energy Transition Scoring)
@@ -113,6 +114,10 @@ class Lead(Base):
 
     # Report generation relationship
     reports = relationship("Report", back_populates="lead", cascade="all, delete-orphan")
+
+    # Cold outreach relationships (from cold-reach integration)
+    sequence_entries = relationship("SequenceEntry", foreign_keys="[SequenceEntry.lead_id]", cascade="all, delete-orphan")
+    signals = relationship("Signal", foreign_keys="[Signal.lead_id]", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Lead(id={self.id}, company='{self.company_name}', score={self.qualification_score})>"

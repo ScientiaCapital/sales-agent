@@ -19,6 +19,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ResourceConflictError
 )
+from app.auth.dependencies import get_current_user
 
 logger = setup_logging(__name__)
 
@@ -184,7 +185,8 @@ def get_campaign_service(db: Session = Depends(get_db)) -> CampaignService:
 )
 async def create_campaign(
     request: CampaignCreateRequest,
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> CampaignResponse:
     """
     Create a new outreach campaign.
@@ -230,7 +232,8 @@ async def create_campaign(
 async def generate_messages(
     campaign_id: int,
     request: MessageGenerationRequest = MessageGenerationRequest(),
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Generate personalized messages for campaign leads.
@@ -286,7 +289,8 @@ async def list_messages(
     status: Optional[str] = Query(None, description="Filter by status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Max records to return"),
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> List[MessageResponse]:
     """
     List messages for a campaign.
@@ -330,7 +334,8 @@ async def list_messages(
 )
 async def get_analytics(
     campaign_id: int,
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> AnalyticsResponse:
     """
     Get comprehensive campaign analytics.
@@ -365,7 +370,8 @@ async def get_analytics(
 )
 async def activate_campaign(
     campaign_id: int,
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Activate a campaign for sending.
@@ -408,7 +414,8 @@ async def activate_campaign(
 )
 async def get_message_variants(
     message_id: int,
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Get all variants for a message.
@@ -447,7 +454,8 @@ async def get_message_variants(
 async def update_message_status(
     message_id: int,
     request: MessageStatusUpdate,
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> Dict[str, Any]:
     """
     Update message status and variant analytics.
@@ -498,7 +506,8 @@ async def list_campaigns(
     status: Optional[str] = Query(None, description="Filter by status"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Max records to return"),
-    service: CampaignService = Depends(get_campaign_service)
+    service: CampaignService = Depends(get_campaign_service),
+    current_user: dict = Depends(get_current_user),
 ) -> List[CampaignResponse]:
     """
     List all campaigns.
