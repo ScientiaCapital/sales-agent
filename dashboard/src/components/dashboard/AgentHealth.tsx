@@ -146,11 +146,36 @@ function AgentCard({ agent }: { agent: AgentMetric }) {
 }
 
 export function AgentHealth() {
-  const { data: agents, isLoading } = useSWR<AgentMetric[]>(
-    "/api/agents",
+  const { data: agents, isLoading, error } = useSWR<AgentMetric[]>(
+    "/api/dashboard/agents",
     fetcher,
     { refreshInterval: 30000 } // Refresh every 30 seconds
   );
+
+  // Error state
+  if (error) {
+    return (
+      <section className="mb-8">
+        <div className="flex items-center gap-2 mb-4">
+          <Activity className="h-5 w-5 text-[var(--turkish-blue)]" />
+          <h2 className="text-2xl font-bold text-[var(--turkish-blue)]">
+            Agent Health
+          </h2>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-6 text-red-500">
+              <XCircle className="h-8 w-8 mx-auto mb-2" />
+              <p className="font-medium">Failed to load agent metrics</p>
+              <p className="text-sm text-muted-foreground">
+                Please check if the backend server is running
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section className="mb-8">

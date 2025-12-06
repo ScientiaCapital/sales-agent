@@ -89,7 +89,7 @@ function ActivitySkeleton() {
 
 export function RecentActivity() {
   const { data, isLoading, mutate } = useSWR<ActivityResponse>(
-    "/api/activity?hours=24&limit=15",
+    "/api/dashboard/activity?hours=24&limit=15",
     fetcher,
     { refreshInterval: 60000 } // Refresh every minute
   );

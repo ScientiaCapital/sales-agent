@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Calendar,
   TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 
 interface OutreachMetrics {
@@ -84,11 +85,33 @@ interface OutreachMetricsProps {
 }
 
 export function OutreachMetrics({ period = "7d" }: OutreachMetricsProps) {
-  const { data, isLoading } = useSWR<OutreachResponse>(
-    `/api/outreach?period=${period}`,
+  const { data, isLoading, error } = useSWR<OutreachResponse>(
+    `/api/dashboard/outreach?period=${period}`,
     fetcher,
     { refreshInterval: 120000 } // Refresh every 2 min
   );
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg font-semibold text-[var(--turkish-blue)] flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Outreach (Close CRM)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6 text-red-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p className="font-medium">Failed to load outreach data</p>
+            <p className="text-sm text-muted-foreground">
+              Please check if the backend server is running
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (

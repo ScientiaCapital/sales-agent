@@ -73,7 +73,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export function NeedsAttentionQueue() {
   const { data, isLoading } = useSWR<AttentionResponse>(
-    "/api/attention",
+    "/api/dashboard/attention",
     fetcher,
     { refreshInterval: 30000 } // Refresh every 30s
   );

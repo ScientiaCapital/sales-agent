@@ -50,6 +50,10 @@ from app.api import rankings  # Lead prediction market rankings
 from app.api import close_outreach  # Close CRM SMS/Voice integration (replaces VozLux)
 from app.api import sequences  # Email sequence management
 from app.api import prospects  # Prospect enrollment and execution
+from app.api import agents  # Agent control API for BDR Cockpit
+from app.api import cockpit_websocket  # WebSocket for BDR Cockpit real-time updates
+from app.api import alerts  # Alert management for BDR workflow
+from app.api import dashboard  # Dashboard endpoints for frontend
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -237,7 +241,12 @@ app.include_router(webhooks_close, prefix=settings.API_V1_PREFIX)  # Close CRM w
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
 app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach (replaces VozLux)
 app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management (cold-reach integration)
+app.include_router(sequences.cockpit_router)  # Sequences cockpit endpoints (v1 prefix in router)
 app.include_router(prospects.router, prefix=settings.API_V1_PREFIX)  # Prospect enrollment and execution (cold-reach integration)
+app.include_router(agents.router, prefix=settings.API_V1_PREFIX)  # Agent control API for BDR Cockpit
+app.include_router(cockpit_websocket.router, prefix=settings.API_V1_PREFIX)  # WebSocket for BDR Cockpit real-time updates
+app.include_router(alerts.router, prefix=settings.API_V1_PREFIX)  # Alert management for BDR workflow
+app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
 
 
 @app.get("/")

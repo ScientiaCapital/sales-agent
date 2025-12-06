@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Target, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Target, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,11 +60,32 @@ function KPICardSkeleton() {
 }
 
 export function ExecutiveSummary() {
-  const { data: metrics, isLoading } = useSWR<MetricsSummary>(
-    "/api/metrics",
+  const { data: metrics, isLoading, error } = useSWR<MetricsSummary>(
+    "/api/dashboard/metrics",
     fetcher,
     { refreshInterval: 300000 } // Refresh every 5 minutes
   );
+
+  if (error) {
+    return (
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 text-[var(--turkish-blue)]">
+          Executive Summary
+        </h2>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-6 text-red-500">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p className="font-medium">Failed to load metrics</p>
+              <p className="text-sm text-muted-foreground">
+                Please check if the backend server is running
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   if (isLoading || !metrics) {
     return (
