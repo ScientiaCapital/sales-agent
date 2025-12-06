@@ -14,6 +14,7 @@ import {
   Phone,
   Mail,
   AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 
 interface Lead {
@@ -99,11 +100,33 @@ function LoadingSkeleton() {
 }
 
 export function ICPQueue() {
-  const { data, isLoading } = useSWR<ICPQueueResponse>(
-    "/api/icp-queue?days=7&limit=10",
+  const { data, isLoading, error } = useSWR<ICPQueueResponse>(
+    "/api/dashboard/icp-queue?days=7&limit=10",
     fetcher,
     { refreshInterval: 60000 } // Refresh every 60 seconds
   );
+
+  if (error) {
+    return (
+      <Card className="col-span-2">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-[var(--turkish-blue)] flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            ICP Queue - "Never Lost, Always Aware"
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-6 text-red-500">
+            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+            <p className="font-medium">Failed to load ICP queue</p>
+            <p className="text-sm text-muted-foreground">
+              Please check if the backend server is running
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (

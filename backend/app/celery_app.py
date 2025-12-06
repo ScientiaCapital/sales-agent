@@ -259,23 +259,122 @@ celery_app.conf.update(
 )
 
 
-# Task lifecycle hooks for logging
+# ========== Agent Tracking Configuration ==========
+# Map task names to agent names for BDR Cockpit tracking
+TRACKED_AGENTS = {
+    "run_lead_scout": "lead_scout",
+    "generate_morning_report": "morning_report",
+    "run_sales_intel_batch": "sales_intel",
+    "run_growth_campaigns": "growth_campaigns",
+    "run_bdr_batch": "bdr_outreach",
+    "run_icp_checker": "icp_checker",
+    "run_prediction_market": "prediction_market",
+    "run_morning_briefing": "morning_briefing",
+    "sync_close_activities": "close_sync",
+    "poll_email_replies": "reply_polling",
+    "advance_sequences": "sequence_advance",
+}
+
+
+def _run_async_tracking(coro):
+    """Run async tracking without blocking the worker."""
+    import asyncio
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(coro)
+        else:
+            loop.run_until_complete(coro)
+    except RuntimeError:
+        asyncio.run(coro)
+    except Exception as e:
+        logger.debug(f"Async tracking error (non-blocking): {e}")
+
+
+# Task lifecycle hooks for logging AND agent tracking
 @task_prerun.connect
 def task_prerun_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, **extra):
-    """Log when a task starts execution"""
-    logger.info(f"Task starting: {task.name} (ID: {task_id})")
+    """Log when a task starts execution and track agent starts."""
+    task_name = task.name if task else None
+    logger.info(f"Task starting: {task_name} (ID: {task_id})")
+
+    # Track agent starts in Redis
+    agent_name = TRACKED_AGENTS.get(task_name)
+    if agent_name:
+        try:
+            from app.services.agent_tracker import get_agent_tracker
+
+            async def _track_start():
+                tracker = get_agent_tracker()
+                await tracker.record_start(
+                    agent_name=agent_name,
+                    task_id=task_id,
+                    args={"args": args, "kwargs": kwargs} if args or kwargs else None
+                )
+
+            _run_async_tracking(_track_start())
+        except Exception as e:
+            logger.debug(f"Failed to track agent start: {e}")
 
 
 @task_postrun.connect
-def task_postrun_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, retval=None, **extra):
-    """Log when a task completes successfully"""
-    logger.info(f"Task completed: {task.name} (ID: {task_id})")
+def task_postrun_handler(sender=None, task_id=None, task=None, args=None, kwargs=None, retval=None, state=None, **extra):
+    """Log when a task completes and track agent completions."""
+    task_name = task.name if task else None
+    logger.info(f"Task completed: {task_name} (ID: {task_id})")
+
+    # Track agent completions in Redis
+    agent_name = TRACKED_AGENTS.get(task_name)
+    if agent_name:
+        try:
+            from app.services.agent_tracker import get_agent_tracker
+
+            # Convert result to dict if possible
+            result = None
+            if retval:
+                if isinstance(retval, dict):
+                    result = retval
+                else:
+                    result = {"result": str(retval)[:500]}  # Truncate large results
+
+            async def _track_completion():
+                tracker = get_agent_tracker()
+                await tracker.record_completion(
+                    agent_name=agent_name,
+                    task_id=task_id,
+                    result=result
+                )
+
+            _run_async_tracking(_track_completion())
+        except Exception as e:
+            logger.debug(f"Failed to track agent completion: {e}")
 
 
 @task_failure.connect
 def task_failure_handler(sender=None, task_id=None, exception=None, args=None, kwargs=None, traceback=None, **extra):
-    """Log task failures"""
-    logger.error(f"Task failed: {sender.name} (ID: {task_id}) - {str(exception)}", exc_info=True)
+    """Log task failures and track agent errors."""
+    task_name = sender.name if sender else "unknown"
+    logger.error(f"Task failed: {task_name} (ID: {task_id}) - {str(exception)}", exc_info=True)
+
+    # Track agent failures in Redis
+    agent_name = TRACKED_AGENTS.get(task_name)
+    if agent_name:
+        try:
+            from app.services.agent_tracker import get_agent_tracker
+
+            error_msg = f"{type(exception).__name__}: {str(exception)[:500]}"
+
+            async def _track_failure():
+                tracker = get_agent_tracker()
+                await tracker.record_completion(
+                    agent_name=agent_name,
+                    task_id=task_id,
+                    error=error_msg
+                )
+
+            _run_async_tracking(_track_failure())
+        except Exception as e:
+            logger.debug(f"Failed to track agent failure: {e}")
 
 
 if __name__ == "__main__":

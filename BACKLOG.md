@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-06 (Evening)
+**Last Updated**: 2025-12-06 (Phase 4 Planning)
 **Sprint**: Current
 
 ---
@@ -11,9 +11,9 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 1 |
-| 🟢 Ready | 13 |
-| ✅ Done (this sprint) | 47 |
+| 🟡 In Progress | 3 (Phase 4) |
+| 🟢 Ready | 10 |
+| ✅ Done (this sprint) | 50 (Phase 1-3 complete) |
 
 ---
 
@@ -29,7 +29,37 @@
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-#### 1. [HIGH] Run Interactive Enrichment on 3,500 Companies
+#### 1. [HIGH] Phase 4: Dashboard Real Data Verification
+- **ID**: TASK-027, TASK-028, TASK-029
+- **Assignee**: Claude (Dec 6 Evening)
+- **Labels**: `dashboard`, `verification`, `phase-4`
+- **Est. Time**: 3 hours (2h with parallelization)
+- **Dependencies**: Phase 3 ✅
+
+**Description**: Ensure ALL dashboard cards display REAL API data, not mock/empty states.
+
+**Execution Plan**:
+```
+PARALLEL: TASK-027 (Backend) + TASK-028 (Frontend)
+SEQUENTIAL: TASK-029 (E2E verification)
+GATE: Code review before merge
+```
+
+**Progress**:
+- [ ] TASK-027: Backend connectivity verification (Agent: debugger)
+- [ ] TASK-028: Frontend API proxy + error states (Agent: frontend-developer)
+- [ ] TASK-029: E2E verification + cleanup (Agent: general-purpose)
+- [ ] Code review gate
+
+**Acceptance Criteria**:
+- [ ] ALL 5 tabs show real data
+- [ ] NO mock data anywhere
+- [ ] NO empty states where data should exist
+- [ ] Screenshot evidence of working dashboard
+
+---
+
+#### 2. [MEDIUM] Run Interactive Enrichment on 3,500 Companies
 - **ID**: TASK-010
 - **Assignee**: Team (Dec 2+)
 - **Labels**: `enrichment`, `scraping`, `supabase`
@@ -149,15 +179,36 @@ python run_enrichment.py
 
 **→ CODE REVIEW GATE: `superpowers:code-reviewer` before Phase 3**
 
-### Phase 3: BDR Cockpit (TIM'S CONTROL CENTER)
+### Phase 3: BDR Cockpit (TIM'S CONTROL CENTER) ✅ COMPLETE
 
-| Task | Agent | Files | Est. |
-|------|-------|-------|------|
-| TASK-024 | `application-performance:frontend-developer` | `CockpitDashboard.tsx`, `AgentStatusPanel.tsx` | 3h |
-| TASK-025 | `api-scaffolding:fastapi-pro` | Agent control endpoints, WebSocket | 2h |
-| TASK-026 | `application-performance:frontend-developer` | `AlertFeed.tsx`, `SequenceManager.tsx` | 2h |
+| Task | Agent | Files | Status |
+|------|-------|-------|--------|
+| TASK-024 | `application-performance:frontend-developer` | `CockpitDashboard.tsx`, `AgentStatusPanel.tsx` | ✅ Done |
+| TASK-025 | `api-scaffolding:fastapi-pro` | Agent control endpoints, WebSocket | ✅ Done |
+| TASK-026 | `application-performance:frontend-developer` | `AlertFeed.tsx`, `SequenceManager.tsx` | ✅ Done |
 
-**→ FINAL CODE REVIEW: `superpowers:code-reviewer`**
+**→ CODE REVIEW: ✅ PASSED (Dec 6 Evening) - 4 fixes applied (FIX-CR1 through FIX-CR4)**
+
+---
+
+### Phase 4: Dashboard Real Data Verification (CURRENT)
+
+> **Goal**: Ensure ALL dashboard cards display REAL API data, not mock/empty states
+> **Status**: 🟡 IN PROGRESS
+> **Strategy**: Backend verification first, then frontend connectivity, then E2E testing
+
+**Exploration Findings (Dec 6 Evening)**:
+- ✅ All frontend components already use SWR with real API endpoints
+- ✅ All backend endpoints query real databases (Supabase, PostgreSQL, Redis)
+- ⚠️ Issue: Backend server may not be running / Database connections need verification
+
+| Task | Agent | Files | Est. | Parallelizable |
+|------|-------|-------|------|----------------|
+| TASK-027 | `error-debugging:debugger` | Backend connectivity verification | 1h | ✅ Yes (with 028) |
+| TASK-028 | `application-performance:frontend-developer` | Frontend API proxy + error states | 1h | ✅ Yes (with 027) |
+| TASK-029 | `general-purpose` | E2E verification + cleanup | 1h | ❌ Sequential |
+
+**→ CODE REVIEW GATE: `superpowers:code-reviewer` before merge**
 
 ---
 
@@ -339,15 +390,149 @@ python run_enrichment.py
 
 ---
 
-#### 9. [HIGH] Cockpit Dashboard + Agent Status - PHASE 3 (PARALLEL A)
-- **ID**: TASK-024
+## 📊 Phase 4: Dashboard Real Data Verification Tasks
+
+> **Execution Strategy**: Backend + Frontend in parallel, then E2E verification
+> **Code Review Gate**: 100% review before declaring Phase 4 complete
+
+---
+
+#### 9. [HIGH] Backend Connectivity Verification - PHASE 4 (PARALLEL A)
+- **ID**: TASK-027
 - **Assignee**: Agent A
-- **Labels**: `frontend`, `cockpit`, `phase-3`, `parallel-a`
-- **Est. Time**: 3 hours
-- **Dependencies**: TASK-023 ✅ (Phase 2 complete)
+- **Labels**: `backend`, `debugging`, `phase-4`, `parallel-a`
+- **Est. Time**: 1 hour
+- **Dependencies**: Phase 3 ✅
+- **Agent**: `error-debugging:debugger`
+
+**Description**: Verify all backend APIs return real data from databases. Can run in PARALLEL with TASK-028.
+
+**Verification Checklist**:
+- [ ] Backend server starts successfully on port 8001
+- [ ] PostgreSQL connection working (sequences, leads)
+- [ ] Supabase connection working (dim_companies, dim_contacts, dim_alerts)
+- [ ] Redis connection working (agent status, pub/sub)
+- [ ] All `/api/v1/*` endpoints return 200 with real data
+
+**API Endpoints to Verify**:
+```
+GET /api/v1/metrics/outreach     → fact_close_activities
+GET /api/v1/agents/status        → Redis agent tracking
+GET /api/v1/alerts               → dim_alerts
+GET /api/v1/sequences            → PostgreSQL Sequence table
+WS  /api/v1/ws/cockpit           → Redis pub/sub
+```
+
+**Acceptance Criteria**:
+- [ ] All database connections verified
+- [ ] All endpoints return real data (not empty/error)
+- [ ] Connection errors documented and fixed
+
+---
+
+#### 10. [HIGH] Frontend API Proxy + Error States - PHASE 4 (PARALLEL B)
+- **ID**: TASK-028
+- **Assignee**: Agent B
+- **Labels**: `frontend`, `debugging`, `phase-4`, `parallel-b`
+- **Est. Time**: 1 hour
+- **Dependencies**: Phase 3 ✅
 - **Agent**: `application-performance:frontend-developer`
 
-**Description**: Main BDR Cockpit view with agent status monitoring. Can run in PARALLEL with TASK-025.
+**Description**: Verify frontend correctly proxies to backend and handles errors gracefully. Can run in PARALLEL with TASK-027.
+
+**Verification Checklist**:
+- [ ] `next.config.ts` API proxy configured for `/api/v1/*` → `localhost:8001`
+- [ ] `.env.local` has correct `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_WS_URL`
+- [ ] All SWR hooks have proper error boundaries
+- [ ] Loading states display correctly while fetching
+- [ ] Error states display user-friendly messages
+
+**Components to Verify**:
+| Component | Endpoint | Expected Data |
+|-----------|----------|---------------|
+| ExecutiveSummary | `/api/metrics` | Lead counts, conversion rates |
+| BDRWorkQueue | `/api/workqueue` | Prioritized leads |
+| ICPQueue | `/api/icp-queue` | ICP-scored leads |
+| OutreachMetrics | `/api/outreach` | Email/SMS/call stats |
+| AlertFeed | `/api/v1/alerts` | Real-time alerts |
+| SequenceManager | `/api/v1/sequences` | Active sequences |
+| AgentStatusPanel | `/api/v1/agents/status` | Agent health |
+
+**Acceptance Criteria**:
+- [ ] API proxy working (no CORS errors)
+- [ ] All components show loading → data (not error)
+- [ ] Error boundaries prevent blank screens
+
+---
+
+#### 11. [HIGH] E2E Verification + Cleanup - PHASE 4 (SEQUENTIAL)
+- **ID**: TASK-029
+- **Assignee**: After TASK-027 + TASK-028
+- **Labels**: `testing`, `verification`, `phase-4`, `sequential`
+- **Est. Time**: 1 hour
+- **Dependencies**: TASK-027 ✅, TASK-028 ✅
+- **Agent**: `general-purpose`
+
+**Description**: End-to-end verification that all dashboard pages display real data. Sequential after parallel tasks complete.
+
+**E2E Test Checklist**:
+- [ ] Start backend: `cd backend && python start_server.py`
+- [ ] Start frontend: `cd dashboard && npm run dev`
+- [ ] Open http://localhost:3000 (or 3001 if port in use)
+- [ ] Navigate through ALL tabs and verify real data displays
+
+**Tab-by-Tab Verification**:
+| Tab | Cards to Verify | Real Data Source |
+|-----|-----------------|------------------|
+| Dashboard | ExecutiveSummary, PipelineFunnel, RecentActivity | Supabase |
+| Leads | BDRWorkQueue, ICPQueue, NeedsAttention | Supabase |
+| Outreach | OutreachMetrics, LeadLifecycle | fact_close_activities |
+| Command Center | CommandCenter, DraftReviewQueue | dim_ai_drafts |
+| Cockpit | AgentStatus, AlertFeed, SequenceManager | PostgreSQL + Redis |
+
+**Cleanup Tasks**:
+- [ ] Remove any remaining mock data fallbacks
+- [ ] Update error messages to be user-friendly
+- [ ] Ensure consistent styling across all cards
+
+**Acceptance Criteria**:
+- [ ] ALL 5 tabs show real data
+- [ ] NO mock data anywhere
+- [ ] NO empty states where data should exist
+- [ ] Screenshot evidence of working dashboard
+
+---
+
+### Phase 4 Execution Plan
+
+```
+STEP 1: Launch TASK-027 + TASK-028 in PARALLEL
+        ├─ Agent A: error-debugging:debugger (Backend)
+        └─ Agent B: frontend-developer (Frontend)
+
+STEP 2: TASK-029 (Sequential - needs both complete)
+        └─ Agent: general-purpose (E2E verification)
+
+STEP 3: CODE REVIEW GATE
+        └─ superpowers:code-reviewer (100% review)
+
+STEP 4: UPDATE BACKLOG.md
+        └─ Move Phase 4 tasks to Done
+```
+
+**Estimated Total Time**: 3 hours (but ~2 hours wall-clock with parallelization)
+
+---
+
+## 🎛️ BDR Cockpit - Reference (PHASE 3 COMPLETE)
+
+#### ✅ [HIGH] Cockpit Dashboard + Agent Status - PHASE 3 (PARALLEL A)
+- **ID**: TASK-024
+- **Status**: ✅ **COMPLETE** (Dec 6, 2025 Evening)
+- **Completed By**: Claude
+- **Agent**: `application-performance:frontend-developer`
+
+**Description**: Main BDR Cockpit view with agent status monitoring. Ran in PARALLEL with TASK-025.
 
 **Files to Create**:
 ```
