@@ -19,6 +19,7 @@ from sqlalchemy import select
 from app.models.database import get_db
 from app.models.sequence import Sequence
 from app.services.sequences.engine import SequenceEngine
+from app.auth.dependencies import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -367,3 +368,191 @@ async def deactivate_sequence(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to deactivate sequence: {str(e)}"
         )
+
+
+# ============================================================================
+# COCKPIT DASHBOARD ENDPOINTS (v1)
+# ============================================================================
+
+class SequenceStepCockpit(BaseModel):
+    """Step info for cockpit display."""
+    step_number: int
+    type: str = "email"
+    subject: Optional[str] = None
+    delay_days: Optional[int] = None
+    status: str = "pending"  # pending, active, completed
+
+
+class SequenceCockpitResponse(BaseModel):
+    """Sequence data formatted for BDR Cockpit dashboard."""
+    id: str
+    name: str
+    status: str  # active, paused, stopped
+    total_subscribers: int
+    active_subscribers: int
+    completed_subscribers: int
+    steps: List[SequenceStepCockpit]
+    current_step: int
+    total_steps: int
+    created_at: str
+    last_activity_at: Optional[str] = None
+    next_scheduled_at: Optional[str] = None
+
+
+class SequencesCockpitResponse(BaseModel):
+    """Response for cockpit sequences list."""
+    sequences: List[SequenceCockpitResponse]
+    total: int
+    timestamp: str
+
+
+# Create separate v1 router for cockpit endpoints
+cockpit_router = APIRouter(prefix="/api/v1/sequences", tags=["sequences-cockpit"])
+
+
+@cockpit_router.get("", response_model=SequencesCockpitResponse)
+async def list_sequences_for_cockpit(
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List sequences with subscriber stats for BDR Cockpit.
+
+    Returns aggregated view suitable for dashboard display.
+    """
+    from datetime import datetime
+
+    try:
+        # Get all sequences
+        query = select(Sequence).order_by(Sequence.created_at.desc())
+        result = await db.execute(query)
+        sequences = result.scalars().all()
+
+        cockpit_sequences = []
+        for seq in sequences:
+            # Get stats from engine
+            engine = SequenceEngine(db)
+            stats = await engine.get_sequence_stats(seq.sequence_id)
+
+            # Build step list with status
+            steps = []
+            for i in range(seq.total_steps):
+                steps.append(SequenceStepCockpit(
+                    step_number=i + 1,
+                    type="email",
+                    status="completed" if i < stats.get("current_avg_step", 0) else "pending"
+                ))
+
+            # Map is_active to status string
+            status = "active" if seq.is_active else "paused"
+
+            cockpit_sequences.append(SequenceCockpitResponse(
+                id=seq.sequence_id,
+                name=seq.name,
+                status=status,
+                total_subscribers=stats.get("total_enrolled", 0),
+                active_subscribers=stats.get("status_breakdown", {}).get("active", 0),
+                completed_subscribers=stats.get("status_breakdown", {}).get("completed", 0),
+                steps=steps,
+                current_step=int(stats.get("current_avg_step", 1)),
+                total_steps=seq.total_steps,
+                created_at=seq.created_at.isoformat(),
+                last_activity_at=None,  # Would need to track this
+                next_scheduled_at=None,  # Would need scheduler integration
+            ))
+
+        return SequencesCockpitResponse(
+            sequences=cockpit_sequences,
+            total=len(cockpit_sequences),
+            timestamp=datetime.utcnow().isoformat(),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to list sequences for cockpit: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load sequences: {str(e)}"
+        )
+
+
+@cockpit_router.post("/{sequence_id}/pause")
+async def pause_sequence_cockpit(
+    sequence_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Pause a sequence (alias for deactivate). Requires authentication."""
+    try:
+        query = select(Sequence).where(Sequence.sequence_id == sequence_id)
+        result = await db.execute(query)
+        sequence = result.scalar_one_or_none()
+
+        if not sequence:
+            raise HTTPException(status_code=404, detail=f"Sequence '{sequence_id}' not found")
+
+        sequence.is_active = False
+        await db.commit()
+
+        return {"status": "paused", "sequence_id": sequence_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to pause sequence: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@cockpit_router.post("/{sequence_id}/resume")
+async def resume_sequence_cockpit(
+    sequence_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Resume a paused sequence (alias for activate). Requires authentication."""
+    try:
+        query = select(Sequence).where(Sequence.sequence_id == sequence_id)
+        result = await db.execute(query)
+        sequence = result.scalar_one_or_none()
+
+        if not sequence:
+            raise HTTPException(status_code=404, detail=f"Sequence '{sequence_id}' not found")
+
+        sequence.is_active = True
+        await db.commit()
+
+        return {"status": "active", "sequence_id": sequence_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to resume sequence: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@cockpit_router.post("/{sequence_id}/stop")
+async def stop_sequence_cockpit(
+    sequence_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Stop a sequence completely. Requires authentication."""
+    try:
+        query = select(Sequence).where(Sequence.sequence_id == sequence_id)
+        result = await db.execute(query)
+        sequence = result.scalar_one_or_none()
+
+        if not sequence:
+            raise HTTPException(status_code=404, detail=f"Sequence '{sequence_id}' not found")
+
+        sequence.is_active = False
+        await db.commit()
+
+        return {"status": "stopped", "sequence_id": sequence_id}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to stop sequence: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

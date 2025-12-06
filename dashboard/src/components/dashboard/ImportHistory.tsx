@@ -75,7 +75,7 @@ function formatDate(dateStr: string): string {
 
 export function ImportHistory() {
   const { data, isLoading } = useSWR<ImportsResponse>(
-    "/api/imports?limit=5",
+    "/api/dashboard/imports?limit=5",
     fetcher,
     { refreshInterval: 300000 } // Refresh every 5 min
   );

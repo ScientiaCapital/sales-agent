@@ -110,7 +110,7 @@ export function BDRWorkQueue() {
   const [expandedTalkingPoints, setExpandedTalkingPoints] = useState<Set<string>>(new Set());
 
   const { data, isLoading, error } = useSWR<WorkQueueResponse>(
-    "/api/workqueue",
+    "/api/dashboard/workqueue",
     fetcher,
     { refreshInterval: 30000 } // Refresh every 30s
   );

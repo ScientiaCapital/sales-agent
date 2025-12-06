@@ -44,7 +44,7 @@ interface LeadLifecycleFunnelProps {
 
 export function LeadLifecycleFunnel({ period = "7d" }: LeadLifecycleFunnelProps) {
   const { data, isLoading } = useSWR<LifecycleResponse>(
-    `/api/lifecycle?period=${period}`,
+    `/api/dashboard/lifecycle?period=${period}`,
     fetcher,
     { refreshInterval: 60000 } // Refresh every 60s
   );
