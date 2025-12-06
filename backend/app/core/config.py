@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = [
         "http://localhost:3000",  # React dev server
         "http://localhost:5173",  # Vite dev server
+        "https://sales-agent-seven-eta.vercel.app",  # Production dashboard
+        "https://sales-agent-b3096zdcs-scientia-capital.vercel.app",  # Preview deployments
     ]
 
     # Database - MUST be provided via environment variable (.env file)
