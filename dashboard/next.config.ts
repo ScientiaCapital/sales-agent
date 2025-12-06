@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  // Set turbopack root for local development to avoid conflicts with parent-level lockfiles
-  // In production (Vercel), this is managed automatically
-  ...(process.env.NODE_ENV === "development" && {
-    turbopack: {
-      root: path.resolve(__dirname),
-    },
-  }),
+  // Explicitly set Turbopack root to dashboard directory
+  // This prevents Next.js 16 from inferring wrong workspace root from parent lockfiles
+  // See: https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory
+  turbopack: {
+    root: process.cwd(),
+  },
 
   async rewrites() {
     // Get backend URL and clean any whitespace/newlines (env vars can have trailing \n)
