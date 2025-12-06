@@ -48,6 +48,7 @@ celery_app = Celery(
         "app.tasks.batch_tasks",
         "app.tasks.icp_tasks",
         "app.tasks.prediction_tasks",
+        "app.tasks.close_sync",
     ]
 )
 
@@ -124,6 +125,10 @@ celery_app.conf.update(
         "app.tasks.prediction_tasks.run_morning_briefing_task": {"queue": "workflows"},
         "app.tasks.prediction_tasks.log_lead_signal_task": {"queue": "default"},
         "app.tasks.prediction_tasks.get_prediction_stats_task": {"queue": "default"},
+        # Close CRM sync tasks
+        "app.tasks.close_sync.sync_close_activities": {"queue": "crm_sync"},
+        "app.tasks.close_sync.poll_email_replies": {"queue": "crm_sync"},
+        "app.tasks.close_sync.advance_sequences": {"queue": "workflows"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -229,6 +234,25 @@ celery_app.conf.update(
             "task": "run_morning_briefing",
             "schedule": crontab(hour=12, minute=0),  # 7 AM EST = 12:00 UTC
             "args": (10,),  # Top 10 leads
+            "options": {"queue": "workflows"},
+        },
+        # ========== CLOSE CRM AUTOMATION SCHEDULES ==========
+        # Sync Close activities (emails, SMS, calls) every 15 minutes
+        "sync-close-activities-every-15-min": {
+            "task": "sync_close_activities",
+            "schedule": crontab(minute="*/15"),  # Every 15 minutes
+            "options": {"queue": "crm_sync"},
+        },
+        # Poll for email replies every 5 minutes (fallback to webhook)
+        "poll-email-replies-every-5-min": {
+            "task": "poll_email_replies",
+            "schedule": crontab(minute="*/5"),  # Every 5 minutes
+            "options": {"queue": "crm_sync"},
+        },
+        # Advance sequences every hour at :00
+        "advance-sequences-hourly": {
+            "task": "advance_sequences",
+            "schedule": crontab(minute=0),  # Every hour at :00
             "options": {"queue": "workflows"},
         },
     },

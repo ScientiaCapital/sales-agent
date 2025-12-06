@@ -45,6 +45,7 @@ from app.api import audit  # Lead audit trail for GTM agents
 from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import batch  # Batch processing with parallel execution
 from app.api import webhooks  # Slack/external webhooks for BDR approval
+from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
 from app.api import rankings  # Lead prediction market rankings
 from app.api import close_outreach  # Close CRM SMS/Voice integration (replaces VozLux)
 from app.api import sequences  # Email sequence management
@@ -232,6 +233,7 @@ app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit tr
 app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outreach draft management
 app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch processing with parallel execution
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
+app.include_router(webhooks_close, prefix=settings.API_V1_PREFIX)  # Close CRM webhooks (email replies, etc.)
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
 app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach (replaces VozLux)
 app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management (cold-reach integration)
