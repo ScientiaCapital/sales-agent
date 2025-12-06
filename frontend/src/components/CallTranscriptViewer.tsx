@@ -108,36 +108,66 @@ export function CallTranscriptViewer({
     );
   }, [messages, searchQuery]);
 
-  // Highlight text based on keywords
-  const highlightText = (text: string, keywords?: TranscriptMessage['keywords']) => {
-    if (!keywords || highlightType === 'all') return text;
+  // Highlight text based on keywords - Returns React elements (XSS-safe)
+  const renderHighlightedText = (text: string, keywords?: TranscriptMessage['keywords']): React.ReactNode => {
+    // If no highlighting needed, return plain text
+    if (!keywords || highlightType === 'all') {
+      return text;
+    }
 
-    let highlightedText = text;
     const highlightMap: Record<string, string> = {
       painPoints: 'bg-red-100 text-red-800',
       buyingSignals: 'bg-green-100 text-green-800',
       objections: 'bg-yellow-100 text-yellow-800'
     };
 
-    // Apply highlights based on selected type
+    // Get keywords to highlight based on selected type
+    let keywordsToHighlight: string[] = [];
+    let highlightClass = '';
+
     if (highlightType === 'painPoints' && keywords.painPoints) {
-      keywords.painPoints.forEach(keyword => {
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        highlightedText = highlightedText.replace(regex, `<span class="${highlightMap.painPoints} px-1 rounded">$1</span>`);
-      });
+      keywordsToHighlight = keywords.painPoints;
+      highlightClass = highlightMap.painPoints;
     } else if (highlightType === 'buyingSignals' && keywords.buyingSignals) {
-      keywords.buyingSignals.forEach(keyword => {
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        highlightedText = highlightedText.replace(regex, `<span class="${highlightMap.buyingSignals} px-1 rounded">$1</span>`);
-      });
+      keywordsToHighlight = keywords.buyingSignals;
+      highlightClass = highlightMap.buyingSignals;
     } else if (highlightType === 'objections' && keywords.objections) {
-      keywords.objections.forEach(keyword => {
-        const regex = new RegExp(`(${keyword})`, 'gi');
-        highlightedText = highlightedText.replace(regex, `<span class="${highlightMap.objections} px-1 rounded">$1</span>`);
-      });
+      keywordsToHighlight = keywords.objections;
+      highlightClass = highlightMap.objections;
     }
 
-    return highlightedText;
+    // If no keywords to highlight, return plain text
+    if (keywordsToHighlight.length === 0) {
+      return text;
+    }
+
+    // Build a combined regex to find all keyword matches
+    const escapedKeywords = keywordsToHighlight.map(kw =>
+      kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    );
+    const combinedPattern = escapedKeywords.join('|');
+    const regex = new RegExp(`(${combinedPattern})`, 'gi');
+
+    // Split text by matches
+    const parts = text.split(regex);
+
+    // Convert parts to React elements
+    return parts.map((part, index) => {
+      // Check if this part matches any keyword (case-insensitive)
+      const isMatch = keywordsToHighlight.some(kw =>
+        part.toLowerCase() === kw.toLowerCase()
+      );
+
+      if (isMatch) {
+        return (
+          <span key={index} className={`${highlightClass} px-1 rounded`}>
+            {part}
+          </span>
+        );
+      }
+
+      return part;
+    });
   };
 
   // Format timestamp
@@ -285,12 +315,9 @@ export function CallTranscriptViewer({
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <p
-                    className="text-sm whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{
-                      __html: highlightText(message.text, message.keywords)
-                    }}
-                  />
+                  <p className="text-sm whitespace-pre-wrap">
+                    {renderHighlightedText(message.text, message.keywords)}
+                  </p>
 
                   {/* Keyword indicators */}
                   {message.keywords && (

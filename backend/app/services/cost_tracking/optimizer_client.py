@@ -33,7 +33,7 @@ Usage:
 
     # Get real-time stats
     stats = await optimizer.get_stats()
-    print(f"Total cost today: ${stats['overall']['total_cost']}")
+    logger.info(f"Total cost today: ${stats['overall']['total_cost']}")
     ```
 
 Features:
