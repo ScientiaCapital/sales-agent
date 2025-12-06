@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Explicitly set Turbopack root to avoid confusion with parent lockfiles
+  // This tells Turbopack to use the dashboard directory as the monorepo root
+  turbopack: {
+    root: __dirname,
+  },
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
     return [
