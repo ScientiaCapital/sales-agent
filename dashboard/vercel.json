@@ -1,45 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "buildCommand": "npm run build",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    }
-  ],
-  "functions": {
-    "api/sync-close.py": {
-      "runtime": "@vercel/python@4.3.1",
-      "memory": 1024,
-      "maxDuration": 60
-    },
-    "api/*.py": {
-      "runtime": "@vercel/python@4.3.1",
-      "memory": 512,
-      "maxDuration": 10
-    }
-  },
-  "crons": [
-    {
-      "path": "/api/sync-close",
-      "schedule": "0 12 * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" }
       ]
     }
   ]
