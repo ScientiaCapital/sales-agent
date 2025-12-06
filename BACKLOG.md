@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-06 (Evening)
 **Sprint**: Current
 
 ---
@@ -13,7 +13,7 @@
 | 🔴 Blocked | 0 |
 | 🟡 In Progress | 1 |
 | 🟢 Ready | 2 |
-| ✅ Done (this sprint) | 32 |
+| ✅ Done (this sprint) | 40 |
 
 ---
 
@@ -62,7 +62,49 @@ python run_enrichment.py
 ### 🟢 Ready (Prioritized)
 <!-- Tasks ready to start, ordered by priority -->
 
-#### 1. [HIGH] Review & Import Close CRM Data
+#### 1. [HIGH] Production Email Test (Monday) - Phase 3
+- **ID**: TASK-015
+- **Assignee**: Tim
+- **Labels**: `testing`, `deliverability`
+- **Dependencies**: TASK-014 (completed)
+
+**Description**: Test email deliverability before enabling warming.
+
+**Steps**:
+1. Configure real SMTP credentials
+2. Send test emails to known mailboxes
+3. Check spam folder placement
+4. Verify SPF/DKIM/DMARC records
+
+**Acceptance Criteria**:
+- [ ] Test emails delivered to inbox
+- [ ] SPF/DKIM/DMARC passing
+- [ ] Deliverability documented
+
+---
+
+#### 2. [HIGH] Email Warming Engine - Phase 3
+- **ID**: TASK-016
+- **Assignee**: Unassigned
+- **Labels**: `feature`, `warming`
+- **Dependencies**: TASK-015
+
+**Description**: Gradual volume increase to build sender reputation. Day 1-7: 10/day → Day 29+: 50/day.
+
+**Files to Create**:
+- `backend/app/services/warming/engine.py`
+- `backend/app/services/warming/tracker.py`
+- `backend/app/api/warming.py`
+
+**Acceptance Criteria**:
+- [ ] Warming engine created
+- [ ] Progressive limits working
+- [ ] Engagement tracking
+- [ ] Tests passing
+
+---
+
+#### 4. [HIGH] Review & Import Close CRM Data
 - **ID**: TASK-008
 - **Assignee**: Tim
 - **Labels**: `crm`, `manual-review`
@@ -133,6 +175,15 @@ python run_enrichment.py
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Cold-Reach Integration (Dec 6)** | | | |
+| TASK-011 | User Authentication (Supabase) - 11 endpoints, JWT validation | 2025-12-06 | Claude |
+| TASK-012 | Close CRM SMS/Voice Integration - 7 endpoints, 2,269 lines | 2025-12-06 | Claude |
+| TASK-013 | Merge cold-reach Models (5 models + Alembic migration) | 2025-12-06 | Claude |
+| TASK-014 | Merge Sequence Engine (engine.py + sender.py) | 2025-12-06 | Claude |
+| TASK-014B | Auth Protection for 45 endpoints | 2025-12-06 | Claude |
+| FIX-M1 | Due email delay logic fix in engine.py | 2025-12-06 | Claude |
+| FIX-M2 | Password encryption (Fernet AES-128) | 2025-12-06 | Claude |
+| FIX-M4 | Rate limiting per mailbox (daily limits) | 2025-12-06 | Claude |
 | **AI Command Center (Dec 2 Evening)** | | | |
 | TASK-D34 | AI Outreach API (7 FastAPI endpoints) | 2025-12-02 | Claude |
 | TASK-D35 | CommandCenter.tsx (two-panel lead enrichment) | 2025-12-02 | Claude |

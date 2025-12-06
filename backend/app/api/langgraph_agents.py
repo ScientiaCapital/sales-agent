@@ -38,6 +38,7 @@ from app.services.langgraph import (
     get_thread_id_for_lead,
 )
 from app.core.logging import setup_logging
+from app.auth.dependencies import get_current_user
 
 logger = setup_logging(__name__)
 
@@ -131,7 +132,8 @@ async def get_or_create_thread_id(
 @router.post("/invoke", response_model=AgentResponse, status_code=200)
 async def invoke_agent(
     request: InvokeAgentRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Invoke a LangGraph agent and return the complete response.
@@ -418,7 +420,8 @@ async def invoke_agent(
 @router.post("/stream")
 async def stream_agent(
     request: InvokeAgentRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Stream a LangGraph agent execution via Server-Sent Events (SSE).
@@ -703,7 +706,8 @@ async def stream_agent(
 @router.get("/state/{thread_id}", response_model=StateResponse, status_code=200)
 async def get_agent_state(
     thread_id: str,
-    checkpoint_id: Optional[str] = None
+    checkpoint_id: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Retrieve conversation state from Redis checkpoint.
@@ -819,7 +823,10 @@ class ScoutRunResponse(BaseModel):
 
 
 @router.post("/scout/run", response_model=ScoutRunResponse, status_code=200)
-async def run_lead_scout(request: ScoutRunRequest):
+async def run_lead_scout(
+    request: ScoutRunRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Trigger a Lead Scout run to discover and prioritize leads.
 
@@ -915,7 +922,8 @@ async def run_lead_scout(request: ScoutRunRequest):
 @router.get("/scout/results", status_code=200)
 async def get_scout_results(
     limit: int = 20,
-    priority: Optional[str] = None
+    priority: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get recent scout results (leads with AI recommendations).
@@ -974,7 +982,9 @@ async def get_scout_results(
 
 
 @router.get("/scout/status", status_code=200)
-async def get_scout_status():
+async def get_scout_status(
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get Lead Scout status and statistics.
 
@@ -1071,7 +1081,10 @@ class ReportRunResponse(BaseModel):
 
 
 @router.post("/report/generate", response_model=ReportRunResponse, status_code=200)
-async def generate_morning_report(request: ReportRunRequest):
+async def generate_morning_report(
+    request: ReportRunRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Generate a morning report with overnight scout results and outreach drafts.
 
@@ -1164,7 +1177,9 @@ async def generate_morning_report(request: ReportRunRequest):
 
 
 @router.get("/report/latest", status_code=200)
-async def get_latest_report():
+async def get_latest_report(
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get the most recent morning report file.
 
@@ -1238,7 +1253,10 @@ class SalesIntelRunResponse(BaseModel):
 
 
 @router.post("/intel/run", response_model=SalesIntelRunResponse, status_code=200)
-async def run_sales_intel(request: SalesIntelRunRequest):
+async def run_sales_intel(
+    request: SalesIntelRunRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Run SalesIntelAgent to extract personal hooks from scouted leads.
 
@@ -1380,7 +1398,8 @@ async def run_sales_intel(request: SalesIntelRunRequest):
 @router.get("/intel/results", status_code=200)
 async def get_sales_intel_results(
     limit: int = 20,
-    has_hooks: bool = True
+    has_hooks: bool = True,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get leads with extracted personal hooks.
@@ -1466,7 +1485,10 @@ class GrowthCampaignResponse(BaseModel):
 
 
 @router.post("/growth/run", response_model=GrowthCampaignResponse, status_code=200)
-async def run_growth_campaigns(request: GrowthCampaignRequest):
+async def run_growth_campaigns(
+    request: GrowthCampaignRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Run GrowthAgent multi-touch campaigns for HOT leads.
 
@@ -1604,7 +1626,9 @@ async def run_growth_campaigns(request: GrowthCampaignRequest):
 
 
 @router.get("/growth/status", status_code=200)
-async def get_growth_status():
+async def get_growth_status(
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get Growth campaign status and statistics.
 
@@ -1701,7 +1725,10 @@ class BDRApprovalRequest(BaseModel):
 
 
 @router.post("/bdr/run", response_model=BDRRunResponse, status_code=200)
-async def run_bdr_outreach(request: BDRRunRequest):
+async def run_bdr_outreach(
+    request: BDRRunRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Run BDR outreach for a specific company or batch of HOT leads.
 
@@ -1777,7 +1804,10 @@ async def run_bdr_outreach(request: BDRRunRequest):
 
 
 @router.post("/bdr/approve", status_code=200)
-async def approve_bdr_draft(request: BDRApprovalRequest):
+async def approve_bdr_draft(
+    request: BDRApprovalRequest,
+    current_user: dict = Depends(get_current_user),
+):
     """
     Approve, reject, or request revision for a BDR draft.
 
@@ -1855,7 +1885,8 @@ async def approve_bdr_draft(request: BDRApprovalRequest):
 @router.get("/bdr/drafts", status_code=200)
 async def get_bdr_drafts(
     status: Optional[str] = None,
-    limit: int = 20
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get BDR drafts from dim_ai_drafts.
@@ -1922,7 +1953,9 @@ async def get_bdr_drafts(
 
 
 @router.get("/bdr/status", status_code=200)
-async def get_bdr_status():
+async def get_bdr_status(
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get BDR status and statistics.
 

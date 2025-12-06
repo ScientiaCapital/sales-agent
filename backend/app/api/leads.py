@@ -20,6 +20,7 @@ from app.core.exceptions import (
     MissingAPIKeyError
 )
 from app.services.langgraph.agents import QualificationAgent
+from app.auth.dependencies import get_current_user
 
 logger = setup_logging(__name__)
 
@@ -48,7 +49,8 @@ except Exception as e:
 async def qualify_lead(
     request: LeadQualificationRequest,
     db: Session = Depends(get_db),
-    cache: CacheManager = Depends(get_cache)
+    cache: CacheManager = Depends(get_cache),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Qualify a new lead using hybrid AI + rule-based scoring
@@ -204,7 +206,8 @@ async def qualify_lead(
 @router.post("/qualify-lcel", response_model=LeadQualificationResponse, status_code=201)
 async def qualify_lead_lcel(
     request: LeadQualificationRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Qualify a lead using LangChain LCEL chain with Cerebras + cost tracking (Phase 2.1)
@@ -334,7 +337,8 @@ async def qualify_lead_lcel(
 async def list_leads(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     List all leads with pagination
@@ -346,7 +350,11 @@ async def list_leads(
 
 
 @router.get("/{lead_id}", response_model=LeadQualificationResponse)
-async def get_lead(lead_id: int, db: Session = Depends(get_db)):
+async def get_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     """
     Get a specific lead by ID
 
@@ -362,7 +370,8 @@ async def get_lead(lead_id: int, db: Session = Depends(get_db)):
 async def import_leads_from_csv(
     file: UploadFile = File(...),
     strict_mode: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Bulk import leads from CSV file
