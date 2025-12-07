@@ -6,80 +6,44 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
-  UserPlus,
   Phone,
-  PhoneIncoming,
-  PhoneMissed,
   Mail,
   ClipboardList,
-  Flame,
   Search,
   RefreshCw,
-  UserCheck,
-  Linkedin,
-  ExternalLink,
-  MessageSquare,
-  ChevronDown,
-  ChevronRight,
 } from "lucide-react";
 
-interface Task {
+interface WorkQueueItem {
   id: string;
-  rank: number;
-  task_type: "hot_intent" | "new_lead" | "follow_up" | "research" | string;
-  recommended_action: string;
-  action_reason: string;
   company_name: string;
-  icp_tier: "PLATINUM" | "GOLD" | "SILVER" | "BRONZE" | null;
-  icp_score: number | null;
-  total_touches: number;
-  days_since_activity: number;
-  days_in_pipeline: number;
-  opportunity_value: number | null;
-  contact_name: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  contact_title: string | null;
-  contact_linkedin: string | null;
-  close_url: string | null;
-  icon: string;
-  color: string;
-  talking_points: string[];
+  task_type: string;
+  priority: number;
+  due_date?: string;
+  contact_name?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  notes?: string;
 }
 
 interface WorkQueueResponse {
-  tasks: Task[];
-  summary: {
-    total: number;
-    hot_intent: number;
-    new_leads: number;
-    follow_ups: number;
-    research: number;
-  };
-  data_source: "star_schema" | "mock";
-  view: string;
+  tasks: WorkQueueItem[];
+  total: number;
+  by_priority: Record<string, number>;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  flame: Flame,
-  "user-plus": UserPlus,
-  phone: Phone,
-  "phone-incoming": PhoneIncoming,
-  "phone-missed": PhoneMissed,
-  mail: Mail,
-  search: Search,
-  "refresh-cw": RefreshCw,
-  "user-check": UserCheck,
-  linkedin: Linkedin,
+const TASK_TYPE_CONFIG: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string; label: string }> = {
+  CALL: { icon: Phone, color: "bg-green-100 text-green-700", label: "Call" },
+  RESEARCH: { icon: Search, color: "bg-purple-100 text-purple-700", label: "Research" },
+  FOLLOW_UP: { icon: RefreshCw, color: "bg-blue-100 text-blue-700", label: "Follow-up" },
+  EMAIL: { icon: Mail, color: "bg-orange-100 text-orange-700", label: "Email" },
 };
 
-const ICP_TIER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  PLATINUM: { bg: "bg-purple-100", text: "text-purple-700", border: "border-purple-300" },
-  GOLD: { bg: "bg-yellow-100", text: "text-yellow-700", border: "border-yellow-300" },
-  SILVER: { bg: "bg-gray-100", text: "text-gray-700", border: "border-gray-300" },
-  BRONZE: { bg: "bg-amber-100", text: "text-amber-700", border: "border-amber-300" },
+const PRIORITY_COLORS: Record<number, string> = {
+  1: "bg-red-100 text-red-700 border-red-300",
+  2: "bg-amber-100 text-amber-700 border-amber-300",
+  3: "bg-gray-100 text-gray-700 border-gray-300",
 };
 
 function TaskSkeleton() {
@@ -99,13 +63,12 @@ function TaskSkeleton() {
   );
 }
 
-type TierFilter = "all" | "PLATINUM" | "GOLD" | "SILVER" | "BRONZE";
-type ActionFilter = "all" | "hot_intent" | "new_lead" | "follow_up" | "research";
+type PriorityFilter = "all" | 1 | 2 | 3;
+type TaskTypeFilter = "all" | "CALL" | "RESEARCH" | "FOLLOW_UP" | "EMAIL";
 
 export function BDRWorkQueue() {
-  const [tierFilter, setTierFilter] = useState<TierFilter>("all");
-  const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
-  const [expandedTalkingPoints, setExpandedTalkingPoints] = useState<Set<string>>(new Set());
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
+  const [taskTypeFilter, setTaskTypeFilter] = useState<TaskTypeFilter>("all");
 
   const { data, isLoading, error } = useSWR<WorkQueueResponse>(
     "/api/dashboard/workqueue",
@@ -113,24 +76,11 @@ export function BDRWorkQueue() {
     { refreshInterval: 30000 } // Refresh every 30s
   );
 
-  // Toggle talking points visibility for a task
-  const toggleTalkingPoints = (taskId: string) => {
-    setExpandedTalkingPoints(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
-    });
-  };
-
-  // Filter tasks based on tier and action filters
+  // Filter tasks based on priority and task type
   const filteredTasks = data?.tasks.filter(task => {
-    const matchesTier = tierFilter === "all" || task.icp_tier === tierFilter;
-    const matchesAction = actionFilter === "all" || task.task_type === actionFilter;
-    return matchesTier && matchesAction;
+    const matchesPriority = priorityFilter === "all" || task.priority === priorityFilter;
+    const matchesType = taskTypeFilter === "all" || task.task_type === taskTypeFilter;
+    return matchesPriority && matchesType;
   }) ?? [];
 
   if (error) {
@@ -168,6 +118,10 @@ export function BDRWorkQueue() {
     );
   }
 
+  const p1Count = data.by_priority?.P1 || 0;
+  const p2Count = data.by_priority?.P2 || 0;
+  const p3Count = data.by_priority?.P3 || 0;
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -177,85 +131,71 @@ export function BDRWorkQueue() {
             BDR Work Queue
           </CardTitle>
           <Badge variant="outline" className="text-xs">
-            {data.summary.total} tasks
+            {data.total} tasks
           </Badge>
         </div>
-        {/* Summary badges */}
+        {/* Priority summary badges */}
         <div className="flex gap-2 mt-2 flex-wrap">
-          {data.summary.hot_intent > 0 && (
-            <Badge className="bg-red-100 text-red-700 text-xs flex items-center gap-1">
-              <Flame className="h-3 w-3" />
-              {data.summary.hot_intent} hot intent
+          {p1Count > 0 && (
+            <Badge className="bg-red-100 text-red-700 text-xs">
+              {p1Count} P1 (urgent)
             </Badge>
           )}
-          {data.summary.new_leads > 0 && (
-            <Badge className="bg-blue-100 text-blue-700 text-xs flex items-center gap-1">
-              <UserPlus className="h-3 w-3" />
-              {data.summary.new_leads} new leads
+          {p2Count > 0 && (
+            <Badge className="bg-amber-100 text-amber-700 text-xs">
+              {p2Count} P2 (high)
             </Badge>
           )}
-          {data.summary.follow_ups > 0 && (
-            <Badge className="bg-green-100 text-green-700 text-xs flex items-center gap-1">
-              <RefreshCw className="h-3 w-3" />
-              {data.summary.follow_ups} follow-ups
-            </Badge>
-          )}
-          {data.summary.research > 0 && (
-            <Badge className="bg-purple-100 text-purple-700 text-xs flex items-center gap-1">
-              <Search className="h-3 w-3" />
-              {data.summary.research} research
+          {p3Count > 0 && (
+            <Badge className="bg-gray-100 text-gray-700 text-xs">
+              {p3Count} P3 (normal)
             </Badge>
           )}
         </div>
 
         {/* Filter Chips */}
         <div className="mt-3 space-y-2">
-          {/* Tier Filters */}
+          {/* Priority Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground font-medium">Tier:</span>
-            {(["all", "PLATINUM", "GOLD", "SILVER", "BRONZE"] as TierFilter[]).map((tier) => (
+            <span className="text-xs text-muted-foreground font-medium">Priority:</span>
+            {(["all", 1, 2, 3] as PriorityFilter[]).map((priority) => (
               <Button
-                key={tier}
-                variant={tierFilter === tier ? "default" : "outline"}
+                key={String(priority)}
+                variant={priorityFilter === priority ? "default" : "outline"}
                 size="sm"
                 className={`h-6 px-2 text-xs ${
-                  tierFilter === tier
+                  priorityFilter === priority
                     ? "bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
-                    : tier === "PLATINUM" ? "hover:bg-purple-100" :
-                      tier === "GOLD" ? "hover:bg-yellow-100" :
-                      tier === "SILVER" ? "hover:bg-gray-100" :
-                      tier === "BRONZE" ? "hover:bg-amber-100" : ""
+                    : priority === 1 ? "hover:bg-red-100" :
+                      priority === 2 ? "hover:bg-amber-100" :
+                      priority === 3 ? "hover:bg-gray-100" : ""
                 }`}
-                onClick={() => setTierFilter(tier)}
+                onClick={() => setPriorityFilter(priority)}
               >
-                {tier === "all" ? "All Tiers" : tier}
+                {priority === "all" ? "All" : `P${priority}`}
               </Button>
             ))}
           </div>
 
-          {/* Action Filters */}
+          {/* Task Type Filters */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-muted-foreground font-medium">Action:</span>
-            {(["all", "hot_intent", "new_lead", "follow_up", "research"] as ActionFilter[]).map((action) => (
+            <span className="text-xs text-muted-foreground font-medium">Type:</span>
+            {(["all", "CALL", "RESEARCH", "FOLLOW_UP", "EMAIL"] as TaskTypeFilter[]).map((type) => (
               <Button
-                key={action}
-                variant={actionFilter === action ? "default" : "outline"}
+                key={type}
+                variant={taskTypeFilter === type ? "default" : "outline"}
                 size="sm"
                 className={`h-6 px-2 text-xs ${
-                  actionFilter === action
+                  taskTypeFilter === type
                     ? "bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
-                    : action === "hot_intent" ? "hover:bg-red-100" :
-                      action === "new_lead" ? "hover:bg-blue-100" :
-                      action === "follow_up" ? "hover:bg-green-100" :
-                      action === "research" ? "hover:bg-purple-100" : ""
+                    : type === "CALL" ? "hover:bg-green-100" :
+                      type === "RESEARCH" ? "hover:bg-purple-100" :
+                      type === "FOLLOW_UP" ? "hover:bg-blue-100" :
+                      type === "EMAIL" ? "hover:bg-orange-100" : ""
                 }`}
-                onClick={() => setActionFilter(action)}
+                onClick={() => setTaskTypeFilter(type)}
               >
-                {action === "all" ? "All Actions" :
-                 action === "hot_intent" ? "🔥 Hot Intent" :
-                 action === "new_lead" ? "📞 New Lead" :
-                 action === "follow_up" ? "🔄 Follow-up" :
-                 action === "research" ? "🔍 Research" : action}
+                {type === "all" ? "All Types" : type.replace("_", " ")}
               </Button>
             ))}
           </div>
@@ -270,17 +210,16 @@ export function BDRWorkQueue() {
         ) : (
           <div className="space-y-3 max-h-[500px] overflow-y-auto">
             {filteredTasks.map((task) => {
-              const isTalkingPointsExpanded = expandedTalkingPoints.has(task.id);
-              const hasTalkingPoints = task.talking_points && task.talking_points.length > 0;
-              const IconComponent = ICON_MAP[task.icon] || Phone;
-              const tierColors = task.icp_tier ? ICP_TIER_COLORS[task.icp_tier] : null;
-              const isHotIntent = task.task_type === "hot_intent";
+              const taskConfig = TASK_TYPE_CONFIG[task.task_type] || TASK_TYPE_CONFIG.CALL;
+              const IconComponent = taskConfig.icon;
+              const priorityColor = PRIORITY_COLORS[task.priority] || PRIORITY_COLORS[3];
+              const isUrgent = task.priority === 1;
 
               return (
                 <div
                   key={task.id}
                   className={`flex flex-col gap-2 p-3 rounded-lg border transition-all ${
-                    isHotIntent
+                    isUrgent
                       ? "border-red-300 bg-red-50/50 shadow-sm"
                       : "border-gray-200 hover:bg-muted/50"
                   }`}
@@ -288,45 +227,34 @@ export function BDRWorkQueue() {
                   {/* Header Row */}
                   <div className="flex items-start gap-3">
                     <Checkbox id={task.id} className="mt-1" />
-                    <div style={{ color: task.color }} className="mt-0.5">
-                      <IconComponent className="h-5 w-5" />
+                    <div className={`mt-0.5 p-1 rounded ${taskConfig.color}`}>
+                      <IconComponent className="h-4 w-4" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      {/* Company + ICP Tier */}
+                      {/* Company + Priority */}
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-semibold text-sm truncate">
                           {task.company_name}
                         </p>
-                        {tierColors && (
-                          <Badge
-                            className={`${tierColors.bg} ${tierColors.text} text-xs px-1.5 py-0`}
-                          >
-                            {task.icp_tier}
-                          </Badge>
-                        )}
+                        <Badge className={`${priorityColor} text-xs px-1.5 py-0`}>
+                          P{task.priority}
+                        </Badge>
+                        <Badge className={`${taskConfig.color} text-xs px-1.5 py-0`}>
+                          {taskConfig.label}
+                        </Badge>
                       </div>
 
-                      {/* Recommended Action */}
-                      <p className="font-medium text-sm text-[var(--turkish-blue)] mb-1">
-                        {task.recommended_action}
-                      </p>
-
-                      {/* Action Reason */}
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {task.action_reason}
-                      </p>
+                      {/* Notes */}
+                      {task.notes && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {task.notes}
+                        </p>
+                      )}
 
                       {/* Contact Info */}
                       {task.contact_name && (
                         <div className="flex flex-col gap-1 text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{task.contact_name}</span>
-                            {task.contact_title && (
-                              <span className="text-muted-foreground">
-                                • {task.contact_title}
-                              </span>
-                            )}
-                          </div>
+                          <span className="font-medium">{task.contact_name}</span>
                           <div className="flex items-center gap-3 flex-wrap">
                             {task.contact_phone && (
                               <a
@@ -346,101 +274,10 @@ export function BDRWorkQueue() {
                                 {task.contact_email}
                               </a>
                             )}
-                            {task.contact_linkedin && (
-                              <a
-                                href={
-                                  task.contact_linkedin.startsWith("http")
-                                    ? task.contact_linkedin
-                                    : `https://${task.contact_linkedin}`
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[var(--turkish-blue)] hover:underline flex items-center gap-1"
-                              >
-                                <Linkedin className="h-3 w-3" />
-                                LinkedIn
-                              </a>
-                            )}
                           </div>
                         </div>
                       )}
-
-                      {/* Talking Points Section */}
-                      {hasTalkingPoints && (
-                        <div className="mt-2">
-                          <button
-                            onClick={() => toggleTalkingPoints(task.id)}
-                            className="flex items-center gap-1 text-xs text-[var(--turkish-blue)] hover:underline"
-                          >
-                            {isTalkingPointsExpanded ? (
-                              <ChevronDown className="h-3 w-3" />
-                            ) : (
-                              <ChevronRight className="h-3 w-3" />
-                            )}
-                            <MessageSquare className="h-3 w-3" />
-                            {task.talking_points.length} talking points
-                          </button>
-                          {isTalkingPointsExpanded && (
-                            <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
-                              <ul className="space-y-1 text-xs">
-                                {task.talking_points.map((point, idx) => (
-                                  <li key={idx} className="text-gray-700">
-                                    {point}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
-                  </div>
-
-                  {/* Footer Row - Metrics + Close Link */}
-                  <div className="flex items-center justify-between text-xs text-muted-foreground ml-9">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      {task.days_since_activity !== null && (
-                        <span
-                          className={
-                            task.days_since_activity > 7
-                              ? "text-amber-600 font-medium"
-                              : ""
-                          }
-                        >
-                          {task.days_since_activity}d since activity
-                        </span>
-                      )}
-                      {task.total_touches > 0 && (
-                        <span>{task.total_touches} touches</span>
-                      )}
-                      {task.icp_score !== null && (
-                        <span className="text-[var(--turkish-blue)]">
-                          Score: {task.icp_score}
-                        </span>
-                      )}
-                      {task.opportunity_value !== null && task.opportunity_value > 0 && (
-                        <span className="text-green-600 font-medium">
-                          ${(task.opportunity_value / 1000).toFixed(0)}K
-                        </span>
-                      )}
-                    </div>
-                    {task.close_url && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-[var(--turkish-blue)] hover:text-[var(--turkish-blue)]"
-                        asChild
-                      >
-                        <a
-                          href={task.close_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Open in Close
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        </a>
-                      </Button>
-                    )}
                   </div>
                 </div>
               );
