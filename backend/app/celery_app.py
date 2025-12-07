@@ -219,11 +219,11 @@ celery_app.conf.update(
             "args": (100,),  # Check up to 100 companies per run
             "options": {"queue": "default"},
         },
-        # ========== PREDICTION MARKET SCHEDULE ==========
-        # Prediction Market - every 5 minutes
-        # Updates prediction rankings for all active leads
-        "prediction-market-every-5-min": {
-            "task": "run_prediction_market",
+        # ========== PREDICTION AGENT SCHEDULE ==========
+        # PredictionAgent - every 5 minutes
+        # Ranks leads by call-worthiness for Sr. BDR cold outbound
+        "prediction-agent-every-5-min": {
+            "task": "run_prediction_market",  # Task name kept for backward compat
             "schedule": 300.0,  # 5 minutes in seconds
             "args": (1000,),  # Rank up to 1000 companies per run
             "options": {"queue": "default"},
@@ -268,7 +268,7 @@ TRACKED_AGENTS = {
     "run_growth_campaigns": "growth_campaigns",
     "run_bdr_batch": "bdr_outreach",
     "run_icp_checker": "icp_checker",
-    "run_prediction_market": "prediction_market",
+    "run_prediction_market": "prediction_agent",  # Renamed from prediction_market
     "run_morning_briefing": "morning_briefing",
     "sync_close_activities": "close_sync",
     "poll_email_replies": "reply_polling",
