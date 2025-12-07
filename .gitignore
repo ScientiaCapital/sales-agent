@@ -217,4 +217,4 @@ test_*.csv
 # Temp directories
 **/.temp/
 .audit-saas.yaml
-!dashboard-new/src/lib/
+!dashboard/src/lib/
