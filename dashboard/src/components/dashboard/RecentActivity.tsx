@@ -5,26 +5,30 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
-interface AuditEvent {
-  id: number;
-  company_name: string;
-  event_type: string;
-  event_details: Record<string, unknown>;
-  created_at: string;
-  session_id?: string;
+interface ActivityItem {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  timestamp: string;
+  lead_id?: string;
+  lead_name?: string;
+  icon: string;
+  color: string;
 }
 
 interface ActivityResponse {
-  events: AuditEvent[];
-  count: number;
-  hours_back: number;
-  data_source: string;
-  updated_at: string;
+  activities: ActivityItem[];
+  total: number;
+  period_hours: number;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 const eventConfig: Record<string, { color: string; label: string }> = {
+  high_value_lead: { color: "bg-yellow-100 text-yellow-700", label: "High Value" },
+  hot_lead: { color: "bg-red-100 text-red-700", label: "HOT" },
+  enrichment: { color: "bg-purple-100 text-purple-700", label: "Enriched" },
   lead_imported: { color: "bg-blue-100 text-blue-700", label: "Imported" },
   lead_qualified: { color: "bg-green-100 text-green-700", label: "Qualified" },
   crm_match_found: { color: "bg-cyan-100 text-cyan-700", label: "CRM Match" },
@@ -51,26 +55,6 @@ function formatRelativeTime(isoString: string): string {
   return `${diffDays}d ago`;
 }
 
-function formatEventDetails(event: AuditEvent): string {
-  const details = event.event_details;
-
-  switch (event.event_type) {
-    case "lead_qualified":
-      return `Score: ${details.score || "N/A"} | Tier: ${details.tier || "N/A"}`;
-    case "lead_enriched":
-      return `${details.contacts_found || 0} contacts via ${details.source || "unknown"}`;
-    case "atl_contact_found":
-      return `${details.contact_name || "Contact"} (${details.title || "Unknown"})`;
-    case "dedup_skip_duplicate":
-      return `Match: ${((details.match_confidence as number) * 100 || 0).toFixed(0)}%`;
-    case "lead_exported":
-      return `${details.leads_count || 0} leads`;
-    case "crm_match_found":
-      return `Confidence: ${((details.match_confidence as number) * 100 || 0).toFixed(0)}%`;
-    default:
-      return "";
-  }
-}
 
 function ActivitySkeleton() {
   return (
@@ -92,8 +76,8 @@ export function RecentActivity() {
     { refreshInterval: 60000 } // Refresh every minute
   );
 
-  // Extract events from response object
-  const events = data?.events || [];
+  // Extract activities from response object
+  const activities = data?.activities || [];
 
   return (
     <Card>
@@ -123,21 +107,20 @@ export function RecentActivity() {
               <ActivitySkeleton />
               <ActivitySkeleton />
             </>
-          ) : events.length === 0 ? (
+          ) : activities.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
               No recent activity
             </p>
           ) : (
-            events.map((event) => {
-              const config = eventConfig[event.event_type] || {
+            activities.map((activity) => {
+              const config = eventConfig[activity.type] || {
                 color: "bg-gray-100 text-gray-700",
-                label: event.event_type,
+                label: activity.type,
               };
-              const details = formatEventDetails(event);
 
               return (
                 <div
-                  key={event.id}
+                  key={activity.id}
                   className="flex items-start gap-3 py-3 border-b last:border-0 hover:bg-slate-50 transition-colors rounded px-2 -mx-2"
                 >
                   <Badge
@@ -147,13 +130,13 @@ export function RecentActivity() {
                     {config.label}
                   </Badge>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{event.company_name}</p>
-                    {details && (
-                      <p className="text-xs text-muted-foreground">{details}</p>
+                    <p className="font-medium truncate">{activity.title}</p>
+                    {activity.description && (
+                      <p className="text-xs text-muted-foreground">{activity.description}</p>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatRelativeTime(event.created_at)}
+                    {formatRelativeTime(activity.timestamp)}
                   </span>
                 </div>
               );
@@ -161,9 +144,9 @@ export function RecentActivity() {
           )}
         </div>
 
-        {events && events.length > 0 && (
+        {activities && activities.length > 0 && (
           <p className="text-xs text-center text-muted-foreground mt-4 pt-2 border-t">
-            Showing {events.length} events from the last 24 hours
+            Showing {activities.length} activities from the last {data?.period_hours || 24} hours
           </p>
         )}
       </CardContent>

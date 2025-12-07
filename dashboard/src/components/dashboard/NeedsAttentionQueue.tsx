@@ -2,44 +2,26 @@ import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertTriangle,
-  Clock,
-  XCircle,
-  PauseCircle,
-  PhoneOff,
-} from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
 
-interface Alert {
+interface AttentionItem {
   id: string;
   company_name: string;
-  alert_type: string;
-  type_label: string;
-  severity: string;
-  message: string;
-  stage: string | null;
-  icon: string;
-  color: string;
-  created_at: string;
+  reason: string;
+  priority: string;
+  days_stale: number;
+  last_activity?: string;
+  contact_name?: string;
+  contact_phone?: string;
 }
 
 interface AttentionResponse {
-  alerts: Alert[];
+  items: AttentionItem[];
   total: number;
-  by_severity: Record<string, number>;
-  by_type: Record<string, number>;
-  data_source: string;
-  updated_at: string;
+  urgent_count: number;
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  clock: Clock,
-  "x-circle": XCircle,
-  "pause-circle": PauseCircle,
-  "phone-off": PhoneOff,
-};
 
 function AlertSkeleton() {
   return (
@@ -55,18 +37,6 @@ function AlertSkeleton() {
       ))}
     </div>
   );
-}
-
-function formatTimeAgo(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) return `${diffDays}d ago`;
-  if (diffHours > 0) return `${diffHours}h ago`;
-  return "Just now";
 }
 
 export function NeedsAttentionQueue() {
@@ -92,11 +62,11 @@ export function NeedsAttentionQueue() {
     );
   }
 
-  const criticalCount = data.by_severity?.critical || 0;
-  const warningCount = data.by_severity?.warning || 0;
+  const urgentCount = data.urgent_count || 0;
+  const totalItems = data.items?.length || 0;
 
   return (
-    <Card className={criticalCount > 0 ? "border-red-300" : "border-amber-200"}>
+    <Card className={urgentCount > 0 ? "border-red-300" : "border-amber-200"}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-red-600 flex items-center gap-2">
@@ -104,60 +74,66 @@ export function NeedsAttentionQueue() {
             Needs Attention
           </CardTitle>
           <div className="flex gap-1">
-            {criticalCount > 0 && (
+            {urgentCount > 0 && (
               <Badge variant="destructive" className="text-xs">
-                {criticalCount} critical
+                {urgentCount} urgent
               </Badge>
             )}
-            {warningCount > 0 && (
+            {totalItems > urgentCount && (
               <Badge variant="outline" className="text-xs border-amber-500 text-amber-600">
-                {warningCount} warning
+                {totalItems - urgentCount} others
               </Badge>
             )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {data.alerts.length === 0 ? (
+        {data.items.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <p className="text-green-600 font-medium">All clear!</p>
             <p className="text-sm">No leads need attention right now.</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-[300px] overflow-y-auto">
-            {data.alerts.map((alert) => {
-              const IconComponent = ICON_MAP[alert.icon] || AlertTriangle;
+            {data.items.map((item) => {
+              const isHighPriority = item.priority === "HIGH";
 
               return (
                 <div
-                  key={alert.id}
+                  key={item.id}
                   className={`flex items-start gap-3 p-2 rounded-lg ${
-                    alert.severity === "critical"
+                    isHighPriority
                       ? "bg-red-50"
-                      : alert.severity === "warning"
-                      ? "bg-amber-50"
-                      : "bg-muted/50"
+                      : "bg-amber-50"
                   }`}
                 >
-                  <div className="mt-0.5" style={{ color: alert.color }}>
-                    <IconComponent className="h-5 w-5" />
+                  <div className="mt-0.5">
+                    <Clock className={`h-5 w-5 ${isHighPriority ? "text-red-500" : "text-amber-500"}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-sm truncate">
-                        {alert.company_name}
+                        {item.company_name}
                       </p>
                       <span className="text-xs text-muted-foreground whitespace-nowrap">
-                        {formatTimeAgo(alert.created_at)}
+                        {item.days_stale}d stale
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate">
-                      {alert.message}
+                      {item.reason}
                     </p>
-                    {alert.stage && (
-                      <Badge variant="outline" className="text-xs mt-1">
-                        {alert.stage}
-                      </Badge>
+                    {item.contact_name && (
+                      <div className="flex items-center gap-2 mt-1 text-xs">
+                        <span className="font-medium">{item.contact_name}</span>
+                        {item.contact_phone && (
+                          <a
+                            href={`tel:${item.contact_phone}`}
+                            className="text-[var(--turkish-blue)] hover:underline"
+                          >
+                            {item.contact_phone}
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
