@@ -6,6 +6,7 @@ import asyncio
 import pytest
 from unittest.mock import Mock, AsyncMock, MagicMock
 from datetime import datetime, timedelta
+from fastapi.testclient import TestClient
 
 
 # ==================== Pytest Configuration ====================
@@ -16,6 +17,15 @@ def event_loop():
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
+
+# ==================== FastAPI Test Client ====================
+
+@pytest.fixture
+def client():
+    """FastAPI test client."""
+    from app.main import app
+    return TestClient(app)
 
 
 # ==================== Database Fixtures ====================

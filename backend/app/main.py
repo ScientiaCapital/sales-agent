@@ -18,7 +18,7 @@ from app.api import health
 from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import dashboard  # Dashboard endpoints for frontend
 
-# GTM Automation Infrastructure (13)
+# GTM Automation Infrastructure (14)
 from app.api import supabase_auth  # Supabase authentication
 from app.api import langgraph_agents
 from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
@@ -32,6 +32,7 @@ from app.api import batch  # Batch processing with parallel execution
 from app.api import agents  # Agent control API for BDR Cockpit
 from app.api import cockpit_websocket  # WebSocket for BDR Cockpit real-time updates
 from app.api import rankings  # Lead prediction market rankings
+from app.api import slack_commands  # Slack slash commands (/enrich)
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -231,7 +232,7 @@ app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"]
 app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outreach draft management
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
 
-# GTM Automation Infrastructure (13)
+# GTM Automation Infrastructure (14)
 app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
 app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # LangGraph agent endpoints
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
@@ -246,6 +247,7 @@ app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch process
 app.include_router(agents.router, prefix=settings.API_V1_PREFIX)  # Agent control API for BDR Cockpit
 app.include_router(cockpit_websocket.router, prefix=settings.API_V1_PREFIX)  # WebSocket for BDR Cockpit real-time updates
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
+app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slack slash commands (/enrich)
 
 
 @app.get("/")

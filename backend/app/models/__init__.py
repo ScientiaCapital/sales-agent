@@ -72,6 +72,17 @@ from .mailbox import Mailbox
 from .sequence import Sequence
 from .sequence_entry import SequenceEntry
 from .signal import Signal
+from .outreach import (
+    StagingMode,
+    OutreachChannel,
+    OutreachPriority,
+    OutreachRequest,
+    OutreachResult,
+    ChannelResult,
+    DraftApprovalRequest,
+    DraftRejectionRequest,
+    SlackApprovalPayload
+)
 
 __all__ = [
     "Base",
@@ -129,5 +140,14 @@ __all__ = [
     "Mailbox",
     "Sequence",
     "SequenceEntry",
-    "Signal"
+    "Signal",
+    "StagingMode",
+    "OutreachChannel",
+    "OutreachPriority",
+    "OutreachRequest",
+    "OutreachResult",
+    "ChannelResult",
+    "DraftApprovalRequest",
+    "DraftRejectionRequest",
+    "SlackApprovalPayload"
 ]
