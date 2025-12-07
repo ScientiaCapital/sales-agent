@@ -907,12 +907,12 @@ class AgentMetric(BaseModel):
 
 
 AGENT_DEFINITIONS = [
-    {"type": "lead_scout", "name": "Lead Scout", "schedule": "Every 30 min", "target_ms": 30000},
-    {"type": "icp_checker", "name": "ICP Checker", "schedule": "Every 15 min", "target_ms": 15000},
-    {"type": "prediction_market", "name": "Prediction Market", "schedule": "Every 5 min", "target_ms": 10000},
-    {"type": "morning_briefing", "name": "Morning Briefing", "schedule": "7 AM EST", "target_ms": 60000},
-    {"type": "sales_intel", "name": "Sales Intel", "schedule": "Hourly :30", "target_ms": 45000},
-    {"type": "bdr_outreach", "name": "BDR Outreach", "schedule": "Hourly :00", "target_ms": 30000},
+    {"type": "lead_scout", "name": "LeadScoutAgent", "schedule": "Every 30 min", "target_ms": 30000},
+    {"type": "icp_checker", "name": "ICPCheckerAgent", "schedule": "Every 15 min", "target_ms": 15000},
+    {"type": "prediction_agent", "name": "PredictionAgent", "schedule": "Every 5 min", "target_ms": 10000},
+    {"type": "morning_briefing", "name": "MorningBriefingAgent", "schedule": "7 AM EST", "target_ms": 60000},
+    {"type": "sales_intel", "name": "SalesIntelAgent", "schedule": "Hourly :30", "target_ms": 45000},
+    {"type": "bdr_outreach", "name": "BDRAgent", "schedule": "Hourly :00", "target_ms": 30000},
 ]
 
 
