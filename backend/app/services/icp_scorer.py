@@ -301,11 +301,11 @@ async def check_and_update_icp(company_id: UUID) -> Dict[str, Any]:
             "tier_upgraded": False
         }
 
-    # Update the company
+    # Update the company (cast scores to int for Supabase integer column)
     supabase.table('dim_companies').update({
-        'icp_score': new_score,
+        'icp_score': int(new_score),
         'icp_tier': new_tier,
-        'icp_score_previous': old_score,
+        'icp_score_previous': int(old_score) if old_score else 0,
         'icp_last_checked': datetime.now(timezone.utc).isoformat()
     }).eq('company_id', str(company_id)).execute()
 
@@ -354,14 +354,27 @@ async def batch_check_icp(limit: int = 100) -> Dict[str, Any]:
     # Query companies that need checking:
     # 1. Never checked (icp_last_checked is null)
     # 2. Updated since last check (updated_at > icp_last_checked)
-    # Order by updated_at DESC to prioritize recent changes
+    # Note: PostgREST doesn't support column-to-column comparisons,
+    # so we fetch all recent and filter in Python
     result = supabase.table('dim_companies').select(
         'company_id, company_name, updated_at, icp_last_checked'
-    ).or_(
-        'icp_last_checked.is.null,updated_at.gt.icp_last_checked'
-    ).order('updated_at', desc=True).limit(limit).execute()
+    ).order('updated_at', desc=True).limit(limit * 2).execute()  # Fetch extra to filter
 
-    companies_to_check = result.data or []
+    # Filter for companies needing check: null or updated_at > icp_last_checked
+    from datetime import datetime
+    all_companies = result.data or []
+    companies_to_check = []
+    for c in all_companies:
+        if c.get('icp_last_checked') is None:
+            companies_to_check.append(c)
+        elif c.get('updated_at') and c.get('icp_last_checked'):
+            # Compare timestamps
+            updated = c['updated_at']
+            checked = c['icp_last_checked']
+            if updated > checked:
+                companies_to_check.append(c)
+        if len(companies_to_check) >= limit:
+            break
 
     if not companies_to_check:
         logger.info("No companies need ICP rechecking")

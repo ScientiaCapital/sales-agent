@@ -1,13 +1,17 @@
 """
-Prediction Market Celery Tasks
-==============================
+PredictionAgent Celery Tasks
+=============================
 Celery tasks for lead ranking updates and morning briefings.
 
+This agent supports the Sr. BDR on outreach motion and cold outbound by:
+- Ranking leads by "call-worthiness" every 5 minutes
+- Generating "why call now" reasoning daily at 7 AM EST
+
 Schedule:
-- Prediction Market: Every 5 minutes
+- PredictionAgent: Every 5 minutes (ranks 1000 leads)
 - Morning Briefing: Daily at 7 AM EST (12:00 UTC)
 
-Author: Claude + Tim
+Author: Claude + Tim (GTM Automation Team)
 Date: Dec 3, 2025
 """
 # Disable LangSmith tracing BEFORE any langchain/langgraph imports
@@ -59,7 +63,7 @@ def run_prediction_market_task(self, limit: int = 1000):
         }
     """
     try:
-        logger.info(f"Starting Prediction Market task: limit={limit}")
+        logger.info(f"Starting PredictionAgent task: limit={limit}")
 
         from app.services.prediction_market import update_rankings
 
@@ -72,7 +76,7 @@ def run_prediction_market_task(self, limit: int = 1000):
             loop.close()
 
         logger.info(
-            f"Prediction Market completed: {result['updated']} companies ranked, "
+            f"PredictionAgent completed: {result['updated']} companies ranked, "
             f"top lead: {result['top_10'][0]['company_name'] if result['top_10'] else 'None'}"
         )
 
@@ -83,11 +87,11 @@ def run_prediction_market_task(self, limit: int = 1000):
         }
 
     except SoftTimeLimitExceeded:
-        logger.warning("Prediction Market soft time limit exceeded (5 minutes)")
+        logger.warning("PredictionAgent soft time limit exceeded (5 minutes)")
         raise
 
     except Exception as exc:
-        logger.error(f"Error in Prediction Market task: {exc}", exc_info=True)
+        logger.error(f"Error in PredictionAgent task: {exc}", exc_info=True)
         countdown = 60 * (2 ** self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
