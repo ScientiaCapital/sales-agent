@@ -1,4 +1,14 @@
 import { CommandCenter, DraftReviewQueue } from "@/components/ai";
+import {
+  ICPQueue,
+  BDRWorkQueue,
+  NeedsAttentionQueue,
+  RecentActivity,
+  ExecutiveSummary,
+  LeadLifecycleFunnel,
+  OutreachMetrics,
+  AgentHealth,
+} from "@/components/dashboard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Zap, Mail, Target, ClipboardList, BarChart3 } from "lucide-react";
 
@@ -51,29 +61,26 @@ export default function App() {
 
         {/* ICP Queue - Tim's Smart Views + AE Pipeline */}
         <TabsContent value="icp" className="space-y-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <Target className="size-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">ICP Queue Coming Soon</p>
-            <p className="text-sm">Dashboard components will be migrated in the next phase</p>
-          </div>
+          <ICPQueue />
         </TabsContent>
 
         {/* Sr. BDR Tim Kipper View */}
         <TabsContent value="bdr" className="space-y-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <ClipboardList className="size-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">BDR View Coming Soon</p>
-            <p className="text-sm">Dashboard components will be migrated in the next phase</p>
+          <div className="grid gap-6 md:grid-cols-2">
+            <BDRWorkQueue />
+            <NeedsAttentionQueue />
           </div>
+          <RecentActivity />
         </TabsContent>
 
         {/* CEO/CTO Executive View */}
         <TabsContent value="executive" className="space-y-6">
-          <div className="text-center py-12 text-muted-foreground">
-            <BarChart3 className="size-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">Executive View Coming Soon</p>
-            <p className="text-sm">Dashboard components will be migrated in the next phase</p>
+          <ExecutiveSummary />
+          <div className="grid gap-6 md:grid-cols-2">
+            <LeadLifecycleFunnel />
+            <OutreachMetrics />
           </div>
+          <AgentHealth />
         </TabsContent>
       </Tabs>
     </div>
