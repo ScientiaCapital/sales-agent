@@ -375,6 +375,129 @@ class SlackNotifier:
 
         return await self._send_message(payload, "batch", "Batch Summary")
 
+    async def send_multichannel_approval_request(
+        self,
+        company_name: str,
+        drafts: list,
+        lead_id: str
+    ) -> bool:
+        """
+        Send Slack notification for multi-channel outreach approval.
+
+        Used when staging multiple channels (email + SMS + LinkedIn) at once.
+
+        Args:
+            company_name: Name of the target company
+            drafts: List of dicts with {channel, draft_id, preview}
+            lead_id: Close CRM lead ID
+
+        Returns:
+            True if notification sent successfully
+        """
+        # Build channel summary
+        channel_emojis = {
+            "email": "📧",
+            "sms": "💬",
+            "linkedin": "🔗",
+            "call": "📞",
+            "voice": "🎙️"
+        }
+
+        channel_blocks = []
+        for draft in drafts:
+            channel = draft.get("channel", "unknown")
+            emoji = channel_emojis.get(channel, "📝")
+            preview = draft.get("preview", "No preview")[:100]
+            draft_id = draft.get("draft_id", "unknown")
+
+            channel_blocks.append({
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{emoji} *{channel.upper()}*\n```{preview}...```"
+                },
+                "accessory": {
+                    "type": "button",
+                    "text": {
+                        "type": "plain_text",
+                        "text": "✅ Approve",
+                        "emoji": True
+                    },
+                    "style": "primary",
+                    "action_id": f"approve_draft_{channel}",
+                    "value": draft_id
+                }
+            })
+
+        blocks = [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": f"📬 Multi-Channel Outreach for {company_name}",
+                    "emoji": True
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*{len(drafts)} channels* staged and ready for review"
+                }
+            },
+            {
+                "type": "divider"
+            },
+            *channel_blocks,
+            {
+                "type": "divider"
+            },
+            {
+                "type": "actions",
+                "block_id": f"multichannel_actions_{lead_id}",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "✅ Approve All",
+                            "emoji": True
+                        },
+                        "style": "primary",
+                        "action_id": "approve_all_drafts",
+                        "value": lead_id
+                    },
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "❌ Reject All",
+                            "emoji": True
+                        },
+                        "style": "danger",
+                        "action_id": "reject_all_drafts",
+                        "value": lead_id
+                    }
+                ]
+            },
+            {
+                "type": "context",
+                "elements": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"Lead ID: `{lead_id[:8]}...` | Click buttons to approve/reject"
+                    }
+                ]
+            }
+        ]
+
+        payload = {
+            "blocks": blocks,
+            "text": f"Multi-channel outreach ready for {company_name}"
+        }
+
+        return await self._send_message(payload, lead_id, f"Multichannel: {company_name}")
+
     async def send_morning_briefing(
         self,
         leads: list,
