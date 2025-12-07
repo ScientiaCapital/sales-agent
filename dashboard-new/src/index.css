@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --radius: 0.625rem;
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(0 0% 9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(0 0% 9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(0 0% 9%);
+  /* Turkish Blue - Brand Color */
+  --turkish-blue: #2E5090;
+  --turkish-blue-light: #4A6DAD;
+  --turkish-blue-dark: #1E3A6E;
+  --color-primary: hsl(220 51% 37%);
+  --color-primary-foreground: hsl(0 0% 98%);
+  --color-secondary: hsl(0 0% 96%);
+  --color-secondary-foreground: hsl(0 0% 12%);
+  --color-muted: hsl(0 0% 96%);
+  --color-muted-foreground: hsl(0 0% 45%);
+  --color-accent: hsl(0 0% 96%);
+  --color-accent-foreground: hsl(0 0% 12%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(0 0% 90%);
+  --color-input: hsl(0 0% 90%);
+  --color-ring: hsl(220 51% 37%);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.dark {
+  --color-background: hsl(0 0% 9%);
+  --color-foreground: hsl(0 0% 98%);
+  --color-card: hsl(0 0% 12%);
+  --color-card-foreground: hsl(0 0% 98%);
+  --color-popover: hsl(0 0% 12%);
+  --color-popover-foreground: hsl(0 0% 98%);
+  --color-primary: hsl(0 0% 90%);
+  --color-primary-foreground: hsl(0 0% 12%);
+  --color-secondary: hsl(0 0% 16%);
+  --color-secondary-foreground: hsl(0 0% 98%);
+  --color-muted: hsl(0 0% 16%);
+  --color-muted-foreground: hsl(0 0% 63%);
+  --color-accent: hsl(0 0% 16%);
+  --color-accent-foreground: hsl(0 0% 98%);
+  --color-destructive: hsl(0 62% 55%);
+  --color-destructive-foreground: hsl(0 0% 98%);
+  --color-border: hsl(0 0% 20%);
+  --color-input: hsl(0 0% 20%);
+  --color-ring: hsl(0 0% 45%);
+}
