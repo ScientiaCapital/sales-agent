@@ -120,6 +120,24 @@ from .outreach_agent import OutreachAgent
 # Phase 3.6: CloseCRMAgent (Lead Management with Deduplication) ✅ COMPLETE
 from .close_crm_agent import CloseCRMAgent
 
+# Phase 3.7: DropInAgent (Universal Input Handler) ✅ COMPLETE
+from .dropin_agent import (
+    DropInAgent,
+    DropInResult,
+    ParsedInput,
+    ExistingLead,
+)
+
+# Phase 4: LinkedInAgent (Social Selling Automation) ✅ COMPLETE
+from .linkedin_agent import (
+    LinkedInAgent,
+    ConnectionResult,
+    MessageResult,
+    ReactionResult,
+    CommentResult,
+    ProfileData,
+)
+
 
 __all__ = [
     # Phase 2.1 - QualificationAgent (LCEL)
@@ -169,4 +187,18 @@ __all__ = [
 
     # Phase 3.6 - CloseCRMAgent (Lead Management with Deduplication)
     "CloseCRMAgent",
+
+    # Phase 3.7 - DropInAgent (Universal Input Handler)
+    "DropInAgent",
+    "DropInResult",
+    "ParsedInput",
+    "ExistingLead",
+
+    # Phase 4 - LinkedInAgent (Social Selling Automation)
+    "LinkedInAgent",
+    "ConnectionResult",
+    "MessageResult",
+    "ReactionResult",
+    "CommentResult",
+    "ProfileData",
 ]

@@ -68,7 +68,7 @@ Integration:
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
@@ -406,3 +406,81 @@ Determine the appropriate action and execute using the available tools."""
             "action": "get_history",
             "lead_id": lead_id
         })
+
+    async def stage_channels(
+        self,
+        lead_id: str,
+        channels: List[str],
+        mode: str = "draft",
+        priority: str = "morning",
+        **content_overrides
+    ) -> Dict[str, Any]:
+        """
+        Stage multi-channel outreach using OutreachStagingService.
+
+        This is a new convenience method that integrates the staging
+        service for orchestrating multi-channel outreach with approval workflows.
+
+        Args:
+            lead_id: Close CRM lead ID
+            channels: List of channels ("email", "sms", "linkedin", "call")
+            mode: Staging mode ("draft", "auto", "review")
+            priority: When to send ("now", "morning", "scheduled")
+            **content_overrides: Optional overrides for email_subject, email_body, etc.
+
+        Returns:
+            Dict with staging results
+
+        Example:
+            result = await agent.stage_channels(
+                lead_id="lead_abc",
+                channels=["email", "sms"],
+                mode="draft",
+                priority="morning",
+                email_subject="Custom subject",
+                email_body="Custom body"
+            )
+        """
+        from app.models.outreach import OutreachRequest, OutreachChannel, StagingMode, OutreachPriority
+        from app.services.outreach import OutreachStagingService
+
+        try:
+            # Parse channels
+            channel_enums = [OutreachChannel(ch) for ch in channels]
+
+            # Create request
+            request = OutreachRequest(
+                lead_id=lead_id,
+                channels=channel_enums,
+                mode=StagingMode(mode),
+                priority=OutreachPriority(priority),
+                **content_overrides
+            )
+
+            # Stage via service
+            service = OutreachStagingService()
+            result = await service.stage_outreach(request)
+
+            logger.info(
+                f"Staged outreach for {lead_id}: "
+                f"{result.drafts_created} drafts, {len(result.channels_sent)} sent"
+            )
+
+            return {
+                "success": True,
+                "request_id": result.request_id,
+                "lead_id": result.lead_id,
+                "channels_staged": [ch.value for ch in result.channels_staged],
+                "channels_sent": [ch.value for ch in result.channels_sent],
+                "channels_failed": [ch.value for ch in result.channels_failed],
+                "drafts_created": result.drafts_created,
+                "slack_notified": result.slack_notified,
+                "processing_time_ms": result.total_processing_time_ms
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to stage channels: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }

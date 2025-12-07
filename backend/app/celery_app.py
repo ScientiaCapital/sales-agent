@@ -31,7 +31,7 @@ os.environ["LANGCHAIN_TRACING"] = "false"
 import logging
 logging.getLogger("langsmith.client").setLevel(logging.ERROR)
 logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
-from celery import Celery
+from celery import Celery, signals
 from celery.schedules import crontab
 from celery.signals import task_prerun, task_postrun, task_failure
 from app.core.logging import setup_logging
@@ -49,6 +49,11 @@ celery_app = Celery(
         "app.tasks.icp_tasks",
         "app.tasks.prediction_tasks",
         "app.tasks.close_sync",
+        "app.tasks.briefing_tasks",
+        "app.tasks.scout_tasks",
+        "app.tasks.ranking_tasks",
+        "app.tasks.sync_tasks",
+        "app.tasks.dropin_tasks",
     ]
 )
 
@@ -122,9 +127,25 @@ celery_app.conf.update(
         "app.tasks.icp_tasks.get_icp_stats_task": {"queue": "default"},
         # Prediction Market tasks
         "app.tasks.prediction_tasks.run_prediction_market_task": {"queue": "default"},
-        "app.tasks.prediction_tasks.run_morning_briefing_task": {"queue": "workflows"},
+        "app.tasks.prediction_tasks.run_morning_briefing_task": {"queue": "workflows"},  # OLD - kept for backward compat
         "app.tasks.prediction_tasks.log_lead_signal_task": {"queue": "default"},
         "app.tasks.prediction_tasks.get_prediction_stats_task": {"queue": "default"},
+        # Briefing tasks
+        "app.tasks.briefing_tasks.run_morning_briefing_task": {"queue": "workflows"},  # NEW consolidated briefing
+        # Scout tasks (Phase 1 consolidation)
+        "app.tasks.scout_tasks.run_scout_cycle": {"queue": "default"},
+        "app.tasks.scout_tasks.run_scout_for_company": {"queue": "default"},
+        "app.tasks.scout_tasks.run_scout_batch": {"queue": "default"},
+        # Ranking tasks (Phase 1 consolidation)
+        "app.tasks.ranking_tasks.run_ranking_cycle_task": {"queue": "default"},
+        "app.tasks.ranking_tasks.run_ranking_for_company_task": {"queue": "default"},
+        "app.tasks.ranking_tasks.get_ranking_stats": {"queue": "default"},
+        # Sync tasks (Phase 1 consolidation)
+        "app.tasks.sync_tasks.run_sync_cycle": {"queue": "crm_sync"},
+        "app.tasks.sync_tasks.sync_single_activity": {"queue": "crm_sync"},
+        # Drop-in tasks (on-demand only, no schedule)
+        "app.tasks.dropin_tasks.run_dropin_enrichment": {"queue": "enrichment"},
+        "app.tasks.dropin_tasks.run_dropin_batch": {"queue": "enrichment"},
         # Close CRM sync tasks
         "app.tasks.close_sync.sync_close_activities": {"queue": "crm_sync"},
         "app.tasks.close_sync.poll_email_replies": {"queue": "crm_sync"},
@@ -153,13 +174,42 @@ celery_app.conf.update(
 
     # Periodic task schedule (Celery Beat)
     beat_schedule={
-        # Lead Scout - autonomous discovery every 30 minutes
-        "lead-scout-every-30-min": {
-            "task": "run_lead_scout",
+        # ========== PHASE 1 CONSOLIDATED AGENTS ==========
+        # Scout Agent - autonomous discovery every 30 minutes
+        "scout-agent-every-30-min": {
+            "task": "app.tasks.scout_tasks.run_scout_cycle",
             "schedule": 1800.0,  # 30 minutes in seconds
             "args": (10, True, None),  # limit=10, require_domain=True, icp_tier=None
             "options": {"queue": "default"},
         },
+        # Ranking Agent - re-rank leads every 10 minutes
+        "ranking-agent-every-10-min": {
+            "task": "app.tasks.ranking_tasks.run_ranking_cycle_task",
+            "schedule": 600.0,  # 10 minutes in seconds
+            "args": (100,),  # Re-rank up to 100 companies per cycle
+            "options": {"queue": "default"},
+        },
+        # Sync Agent - sync Close CRM activities every 5 minutes
+        "sync-agent-every-5-min": {
+            "task": "app.tasks.sync_tasks.run_sync_cycle",
+            "schedule": 300.0,  # 5 minutes in seconds
+            "options": {"queue": "crm_sync"},
+        },
+        # Briefing Agent - 7:30 AM EST (12:30 UTC)
+        "briefing-agent-730am-est": {
+            "task": "app.tasks.briefing_tasks.run_morning_briefing_task",
+            "schedule": crontab(hour=12, minute=30),  # 7:30 AM EST = 12:30 UTC
+            "args": (10,),  # Top 10 leads
+            "options": {"queue": "workflows"},
+        },
+        # ========== OLD SCHEDULES (COMMENTED FOR BACKWARD COMPAT) ==========
+        # OLD: Lead Scout - replaced by scout-agent-every-30-min
+        # "lead-scout-every-30-min": {
+        #     "task": "run_lead_scout",
+        #     "schedule": 1800.0,
+        #     "args": (10, True, None),
+        #     "options": {"queue": "default"},
+        # },
         # Morning Report - daily at 9 AM EST (14:00 UTC)
         "morning-report-9am-est": {
             "task": "generate_morning_report",
@@ -228,14 +278,14 @@ celery_app.conf.update(
             "args": (1000,),  # Rank up to 1000 companies per run
             "options": {"queue": "default"},
         },
-        # Morning Briefing - 7 AM EST (12:00 UTC)
-        # Generates "why call now" reasoning for top leads
-        "morning-briefing-7am-est": {
-            "task": "run_morning_briefing",
-            "schedule": crontab(hour=12, minute=0),  # 7 AM EST = 12:00 UTC
-            "args": (10,),  # Top 10 leads
-            "options": {"queue": "workflows"},
-        },
+        # ========== CONSOLIDATED BRIEFING SCHEDULE ==========
+        # OLD: Morning Briefing - replaced by briefing-agent-730am-est above
+        # "morning-briefing-730am-est": {
+        #     "task": "run_morning_briefing",
+        #     "schedule": crontab(hour=12, minute=30),
+        #     "args": (10,),
+        #     "options": {"queue": "workflows"},
+        # },
         # ========== CLOSE CRM AUTOMATION SCHEDULES ==========
         # Sync Close activities (emails, SMS, calls) every 15 minutes
         "sync-close-activities-every-15-min": {
@@ -262,14 +312,19 @@ celery_app.conf.update(
 # ========== Agent Tracking Configuration ==========
 # Map task names to agent names for BDR Cockpit tracking
 TRACKED_AGENTS = {
-    "run_lead_scout": "lead_scout",
-    "generate_morning_report": "morning_report",
+    # Phase 1 consolidated agents
+    "run_scout_cycle": "scout_agent",
+    "run_ranking_cycle": "ranking_agent",
+    "run_sync_cycle": "sync_agent",
+    "run_morning_briefing": "briefing_agent",
+    # Legacy agents (kept for backward compatibility)
+    "run_lead_scout": "lead_scout",  # OLD - replaced by run_scout_cycle
+    "generate_morning_report": "morning_report",  # OLD - legacy task
     "run_sales_intel_batch": "sales_intel",
     "run_growth_campaigns": "growth_campaigns",
     "run_bdr_batch": "bdr_outreach",
     "run_icp_checker": "icp_checker",
     "run_prediction_market": "prediction_agent",  # Renamed from prediction_market
-    "run_morning_briefing": "morning_briefing",
     "sync_close_activities": "close_sync",
     "poll_email_replies": "reply_polling",
     "advance_sequences": "sequence_advance",
@@ -375,6 +430,56 @@ def task_failure_handler(sender=None, task_id=None, exception=None, args=None, k
             _run_async_tracking(_track_failure())
         except Exception as e:
             logger.debug(f"Failed to track agent failure: {e}")
+
+
+# ========== Event-Driven Agent Triggers ==========
+# Listen for task success events to trigger dependent agents
+
+@signals.task_success.connect
+def handle_task_success(sender=None, result=None, **kwargs):
+    """
+    Handle task success events to trigger dependent agent workflows.
+
+    Event-driven patterns:
+    - company_enriched -> trigger ranking for that company
+    - tier_upgraded to PLATINUM/GOLD -> trigger outreach
+    """
+    if not isinstance(result, dict) or "event" not in result:
+        return
+
+    event_type = result.get("event")
+
+    try:
+        # Pattern 1: Company enriched -> re-rank immediately
+        if event_type == "company_enriched":
+            from app.tasks.ranking_tasks import run_ranking_for_company_task
+            company_ids = result.get("companies", [])
+            for company_id in company_ids:
+                logger.info(f"Triggering ranking for enriched company: {company_id}")
+                run_ranking_for_company_task.delay(company_id)
+
+        # Pattern 2: Tier upgraded to HOT -> queue outreach
+        elif event_type == "tier_upgraded":
+            new_tier = result.get("new_tier")
+            if new_tier in ["PLATINUM", "GOLD"]:
+                # Trigger outreach workflow for HOT leads
+                # Note: This assumes outreach_tasks exists - adjust if needed
+                try:
+                    from app.tasks.agent_tasks import run_bdr_outreach_task
+                    company_id = result.get("company_id")
+                    logger.info(f"Triggering outreach for HOT lead: {company_id} (tier: {new_tier})")
+                    run_bdr_outreach_task.delay(company_id)
+                except ImportError:
+                    logger.debug("Outreach task not found - skipping outreach trigger")
+
+        # Pattern 3: Research completed -> update intelligence
+        elif event_type == "research_completed":
+            company_id = result.get("company_id")
+            logger.info(f"Research completed for {company_id} - intelligence updated")
+            # Future: Trigger sales intel extraction
+
+    except Exception as e:
+        logger.error(f"Error in event handler for {event_type}: {e}", exc_info=True)
 
 
 if __name__ == "__main__":
