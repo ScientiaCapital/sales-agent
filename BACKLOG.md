@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-06 (Phase 4 Planning)
+**Last Updated**: 2025-12-07 (Vite Migration Complete)
 **Sprint**: Current
 
 ---
@@ -11,9 +11,9 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 3 (Phase 4) |
+| 🟡 In Progress | 0 |
 | 🟢 Ready | 10 |
-| ✅ Done (this sprint) | 50 (Phase 1-3 complete) |
+| ✅ Done (this sprint) | 54 (Phase 1-4 + Vite Migration) |
 
 ---
 
@@ -725,6 +725,11 @@ frontend/src/components/Cockpit/
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Vite + React Migration (Dec 7)** | | | |
+| TASK-030 | Vite Setup + Config (path aliases, proxy, theme) | 2025-12-07 | Claude |
+| TASK-031 | Component Migration (12 dashboard + 6 UI + 3 AI) | 2025-12-07 | Claude |
+| TASK-032 | Vercel Deployment Configuration | 2025-12-07 | Claude |
+| TASK-033 | Delete Next.js Dashboard, Rename dashboard-new → dashboard | 2025-12-07 | Claude |
 | **Close CRM GTM Automation - Phases 1 & 2 (Dec 6 Evening)** | | | |
 | TASK-021 | Reply Processing (classifier + router + webhook) | 2025-12-06 | Claude |
 | TASK-022 | Celery Beat Schedules for Close sync | 2025-12-06 | Claude |
