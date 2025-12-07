@@ -13,49 +13,25 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+# Essential Dashboard Imports (3)
 from app.api import health
-from app.api import leads
-from app.api import documents
-from app.api import contacts
-from app.api import knowledge
-from app.api import customers
-from app.api import refine
-from app.api import research
-from app.api import transfer
-from app.api import voice
-from app.api import reports
-from app.api import apollo
-from app.api import linkedin
-from app.api import campaigns
-from app.api import sync
-from app.api import auth
-from app.api import supabase_auth  # Supabase authentication
-from app.api import gdpr
-from app.api import costs
-from app.api import analytics
-from app.api import langgraph_agents
-from app.api import dealer_import
-from app.api import metrics
-from app.api import ab_tests
-from app.api import report_templates
-from app.api import exports
-from app.api import pipeline  # Pipeline testing endpoints
-from app.api import pipeline_dry_run  # Dry run testing (NO CRM writes)
-from app.api import csv_import  # CSV upload and processing
-from app.api import hubspot  # HubSpot for GTM marketing (Close = Sales)
-from app.api import audit  # Lead audit trail for GTM agents
 from app.api import ai_outreach  # AI-powered outreach draft management
-from app.api import batch  # Batch processing with parallel execution
-from app.api import webhooks  # Slack/external webhooks for BDR approval
+from app.api import dashboard  # Dashboard endpoints for frontend
+
+# GTM Automation Infrastructure (13)
+from app.api import supabase_auth  # Supabase authentication
+from app.api import langgraph_agents
 from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
-from app.api import rankings  # Lead prediction market rankings
+from app.api import webhooks  # Slack/external webhooks for BDR approval
+from app.api import audit  # Lead audit trail for GTM agents
+from app.api import sync
 from app.api import close_outreach  # Close CRM SMS/Voice integration (replaces VozLux)
 from app.api import sequences  # Email sequence management
-from app.api import prospects  # Prospect enrollment and execution
+from app.api import alerts  # Alert management for BDR workflow
+from app.api import batch  # Batch processing with parallel execution
 from app.api import agents  # Agent control API for BDR Cockpit
 from app.api import cockpit_websocket  # WebSocket for BDR Cockpit real-time updates
-from app.api import alerts  # Alert management for BDR workflow
-from app.api import dashboard  # Dashboard endpoints for frontend
+from app.api import rankings  # Lead prediction market rankings
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -249,50 +225,27 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # Include routers with API version prefix
+
+# Essential Dashboard (3)
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
-app.include_router(auth.router, prefix=settings.API_V1_PREFIX)  # Legacy JWT authentication
-app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
-app.include_router(gdpr.router, prefix=settings.API_V1_PREFIX)  # Task 9.1: GDPR compliance
-app.include_router(leads.router, prefix=settings.API_V1_PREFIX)
-app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
-app.include_router(contacts.router, prefix=settings.API_V1_PREFIX)
-app.include_router(knowledge.router, prefix=settings.API_V1_PREFIX)  # Task 24: Knowledge base with RunPod storage
-app.include_router(customers.router, prefix=settings.API_V1_PREFIX)  # Task 25: Customer platform endpoints
-app.include_router(refine.router, prefix=settings.API_V1_PREFIX)  # Task 1: Iterative refinement engine
-app.include_router(research.router, prefix=settings.API_V1_PREFIX)  # Task 3: Multi-agent research pipeline
-app.include_router(transfer.router, prefix=settings.API_V1_PREFIX)  # Task 4: Agent transfer system
-app.include_router(voice.router, prefix=settings.API_V1_PREFIX)  # Task 6: Cartesia voice integration
-app.include_router(reports.router, prefix=settings.API_V1_PREFIX)  # Task 3.3-3.4: Report generation system
-app.include_router(apollo.router, prefix=settings.API_V1_PREFIX)  # Task 5.3: Apollo contact enrichment
-app.include_router(linkedin.router, prefix=settings.API_V1_PREFIX)  # Task 5.4: LinkedIn OAuth 2.0 connector
-app.include_router(hubspot.router, prefix=settings.API_V1_PREFIX)  # HubSpot for GTM marketing (Close = Sales)
-app.include_router(campaigns.router, prefix=settings.API_V1_PREFIX)  # Task 4: Personalized outreach campaigns
-app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # Task 5.5: CRM sync monitoring and control
-app.include_router(costs.router, prefix=settings.API_V1_PREFIX)  # Task 10.5: Cost reporting and budget monitoring
-app.include_router(analytics.router, prefix=settings.API_V1_PREFIX)  # AI cost analytics endpoint
-app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # Phase 2: LangGraph agent endpoints
-app.include_router(dealer_import.router, prefix=settings.API_V1_PREFIX)  # Dealer scraper integration
-app.include_router(metrics.router, prefix=settings.API_V1_PREFIX)  # Task 11.1: Metrics tracking and analytics
-app.include_router(ab_tests.router, prefix=settings.API_V1_PREFIX)  # Task 11.3: A/B test analytics with statistical significance
-app.include_router(report_templates.router, prefix=settings.API_V1_PREFIX)  # Task 11.4: Custom report templates with flexible queries
-app.include_router(exports.router, prefix=settings.API_V1_PREFIX)  # Task 11.5: Export functionality (CSV, PDF, Excel)
-app.include_router(pipeline.router, prefix=settings.API_V1_PREFIX)  # Phase 6: Pipeline testing system
-app.include_router(pipeline_dry_run.router, prefix=settings.API_V1_PREFIX)  # Dry run testing (NO CRM writes!)
-app.include_router(csv_import.router, prefix=settings.API_V1_PREFIX)  # CSV upload and lead enrichment
-app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit trail for GTM agents
 app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outreach draft management
-app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch processing with parallel execution
+app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
+
+# GTM Automation Infrastructure (13)
+app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
+app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # LangGraph agent endpoints
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
 app.include_router(webhooks_close, prefix=settings.API_V1_PREFIX)  # Close CRM webhooks (email replies, etc.)
-app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
-app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach (replaces VozLux)
-app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management (cold-reach integration)
+app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit trail for GTM agents
+app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # CRM sync monitoring
+app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach
+app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management
 app.include_router(sequences.cockpit_router)  # Sequences cockpit endpoints (v1 prefix in router)
-app.include_router(prospects.router, prefix=settings.API_V1_PREFIX)  # Prospect enrollment and execution (cold-reach integration)
+app.include_router(alerts.router, prefix=settings.API_V1_PREFIX)  # Alert management for BDR workflow
+app.include_router(batch.router, prefix=settings.API_V1_PREFIX)  # Batch processing with parallel execution
 app.include_router(agents.router, prefix=settings.API_V1_PREFIX)  # Agent control API for BDR Cockpit
 app.include_router(cockpit_websocket.router, prefix=settings.API_V1_PREFIX)  # WebSocket for BDR Cockpit real-time updates
-app.include_router(alerts.router, prefix=settings.API_V1_PREFIX)  # Alert management for BDR workflow
-app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
+app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
 
 
 @app.get("/")
