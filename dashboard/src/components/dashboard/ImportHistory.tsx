@@ -1,5 +1,3 @@
-"use client";
-
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -203,7 +201,7 @@ export function ImportHistory() {
 }
 
 function FieldBadge({
-  icon: Icon,
+  icon: IconComponent,
   label,
   available,
 }: {
@@ -211,6 +209,8 @@ function FieldBadge({
   label: string;
   available: boolean;
 }) {
+  // Use IconComponent if needed in future iterations
+  void IconComponent;
   return (
     <div
       className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${
