@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from 'react';
 import useSWR from 'swr';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -186,6 +184,32 @@ export const CommandCenter = () => {
     setCurrentPage(1);
   }, [searchQuery]);
 
+  // Handle lead enrichment (defined before useEffect that uses it)
+  const handleEnrich = useCallback(async () => {
+    if (!selectedLead || isEnriching) return;
+
+    setIsEnriching(true);
+    try {
+      const response = await fetch('/api/ai/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company_id: selectedLead.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Enrichment failed');
+      }
+
+      // TODO: Show success toast
+      // Refresh data by mutating SWR cache
+    } catch (error) {
+      console.error('Enrichment error:', error);
+      // TODO: Show error toast
+    } finally {
+      setIsEnriching(false);
+    }
+  }, [selectedLead, isEnriching]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -249,33 +273,7 @@ export const CommandCenter = () => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [selectedLead, paginatedLeads, currentPage, totalPages]);
-
-  // Handle lead enrichment
-  const handleEnrich = useCallback(async () => {
-    if (!selectedLead || isEnriching) return;
-
-    setIsEnriching(true);
-    try {
-      const response = await fetch('/api/ai/enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ company_id: selectedLead.id }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Enrichment failed');
-      }
-
-      // TODO: Show success toast
-      // Refresh data by mutating SWR cache
-    } catch (error) {
-      console.error('Enrichment error:', error);
-      // TODO: Show error toast
-    } finally {
-      setIsEnriching(false);
-    }
-  }, [selectedLead, isEnriching]);
+  }, [selectedLead, paginatedLeads, currentPage, totalPages, handleEnrich]);
 
   // Handle draft editing
   const handleEditDraft = useCallback(

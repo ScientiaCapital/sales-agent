@@ -1,5 +1,3 @@
-"use client";
-
 import { Activity, RefreshCw } from "lucide-react";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
