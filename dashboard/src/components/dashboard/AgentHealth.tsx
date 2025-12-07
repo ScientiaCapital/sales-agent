@@ -1,5 +1,3 @@
-"use client";
-
 import { Activity, Clock, CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

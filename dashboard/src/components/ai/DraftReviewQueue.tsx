@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +27,7 @@ interface Draft {
   confidence_score: number | null;
   created_at: string;
   agent_type: string;
-  metadata: Record<string, any> | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface DraftListResponse {
@@ -38,7 +36,7 @@ interface DraftListResponse {
   data_source: "database" | "mock";
 }
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -112,7 +110,7 @@ export function DraftReviewQueue() {
     });
   };
 
-  // Toggle all visible drafts
+  // Toggle all visible drafts (used by "Select All" checkbox in header)
   const toggleAllDrafts = () => {
     if (selectedDrafts.size === filteredDrafts.length) {
       setSelectedDrafts(new Set());
@@ -120,6 +118,8 @@ export function DraftReviewQueue() {
       setSelectedDrafts(new Set(filteredDrafts.map((d) => d.id)));
     }
   };
+  // Expose for potential future "Select All" checkbox
+  void toggleAllDrafts;
 
   // Start editing a draft
   const startEditing = (draftId: string, currentBody: string) => {

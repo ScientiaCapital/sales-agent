@@ -1,5 +1,3 @@
-"use client";
-
 import { Users, Target, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
