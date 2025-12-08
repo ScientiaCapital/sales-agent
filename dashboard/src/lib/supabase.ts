@@ -8,8 +8,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration from environment
+// Fallbacks ensure production works without Vercel env vars (anon key is public/safe)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oyyakkuvvtckocncuwwf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'REVOKED';
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
