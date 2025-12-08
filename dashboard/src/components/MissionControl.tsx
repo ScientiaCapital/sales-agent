@@ -1,12 +1,10 @@
 'use client'
 
 /**
- * LEAD HUNTER - Agent Mission Control
+ * GTM Pipeline Dashboard
  *
- * Atari-style retro terminal dashboard for CEO/CTO/VC demos
- * Shows live agent activity, lead growth, and Tim Kipper's GTM journey
- *
- * Inspired by quantify-mvp VLM Demo terminal aesthetic
+ * Clean, professional dashboard for Coperniq ICP pipeline visibility
+ * Shows live agent activity, lead metrics, and pipeline health
  */
 
 import { useState, useEffect, useRef } from 'react'
@@ -16,7 +14,7 @@ import { supabase } from '@/lib/supabase'
 // TYPES
 // ============================================
 
-interface GameStats {
+interface PipelineStats {
   totalLeads: number
   totalContacts: number
   enrichedLeads: number
@@ -27,48 +25,28 @@ interface GameStats {
   hotLeads: number
   leadsWithPhone: number
   leadsWithEmail: number
-  // Growth tracking
-  startingLeads: number // Dec 2025 baseline
   leadsAddedToday: number
   leadsAddedThisWeek: number
 }
 
-// ICP Segment tracking - Coperniq MCP+Energy verticals
 interface ICPSegments {
   hvac: number
   solar: number
   electrical: number
   plumbing: number
   roofing: number
-  // Market segments
-  resiOnly: number      // Residential only
-  commercial: number    // Pure commercial
-  resimercial: number   // Both resi + commercial
-  cAndI: number         // Large C&I solar
-  // Quality metrics
-  multiTrade: number    // 3+ trades
+  resiOnly: number
+  commercial: number
+  resimercial: number
+  cAndI: number
+  multiTrade: number
   avgTradeCount: number
   avgLocations: number
   avgEmployees: number
 }
 
-// Valuation point values - gamified scoring
-const VALUATION_POINTS = {
-  leadBase: 50,              // Every lead = $50
-  enriched: 25,              // +$25 for enrichment
-  atlContact: 100,           // +$100 for decision maker
-  directPhone: 150,          // +$150 for direct dial
-  platinum: 500,             // +$500 for platinum ICP
-  gold: 250,                 // +$250 for gold
-  silver: 100,               // +$100 for silver
-  multiTrade: 200,           // +$200 for 3+ trades (Coperniq sweet spot)
-  hasSolar: 300,             // +$300 for solar capability
-  multiLocation: 150,        // +$150 for multi-location
-}
-
 interface AgentStatus {
   name: string
-  icon: string
   status: 'active' | 'idle' | 'sleeping'
   lastRun: string
   tasksCompleted: number
@@ -87,26 +65,20 @@ interface ActivityLog {
 // ============================================
 
 const AGENTS: AgentStatus[] = [
-  { name: 'SCOUT', icon: '🔍', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Every 30 min' },
-  { name: 'ICP-SCORER', icon: '📊', status: 'idle', lastRun: '', tasksCompleted: 0, schedule: 'Every 15 min' },
-  { name: 'PREDICTOR', icon: '🎯', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Every 5 min' },
-  { name: 'BRIEFER', icon: '📋', status: 'sleeping', lastRun: '', tasksCompleted: 0, schedule: '7 AM EST' },
-  { name: 'INTEL', icon: '🧠', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Hourly' },
-  { name: 'OUTREACH', icon: '✉️', status: 'idle', lastRun: '', tasksCompleted: 0, schedule: 'Hourly' },
+  { name: 'Lead Scout', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Every 30 min' },
+  { name: 'ICP Scorer', status: 'idle', lastRun: '', tasksCompleted: 0, schedule: 'Every 15 min' },
+  { name: 'Predictor', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Every 5 min' },
+  { name: 'Briefer', status: 'sleeping', lastRun: '', tasksCompleted: 0, schedule: '7 AM EST' },
+  { name: 'Sales Intel', status: 'active', lastRun: '', tasksCompleted: 0, schedule: 'Hourly' },
+  { name: 'Outreach', status: 'idle', lastRun: '', tasksCompleted: 0, schedule: 'Hourly' },
 ]
-
-const DECEMBER_2025_BASELINE = {
-  leads: 6568, // Original gold standard leads
-  contacts: 562, // ATL contacts from Batch 1
-  date: '2025-12-01'
-}
 
 // ============================================
 // COMPONENT
 // ============================================
 
 export function MissionControl() {
-  const [stats, setStats] = useState<GameStats>({
+  const [stats, setStats] = useState<PipelineStats>({
     totalLeads: 0,
     totalContacts: 0,
     enrichedLeads: 0,
@@ -117,7 +89,6 @@ export function MissionControl() {
     hotLeads: 0,
     leadsWithPhone: 0,
     leadsWithEmail: 0,
-    startingLeads: DECEMBER_2025_BASELINE.leads,
     leadsAddedToday: 0,
     leadsAddedThisWeek: 0,
   })
@@ -138,22 +109,16 @@ export function MissionControl() {
     avgEmployees: 0,
   })
 
-  const [pipelineValuation, setPipelineValuation] = useState(0)
-  const [displayedValuation, setDisplayedValuation] = useState(0)
   const [topBrands, setTopBrands] = useState<{name: string, count: number}[]>([])
-
   const [agents, setAgents] = useState<AgentStatus[]>(AGENTS)
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([])
-  const [displayedScore, setDisplayedScore] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const terminalRef = useRef<HTMLDivElement>(null)
-  const scoreRef = useRef<HTMLDivElement>(null)
 
   // Fetch stats from Supabase
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Get company counts with ICP segment data
         const { data: companies, error: compError } = await supabase
           .from('dim_companies')
           .select(`
@@ -164,7 +129,6 @@ export function MissionControl() {
 
         if (compError) throw compError
 
-        // Get contact counts
         const { data: contacts, error: contError } = await supabase
           .from('dim_contacts')
           .select('id, is_atl')
@@ -176,7 +140,7 @@ export function MissionControl() {
         const weekStart = new Date(todayStart)
         weekStart.setDate(weekStart.getDate() - 7)
 
-        const newStats: GameStats = {
+        const newStats: PipelineStats = {
           totalLeads: companies?.length || 0,
           totalContacts: contacts?.length || 0,
           enrichedLeads: companies?.filter(c => c.enrichment_status === 'complete').length || 0,
@@ -187,12 +151,11 @@ export function MissionControl() {
           hotLeads: companies?.filter(c => c.has_phone && c.has_email).length || 0,
           leadsWithPhone: companies?.filter(c => c.has_phone).length || 0,
           leadsWithEmail: companies?.filter(c => c.has_email).length || 0,
-          startingLeads: DECEMBER_2025_BASELINE.leads,
           leadsAddedToday: companies?.filter(c => new Date(c.created_at) >= todayStart).length || 0,
           leadsAddedThisWeek: companies?.filter(c => new Date(c.created_at) >= weekStart).length || 0,
         }
 
-        // Calculate ICP Segments from services_offered and industries_served
+        // Calculate ICP Segments
         const servicesCheck = (services: string[] | null, keywords: string[]) => {
           if (!services) return false
           const lower = services.map(s => s.toLowerCase())
@@ -220,7 +183,6 @@ export function MissionControl() {
           servicesCheck(c.services_offered, ['roofing', 'roof'])
         ).length || 0
 
-        // Market segment classification
         const resiCount = companies?.filter(c =>
           servicesCheck(c.services_offered, ['residential']) &&
           !servicesCheck(c.services_offered, ['commercial'])
@@ -236,18 +198,15 @@ export function MissionControl() {
           servicesCheck(c.services_offered, ['commercial'])
         ).length || 0
 
-        // C&I = Large commercial + industrial solar focus
         const cAndICount = companies?.filter(c =>
-          (servicesCheck(c.industries_served, ['industrial', 'c&i', 'commercial solar']) ||
-           servicesCheck(c.services_offered, ['industrial', 'commercial solar']))
+          servicesCheck(c.industries_served, ['industrial', 'c&i', 'commercial solar']) ||
+          servicesCheck(c.services_offered, ['industrial', 'commercial solar'])
         ).length || 0
 
-        // Multi-trade (Coperniq sweet spot: 3+ trades)
         const multiTradeCount = companies?.filter(c =>
           c.trade_count && c.trade_count >= 3
         ).length || 0
 
-        // Calculate averages
         const withTrades = companies?.filter(c => c.trade_count && c.trade_count > 0) || []
         const withLocations = companies?.filter(c => c.location_count && c.location_count > 0) || []
         const withEmployees = companies?.filter(c => c.employee_count) || []
@@ -260,7 +219,6 @@ export function MissionControl() {
           ? withLocations.reduce((sum, c) => sum + (c.location_count || 0), 0) / withLocations.length
           : 0
 
-        // Parse employee_count which might be text like "50+" or "100-200"
         const parseEmployees = (emp: string | null): number => {
           if (!emp) return 0
           const num = parseInt(emp.replace(/[^0-9]/g, ''))
@@ -297,27 +255,9 @@ export function MissionControl() {
         })
         const sortedBrands = Object.entries(brandCounts)
           .sort((a, b) => b[1] - a[1])
-          .slice(0, 10)
+          .slice(0, 8)
           .map(([name, count]) => ({ name, count }))
         setTopBrands(sortedBrands)
-
-        // Calculate Pipeline Valuation (gamified scoring)
-        let valuation = 0
-        companies?.forEach(c => {
-          valuation += VALUATION_POINTS.leadBase  // Every lead
-          if (c.enrichment_status === 'complete') valuation += VALUATION_POINTS.enriched
-          if (c.has_phone) valuation += VALUATION_POINTS.directPhone
-          if (c.icp_tier === 'PLATINUM') valuation += VALUATION_POINTS.platinum
-          else if (c.icp_tier === 'GOLD') valuation += VALUATION_POINTS.gold
-          else if (c.icp_tier === 'SILVER') valuation += VALUATION_POINTS.silver
-          if (c.trade_count && c.trade_count >= 3) valuation += VALUATION_POINTS.multiTrade
-          if (servicesCheck(c.services_offered, ['solar'])) valuation += VALUATION_POINTS.hasSolar
-          if (c.location_count && c.location_count > 1) valuation += VALUATION_POINTS.multiLocation
-        })
-        // Add value for ATL contacts
-        const atlCount = contacts?.filter(c => c.is_atl).length || 0
-        valuation += atlCount * VALUATION_POINTS.atlContact
-        setPipelineValuation(valuation)
 
         setStats(newStats)
         setIsLoading(false)
@@ -329,13 +269,11 @@ export function MissionControl() {
     }
 
     fetchStats()
-
-    // Refresh every 30 seconds
     const interval = setInterval(fetchStats, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch REAL activity from lead_audit_log
+  // Fetch activity from lead_audit_log
   useEffect(() => {
     async function fetchActivity() {
       try {
@@ -343,32 +281,22 @@ export function MissionControl() {
           .from('lead_audit_log')
           .select('id, event_type, company_name, created_at, details')
           .order('created_at', { ascending: false })
-          .limit(50)
+          .limit(20)
 
         if (error) throw error
 
         if (auditLogs && auditLogs.length > 0) {
           const realActivity: ActivityLog[] = auditLogs.map((log) => {
-            // Map event types to display format
-            const eventIcons: Record<string, string> = {
-              'lead_imported': '📥',
-              'lead_qualified': '✅',
-              'lead_enriched': '✨',
-              'contact_added': '👔',
-              'icp_scored': '📊',
-              'email_sent': '✉️',
-              'call_logged': '📞',
-              'opportunity_created': '🎯',
-              'stage_changed': '📈',
-            }
-            const icon = eventIcons[log.event_type] || '•'
-            const eventLabel = log.event_type.replace(/_/g, ' ').toUpperCase()
-
+            const eventLabel = log.event_type.replace(/_/g, ' ')
             return {
               id: log.id,
-              text: `${icon} ${eventLabel}: ${log.company_name || 'Unknown'}`,
+              text: `${eventLabel}: ${log.company_name || 'Unknown'}`,
               type: getEventLogType(log.event_type),
-              timestamp: new Date(log.created_at).toLocaleTimeString('en-US', { hour12: false })
+              timestamp: new Date(log.created_at).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+              })
             }
           })
           setActivityLog(realActivity)
@@ -379,30 +307,26 @@ export function MissionControl() {
     }
 
     fetchActivity()
-
-    // Refresh every 10 seconds for live updates
     const interval = setInterval(fetchActivity, 10000)
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch REAL agent health from FastAPI backend (when running locally)
+  // Fetch agent health
   useEffect(() => {
     async function fetchAgentHealth() {
       try {
-        // Try local FastAPI backend first
         const response = await fetch('/api/dashboard/agents')
         if (response.ok) {
           const agentData = await response.json()
           if (Array.isArray(agentData) && agentData.length > 0) {
             const updatedAgents: AgentStatus[] = agentData.map((agent: {
-              agent_type: string;
-              display_name: string;
-              status: string;
-              last_execution_at: string;
-              successful_executions: number;
+              agent_type: string
+              display_name: string
+              status: string
+              last_execution_at: string
+              successful_executions: number
             }) => ({
-              name: agent.display_name || agent.agent_type.toUpperCase(),
-              icon: getAgentIcon(agent.agent_type),
+              name: agent.display_name || formatAgentName(agent.agent_type),
               status: agent.status === 'healthy' ? 'active' as const :
                       agent.status === 'degraded' ? 'idle' as const : 'sleeping' as const,
               lastRun: agent.last_execution_at || '',
@@ -412,374 +336,191 @@ export function MissionControl() {
             setAgents(updatedAgents)
           }
         }
-      } catch (err) {
-        // Backend not running - use default static agents (no fake data)
-        console.log('FastAPI backend not available, using static agent list')
+      } catch {
+        console.log('Backend not available, using static agent list')
       }
     }
 
     fetchAgentHealth()
-
-    // Refresh every 30 seconds
     const interval = setInterval(fetchAgentHealth, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // Animate score counter
-  useEffect(() => {
-    if (stats.totalLeads === 0) return
-
-    const duration = 2000 // 2 seconds
-    const steps = 60
-    const increment = stats.totalLeads / steps
-    let current = 0
-
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= stats.totalLeads) {
-        setDisplayedScore(stats.totalLeads)
-        clearInterval(timer)
-      } else {
-        setDisplayedScore(Math.floor(current))
-      }
-    }, duration / steps)
-
-    return () => clearInterval(timer)
-  }, [stats.totalLeads])
-
-  // Animate valuation counter (slightly slower, like a stock ticker)
-  useEffect(() => {
-    if (pipelineValuation === 0) return
-
-    const duration = 3000 // 3 seconds for dramatic effect
-    const steps = 90
-    const increment = pipelineValuation / steps
-    let current = 0
-
-    const timer = setInterval(() => {
-      current += increment
-      if (current >= pipelineValuation) {
-        setDisplayedValuation(pipelineValuation)
-        clearInterval(timer)
-      } else {
-        setDisplayedValuation(Math.floor(current))
-      }
-    }, duration / steps)
-
-    return () => clearInterval(timer)
-  }, [pipelineValuation])
-
-  // Auto-scroll terminal
+  // Auto-scroll activity feed
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight
     }
   }, [activityLog])
 
-  const growthPercent = ((stats.totalLeads - stats.startingLeads) / stats.startingLeads * 100).toFixed(1)
-  const growthPositive = stats.totalLeads >= stats.startingLeads
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600">Loading pipeline data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-black p-4 font-mono">
-      {/* HEADER - Game Title */}
-      <div className="text-center mb-6">
-        <div className="text-green-500 text-xs mb-2">
-          ╔══════════════════════════════════════════════════════════════════════════════╗
-        </div>
-        <h1 className="text-4xl md:text-6xl font-bold text-green-400 tracking-wider animate-pulse">
-          🎮 CONTRACTOR HUNTER 🎮
-        </h1>
-        <p className="text-green-600 text-sm mt-2">
-          HVAC • SOLAR • ELECTRICAL • PLUMBING • ROOFING • EV | COPERNIQ ICP PIPELINE
-        </p>
-        <p className="text-cyan-500 text-xs mt-1">
-          AUTONOMOUS GTM AGENT SYSTEM v1.0 | LANGGRAPH + CLAUDE AI
-        </p>
-        <div className="text-green-500 text-xs mt-2">
-          ╚══════════════════════════════════════════════════════════════════════════════╝
-        </div>
-      </div>
-
-      {/* MAIN SCORE DISPLAY */}
-      <div className="bg-black border-4 border-green-500 rounded-lg p-6 mb-6 text-center relative overflow-hidden">
-        {/* Scanline effect */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(0,255,0,0.03) 1px, transparent 1px)',
-            backgroundSize: '100% 3px',
-          }}
-        />
-
-        <div className="text-green-600 text-sm mb-2">CONTRACTORS IN PIPELINE</div>
-        <div
-          ref={scoreRef}
-          className="text-6xl md:text-8xl font-bold text-green-400 tabular-nums"
-          style={{ textShadow: '0 0 20px rgba(0,255,0,0.5), 0 0 40px rgba(0,255,0,0.3)' }}
-        >
-          {displayedScore.toLocaleString()}
-        </div>
-
-        {/* Growth indicator */}
-        <div className={`text-2xl mt-4 ${growthPositive ? 'text-green-400' : 'text-red-400'}`}>
-          {growthPositive ? '▲' : '▼'} {growthPercent}% since Dec 2025
-        </div>
-        <div className="text-green-600 text-sm">
-          Baseline: {DECEMBER_2025_BASELINE.leads.toLocaleString()} contractors |
-          Discovered: +{(stats.totalLeads - stats.startingLeads).toLocaleString()}
-        </div>
-      </div>
-
-      {/* STATS GRID - Arcade Style */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatBox label="DECISION MAKERS" value={stats.totalContacts} icon="👔" color="cyan" />
-        <StatBox label="INTEL COMPLETE" value={stats.enrichedLeads} icon="✨" color="yellow" />
-        <StatBox label="🔥 CALL READY" value={stats.hotLeads} icon="🔥" color="red" />
-        <StatBox label="DIRECT DIAL" value={stats.leadsWithPhone} icon="📱" color="green" />
-
-        <StatBox label="⭐ PLATINUM" value={stats.platinumLeads} icon="💎" color="purple" />
-        <StatBox label="🥇 GOLD" value={stats.goldLeads} icon="🥇" color="yellow" />
-        <StatBox label="🥈 SILVER" value={stats.silverLeads} icon="🥈" color="gray" />
-        <StatBox label="🥉 BRONZE" value={stats.bronzeLeads} icon="🥉" color="orange" />
-      </div>
-
-      {/* PIPELINE VALUATION - Stock Ticker Style */}
-      <div className="bg-black border-4 border-yellow-500 rounded-lg p-6 mb-6 relative overflow-hidden">
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: 'linear-gradient(rgba(255,215,0,0.02) 1px, transparent 1px)',
-            backgroundSize: '100% 3px',
-          }}
-        />
-        <div className="grid md:grid-cols-3 gap-6 items-center">
-          {/* Valuation Clock */}
-          <div className="text-center">
-            <div className="text-yellow-600 text-sm mb-1">💰 PIPELINE VALUATION</div>
-            <div
-              className="text-4xl md:text-5xl font-bold text-yellow-400 tabular-nums"
-              style={{ textShadow: '0 0 15px rgba(255,215,0,0.4)' }}
-            >
-              ${displayedValuation.toLocaleString()}
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">GTM Pipeline</h1>
+            <p className="text-sm text-slate-500">Coperniq ICP Contractor Intelligence</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-500">
+              Last updated: {new Date().toLocaleTimeString()}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm text-slate-600">Live</span>
             </div>
-            <div className="text-yellow-700 text-xs mt-1">
-              +${VALUATION_POINTS.leadBase}/lead • +${VALUATION_POINTS.atlContact}/ATL • +${VALUATION_POINTS.hasSolar}/solar
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Primary Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <MetricCard
+            label="Total Contractors"
+            value={stats.totalLeads}
+            trend={stats.leadsAddedThisWeek > 0 ? `+${stats.leadsAddedThisWeek} this week` : undefined}
+            primary
+          />
+          <MetricCard label="Decision Makers" value={stats.totalContacts} />
+          <MetricCard label="Call Ready" value={stats.hotLeads} highlight />
+          <MetricCard label="Enriched" value={stats.enrichedLeads} />
+        </div>
+
+        {/* ICP Tiers */}
+        <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">ICP Tiers</h2>
+          <div className="grid grid-cols-4 gap-4">
+            <TierCard tier="Platinum" count={stats.platinumLeads} color="purple" />
+            <TierCard tier="Gold" count={stats.goldLeads} color="amber" />
+            <TierCard tier="Silver" count={stats.silverLeads} color="slate" />
+            <TierCard tier="Bronze" count={stats.bronzeLeads} color="orange" />
+          </div>
+        </div>
+
+        {/* Two Column Layout */}
+        <div className="grid md:grid-cols-2 gap-8 mb-8">
+          {/* Trade Verticals */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Trade Verticals</h2>
+            <div className="space-y-3">
+              <VerticalBar label="HVAC" count={segments.hvac} total={stats.totalLeads} />
+              <VerticalBar label="Solar" count={segments.solar} total={stats.totalLeads} />
+              <VerticalBar label="Electrical" count={segments.electrical} total={stats.totalLeads} />
+              <VerticalBar label="Plumbing" count={segments.plumbing} total={stats.totalLeads} />
+              <VerticalBar label="Roofing" count={segments.roofing} total={stats.totalLeads} />
             </div>
           </div>
 
-          {/* Quality Metrics */}
-          <div className="text-center border-l border-r border-yellow-500/30 px-4">
-            <div className="text-yellow-600 text-sm mb-2">📊 QUALITY METRICS</div>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div>
-                <div className="text-yellow-400 text-lg font-bold">{segments.multiTrade}</div>
-                <div className="text-yellow-700">Multi-Trade</div>
-              </div>
-              <div>
-                <div className="text-yellow-400 text-lg font-bold">{segments.avgTradeCount}</div>
-                <div className="text-yellow-700">Avg Trades</div>
-              </div>
-              <div>
-                <div className="text-yellow-400 text-lg font-bold">{segments.avgEmployees}</div>
-                <div className="text-yellow-700">Avg Staff</div>
-              </div>
+          {/* Market Segments */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Market Segments</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <SegmentCard label="Residential" count={segments.resiOnly} />
+              <SegmentCard label="Commercial" count={segments.commercial} />
+              <SegmentCard label="Resimercial" count={segments.resimercial} />
+              <SegmentCard label="C&I" count={segments.cAndI} />
             </div>
-          </div>
-
-          {/* Bonus Multipliers */}
-          <div className="text-center">
-            <div className="text-yellow-600 text-sm mb-2">🎯 BONUS POINTS</div>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between text-yellow-500">
-                <span>💎 Platinum:</span>
-                <span>+{stats.platinumLeads * VALUATION_POINTS.platinum}</span>
-              </div>
-              <div className="flex justify-between text-yellow-500">
-                <span>☀️ Solar Capable:</span>
-                <span>+{segments.solar * VALUATION_POINTS.hasSolar}</span>
-              </div>
-              <div className="flex justify-between text-yellow-500">
-                <span>🔧 Multi-Trade:</span>
-                <span>+{segments.multiTrade * VALUATION_POINTS.multiTrade}</span>
+            <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Multi-Trade (3+)</span>
+                <span className="font-medium text-slate-900">{segments.multiTrade}</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ICP SEGMENTS - MCP+Energy Verticals */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Trade Verticals */}
-        <div className="bg-black border-2 border-purple-500/50 rounded-lg p-4">
-          <div className="text-purple-400 font-bold mb-4 text-center">
-            ═══ MCP+ENERGY VERTICALS ═══
+        {/* OEM Brands */}
+        {topBrands.length > 0 && (
+          <div className="bg-white rounded-xl border border-slate-200 p-6 mb-8">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Top OEM Brands</h2>
+            <div className="flex flex-wrap gap-2">
+              {topBrands.map((brand, idx) => (
+                <span
+                  key={brand.name}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium ${
+                    idx === 0 ? 'bg-amber-100 text-amber-800' :
+                    idx === 1 ? 'bg-slate-100 text-slate-700' :
+                    idx === 2 ? 'bg-orange-100 text-orange-700' :
+                    'bg-slate-50 text-slate-600'
+                  }`}
+                >
+                  {brand.name} ({brand.count})
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-5 gap-2 text-center">
-            <VerticalBox label="HVAC" count={segments.hvac} icon="❄️" />
-            <VerticalBox label="SOLAR" count={segments.solar} icon="☀️" />
-            <VerticalBox label="ELEC" count={segments.electrical} icon="⚡" />
-            <VerticalBox label="PLUMB" count={segments.plumbing} icon="🔧" />
-            <VerticalBox label="ROOF" count={segments.roofing} icon="🏠" />
-          </div>
-        </div>
+        )}
 
-        {/* Market Segments */}
-        <div className="bg-black border-2 border-blue-500/50 rounded-lg p-4">
-          <div className="text-blue-400 font-bold mb-4 text-center">
-            ═══ MARKET SEGMENTS ═══
-          </div>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <SegmentBox label="RESI" count={segments.resiOnly} color="green" />
-            <SegmentBox label="COMM" count={segments.commercial} color="blue" />
-            <SegmentBox label="RESIMER" count={segments.resimercial} color="purple" />
-            <SegmentBox label="C&I" count={segments.cAndI} color="orange" />
-          </div>
-        </div>
-      </div>
-
-      {/* OEM BRANDS LEADERBOARD */}
-      {topBrands.length > 0 && (
-        <div className="bg-black border-2 border-emerald-500/50 rounded-lg p-4 mb-6">
-          <div className="text-emerald-400 font-bold mb-4 text-center">
-            ═══ TOP OEM BRANDS IN PIPELINE ═══
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {topBrands.map((brand, idx) => (
-              <div
-                key={brand.name}
-                className={`px-3 py-1 rounded-full text-sm ${
-                  idx === 0 ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-500' :
-                  idx === 1 ? 'bg-gray-800/40 text-gray-300 border border-gray-500' :
-                  idx === 2 ? 'bg-orange-900/40 text-orange-400 border border-orange-600' :
-                  'bg-emerald-900/20 text-emerald-400 border border-emerald-700/50'
-                }`}
-              >
-                {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
-                {brand.name}: {brand.count}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* AGENT STATUS PANEL */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
-        {/* Agents */}
-        <div className="bg-black border-2 border-green-500/50 rounded-lg p-4">
-          <div className="text-green-400 font-bold mb-4 text-center">
-            ═══ ACTIVE AGENTS ═══
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {agents.map((agent) => (
-              <div
-                key={agent.name}
-                className={`p-3 rounded border ${
-                  agent.status === 'active'
-                    ? 'border-green-400 bg-green-900/20'
-                    : agent.status === 'idle'
-                    ? 'border-yellow-400/50 bg-yellow-900/10'
-                    : 'border-gray-600 bg-gray-900/20'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{agent.icon}</span>
-                  <div>
-                    <div className={`font-bold text-sm ${
-                      agent.status === 'active' ? 'text-green-400' :
-                      agent.status === 'idle' ? 'text-yellow-400' : 'text-gray-500'
+        {/* Agents & Activity */}
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Agents */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Agent Status</h2>
+            <div className="space-y-3">
+              {agents.map((agent) => (
+                <div
+                  key={agent.name}
+                  className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2 h-2 rounded-full ${
+                      agent.status === 'active' ? 'bg-green-500' :
+                      agent.status === 'idle' ? 'bg-amber-500' : 'bg-slate-300'
+                    }`} />
+                    <span className="font-medium text-slate-900">{agent.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${
+                      agent.status === 'active' ? 'bg-green-100 text-green-700' :
+                      agent.status === 'idle' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
                     }`}>
-                      {agent.name}
-                    </div>
-                    <div className="text-xs text-green-600">
-                      {agent.status === 'active' && '● RUNNING'}
-                      {agent.status === 'idle' && '○ STANDBY'}
-                      {agent.status === 'sleeping' && '◐ SCHEDULED'}
-                    </div>
+                      {agent.status === 'active' ? 'Running' :
+                       agent.status === 'idle' ? 'Standby' : 'Scheduled'}
+                    </span>
+                    <p className="text-xs text-slate-400 mt-1">{agent.schedule}</p>
                   </div>
                 </div>
-                <div className="text-xs text-green-700 mt-1">
-                  Tasks: {agent.tasksCompleted} | {agent.schedule}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Activity Terminal */}
-        <div className="bg-black border-2 border-green-500/50 rounded-lg overflow-hidden">
-          <div className="bg-green-900/30 px-4 py-2 text-green-400 font-bold text-center border-b border-green-500/30">
-            ═══ LIVE ACTIVITY FEED ═══
-          </div>
-          <div
-            ref={terminalRef}
-            className="h-64 overflow-y-auto p-3 text-sm"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(0,255,0,0.02) 1px, transparent 1px)',
-              backgroundSize: '100% 2px',
-            }}
-          >
-            {activityLog.length === 0 ? (
-              <div className="text-green-600 animate-pulse">
-                {'>'} Initializing agent swarm...
-                <span className="animate-pulse">█</span>
-              </div>
-            ) : (
-              activityLog.map((log) => (
-                <div
-                  key={log.id}
-                  className={`leading-relaxed ${getLogColor(log.type)}`}
-                >
-                  <span className="text-green-900">[{log.timestamp}]</span> {log.text}
-                </div>
-              ))
-            )}
-            <div className="text-green-400 animate-pulse">█</div>
+          {/* Activity Feed */}
+          <div className="bg-white rounded-xl border border-slate-200 p-6">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Activity</h2>
+            <div
+              ref={terminalRef}
+              className="h-64 overflow-y-auto space-y-2"
+            >
+              {activityLog.length === 0 ? (
+                <p className="text-slate-400 text-sm">Waiting for activity...</p>
+              ) : (
+                activityLog.map((log) => (
+                  <div
+                    key={log.id}
+                    className="flex items-start gap-3 text-sm py-1.5 border-b border-slate-50 last:border-0"
+                  >
+                    <span className="text-slate-400 text-xs whitespace-nowrap">{log.timestamp}</span>
+                    <span className={`capitalize ${getLogColorClass(log.type)}`}>{log.text}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* TIM KIPPER'S GTM JOURNEY */}
-      <div className="bg-black border-2 border-cyan-500/50 rounded-lg p-6">
-        <div className="text-cyan-400 font-bold text-center mb-4 text-xl">
-          🚀 AUTONOMOUS GTM PIPELINE 🚀
-        </div>
-        <div className="text-center text-green-500 text-sm mb-4">
-          AGENTS RUN 6AM-11PM CST | 15+ HOURS/DAY OF AUTONOMOUS PROSPECTING
-        </div>
-        <div className="grid md:grid-cols-4 gap-4 text-center">
-          <JourneyMilestone
-            year="2022-2024"
-            title="FOUNDER-LED SALES"
-            description="3 years closing deals at HVAC/MEP contractors"
-            icon="💼"
-            status="complete"
-          />
-          <JourneyMilestone
-            year="DEC 2025"
-            title="AI AGENTS BUILT"
-            description="6 LangGraph agents with Claude + Cerebras"
-            icon="🤖"
-            status="complete"
-          />
-          <JourneyMilestone
-            year="NOW"
-            title="SCALING PIPELINE"
-            description={`${stats.totalLeads.toLocaleString()} contractors, ${stats.totalContacts} decision makers`}
-            icon="📈"
-            status="active"
-          />
-          <JourneyMilestone
-            year="2026"
-            title="GTME @ COPERNIQ"
-            description="First GTM Engineer - hybrid AE/BDR/RevOps"
-            icon="🎯"
-            status="pending"
-          />
-        </div>
-        <div className="text-center mt-4 text-cyan-600 text-sm">
-          Built with Claude Code by Tim Kipper | coperniq.io
-        </div>
-      </div>
+      </main>
     </div>
   )
 }
@@ -788,140 +529,115 @@ export function MissionControl() {
 // SUB-COMPONENTS
 // ============================================
 
-function StatBox({ label, value, icon, color }: {
+function MetricCard({ label, value, trend, primary, highlight }: {
   label: string
   value: number
-  icon: string
-  color: 'green' | 'cyan' | 'yellow' | 'red' | 'purple' | 'gray' | 'orange'
-}) {
-  const colorClasses = {
-    green: 'border-green-500 text-green-400',
-    cyan: 'border-cyan-500 text-cyan-400',
-    yellow: 'border-yellow-500 text-yellow-400',
-    red: 'border-red-500 text-red-400',
-    purple: 'border-purple-500 text-purple-400',
-    gray: 'border-gray-500 text-gray-400',
-    orange: 'border-orange-500 text-orange-400',
-  }
-
-  return (
-    <div className={`bg-black border-2 ${colorClasses[color]} rounded-lg p-4 text-center`}>
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className="text-3xl font-bold tabular-nums">
-        {value.toLocaleString()}
-      </div>
-      <div className="text-xs opacity-70 mt-1">{label}</div>
-    </div>
-  )
-}
-
-function JourneyMilestone({ year, title, description, icon, status }: {
-  year: string
-  title: string
-  description: string
-  icon: string
-  status: 'complete' | 'active' | 'pending'
+  trend?: string
+  primary?: boolean
+  highlight?: boolean
 }) {
   return (
-    <div className={`p-4 rounded-lg border ${
-      status === 'complete' ? 'border-green-500 bg-green-900/20' :
-      status === 'active' ? 'border-cyan-500 bg-cyan-900/20 animate-pulse' :
-      'border-gray-600 bg-gray-900/20'
+    <div className={`rounded-xl p-5 ${
+      primary ? 'bg-slate-900 text-white' :
+      highlight ? 'bg-green-50 border border-green-200' :
+      'bg-white border border-slate-200'
     }`}>
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className={`text-xs font-bold ${
-        status === 'complete' ? 'text-green-400' :
-        status === 'active' ? 'text-cyan-400' : 'text-gray-500'
+      <p className={`text-sm ${primary ? 'text-slate-400' : 'text-slate-500'}`}>{label}</p>
+      <p className={`text-3xl font-semibold mt-1 ${
+        primary ? 'text-white' : highlight ? 'text-green-700' : 'text-slate-900'
       }`}>
-        {year}
-      </div>
-      <div className={`font-bold ${
-        status === 'complete' ? 'text-green-300' :
-        status === 'active' ? 'text-cyan-300' : 'text-gray-400'
-      }`}>
-        {title}
-      </div>
-      <div className="text-xs text-gray-500 mt-1">{description}</div>
-      {status === 'complete' && <div className="text-green-400 mt-2">✓</div>}
-      {status === 'active' && <div className="text-cyan-400 mt-2">●</div>}
-      {status === 'pending' && <div className="text-gray-500 mt-2">○</div>}
+        {value.toLocaleString()}
+      </p>
+      {trend && (
+        <p className={`text-xs mt-2 ${primary ? 'text-green-400' : 'text-green-600'}`}>{trend}</p>
+      )}
     </div>
   )
 }
 
-function VerticalBox({ label, count, icon }: {
-  label: string
+function TierCard({ tier, count, color }: {
+  tier: string
   count: number
-  icon: string
-}) {
-  return (
-    <div className="p-2 rounded border border-purple-500/30 bg-purple-900/10">
-      <div className="text-xl">{icon}</div>
-      <div className="text-lg font-bold text-purple-400">{count.toLocaleString()}</div>
-      <div className="text-[10px] text-purple-600">{label}</div>
-    </div>
-  )
-}
-
-function SegmentBox({ label, count, color }: {
-  label: string
-  count: number
-  color: 'green' | 'blue' | 'purple' | 'orange'
+  color: 'purple' | 'amber' | 'slate' | 'orange'
 }) {
   const colorClasses = {
-    green: 'border-green-500/30 bg-green-900/10 text-green-400',
-    blue: 'border-blue-500/30 bg-blue-900/10 text-blue-400',
-    purple: 'border-purple-500/30 bg-purple-900/10 text-purple-400',
-    orange: 'border-orange-500/30 bg-orange-900/10 text-orange-400',
+    purple: 'bg-purple-50 border-purple-200 text-purple-700',
+    amber: 'bg-amber-50 border-amber-200 text-amber-700',
+    slate: 'bg-slate-100 border-slate-200 text-slate-600',
+    orange: 'bg-orange-50 border-orange-200 text-orange-700',
   }
 
   return (
-    <div className={`p-2 rounded border ${colorClasses[color]}`}>
-      <div className="text-lg font-bold">{count.toLocaleString()}</div>
-      <div className="text-[10px] opacity-70">{label}</div>
+    <div className={`rounded-lg border p-4 text-center ${colorClasses[color]}`}>
+      <p className="text-2xl font-semibold">{count.toLocaleString()}</p>
+      <p className="text-sm mt-1">{tier}</p>
     </div>
   )
 }
 
-function getLogColor(type: ActivityLog['type']): string {
+function VerticalBar({ label, count, total }: {
+  label: string
+  count: number
+  total: number
+}) {
+  const percent = total > 0 ? (count / total) * 100 : 0
+
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="text-slate-700">{label}</span>
+        <span className="text-slate-500">{count.toLocaleString()}</span>
+      </div>
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-slate-600 rounded-full transition-all duration-500"
+          style={{ width: `${Math.min(percent, 100)}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function SegmentCard({ label, count }: {
+  label: string
+  count: number
+}) {
+  return (
+    <div className="bg-slate-50 rounded-lg p-4">
+      <p className="text-2xl font-semibold text-slate-900">{count.toLocaleString()}</p>
+      <p className="text-sm text-slate-500">{label}</p>
+    </div>
+  )
+}
+
+function getLogColorClass(type: ActivityLog['type']): string {
   switch (type) {
-    case 'system': return 'text-green-600'
-    case 'agent': return 'text-cyan-400'
-    case 'success': return 'text-green-300 font-bold'
-    case 'enrichment': return 'text-yellow-400'
-    case 'discovery': return 'text-purple-400 font-bold'
-    default: return 'text-green-400'
+    case 'success': return 'text-green-600 font-medium'
+    case 'enrichment': return 'text-amber-600'
+    case 'discovery': return 'text-purple-600'
+    case 'agent': return 'text-blue-600'
+    default: return 'text-slate-600'
   }
 }
 
 function getEventLogType(eventType: string): ActivityLog['type'] {
   switch (eventType) {
-    case 'lead_enriched':
-      return 'enrichment'
+    case 'lead_enriched': return 'enrichment'
     case 'lead_qualified':
-    case 'opportunity_created':
-      return 'success'
-    case 'contact_added':
-      return 'discovery'
+    case 'opportunity_created': return 'success'
+    case 'contact_added': return 'discovery'
     case 'icp_scored':
     case 'email_sent':
-    case 'call_logged':
-      return 'agent'
-    default:
-      return 'system'
+    case 'call_logged': return 'agent'
+    default: return 'system'
   }
 }
 
-function getAgentIcon(agentType: string): string {
-  const icons: Record<string, string> = {
-    'lead_scout': '🔍',
-    'icp_checker': '📊',
-    'prediction_agent': '🎯',
-    'morning_briefing': '📋',
-    'sales_intel': '🧠',
-    'bdr_outreach': '✉️',
-  }
-  return icons[agentType] || '🤖'
+function formatAgentName(agentType: string): string {
+  return agentType
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
 }
 
 function getAgentSchedule(agentType: string): string {
