@@ -55,6 +55,7 @@ celery_app = Celery(
         "app.tasks.sync_tasks",
         "app.tasks.dropin_tasks",
         "app.tasks.enrichment_tasks",  # Website enrichment
+        "app.tasks.elite_team_tasks",  # Trifecta Hunter Elite Squad
     ]
 )
 
@@ -154,6 +155,11 @@ celery_app.conf.update(
         "app.tasks.close_sync.sync_close_activities": {"queue": "crm_sync"},
         "app.tasks.close_sync.poll_email_replies": {"queue": "crm_sync"},
         "app.tasks.close_sync.advance_sequences": {"queue": "workflows"},
+        # Elite Team tasks - Trifecta Hunter Squad
+        "app.tasks.elite_team_tasks.run_signal_scout": {"queue": "default"},
+        "app.tasks.elite_team_tasks.run_deep_hunter": {"queue": "workflows"},
+        "app.tasks.elite_team_tasks.run_intake_commander": {"queue": "default"},
+        "app.tasks.elite_team_tasks.process_scraping_order": {"queue": "workflows"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -318,6 +324,22 @@ celery_app.conf.update(
             "schedule": crontab(minute=0),  # Every hour at :00
             "options": {"queue": "workflows"},
         },
+        # ========== ELITE TEAM SCHEDULES - Trifecta Hunter Squad ==========
+        # Signal Scout - detect market signals hourly at :15
+        "elite-signal-scout-hourly": {
+            "task": "run_signal_scout",
+            "schedule": crontab(minute=15),  # :15 past each hour
+            "options": {"queue": "default"},
+        },
+        # Intake Commander - process incoming leads every 60 seconds
+        "elite-intake-commander-continuous": {
+            "task": "run_intake_commander",
+            "schedule": 60.0,  # Every 60 seconds
+            "args": (100,),  # Process up to 100 items per cycle
+            "options": {"queue": "default"},
+        },
+        # Deep Hunter is event-driven (triggered by Signal Scout orders)
+        # No scheduled task - runs via process_scraping_order when orders arrive
     },
 )
 
@@ -341,6 +363,11 @@ TRACKED_AGENTS = {
     "sync_close_activities": "close_sync",
     "poll_email_replies": "reply_polling",
     "advance_sequences": "sequence_advance",
+    # Elite Team - Trifecta Hunter Squad
+    "run_signal_scout": "signal_scout",
+    "run_deep_hunter": "deep_hunter",
+    "run_intake_commander": "intake_commander",
+    "process_scraping_order": "deep_hunter",  # Maps to deep_hunter
 }
 
 

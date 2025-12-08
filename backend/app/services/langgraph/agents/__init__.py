@@ -138,6 +138,14 @@ from .linkedin_agent import (
     ProfileData,
 )
 
+# Phase 5: Elite Team - Trifecta Hunter Squad ✅ COMPLETE
+from .elite_team import (
+    SignalScoutAgent,
+    VerticalSignal,
+    ScrapingOrder,
+    SignalScoutResult,
+)
+
 
 __all__ = [
     # Phase 2.1 - QualificationAgent (LCEL)
@@ -201,4 +209,10 @@ __all__ = [
     "ReactionResult",
     "CommentResult",
     "ProfileData",
+
+    # Phase 5 - Elite Team (Trifecta Hunter Squad)
+    "SignalScoutAgent",
+    "VerticalSignal",
+    "ScrapingOrder",
+    "SignalScoutResult",
 ]

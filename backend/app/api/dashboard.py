@@ -22,7 +22,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -1093,6 +1093,300 @@ async def get_lifecycle_funnel(
     except Exception as e:
         logger.error(f"Error fetching lifecycle: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch lifecycle data")
+
+
+# ============================================================================
+# Combined Stats Endpoint
+# ============================================================================
+
+class CombinedStatsResponse(BaseModel):
+    """Combined pipeline stats from multiple sources."""
+    total_contractors: int
+    sales_agent_count: int
+    dealer_scraper_estimate: int
+    total_contacts: int
+    atl_contacts: int
+    btl_contacts: int
+    oem_certifications: int
+    data_sources: Dict[str, Any]
+    updated_at: str
+
+
+@router.get("/combined-stats", response_model=CombinedStatsResponse)
+async def get_combined_stats():
+    """
+    Get combined pipeline stats from both sales-agent and dealer-scraper projects.
+    """
+    try:
+        supabase = get_supabase()
+
+        # Get all companies
+        companies = supabase.table("dim_companies").select(
+            "company_id, company_name, source"
+        ).execute()
+        total_companies = len(companies.data or [])
+
+        # Count by source
+        sales_agent_count = len([c for c in (companies.data or []) if c.get("source") == "sales-agent"])
+        dealer_scraper_count = len([c for c in (companies.data or []) if c.get("source") == "dealer-scraper"])
+
+        # Get contacts
+        contacts = supabase.table("dim_contacts").select(
+            "contact_id, is_atl"
+        ).execute()
+        total_contacts = len(contacts.data or [])
+        atl_contacts = len([c for c in (contacts.data or []) if c.get("is_atl")])
+        btl_contacts = total_contacts - atl_contacts
+
+        # Count OEM certifications (distinct OEM brands)
+        companies_with_oems = supabase.table("dim_companies").select(
+            "oem_brands"
+        ).not_.is_("oem_brands", "null").execute()
+
+        unique_oems = set()
+        for company in (companies_with_oems.data or []):
+            oem_list = company.get("oem_brands") or []
+            if isinstance(oem_list, list):
+                unique_oems.update(oem_list)
+        oem_certifications = len(unique_oems)
+
+        now = datetime.now(timezone.utc)
+
+        return CombinedStatsResponse(
+            total_contractors=total_companies,
+            sales_agent_count=sales_agent_count,
+            dealer_scraper_estimate=dealer_scraper_count,
+            total_contacts=total_contacts,
+            atl_contacts=atl_contacts,
+            btl_contacts=btl_contacts,
+            oem_certifications=oem_certifications,
+            data_sources={
+                "sales_agent": {
+                    "description": "Enriched leads from manual discovery",
+                    "count": sales_agent_count
+                },
+                "dealer_scraper": {
+                    "description": "Deep scraped contractor data",
+                    "count": dealer_scraper_count
+                }
+            },
+            updated_at=now.isoformat()
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching combined stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch combined stats")
+
+
+# ============================================================================
+# Trifecta Scoring Endpoint
+# ============================================================================
+
+class TrifectaStatsResponse(BaseModel):
+    """Trifecta detection statistics."""
+    unicorn_count: int
+    partial_trifecta_count: int
+    multi_oem_count: int
+    score_distribution: Dict[str, int]
+    top_unicorns: List[Dict[str, Any]]
+    energy_breakdown: Dict[str, int]
+    updated_at: str
+
+
+@router.get("/trifecta", response_model=TrifectaStatsResponse)
+async def get_trifecta_stats():
+    """
+    Get Trifecta detection statistics.
+    Identifies UNICORN contractors (Solar + Generator + Battery).
+    """
+    try:
+        from app.services.trifecta_scoring import calculate_trifecta_score
+
+        supabase = get_supabase()
+
+        # Get all companies with OEM data
+        companies = supabase.table("dim_companies").select(
+            "company_id, company_name, oem_brands, services_offered, states_served"
+        ).not_.is_("oem_brands", "null").execute()
+
+        # Get contacts for quality scoring
+        contacts = supabase.table("dim_contacts").select(
+            "company_id, is_atl, email, phone"
+        ).execute()
+
+        # Build contact lookup
+        contact_map = {}
+        for c in (contacts.data or []):
+            cid = c.get("company_id")
+            if cid:
+                if cid not in contact_map:
+                    contact_map[cid] = {"has_atl": False, "has_email": False, "has_phone": False}
+                if c.get("is_atl"):
+                    contact_map[cid]["has_atl"] = True
+                if c.get("email"):
+                    contact_map[cid]["has_email"] = True
+                if c.get("phone"):
+                    contact_map[cid]["has_phone"] = True
+
+        # Score all companies
+        unicorns = []
+        partial_trifecta = []
+        multi_oem = []
+        score_tiers = {"UNICORN": 0, "PLATINUM": 0, "GOLD": 0, "SILVER": 0, "BRONZE": 0, "LEAD": 0}
+        energy_types = {"solar": 0, "generator": 0, "battery": 0}
+
+        for company in (companies.data or []):
+            company_id = company.get("company_id")
+            company_name = company.get("company_name") or "Unknown"
+            oem_brands = company.get("oem_brands") or []
+            services_offered = company.get("services_offered") or []
+            states_served = company.get("states_served") or []
+
+            # Get contact quality
+            contact_info = contact_map.get(company_id, {})
+
+            # Calculate score
+            score = calculate_trifecta_score(
+                company_name=company_name,
+                oem_brands=oem_brands,
+                services_offered=services_offered,
+                states_served=states_served,
+                has_atl_contact=contact_info.get("has_atl", False),
+                has_email=contact_info.get("has_email", False),
+                has_direct_phone=contact_info.get("has_phone", False)
+            )
+
+            # Collect stats
+            score_tiers[score.tier] += 1
+
+            if score.has_solar:
+                energy_types["solar"] += 1
+            if score.has_generator:
+                energy_types["generator"] += 1
+            if score.has_battery:
+                energy_types["battery"] += 1
+
+            if score.is_unicorn:
+                unicorns.append({
+                    "company_id": str(company_id),
+                    "company_name": company_name,
+                    "score": score.total,
+                    "oem_count": len(oem_brands),
+                    "trades": score.trades_detected
+                })
+
+            if score.is_partial_trifecta:
+                partial_trifecta.append(company_name)
+
+            if len(oem_brands) >= 3:
+                multi_oem.append(company_name)
+
+        # Sort unicorns by score
+        unicorns.sort(key=lambda x: x["score"], reverse=True)
+
+        now = datetime.now(timezone.utc)
+
+        return TrifectaStatsResponse(
+            unicorn_count=len(unicorns),
+            partial_trifecta_count=len(partial_trifecta),
+            multi_oem_count=len(multi_oem),
+            score_distribution=score_tiers,
+            top_unicorns=unicorns[:10],
+            energy_breakdown=energy_types,
+            updated_at=now.isoformat()
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching trifecta stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch trifecta stats")
+
+
+# ============================================================================
+# Elite Team Status Endpoint
+# ============================================================================
+
+class EliteAgentStatusModel(BaseModel):
+    """Status for a single Elite Squad agent."""
+    name: str
+    icon: str
+    status: str
+    last_run: Optional[str] = None
+    current_task: Optional[str] = None
+    signals_detected: Optional[int] = None
+    scraped_today: Optional[int] = None
+    queue_size: Optional[int] = None
+    unicorns_found: Optional[int] = None
+    duplicates_blocked: Optional[int] = None
+    routed_to_bdr: Optional[int] = None
+    extra: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EliteTeamResponse(BaseModel):
+    """Elite Squad status response."""
+    signal_scout: EliteAgentStatusModel
+    deep_hunter: EliteAgentStatusModel
+    intake_commander: EliteAgentStatusModel
+    summary: Dict[str, Any]
+    updated_at: str
+
+
+@router.get("/elite-team", response_model=EliteTeamResponse)
+async def get_elite_team_status():
+    """
+    Get Elite Squad status for dashboard.
+    """
+    try:
+        from app.services.langgraph.agents.elite_team.elite_team_hub import get_elite_hub
+
+        hub = get_elite_hub()
+        dashboard_data = hub.get_dashboard_status()
+
+        # Transform to response model
+        return EliteTeamResponse(
+            signal_scout=EliteAgentStatusModel(**dashboard_data["signal_scout"]),
+            deep_hunter=EliteAgentStatusModel(**dashboard_data["deep_hunter"]),
+            intake_commander=EliteAgentStatusModel(**dashboard_data["intake_commander"]),
+            summary=dashboard_data["summary"],
+            updated_at=dashboard_data["updated_at"]
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching elite team status: {e}", exc_info=True)
+        # Return idle state on error
+        now = datetime.now(timezone.utc)
+        return EliteTeamResponse(
+            signal_scout=EliteAgentStatusModel(
+                name="Signal Scout",
+                icon="telescope",
+                status="idle",
+                signals_detected=0
+            ),
+            deep_hunter=EliteAgentStatusModel(
+                name="Deep Hunter",
+                icon="search",
+                status="idle",
+                scraped_today=0
+            ),
+            intake_commander=EliteAgentStatusModel(
+                name="Intake Commander",
+                icon="shield-check",
+                status="idle",
+                queue_size=0,
+                unicorns_found=0,
+                duplicates_blocked=0,
+                routed_to_bdr=0
+            ),
+            summary={
+                "signals_today": 0,
+                "scraped_today": 0,
+                "unicorns_today": 0,
+                "bdr_routed_today": 0,
+                "duplicates_blocked": 0,
+                "pending_orders": 0,
+                "intake_queue": 0
+            },
+            updated_at=now.isoformat()
+        )
 
 
 # ============================================================================
