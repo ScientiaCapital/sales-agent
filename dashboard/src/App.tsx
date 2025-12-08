@@ -9,8 +9,9 @@ import {
   OutreachMetrics,
   AgentHealth,
 } from "@/components/dashboard";
+import { MissionControl } from "@/components/MissionControl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Zap, Mail, Target, ClipboardList, BarChart3 } from "lucide-react";
+import { Zap, Mail, Target, ClipboardList, BarChart3, Gamepad2 } from "lucide-react";
 
 export default function App() {
 
@@ -25,8 +26,12 @@ export default function App() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs defaultValue="command-center" className="space-y-6">
-        <TabsList className="grid w-full max-w-4xl grid-cols-5">
+      <Tabs defaultValue="mission-control" className="space-y-6">
+        <TabsList className="grid w-full max-w-5xl grid-cols-6">
+          <TabsTrigger value="mission-control" className="flex items-center gap-2 bg-black text-green-400 data-[state=active]:bg-green-900/50 data-[state=active]:text-green-300">
+            <Gamepad2 className="h-4 w-4" />
+            LEAD HUNTER
+          </TabsTrigger>
           <TabsTrigger value="command-center" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
             Command Center
@@ -48,6 +53,11 @@ export default function App() {
             CEO/CTO
           </TabsTrigger>
         </TabsList>
+
+        {/* LEAD HUNTER - Atari-style Agent Mission Control (CEO/CTO/VC Demo) */}
+        <TabsContent value="mission-control" className="-mx-4 -mt-2">
+          <MissionControl />
+        </TabsContent>
 
         {/* AI Command Center - Interactive Chat with LangGraph Agents */}
         <TabsContent value="command-center">
