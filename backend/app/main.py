@@ -33,6 +33,7 @@ from app.api import agents  # Agent control API for BDR Cockpit
 from app.api import cockpit_websocket  # WebSocket for BDR Cockpit real-time updates
 from app.api import rankings  # Lead prediction market rankings
 from app.api import slack_commands  # Slack slash commands (/enrich)
+from app.api import claude_chat  # Claude chat API for CEO/CTO interaction
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -248,6 +249,7 @@ app.include_router(agents.router, prefix=settings.API_V1_PREFIX)  # Agent contro
 app.include_router(cockpit_websocket.router, prefix=settings.API_V1_PREFIX)  # WebSocket for BDR Cockpit real-time updates
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
 app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slack slash commands (/enrich)
+app.include_router(claude_chat.router, prefix=settings.API_V1_PREFIX)  # Claude chat API for CEO/CTO interaction
 
 
 @app.get("/")
