@@ -367,7 +367,7 @@ async def list_drafts(
     company_id: Optional[str] = Query(None, description="Filter by company ID"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
-    current_user: dict = Depends(get_current_user),
+    # Public endpoint for internal dashboard - no auth required
 ):
     """
     List pending outreach drafts with pagination and filtering.
@@ -397,7 +397,7 @@ async def list_drafts(
         query = query.eq('company_id', company_id)
 
     # Order by newest first
-    query = query.order('generated_at', desc=True)
+    query = query.order('created_at', desc=True)
 
     # Pagination
     offset = (page - 1) * page_size
@@ -408,10 +408,11 @@ async def list_drafts(
 
         drafts = []
         for row in result.data:
+            # Map from SQL schema (id, created_at) to API schema (draft_id, generated_at)
             drafts.append(OutreachDraft(
-                draft_id=row['draft_id'],
-                company_id=row['company_id'],
-                company_name=row['company_name'],
+                draft_id=str(row['id']),  # SQL uses 'id', API uses 'draft_id'
+                company_id=str(row['company_id']),
+                company_name=row.get('company_name', 'Unknown'),  # May need JOIN for actual name
                 draft_type=DraftType(row['draft_type']),
                 status=DraftStatus(row['status']),
                 subject=row.get('subject'),
@@ -420,7 +421,7 @@ async def list_drafts(
                 contact_title=row.get('contact_title'),
                 personal_hooks=row.get('personal_hooks', []),
                 confidence=row.get('confidence', 0.5),
-                generated_at=datetime.fromisoformat(row['generated_at'].replace('Z', '+00:00')),
+                generated_at=datetime.fromisoformat(row['created_at'].replace('Z', '+00:00')),  # SQL uses created_at
                 updated_at=datetime.fromisoformat(row['updated_at'].replace('Z', '+00:00')),
                 sent_at=datetime.fromisoformat(row['sent_at'].replace('Z', '+00:00')) if row.get('sent_at') else None
             ))

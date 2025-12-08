@@ -18,25 +18,33 @@ import {
 } from "lucide-react";
 
 interface Draft {
-  id: string;
+  draft_id: string;
+  company_id: string;
   draft_type: "email" | "sms" | "voice";
+  status: "pending" | "approved" | "sent" | "discarded";
   company_name: string;
   contact_name: string | null;
+  contact_title: string | null;
   subject: string | null; // Email only
   body: string;
-  confidence_score: number | null;
-  created_at: string;
-  agent_type: string;
-  metadata: Record<string, unknown> | null;
+  personal_hooks: Array<{ type: string; hook: string }>;
+  confidence: number;
+  generated_at: string;
+  updated_at: string;
+  sent_at: string | null;
 }
 
 interface DraftListResponse {
   drafts: Draft[];
   total: number;
-  data_source: "database" | "mock";
+  page?: number;
+  page_size?: number;
 }
 
 const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8001";
+
+// Use /api/v1 prefix for FastAPI endpoints
+const API_BASE = `${apiUrl}/api/v1`;
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -86,7 +94,7 @@ export function DraftReviewQueue() {
   );
 
   const { data, error, isLoading, mutate } = useSWR<DraftListResponse>(
-    `${apiUrl}/api/ai/drafts?status=pending`,
+    `${API_BASE}/ai/drafts?status=pending`,
     fetcher,
     { refreshInterval: 30000 } // Refresh every 30s
   );
@@ -115,7 +123,7 @@ export function DraftReviewQueue() {
     if (selectedDrafts.size === filteredDrafts.length) {
       setSelectedDrafts(new Set());
     } else {
-      setSelectedDrafts(new Set(filteredDrafts.map((d) => d.id)));
+      setSelectedDrafts(new Set(filteredDrafts.map((d) => d.draft_id)));
     }
   };
   // Expose for potential future "Select All" checkbox
@@ -155,7 +163,7 @@ export function DraftReviewQueue() {
     if (!editedBody) return;
 
     try {
-      await fetch(`${apiUrl}/api/ai/drafts/${draftId}`, {
+      await fetch(`${API_BASE}/ai/drafts/${draftId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ body: editedBody }),
@@ -188,7 +196,7 @@ export function DraftReviewQueue() {
   // Regenerate draft
   const regenerateDraft = async (draftId: string) => {
     try {
-      await fetch(`${apiUrl}/api/ai/drafts/${draftId}/regenerate`, {
+      await fetch(`${API_BASE}/ai/drafts/${draftId}/regenerate`, {
         method: "POST",
       });
       mutate(); // Refresh data
@@ -200,7 +208,7 @@ export function DraftReviewQueue() {
   // Approve and send single draft
   const approveAndSend = async (draftId: string) => {
     try {
-      await fetch(`${apiUrl}/api/ai/drafts/${draftId}/send`, {
+      await fetch(`${API_BASE}/ai/drafts/${draftId}/send`, {
         method: "POST",
       });
       mutate(); // Refresh data
@@ -212,7 +220,7 @@ export function DraftReviewQueue() {
   // Discard single draft
   const discardDraft = async (draftId: string) => {
     try {
-      await fetch(`${apiUrl}/api/ai/drafts/${draftId}`, {
+      await fetch(`${API_BASE}/ai/drafts/${draftId}`, {
         method: "DELETE",
       });
       mutate(); // Refresh data
@@ -226,7 +234,7 @@ export function DraftReviewQueue() {
     try {
       await Promise.all(
         Array.from(selectedDrafts).map((id) =>
-          fetch(`${apiUrl}/api/ai/drafts/${id}/send`, { method: "POST" })
+          fetch(`${API_BASE}/ai/drafts/${id}/send`, { method: "POST" })
         )
       );
       setSelectedDrafts(new Set());
@@ -373,22 +381,22 @@ export function DraftReviewQueue() {
             {filteredDrafts.map((draft) => {
               const config = DRAFT_TYPE_CONFIG[draft.draft_type];
               const IconComponent = config.icon;
-              const isEditing = editingDrafts.has(draft.id);
-              const editedBody = editingDrafts.get(draft.id) || draft.body;
-              const charCount = characterCounts.get(draft.id) || draft.body.length;
+              const isEditing = editingDrafts.has(draft.draft_id);
+              const editedBody = editingDrafts.get(draft.draft_id) || draft.body;
+              const charCount = characterCounts.get(draft.draft_id) || draft.body.length;
               const isSmsOverLimit = draft.draft_type === "sms" && charCount > 160;
 
               return (
                 <div
-                  key={draft.id}
+                  key={draft.draft_id}
                   className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 hover:bg-muted/50 transition-all"
                 >
                   {/* Header Row */}
                   <div className="flex items-start gap-3">
                     <Checkbox
-                      id={draft.id}
-                      checked={selectedDrafts.has(draft.id)}
-                      onCheckedChange={() => toggleDraftSelection(draft.id)}
+                      id={draft.draft_id}
+                      checked={selectedDrafts.has(draft.draft_id)}
+                      onCheckedChange={() => toggleDraftSelection(draft.draft_id)}
                       className="mt-1"
                     />
                     <div className={`${config.color} mt-0.5`}>
@@ -412,18 +420,18 @@ export function DraftReviewQueue() {
                         <Badge className={`${config.color} text-xs px-1.5 py-0`}>
                           {config.label}
                         </Badge>
-                        {draft.confidence_score !== null && (
+                        {draft.confidence !== null && (
                           <Badge
                             className={`${getConfidenceBadgeColor(
-                              draft.confidence_score
+                              draft.confidence
                             )} text-xs px-1.5 py-0`}
                           >
-                            {Math.round(draft.confidence_score * 100)}%
+                            {Math.round(draft.confidence * 100)}%
                             confidence
                           </Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {formatRelativeTime(draft.created_at)}
+                          {formatRelativeTime(draft.generated_at)}
                         </span>
                       </div>
 
@@ -440,7 +448,7 @@ export function DraftReviewQueue() {
                           <textarea
                             value={editedBody}
                             onChange={(e) =>
-                              updateDraftBody(draft.id, e.target.value)
+                              updateDraftBody(draft.draft_id, e.target.value)
                             }
                             className="w-full p-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[var(--turkish-blue)] resize-none"
                             rows={6}
@@ -463,7 +471,7 @@ export function DraftReviewQueue() {
                             <Button
                               size="sm"
                               className="h-7 px-2 text-xs bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
-                              onClick={() => saveEdit(draft.id)}
+                              onClick={() => saveEdit(draft.draft_id)}
                             >
                               Save
                             </Button>
@@ -471,7 +479,7 @@ export function DraftReviewQueue() {
                               size="sm"
                               variant="outline"
                               className="h-7 px-2 text-xs"
-                              onClick={() => cancelEdit(draft.id)}
+                              onClick={() => cancelEdit(draft.draft_id)}
                             >
                               Cancel
                             </Button>
@@ -507,7 +515,7 @@ export function DraftReviewQueue() {
                         size="sm"
                         variant="outline"
                         className="h-7 px-2 text-xs"
-                        onClick={() => startEditing(draft.id, draft.body)}
+                        onClick={() => startEditing(draft.draft_id, draft.body)}
                       >
                         <Edit className="h-3 w-3 mr-1" />
                         Edit
@@ -516,7 +524,7 @@ export function DraftReviewQueue() {
                         size="sm"
                         variant="outline"
                         className="h-7 px-2 text-xs"
-                        onClick={() => regenerateDraft(draft.id)}
+                        onClick={() => regenerateDraft(draft.draft_id)}
                       >
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Regenerate
@@ -524,7 +532,7 @@ export function DraftReviewQueue() {
                       <Button
                         size="sm"
                         className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700"
-                        onClick={() => approveAndSend(draft.id)}
+                        onClick={() => approveAndSend(draft.draft_id)}
                       >
                         <Send className="h-3 w-3 mr-1" />
                         Approve & Send
@@ -533,7 +541,7 @@ export function DraftReviewQueue() {
                         size="sm"
                         variant="destructive"
                         className="h-7 px-2 text-xs"
-                        onClick={() => discardDraft(draft.id)}
+                        onClick={() => discardDraft(draft.draft_id)}
                       >
                         <Trash2 className="h-3 w-3 mr-1" />
                         Discard
