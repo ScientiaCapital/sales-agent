@@ -239,6 +239,18 @@ async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
         # Extract custom fields
         custom = lead.get("custom", {})
 
+        # Extract Close CRM metadata fields (Phase 0 enhancement)
+        lead_url = lead.get("url")  # Close lead URL
+        created_by = lead.get("created_by")  # User ID who created the lead
+        description = lead.get("description", "")  # Lead description/notes
+        status_id = lead.get("status_id")  # Status ID for filtering
+        raw_data = lead  # Full API response for audit trail
+
+        # Extract ALL custom fields dynamically (not hardcoded list)
+        custom_fields = {}
+        for key, value in custom.items():
+            custom_fields[key] = value
+
         # Get primary contact
         contacts = lead.get("contacts", [])
         primary_contact = contacts[0] if contacts else {}
@@ -273,6 +285,12 @@ async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
             "icp_tier": tier,
             "current_stage": current_stage,
             "close_lead_id": lead.get("id"),
+            "close_lead_url": lead_url,  # NEW: Direct link to Close dashboard
+            "close_created_by": created_by,  # NEW: Who created this lead
+            "close_description": description,  # NEW: Description/notes from Close
+            "close_status_id": status_id,  # NEW: Status ID for filtering
+            "close_raw_data": raw_data,  # NEW: Full API response
+            "close_custom_fields": custom_fields,  # NEW: All custom fields dynamically
             "source_type": "close_crm",
             "first_seen_at": lead.get("date_created"),
             "updated_at": datetime.utcnow().isoformat(),

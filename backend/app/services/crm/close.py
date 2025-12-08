@@ -196,7 +196,7 @@ class CloseProvider(CRMProvider):
                 title=contact_data.get("title"),
                 company=lead_name,
                 phone=phone,
-                custom_fields={
+                enrichment_data={
                     "close_lead_id": lead_id,
                     "close_contact_id": contact_data.get("id"),
                     "lead_status": lead.get("status_label"),
