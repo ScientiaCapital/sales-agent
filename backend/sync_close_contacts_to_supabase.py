@@ -163,11 +163,27 @@ async def sync_contacts_to_supabase(contacts: list) -> dict:
                 # Extract contact info
                 emails = contact.get('emails', [])
                 phones = contact.get('phones', [])
+                urls = contact.get('urls', [])
 
-                email = emails[0].get('email') if emails else None
-                phone = phones[0].get('phone') if phones else None
+                # Phase 0 enhancement: Extract primary + secondary emails/phones
+                email_primary = emails[0].get('email') if len(emails) > 0 else None
+                email_secondary = emails[1].get('email') if len(emails) > 1 else None
 
-                if not email:
+                phone_primary = phones[0].get('phone') if len(phones) > 0 else None
+                phone_secondary = phones[1].get('phone') if len(phones) > 1 else None
+
+                # Phase 0 enhancement: Extract LinkedIn and Twitter URLs by type
+                linkedin_url = None
+                twitter_url = None
+                for url_obj in urls:
+                    url = url_obj.get('url', '')
+                    url_type = url_obj.get('type', '')
+                    if 'linkedin' in url.lower() or url_type == 'linkedin':
+                        linkedin_url = url
+                    elif 'twitter' in url.lower() or url_type == 'twitter':
+                        twitter_url = url
+
+                if not email_primary:
                     skipped += 1
                     continue
 
@@ -191,13 +207,22 @@ async def sync_contacts_to_supabase(contacts: list) -> dict:
                 title = contact.get('title', '')
                 record = {
                     'full_name': contact.get('name', ''),
-                    'email': email.lower(),
-                    'phone': phone,
+                    'email': email_primary.lower(),
+                    'email_secondary': email_secondary.lower() if email_secondary else None,  # NEW
+                    'phone': phone_primary,
+                    'phone_secondary': phone_secondary,  # NEW
+                    'linkedin_url': linkedin_url,  # May already exist, but ensure populated
+                    'twitter_url': twitter_url,  # NEW
                     'title': title,
                     'is_atl': is_atl(title),
                     'source': 'close_manual',
                     'confidence': 95,  # High confidence - Tim added manually
                     'validated': True,
+                    'close_contact_id': contact.get('id'),  # NEW: Close contact ID reference
+                    'close_lead_id': lead_id,  # NEW: Close lead ID reference
+                    'close_raw_data': contact,  # NEW: Full API response for audit
+                    'close_date_created': contact.get('date_created'),  # NEW
+                    'close_date_updated': contact.get('date_updated'),  # NEW
                     'updated_at': datetime.now(timezone.utc).isoformat()
                 }
 
@@ -205,15 +230,15 @@ async def sync_contacts_to_supabase(contacts: list) -> dict:
                     record['company_id'] = company_id
 
                 # Insert or update
-                if email.lower() in existing_emails:
+                if email_primary.lower() in existing_emails:
                     # Update existing
-                    contact_id = existing_emails[email.lower()]
+                    contact_id = existing_emails[email_primary.lower()]
                     supabase.table('dim_contacts').update(record).eq('contact_id', contact_id).execute()
                     updated += 1
                 else:
                     # Insert new
                     supabase.table('dim_contacts').insert(record).execute()
-                    existing_emails[email.lower()] = record  # Track for dedup
+                    existing_emails[email_primary.lower()] = record  # Track for dedup
                     inserted += 1
 
             except Exception as e:

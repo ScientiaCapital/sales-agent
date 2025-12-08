@@ -154,7 +154,7 @@ export const CommandCenter = () => {
 
   // Fetch leads from API
   const { data: leadsData, isLoading: leadsLoading } = useSWR<{ leads: Lead[] }>(
-    '/api/icp-queue',
+    '/api/dashboard/icp-queue',
     fetcher,
     { refreshInterval: 30000 }
   );

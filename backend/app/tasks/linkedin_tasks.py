@@ -4,13 +4,13 @@ import logging
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 
-from app.celery_app import celery
+from app.celery_app import celery_app
 from app.services.langgraph.agents.linkedin_agent import (
     LinkedInAgent,
     ConnectionResult,
     MessageResult,
 )
-from app.services.supabase_client import get_supabase_client
+from app.services.langgraph.tools.supabase_tools import get_supabase
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 
-@celery.task(name="send_linkedin_connection", queue="linkedin")
+@celery_app.task(name="send_linkedin_connection", queue="linkedin")
 def send_linkedin_connection(
     lead_id: str,
     profile_url: str,
@@ -62,7 +62,7 @@ def send_linkedin_connection(
     return asyncio.run(_send())
 
 
-@celery.task(name="send_linkedin_message", queue="linkedin")
+@celery_app.task(name="send_linkedin_message", queue="linkedin")
 def send_linkedin_message(
     lead_id: str,
     profile_url: str,
@@ -104,7 +104,7 @@ def send_linkedin_message(
     return asyncio.run(_send())
 
 
-@celery.task(name="react_to_linkedin_post", queue="linkedin")
+@celery_app.task(name="react_to_linkedin_post", queue="linkedin")
 def react_to_linkedin_post(
     lead_id: str,
     post_url: str,
@@ -146,7 +146,7 @@ def react_to_linkedin_post(
     return asyncio.run(_react())
 
 
-@celery.task(name="comment_on_linkedin_post", queue="linkedin")
+@celery_app.task(name="comment_on_linkedin_post", queue="linkedin")
 def comment_on_linkedin_post(
     lead_id: str,
     post_url: str,
@@ -193,7 +193,7 @@ def comment_on_linkedin_post(
 # ============================================================================
 
 
-@celery.task(name="run_linkedin_daily_actions", queue="linkedin")
+@celery_app.task(name="run_linkedin_daily_actions", queue="linkedin")
 def run_linkedin_daily_actions() -> Dict[str, Any]:
     """
     Process queued LinkedIn actions (max 10 connections/day).
@@ -208,7 +208,7 @@ def run_linkedin_daily_actions() -> Dict[str, Any]:
     logger.info("[LinkedIn] Running daily action cycle")
 
     async def _run():
-        supabase = get_supabase_client()
+        supabase = get_supabase()
 
         # Get pending LinkedIn actions
         result = supabase.table("linkedin_action_queue").select("*").eq(
@@ -310,7 +310,7 @@ async def _save_linkedin_action(
     result: Dict[str, Any],
 ):
     """Save LinkedIn action to database."""
-    supabase = get_supabase_client()
+    supabase = get_supabase()
 
     try:
         supabase.table("linkedin_action_queue").insert({
@@ -349,7 +349,7 @@ def queue_linkedin_connection(
     Returns:
         Action queue ID
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase()
 
     result = supabase.table("linkedin_action_queue").insert({
         "lead_id": lead_id,
@@ -385,7 +385,7 @@ def queue_linkedin_message(
     Returns:
         Action queue ID
     """
-    supabase = get_supabase_client()
+    supabase = get_supabase()
 
     result = supabase.table("linkedin_action_queue").insert({
         "lead_id": lead_id,
