@@ -17,6 +17,7 @@ from starlette.responses import Response
 from app.api import health
 from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import dashboard  # Dashboard endpoints for frontend
+from app.api import sync_from_scraper  # Dealer scraper webhook endpoint
 
 # GTM Automation Infrastructure (14)
 from app.api import supabase_auth  # Supabase authentication
@@ -228,10 +229,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include routers with API version prefix
 
-# Essential Dashboard (3)
+# Essential Dashboard (4)
 app.include_router(health.router, prefix=settings.API_V1_PREFIX, tags=["health"])
 app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outreach draft management
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
+app.include_router(sync_from_scraper.router, prefix=settings.API_V1_PREFIX)  # Dealer scraper webhook endpoint
 
 # GTM Automation Infrastructure (14)
 app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
