@@ -10,12 +10,12 @@ Elite Squad Mission:
 - Intake Commander: Dedup, score with Trifecta, route to BDR (every 60s)
 """
 
+# LangSmith tracing is configured centrally in celery_app.py
+# Do NOT override here - let the central config control tracing
 import os
-os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
-os.environ.setdefault("LANGSMITH_TRACING", "false")
-os.environ.setdefault("LANGCHAIN_TRACING", "false")
-
 import logging
+
+# Suppress LangSmith warning logs when tracing is disabled
 logging.getLogger("langsmith.client").setLevel(logging.ERROR)
 logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
 
