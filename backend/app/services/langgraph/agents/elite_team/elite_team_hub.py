@@ -11,7 +11,7 @@ Also provides status tracking for dashboard display.
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List, Any
 from enum import Enum
 from pydantic import BaseModel, Field
@@ -254,6 +254,69 @@ class EliteTeamHub:
             return self.redis_client.llen(self.ORDERS_KEY)
         except Exception:
             return 0
+
+    def has_recent_order_for_vertical(self, vertical: str, lookback_hours: int = 24) -> bool:
+        """
+        Check if a recent scraping order exists for this vertical.
+
+        Prevents duplicate orders from being generated within the lookback window.
+        Uses a separate Redis key to track order history without consuming orders.
+
+        Args:
+            vertical: The vertical to check (e.g., "hvac_general", "solar")
+            lookback_hours: How many hours to look back (default 24)
+
+        Returns:
+            True if a recent order for this vertical exists
+        """
+        try:
+            # Use a separate key for order history tracking
+            history_key = f"{self.ORDERS_KEY}:history"
+
+            # Get recent order history (JSON strings)
+            recent_orders = self.redis_client.lrange(history_key, 0, 100)
+
+            cutoff_time = datetime.now() - timedelta(hours=lookback_hours)
+
+            for order_json in recent_orders:
+                try:
+                    order_data = json.loads(order_json)
+                    order_vertical = order_data.get("vertical", "")
+                    order_created = order_data.get("created_at", "")
+
+                    # Check if same vertical
+                    if order_vertical == vertical:
+                        # Parse creation time
+                        try:
+                            created_dt = datetime.fromisoformat(order_created.replace("Z", "+00:00"))
+                            if created_dt.replace(tzinfo=None) > cutoff_time:
+                                return True
+                        except (ValueError, TypeError):
+                            # If we can't parse the date, assume it's recent
+                            return True
+                except json.JSONDecodeError:
+                    continue
+
+            return False
+
+        except Exception as e:
+            logger.error(f"[EliteHub] Error checking recent orders: {e}")
+            return False  # Allow order on error to avoid blocking
+
+    def record_order_history(self, order: ScrapingOrder) -> None:
+        """
+        Record a scraping order to history for deduplication.
+
+        This is separate from emit_scraping_order to track all orders,
+        even those that were deduplicated.
+        """
+        try:
+            history_key = f"{self.ORDERS_KEY}:history"
+            self.redis_client.lpush(history_key, order.model_dump_json())
+            # Keep only last 200 orders in history
+            self.redis_client.ltrim(history_key, 0, 199)
+        except Exception as e:
+            logger.error(f"[EliteHub] Error recording order history: {e}")
 
     # ========== Intake Queue ==========
 

@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+// Note: No longer using direct Supabase - data fetched from backend API
 
 // ============================================
 // CONSTANTS
@@ -169,123 +169,36 @@ export function MissionControl() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch all stats from Supabase
+  // Fetch all stats from Backend API (uses service key - no Supabase auth needed)
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Fetch companies
-        const { data: companies, error: compError } = await supabase
-          .from('dim_companies')
-          .select(`
-            company_id, company_name, icp_tier, icp_score, phone, domain,
-            services_offered, oem_brands, trade_count, ai_enriched_at, created_at
-          `)
+        // Use backend API instead of direct Supabase (avoids anon key issues)
+        const response = await fetch(`${API_BASE}/dashboard/mission-control`)
 
-        if (compError) throw compError
-
-        // Fetch contacts
-        const { data: contacts, error: contError } = await supabase
-          .from('dim_contacts')
-          .select('contact_id, company_id, is_atl, email, phone')
-
-        if (contError) throw contError
-
-        // Fetch opportunities for pipeline value
-        const { data: opportunities, error: oppError } = await supabase
-          .from('fact_opportunities')
-          .select('opportunity_id, value_usd, status')
-
-        if (oppError) {
-          console.log('No opportunities table yet')
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
         }
 
-        const now = new Date()
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        const weekStart = new Date(todayStart)
-        weekStart.setDate(weekStart.getDate() - 7)
+        const data = await response.json()
 
-        // Build contact lookup
-        const contactsByCompany = new Map<string, { hasEmail: boolean, hasPhone: boolean, isAtl: boolean }>()
-        contacts?.forEach(contact => {
-          if (contact.company_id) {
-            const existing = contactsByCompany.get(contact.company_id) || { hasEmail: false, hasPhone: false, isAtl: false }
-            if (contact.email) existing.hasEmail = true
-            if (contact.phone) existing.hasPhone = true
-            if (contact.is_atl) existing.isAtl = true
-            contactsByCompany.set(contact.company_id, existing)
-          }
-        })
+        // Set all stats from API response
+        setStats(data.stats)
+        setTrades(data.trades)
+        setPipelineValue(data.pipelineValue)
+        setDealsCount(data.dealsCount)
+        setWinRate(data.winRate)
+        setAvgDealSize(data.avgDealSize)
 
-        // HOT = ATL contact with both email AND phone
-        const hotCompanies = companies?.filter(c => {
-          const contactInfo = contactsByCompany.get(c.company_id)
-          return contactInfo?.isAtl && contactInfo?.hasEmail && contactInfo?.hasPhone
-        }) || []
-
-        // Calculate stats
-        const newStats: PipelineStats = {
-          totalLeads: companies?.length || 0,
-          totalContacts: contacts?.length || 0,
-          atlContacts: contacts?.filter(c => c.is_atl).length || 0,
-          enrichedLeads: companies?.filter(c => c.ai_enriched_at).length || 0,
-          platinumLeads: companies?.filter(c => c.icp_tier === 'PLATINUM').length || 0,
-          goldLeads: companies?.filter(c => c.icp_tier === 'GOLD').length || 0,
-          silverLeads: companies?.filter(c => c.icp_tier === 'SILVER').length || 0,
-          bronzeLeads: companies?.filter(c => c.icp_tier === 'BRONZE').length || 0,
-          hotLeads: hotCompanies.length,
-          leadsWithPhone: companies?.filter(c => c.phone).length || 0,
-          leadsWithEmail: companies?.filter(c => contactsByCompany.get(c.company_id)?.hasEmail).length || 0,
-          leadsAddedToday: companies?.filter(c => new Date(c.created_at) >= todayStart).length || 0,
-          leadsAddedThisWeek: companies?.filter(c => new Date(c.created_at) >= weekStart).length || 0,
+        // Set activity log if available
+        if (data.activityLog && data.activityLog.length > 0) {
+          setActivityLog(data.activityLog)
         }
 
-        // Calculate trade verticals
-        const servicesCheck = (services: string[] | null, keywords: string[]) => {
-          if (!services) return false
-          const lower = services.map(s => s.toLowerCase())
-          return keywords.some(k => lower.some(s => s.includes(k)))
-        }
-
-        const oemCheck = (oems: string[] | null, keywords: string[]) => {
-          if (!oems) return false
-          const lower = oems.map(s => s.toLowerCase())
-          return keywords.some(k => lower.some(s => s.includes(k)))
-        }
-
-        const newTrades: TradeVerticals = {
-          hvac: companies?.filter(c => servicesCheck(c.services_offered, ['hvac', 'heating', 'cooling', 'air conditioning'])).length || 0,
-          solar: companies?.filter(c => servicesCheck(c.services_offered, ['solar', 'pv', 'photovoltaic']) || oemCheck(c.oem_brands, ['enphase', 'solaredge', 'sma'])).length || 0,
-          electrical: companies?.filter(c => servicesCheck(c.services_offered, ['electrical', 'electrician'])).length || 0,
-          plumbing: companies?.filter(c => servicesCheck(c.services_offered, ['plumbing', 'plumber'])).length || 0,
-          roofing: companies?.filter(c => servicesCheck(c.services_offered, ['roofing', 'roof'])).length || 0,
-          generator: companies?.filter(c => servicesCheck(c.services_offered, ['generator', 'backup power']) || oemCheck(c.oem_brands, ['generac', 'kohler', 'cummins'])).length || 0,
-          battery: companies?.filter(c => servicesCheck(c.services_offered, ['battery', 'storage']) || oemCheck(c.oem_brands, ['powerwall', 'enphase battery', 'pwrcell'])).length || 0,
-          lowVoltage: companies?.filter(c => servicesCheck(c.services_offered, ['low voltage', 'security', 'alarm', 'access control', 'surveillance'])).length || 0,
-          fireSafety: companies?.filter(c => servicesCheck(c.services_offered, ['fire', 'sprinkler', 'suppression', 'fire alarm'])).length || 0,
-        }
-
-        // Calculate pipeline value and VC metrics
-        if (opportunities && opportunities.length > 0) {
-          const activeOpps = opportunities.filter(o => o.status === 'active' || o.status === 'open')
-          const wonOpps = opportunities.filter(o => o.status === 'won')
-          const lostOpps = opportunities.filter(o => o.status === 'lost')
-          const closedCount = wonOpps.length + lostOpps.length
-
-          const totalValue = activeOpps.reduce((sum, o) => sum + (o.value_usd || 0), 0)
-          const wonValue = wonOpps.reduce((sum, o) => sum + (o.value_usd || 0), 0)
-
-          setPipelineValue(totalValue)
-          setDealsCount(activeOpps.length)
-          setWinRate(closedCount > 0 ? (wonOpps.length / closedCount) * 100 : 0)
-          setAvgDealSize(wonOpps.length > 0 ? wonValue / wonOpps.length : 15000)
-        }
-
-        setStats(newStats)
-        setTrades(newTrades)
         setIsLoading(false)
 
       } catch (err) {
-        console.error('Failed to fetch stats:', err)
+        console.error('Failed to fetch stats from API:', err)
         setIsLoading(false)
       }
     }
@@ -295,44 +208,7 @@ export function MissionControl() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch activity from lead_audit_log
-  useEffect(() => {
-    async function fetchActivity() {
-      try {
-        const { data: auditLogs, error } = await supabase
-          .from('lead_audit_log')
-          .select('id, event_type, company_name, created_at, details')
-          .order('created_at', { ascending: false })
-          .limit(15)
-
-        if (error) throw error
-
-        if (auditLogs && auditLogs.length > 0) {
-          const realActivity: ActivityLog[] = auditLogs.map((log) => {
-            const eventLabel = formatEventType(log.event_type)
-            return {
-              id: log.id,
-              text: `${eventLabel}: ${log.company_name || 'Unknown'}`,
-              type: getEventLogType(log.event_type),
-              timestamp: new Date(log.created_at).toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: false
-              })
-            }
-          })
-          setActivityLog(realActivity)
-        }
-      } catch (err) {
-        console.error('Failed to fetch activity:', err)
-      }
-    }
-
-    fetchActivity()
-    const interval = setInterval(fetchActivity, 10000)
-    return () => clearInterval(interval)
-  }, [])
+  // Activity is now fetched from the main API call above
 
   // Fetch agent status from FastAPI backend
   useEffect(() => {
@@ -385,7 +261,7 @@ export function MissionControl() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: SOL.base03 }}>
         <div className="text-center font-mono">
           <div className="text-4xl mb-4" style={{ color: SOL.cyan }}>LOADING...</div>
-          <div className="animate-pulse" style={{ color: SOL.base0 }}>Connecting to Supabase</div>
+          <div className="animate-pulse" style={{ color: SOL.base0 }}>Connecting to Backend API</div>
         </div>
       </div>
     )

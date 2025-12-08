@@ -13,10 +13,22 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api': {
+      // Proxy /api/v1 directly to backend
+      '/api/v1': {
         target: 'http://localhost:8001',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
+      },
+      // Rewrite /api/dashboard to /api/v1/dashboard for legacy components
+      '/api/dashboard': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dashboard/, '/api/v1/dashboard'),
+      },
+      // Rewrite /api/ai to /api/v1/ai for AI components
+      '/api/ai': {
+        target: 'http://localhost:8001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/ai/, '/api/v1/ai'),
       },
     },
   },

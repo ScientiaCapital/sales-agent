@@ -693,10 +693,22 @@ Analyze this pattern and provide:
 
         orders = []
 
+        # Import hub for deduplication
+        from app.services.langgraph.agents.elite_team.elite_team_hub import get_elite_hub
+        hub = get_elite_hub()
+
         for signal in state.detected_signals:
             # Only create orders for medium+ confidence
             if signal.confidence < 0.5:
                 logger.debug(f"Skipping {signal.vertical} (low confidence: {signal.confidence})")
+                continue
+
+            # Check for duplicate orders (per Anthropic best practices)
+            if hub.has_recent_order_for_vertical(signal.vertical, lookback_hours=24):
+                logger.info(
+                    f"Skipping duplicate order for {signal.vertical} "
+                    "(already ordered in last 24h)"
+                )
                 continue
 
             # Determine priority
@@ -725,6 +737,10 @@ Analyze this pattern and provide:
             )
 
             orders.append(order)
+
+            # Record to history for deduplication (per Anthropic best practices)
+            hub.record_order_history(order)
+
             logger.info(
                 f"Created {priority} scraping order: {signal.vertical} "
                 f"({target_count} targets in {len(signal.states)} states)"
@@ -763,19 +779,26 @@ Analyze this pattern and provide:
             final_state = await self.workflow.ainvoke(initial_state)
         except Exception as e:
             logger.error(f"Workflow failed: {e}")
-            final_state = initial_state
-            final_state.errors.append(str(e))
+            # Convert initial_state to dict for consistent handling
+            final_state = initial_state.model_dump()
+            final_state["errors"] = [str(e)]
 
         duration_ms = int((time.time() - start_time) * 1000)
 
         # Calculate next scan time (1 hour from now)
         next_scan = datetime.now() + timedelta(hours=1)
 
+        # LangGraph returns AddableValuesDict, access with dict notation
+        # (Also works with dict from error branch)
+        inbound_leads = final_state.get("inbound_leads", []) if isinstance(final_state, dict) else getattr(final_state, "inbound_leads", [])
+        detected_signals = final_state.get("detected_signals", []) if isinstance(final_state, dict) else getattr(final_state, "detected_signals", [])
+        scraping_orders = final_state.get("scraping_orders", []) if isinstance(final_state, dict) else getattr(final_state, "scraping_orders", [])
+
         result = SignalScoutResult(
-            total_inbound_leads=len(final_state.inbound_leads),
-            signals_detected=len(final_state.detected_signals),
-            signals=final_state.detected_signals,
-            scraping_orders=final_state.scraping_orders,
+            total_inbound_leads=len(inbound_leads),
+            signals_detected=len(detected_signals),
+            signals=detected_signals,
+            scraping_orders=scraping_orders,
             duration_ms=duration_ms,
             next_scan_at=next_scan.isoformat(),
         )

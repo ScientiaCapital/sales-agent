@@ -16,7 +16,9 @@ Usage:
 
 import os
 import re
+import json
 import argparse
+import time
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
@@ -31,6 +33,10 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 # 6 months threshold for revival candidates
 REVIVAL_THRESHOLD_DAYS = 180
+
+# Rate limiting - Close API allows ~100 requests per minute
+RATE_LIMIT_DELAY = 0.7  # seconds between activity API calls
+CHECKPOINT_FILE = "data/lost_deals_checkpoint.json"
 
 # Common competitor patterns to extract from notes
 COMPETITOR_PATTERNS = [
@@ -112,8 +118,37 @@ def fetch_all_lost_opportunities(limit: Optional[int] = None) -> List[Dict]:
     return all_opps
 
 
-def fetch_activities_summary(lead_id: str) -> Dict[str, Any]:
+def load_checkpoint() -> Dict[str, Any]:
+    """Load checkpoint from JSON file."""
+    try:
+        if os.path.exists(CHECKPOINT_FILE):
+            with open(CHECKPOINT_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"  Warning: Could not load checkpoint: {e}")
+    return {"processed_leads": {}, "last_updated": None}
+
+
+def save_checkpoint(data: Dict[str, Any]):
+    """Save checkpoint to JSON file."""
+    try:
+        os.makedirs(os.path.dirname(CHECKPOINT_FILE), exist_ok=True)
+        data["last_updated"] = datetime.now().isoformat()
+        with open(CHECKPOINT_FILE, 'w') as f:
+            json.dump(data, f, indent=2, default=str)
+    except Exception as e:
+        print(f"  Warning: Could not save checkpoint: {e}")
+
+
+def fetch_activities_summary(lead_id: str, checkpoint: Dict = None) -> Dict[str, Any]:
     """Get activity summary for a lead (last activity date, counts)."""
+    # Check if we already have this in checkpoint
+    if checkpoint and lead_id in checkpoint.get("processed_leads", {}):
+        return checkpoint["processed_leads"][lead_id]
+
+    # Rate limit - sleep before making request
+    time.sleep(RATE_LIMIT_DELAY)
+
     resp = requests.get(
         f"{CLOSE_API_BASE}/activity/",
         params={
@@ -125,7 +160,15 @@ def fetch_activities_summary(lead_id: str) -> Dict[str, Any]:
         timeout=30
     )
 
+    if resp.status_code == 429:
+        # Rate limited - wait and retry
+        reset_time = int(resp.headers.get("X-RateLimit-Reset", 60))
+        print(f"  ⚠️ Rate limited. Waiting {reset_time}s...")
+        time.sleep(reset_time)
+        return fetch_activities_summary(lead_id, checkpoint)
+
     if resp.status_code != 200:
+        print(f"  ⚠️ Activity fetch failed for {lead_id}: {resp.status_code}")
         return {}
 
     data = resp.json()
@@ -314,23 +357,42 @@ def sync_lost_deals(limit: Optional[int] = None, dry_run: bool = False):
     print("SYNCING LOST OPPORTUNITIES")
     print("=" * 60)
 
+    # Load checkpoint for resumable sync
+    checkpoint = load_checkpoint()
+    cached_count = len(checkpoint.get("processed_leads", {}))
+    if cached_count > 0:
+        print(f"  📁 Loaded checkpoint with {cached_count} cached activity summaries")
+
     synced = 0
     revival_candidates = 0
     high_priority = 0
     total_value = 0
 
     records = []
+    start_time = time.time()
 
     for i, opp in enumerate(opps):
-        if i % 50 == 0:
-            print(f"  Processing {i+1}/{len(opps)}...")
-
         lead_id = opp.get("lead_id")
         lead_name = opp.get("lead_name", "Unknown")
 
+        # Progress logging every 10 items (more frequent)
+        if i % 10 == 0:
+            elapsed = time.time() - start_time
+            rate = i / elapsed if elapsed > 0 else 0
+            eta = (len(opps) - i) / rate if rate > 0 else 0
+            cached = lead_id in checkpoint.get("processed_leads", {})
+            print(f"  [{i+1}/{len(opps)}] {lead_name[:30]:<30} {'(cached)' if cached else '(fetching)'} | ETA: {eta/60:.1f}min")
+
         # Get activity summary (only if not dry run, to save API calls)
         if not dry_run:
-            activities = fetch_activities_summary(lead_id)
+            activities = fetch_activities_summary(lead_id, checkpoint)
+            # Save to checkpoint
+            if lead_id not in checkpoint.get("processed_leads", {}):
+                checkpoint.setdefault("processed_leads", {})[lead_id] = activities
+                # Save checkpoint every 25 records
+                if i % 25 == 0:
+                    save_checkpoint(checkpoint)
+                    print(f"  💾 Checkpoint saved ({len(checkpoint['processed_leads'])} leads)")
         else:
             activities = {"total_activities": 0}
 
@@ -388,6 +450,11 @@ def sync_lost_deals(limit: Optional[int] = None, dry_run: bool = False):
     print("\n  Close Reasons:")
     for reason, count in sorted(reasons.items(), key=lambda x: -x[1])[:5]:
         print(f"    - {reason}: {count}")
+
+    # Save final checkpoint
+    if not dry_run:
+        save_checkpoint(checkpoint)
+        print(f"  💾 Final checkpoint saved ({len(checkpoint.get('processed_leads', {}))} leads)")
 
     if dry_run:
         print("\n  [DRY RUN] No data written to Supabase")

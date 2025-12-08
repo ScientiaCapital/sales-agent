@@ -22,10 +22,22 @@ from enum import Enum
 import os
 
 from app.services.langgraph.agents import extract_sales_intel
+from app.services.crm.close_email import CloseEmailClient
+from app.services.outreach.signal_detector import detect_outreach_signal, SIGNAL_STRATEGIES
 from app.core.logging import setup_logging
 from app.auth.dependencies import get_current_user, require_admin
 
 logger = setup_logging(__name__)
+
+# Initialize Close Email Client (lazy)
+_close_email_client: Optional[CloseEmailClient] = None
+
+def get_close_email_client() -> CloseEmailClient:
+    """Get or create Close email client."""
+    global _close_email_client
+    if _close_email_client is None:
+        _close_email_client = CloseEmailClient()
+    return _close_email_client
 
 router = APIRouter(prefix="/ai", tags=["ai-outreach"])
 
@@ -101,6 +113,9 @@ class OutreachDraft(BaseModel):
     contact_title: Optional[str] = None
     personal_hooks: List[Dict[str, str]] = Field(default_factory=list)
 
+    # Close CRM link (for "Open in Close" button)
+    close_lead_url: Optional[str] = None
+
     # Metadata
     confidence: float
     generated_at: datetime
@@ -136,6 +151,15 @@ class SendDraftResponse(BaseModel):
     close_activity_id: Optional[str] = None
 
 
+class StageDraftResponse(BaseModel):
+    """Response after staging draft to Close CRM"""
+    draft_id: str
+    status: str
+    message: str
+    close_email_id: Optional[str] = None  # Close CRM email activity ID
+    close_lead_url: Optional[str] = None  # URL to open the lead in Close
+
+
 # ========== Helper Functions ==========
 
 def _check_supabase():
@@ -166,63 +190,70 @@ async def _save_drafts_to_supabase(
     company_name: str,
     intel_result: Dict[str, Any],
     contact_name: Optional[str] = None,
-    contact_title: Optional[str] = None
+    contact_title: Optional[str] = None,
+    signal_data: Optional[Dict[str, Any]] = None
 ) -> int:
-    """Save AI-generated drafts to Supabase dim_ai_drafts table"""
+    """
+    Save AI-generated drafts to Supabase dim_ai_drafts table.
+
+    Now includes signal context - the "why now" for each draft.
+    """
     _check_supabase()
 
     drafts = []
     now = datetime.utcnow().isoformat()
 
+    # Extract signal fields (if provided)
+    signal_type = signal_data.get('signal_type') if signal_data else None
+    signal_source = signal_data.get('signal_source') if signal_data else None
+    signal_reason = signal_data.get('signal_reason') if signal_data else None
+    close_lead_status = signal_data.get('close_lead_status') if signal_data else None
+    correspondence_summary = signal_data.get('correspondence_summary') if signal_data else None
+
+    # Base draft data (shared across all draft types)
+    base_draft = {
+        'company_id': company_id,
+        'company_name': company_name,
+        'status': DraftStatus.PENDING.value,
+        'contact_name': contact_name,
+        'contact_title': contact_title,
+        'personal_hooks': intel_result.get('personal_hooks', []),
+        'confidence': intel_result.get('confidence', 0.5),
+        'generated_at': now,
+        'updated_at': now,
+        # Signal fields - the "why now" context
+        'signal_type': signal_type,
+        'signal_source': signal_source,
+        'signal_reason': signal_reason,
+        'close_lead_status': close_lead_status,
+        'correspondence_summary': correspondence_summary,
+    }
+
     # Email draft
     if intel_result.get('email_subject') and intel_result.get('email_body'):
         drafts.append({
-            'company_id': company_id,
-            'company_name': company_name,
+            **base_draft,
             'draft_type': DraftType.EMAIL.value,
-            'status': DraftStatus.PENDING.value,
             'subject': intel_result['email_subject'],
             'body': intel_result['email_body'],
-            'contact_name': contact_name,
-            'contact_title': contact_title,
-            'personal_hooks': intel_result.get('personal_hooks', []),
-            'confidence': intel_result.get('confidence', 0.5),
-            'generated_at': now,
-            'updated_at': now,
         })
 
     # SMS draft
     if intel_result.get('sms_draft'):
         drafts.append({
-            'company_id': company_id,
-            'company_name': company_name,
+            **base_draft,
             'draft_type': DraftType.SMS.value,
-            'status': DraftStatus.PENDING.value,
             'subject': None,
             'body': intel_result['sms_draft'],
-            'contact_name': contact_name,
-            'contact_title': contact_title,
-            'personal_hooks': intel_result.get('personal_hooks', []),
-            'confidence': intel_result.get('confidence', 0.5),
-            'generated_at': now,
-            'updated_at': now,
         })
 
     # Voice opener draft
     if intel_result.get('voice_opener'):
         drafts.append({
-            'company_id': company_id,
-            'company_name': company_name,
+            **base_draft,
             'draft_type': DraftType.VOICE.value,
-            'status': DraftStatus.PENDING.value,
             'subject': None,
             'body': intel_result['voice_opener'],
-            'contact_name': contact_name,
-            'contact_title': contact_title,
-            'personal_hooks': intel_result.get('personal_hooks', []),
-            'confidence': intel_result.get('confidence', 0.5),
-            'generated_at': now,
-            'updated_at': now,
         })
 
     if drafts:
@@ -326,7 +357,23 @@ async def enrich_company(
 
     location = f"{company.get('city', '')}, {company.get('state', '')}" if company.get('city') else None
 
-    # Run SalesIntelAgent
+    # SIGNAL DETECTION: Determine "why now" before generating draft
+    # This is the core of signal-based outreach - never draft without context
+    close_lead_id = company.get('close_lead_id')
+    signal_data = await detect_outreach_signal(
+        company_id=company_id,
+        close_lead_id=close_lead_id,
+        company_data=company,
+    )
+
+    logger.info(f"Signal detected for {company_name}: {signal_data.get('signal_type')} ({signal_data.get('signal_source')})")
+
+    # Use signal strategy to customize the draft generation
+    strategy = signal_data.get('strategy', {})
+    email_tone = strategy.get('email_tone', 'first_touch')
+    cta_type = strategy.get('cta', 'Introduction')
+
+    # Run SalesIntelAgent with signal context
     try:
         intel_result = await extract_sales_intel(
             company_name=company_name,
@@ -335,19 +382,26 @@ async def enrich_company(
             scraped_content=scraped_content,
             services=services,
             brands=brands,
-            location=location
+            location=location,
+            # Pass signal context to inform draft generation
+            signal_type=signal_data.get('signal_type'),
+            signal_reason=signal_data.get('signal_reason'),
+            correspondence_summary=signal_data.get('correspondence_summary'),
+            email_tone=email_tone,
+            cta_type=cta_type,
         )
     except Exception as e:
         logger.error(f"SalesIntelAgent error: {e}")
         raise HTTPException(status_code=500, detail=f"AI extraction failed: {str(e)}")
 
-    # Save drafts to Supabase
+    # Save drafts to Supabase WITH signal context
     drafts_count = await _save_drafts_to_supabase(
         company_id=company_id,
         company_name=company_name,
         intel_result=intel_result,
         contact_name=contact_name,
-        contact_title=contact_title
+        contact_title=contact_title,
+        signal_data=signal_data,  # NOW INCLUDES SIGNAL CONTEXT!
     )
 
     return EnrichmentResponse(
@@ -356,7 +410,7 @@ async def enrich_company(
         drafts_generated=drafts_count,
         processing_time_ms=intel_result.get('processing_time_ms', 0),
         confidence=intel_result.get('confidence', 0.5),
-        message=f"Generated {drafts_count} drafts for {company_name}"
+        message=f"Generated {drafts_count} drafts for {company_name} (Signal: {signal_data.get('signal_type')})"
     )
 
 
@@ -406,12 +460,23 @@ async def list_drafts(
     try:
         result = query.execute()
 
+        # Fetch close_lead_url for all company_ids in results
+        company_ids = list(set(str(row['company_id']) for row in result.data if row.get('company_id')))
+        close_urls = {}
+        if company_ids:
+            try:
+                companies_result = supabase.table('dim_companies').select('company_id, close_lead_url').in_('company_id', company_ids).execute()
+                close_urls = {str(c['company_id']): c.get('close_lead_url') for c in companies_result.data}
+            except Exception as e:
+                logger.warning(f"Failed to fetch close_lead_urls: {e}")
+
         drafts = []
         for row in result.data:
+            company_id = str(row['company_id'])
             # Map from SQL schema (id, created_at) to API schema (draft_id, generated_at)
             drafts.append(OutreachDraft(
                 draft_id=str(row['id']),  # SQL uses 'id', API uses 'draft_id'
-                company_id=str(row['company_id']),
+                company_id=company_id,
                 company_name=row.get('company_name', 'Unknown'),  # May need JOIN for actual name
                 draft_type=DraftType(row['draft_type']),
                 status=DraftStatus(row['status']),
@@ -420,6 +485,7 @@ async def list_drafts(
                 contact_name=row.get('contact_name'),
                 contact_title=row.get('contact_title'),
                 personal_hooks=row.get('personal_hooks', []),
+                close_lead_url=close_urls.get(company_id),  # "Open in Close" URL
                 confidence=row.get('confidence', 0.5),
                 generated_at=datetime.fromisoformat(row['created_at'].replace('Z', '+00:00')),  # SQL uses created_at
                 updated_at=datetime.fromisoformat(row['updated_at'].replace('Z', '+00:00')),
@@ -609,6 +675,213 @@ async def send_draft(
     except Exception as e:
         logger.error(f"Error sending draft {draft_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to send draft: {str(e)}")
+
+
+@router.post("/drafts/{draft_id}/stage", response_model=StageDraftResponse)
+async def stage_draft_to_close(
+    draft_id: str,
+    # Public endpoint for internal dashboard - no auth required
+):
+    """
+    Stage a draft as a REAL email draft in Close CRM.
+
+    This creates an email with status='draft' in Close CRM, which appears
+    in the lead's activity timeline ready for Tim to review and send.
+
+    Workflow:
+    1. Get draft from Supabase
+    2. Get company data to find Close lead ID and contact email
+    3. Create email draft in Close CRM via API
+    4. Update Supabase draft with close_email_id
+    5. Mark draft as 'approved' (staged to Close)
+
+    Args:
+        draft_id: UUID of the draft to stage
+
+    Returns:
+        StageDraftResponse with Close activity ID and lead URL
+    """
+    _check_supabase()
+
+    # Get draft from Supabase (using 'id' column, not 'draft_id')
+    try:
+        result = supabase.table('dim_ai_drafts').select('*').eq('id', draft_id).execute()
+
+        if not result.data or len(result.data) == 0:
+            raise HTTPException(status_code=404, detail=f"Draft {draft_id} not found")
+
+        draft_data = result.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching draft {draft_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch draft: {str(e)}")
+
+    # Only stage email drafts (SMS would need different handling)
+    if draft_data.get('draft_type') != DraftType.EMAIL.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Only email drafts can be staged to Close CRM. This is a {draft_data.get('draft_type')} draft."
+        )
+
+    # Check draft status
+    if draft_data.get('status') in [DraftStatus.SENT.value, DraftStatus.DISCARDED.value]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot stage draft with status {draft_data.get('status')}"
+        )
+
+    # Get company data to find Close lead ID
+    company_id = draft_data.get('company_id')
+    company = await _get_company_data(company_id)
+
+    if not company:
+        raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
+
+    close_lead_id = company.get('close_lead_id')
+    lead_was_created = False
+
+    # Get contact info first - we'll need it either way
+    contact_email = None
+    contact_name = None
+    contact_title = None
+    try:
+        contacts_result = supabase.table('dim_contacts').select(
+            'email, full_name, title'
+        ).eq('company_id', company_id).limit(1).execute()
+
+        if contacts_result.data and len(contacts_result.data) > 0:
+            contact = contacts_result.data[0]
+            contact_email = contact.get('email')
+            contact_name = contact.get('full_name')
+            contact_title = contact.get('title')
+    except Exception as e:
+        logger.warning(f"Error fetching contact for company {company_id}: {e}")
+
+    if not contact_email:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No contact email found for {company.get('company_name')}. Enrich the company first."
+        )
+
+    # If no Close lead ID, auto-create the lead in Close with ICP data
+    if not close_lead_id:
+        logger.info(f"No Close lead ID for {company.get('company_name')} - auto-creating lead with ICP data")
+        try:
+            close_client = get_close_email_client()
+
+            # Extract ICP data from Supabase company record
+            icp_tier = company.get('icp_tier')
+            qualification_score = company.get('icp_score') or company.get('qualification_score')
+            primary_industry = company.get('primary_vertical') or company.get('vertical')
+            linkedin_url = company.get('linkedin_url')
+            num_employees = company.get('employee_count') or company.get('linkedin_employees')
+
+            # Determine area of focus based on service flags
+            area_of_focus = None
+            has_resi = company.get('has_residential', False)
+            has_comm = company.get('has_commercial', False)
+            if has_resi and has_comm:
+                area_of_focus = "Both"
+            elif has_resi:
+                area_of_focus = "Residential"
+            elif has_comm:
+                area_of_focus = "Commercial"
+
+            # Check if contact is ATL
+            is_atl = contact_title and any(
+                title in (contact_title or '').lower()
+                for title in ['owner', 'ceo', 'president', 'vp', 'director', 'founder', 'partner', 'principal']
+            )
+
+            create_result = await close_client.create_lead_with_contact(
+                company_name=company.get('company_name'),
+                contact_email=contact_email,
+                contact_name=contact_name,
+                contact_title=contact_title,
+                company_url=company.get('domain'),
+                company_phone=company.get('phone'),
+                # ICP data
+                icp_tier=icp_tier,
+                qualification_score=qualification_score,
+                primary_industry=primary_industry,
+                area_of_focus=area_of_focus,
+                is_atl=is_atl,
+                linkedin_url=linkedin_url,
+                num_employees=str(num_employees) if num_employees else None,
+            )
+            close_lead_id = create_result.get('lead_id')
+            lead_was_created = True
+
+            # Update Supabase with the new Close lead ID
+            try:
+                supabase.table('dim_companies').update({
+                    'close_lead_id': close_lead_id,
+                    'close_lead_url': create_result.get('close_lead_url'),
+                    'updated_at': datetime.utcnow().isoformat()
+                }).eq('id', company_id).execute()
+                logger.info(f"Updated dim_companies with close_lead_id={close_lead_id}")
+            except Exception as e:
+                logger.warning(f"Failed to update Supabase with close_lead_id: {e}")
+
+        except Exception as e:
+            logger.error(f"Failed to auto-create Close lead: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to create lead in Close CRM: {str(e)}"
+            )
+
+    # Create draft in Close CRM
+    try:
+        close_client = get_close_email_client()
+
+        close_result = await close_client.create_draft(
+            to_email=contact_email,
+            subject=draft_data.get('subject', 'Follow-up'),
+            body_text=draft_data.get('body', ''),
+            lead_id=close_lead_id,
+        )
+
+        close_email_id = close_result.get('id')
+        logger.info(f"Created Close CRM draft {close_email_id} for lead {close_lead_id}")
+
+    except Exception as e:
+        logger.error(f"Error creating Close CRM draft: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create draft in Close CRM: {str(e)}"
+        )
+
+    # Update Supabase draft with Close email ID and mark as approved
+    try:
+        supabase.table('dim_ai_drafts').update({
+            'status': DraftStatus.APPROVED.value,
+            'close_email_id': close_email_id,
+            'updated_at': datetime.utcnow().isoformat()
+        }).eq('id', draft_id).execute()
+
+        logger.info(f"Updated draft {draft_id} with close_email_id={close_email_id}")
+
+    except Exception as e:
+        logger.warning(f"Failed to update Supabase draft with close_email_id: {e}")
+        # Don't fail the request - the Close draft was created successfully
+
+    # Build Close lead URL
+    close_lead_url = f"https://app.close.com/lead/{close_lead_id}/" if close_lead_id else None
+
+    # Build message based on whether lead was auto-created
+    if lead_was_created:
+        message = f"Lead AUTO-CREATED in Close CRM for {company.get('company_name')}. Email draft staged. Open Close to review and send."
+    else:
+        message = f"Email draft created in Close CRM for {company.get('company_name')}. Open Close to review and send."
+
+    return StageDraftResponse(
+        draft_id=draft_id,
+        status="staged",
+        message=message,
+        close_email_id=close_email_id,
+        close_lead_url=close_lead_url
+    )
 
 
 @router.post("/drafts/{draft_id}/regenerate", response_model=EnrichmentResponse)
