@@ -102,6 +102,9 @@ const ELITE_AGENTS: AgentStatus[] = [
   { name: 'Intake Commander', emoji: '⚡', status: 'active', schedule: 'Continuous', expertise: 'Dedup, scoring, Close CRM sync' },
 ]
 
+// Backend API base URL - use proxy in dev, direct in production
+const API_BASE = import.meta.env.DEV ? '/api/v1' : 'http://localhost:8001/api/v1'
+
 // ============================================
 // COMPONENT
 // ============================================
@@ -140,6 +143,9 @@ export function MissionControl() {
   const [missionTime, setMissionTime] = useState('00d 00h 00m 00s')
   const [pipelineValue, setPipelineValue] = useState(0)
   const [dealsCount, setDealsCount] = useState(0)
+  const [winRate, setWinRate] = useState(0)
+  const [avgDealSize, setAvgDealSize] = useState(0)
+  const [regularAgents, setRegularAgents] = useState<AgentStatus[]>(REGULAR_AGENTS)
   const terminalRef = useRef<HTMLDivElement>(null)
 
   // Running clock since launch
@@ -258,12 +264,20 @@ export function MissionControl() {
           fireSafety: companies?.filter(c => servicesCheck(c.services_offered, ['fire', 'sprinkler', 'suppression', 'fire alarm'])).length || 0,
         }
 
-        // Calculate pipeline value
+        // Calculate pipeline value and VC metrics
         if (opportunities && opportunities.length > 0) {
           const activeOpps = opportunities.filter(o => o.status === 'active' || o.status === 'open')
+          const wonOpps = opportunities.filter(o => o.status === 'won')
+          const lostOpps = opportunities.filter(o => o.status === 'lost')
+          const closedCount = wonOpps.length + lostOpps.length
+
           const totalValue = activeOpps.reduce((sum, o) => sum + (o.value_usd || 0), 0)
+          const wonValue = wonOpps.reduce((sum, o) => sum + (o.value_usd || 0), 0)
+
           setPipelineValue(totalValue)
           setDealsCount(activeOpps.length)
+          setWinRate(closedCount > 0 ? (wonOpps.length / closedCount) * 100 : 0)
+          setAvgDealSize(wonOpps.length > 0 ? wonValue / wonOpps.length : 15000)
         }
 
         setStats(newStats)
@@ -317,6 +331,45 @@ export function MissionControl() {
 
     fetchActivity()
     const interval = setInterval(fetchActivity, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Fetch agent status from FastAPI backend
+  useEffect(() => {
+    async function fetchAgentStatus() {
+      try {
+        const response = await fetch(`${API_BASE}/dashboard/agents`)
+        if (response.ok) {
+          const agentData = await response.json()
+          if (Array.isArray(agentData) && agentData.length > 0) {
+            const updatedAgents: AgentStatus[] = agentData.slice(0, 6).map((agent: {
+              agent_type: string
+              display_name: string
+              status: string
+              successful_executions: number
+            }) => {
+              const baseAgent = REGULAR_AGENTS.find(a =>
+                a.name.toLowerCase().includes(agent.agent_type.split('_')[0])
+              ) || REGULAR_AGENTS[0]
+              return {
+                ...baseAgent,
+                name: agent.display_name || baseAgent.name,
+                status: agent.status === 'healthy' ? 'active' as const :
+                        agent.status === 'degraded' ? 'idle' as const : 'sleeping' as const,
+              }
+            })
+            if (updatedAgents.length > 0) {
+              setRegularAgents(updatedAgents)
+            }
+          }
+        }
+      } catch {
+        console.log('Backend not available, using static agent list')
+      }
+    }
+
+    fetchAgentStatus()
+    const interval = setInterval(fetchAgentStatus, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -508,7 +561,7 @@ export function MissionControl() {
           <div className="p-4 rounded-lg border" style={{ backgroundColor: SOL.base02, borderColor: SOL.base01 }}>
             <h2 className="text-lg font-bold mb-4" style={{ color: SOL.base1 }}>🤖 AGENT SQUAD</h2>
             <div className="space-y-2">
-              {REGULAR_AGENTS.map((agent) => (
+              {regularAgents.map((agent) => (
                 <AgentRow key={agent.name} agent={agent} />
               ))}
             </div>
