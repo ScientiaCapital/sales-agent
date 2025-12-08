@@ -11,10 +11,48 @@ import {
   ChevronRight,
   Building2,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 import { AIInsightsPanel } from './AIInsightsPanel';
 
-// Type definitions
+// Type definitions - matches backend dashboard.py ICPQueueResponse
+interface APILead {
+  id: string;
+  company_name: string;
+  domain: string | null;
+  close_lead_id: string | null;
+  close_lead_url: string | null;
+  status: string;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
+  smart_view: string;
+  quarter: string;
+  priority: number;
+  color: string;
+  days_since_activity: number;
+  is_untouched: boolean;
+}
+
+interface SmartView {
+  name: string;
+  color: string;
+  priority: number;
+  leads: APILead[];
+  total: number;
+  untouched: number;
+}
+
+interface ICPQueueResponse {
+  smart_views: Record<string, SmartView>;
+  untouched_leads: APILead[];
+  summary: {
+    total_leads: number;
+    untouched_count: number;
+  };
+}
+
+// Lead type for display (transformed from APILead)
 interface Lead {
   id: string;
   name: string;
@@ -23,6 +61,8 @@ interface Lead {
   state: string | null;
   icp_tier: string; // PLATINUM, GOLD, SILVER, BRONZE
   icp_score: number;
+  close_lead_id: string | null; // For Close CRM link
+  close_lead_url: string | null; // Direct URL to Close CRM
   ai_enriched_at: string | null;
   ai_confidence: number | null;
   ai_personal_hooks: Array<{
@@ -88,6 +128,14 @@ const LeadCard = ({
 }) => {
   const hasAIData = lead.ai_enriched_at !== null;
   const location = [lead.city, lead.state].filter(Boolean).join(', ');
+  const closeUrl = lead.close_lead_url || (lead.close_lead_id ? `https://app.close.com/lead/${lead.close_lead_id}` : null);
+
+  const handleCloseLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Don't trigger card selection
+    if (closeUrl) {
+      window.open(closeUrl, '_blank');
+    }
+  };
 
   return (
     <div
@@ -112,11 +160,22 @@ const LeadCard = ({
             </p>
           )}
         </div>
-        {hasAIData && (
-          <div title="AI Enriched">
-            <Sparkles className="size-4 text-purple-600 shrink-0" />
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          {hasAIData && (
+            <div title="AI Enriched">
+              <Sparkles className="size-4 text-purple-600 shrink-0" />
+            </div>
+          )}
+          {closeUrl && (
+            <button
+              onClick={handleCloseLinkClick}
+              title="Open in Close CRM"
+              className="p-1 rounded hover:bg-muted transition-colors"
+            >
+              <ExternalLink className="size-4 text-blue-600" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -152,12 +211,58 @@ export const CommandCenter = () => {
   const [isEnriching, setIsEnriching] = useState(false);
   const leadsPerPage = 10;
 
-  // Fetch leads from API
-  const { data: leadsData, isLoading: leadsLoading } = useSWR<{ leads: Lead[] }>(
+  // Fetch leads from API and transform to flat leads array
+  const { data: icpData, isLoading: leadsLoading } = useSWR<ICPQueueResponse>(
     '/api/dashboard/icp-queue',
     fetcher,
     { refreshInterval: 30000 }
   );
+
+  // Transform ICPQueueResponse smart_views into flat Lead array
+  const transformedLeads: Lead[] = (() => {
+    if (!icpData?.smart_views) return [];
+
+    const allLeads: Lead[] = [];
+    const seenIds = new Set<string>();
+
+    // Process each smart view and extract leads
+    Object.values(icpData.smart_views).forEach((view) => {
+      view.leads.forEach((apiLead) => {
+        if (seenIds.has(apiLead.id)) return;
+        seenIds.add(apiLead.id);
+
+        allLeads.push({
+          id: apiLead.id,
+          name: apiLead.company_name,
+          domain: apiLead.domain,
+          city: null,
+          state: null,
+          icp_tier: apiLead.smart_view,
+          icp_score: apiLead.priority * 25, // Approximate from priority
+          close_lead_id: apiLead.close_lead_id,
+          close_lead_url: apiLead.close_lead_url,
+          ai_enriched_at: null,
+          ai_confidence: null,
+          ai_personal_hooks: null,
+          ai_company_story: null,
+          ai_pain_points: null,
+          ai_buying_signals: null,
+        });
+      });
+    });
+
+    // Sort by priority (PLATINUM/GOLD first)
+    return allLeads.sort((a, b) => {
+      const tierPriority: Record<string, number> = {
+        'PLATINUM': 1,
+        'GOLD': 2,
+        'SILVER': 3,
+        'BRONZE': 4,
+        'UNKNOWN': 5,
+      };
+      return (tierPriority[a.icp_tier] || 5) - (tierPriority[b.icp_tier] || 5);
+    });
+  })();
 
   // Fetch drafts for selected lead
   const { data: draftsData, isLoading: draftsLoading } = useSWR<{ drafts: Draft[] }>(
@@ -166,7 +271,7 @@ export const CommandCenter = () => {
   );
 
   // Filter leads by search query
-  const filteredLeads = (leadsData?.leads || []).filter((lead) => {
+  const filteredLeads = transformedLeads.filter((lead) => {
     const query = searchQuery.toLowerCase();
     return (
       lead.name.toLowerCase().includes(query) ||
