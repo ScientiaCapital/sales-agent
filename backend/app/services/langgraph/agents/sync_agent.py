@@ -524,20 +524,21 @@ Always prioritize:
         )
         final_state = await self.graph.ainvoke(initial_state)
 
-        # Return results
+        # LangGraph returns AddableValuesDict - use .get() for safe access
+        # This is consistent with Signal Scout fix from Dec 8
         return {
-            "status": final_state.status,
-            "activities_synced": final_state.activities_synced,
-            "emails": final_state.emails_synced,
-            "sms": final_state.sms_synced,
-            "calls": final_state.calls_synced,
-            "replies_found": final_state.replies_found,
-            "replies_classified": final_state.replies_classified,
-            "sequences_advanced": final_state.sequences_advanced,
-            "outreach_sent": final_state.outreach_sent,
-            "sequences_completed": final_state.sequences_completed,
-            "events_emitted": final_state.events_emitted,
-            "errors": final_state.errors,
+            "status": final_state.get("status", "unknown"),
+            "activities_synced": final_state.get("activities_synced", 0),
+            "emails": final_state.get("emails_synced", 0),
+            "sms": final_state.get("sms_synced", 0),
+            "calls": final_state.get("calls_synced", 0),
+            "replies_found": final_state.get("replies_found", 0),
+            "replies_classified": final_state.get("replies_classified", 0),
+            "sequences_advanced": final_state.get("sequences_advanced", 0),
+            "outreach_sent": final_state.get("outreach_sent", 0),
+            "sequences_completed": final_state.get("sequences_completed", 0),
+            "events_emitted": final_state.get("events_emitted", []),
+            "errors": final_state.get("errors", []),
         }
 
     async def handle_webhook(

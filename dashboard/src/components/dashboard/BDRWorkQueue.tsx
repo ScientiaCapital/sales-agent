@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Search,
   RefreshCw,
+  ExternalLink,
 } from "lucide-react";
 
 interface WorkQueueItem {
@@ -23,6 +24,7 @@ interface WorkQueueItem {
   contact_phone?: string;
   contact_email?: string;
   notes?: string;
+  close_lead_url?: string; // "Open in Close" CRM link
 }
 
 interface WorkQueueResponse {
@@ -275,6 +277,26 @@ export function BDRWorkQueue() {
                               </a>
                             )}
                           </div>
+                        </div>
+                      )}
+
+                      {/* Open in Close CRM button */}
+                      {task.close_lead_url && (
+                        <div className="mt-2">
+                          <a
+                            href={task.close_lead_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs border-[var(--turkish-blue)] text-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/10"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Open in Close
+                            </Button>
+                          </a>
                         </div>
                       )}
                     </div>

@@ -8,24 +8,26 @@ Runs in the background to scrape contractor websites and extract:
 - Maintenance plans
 - Company info
 
-This replaces the standalone run_enrichment.py script with a scheduled Celery task.
+Uses WebsiteScraper with Browserbase for cloud browser automation.
 """
 
 # LangSmith tracing is configured centrally in celery_app.py
 # Do NOT override here - let the central config control tracing
-import os
+import asyncio
 import logging
-
-# Suppress LangSmith warning logs when tracing is disabled
-logging.getLogger("langsmith.client").setLevel(logging.ERROR)
-logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
-
-from typing import Dict, Any, List, Optional
+import os
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from celery.exceptions import SoftTimeLimitExceeded
 
 from app.celery_app import celery_app
 from app.core.logging import setup_logging
+
+# Suppress LangSmith warning logs when tracing is disabled
+logging.getLogger("langsmith.client").setLevel(logging.ERROR)
+logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
 
 logger = setup_logging(__name__)
 
@@ -34,14 +36,14 @@ logger = setup_logging(__name__)
     name="run_website_enrichment_batch",
     bind=True,
     max_retries=1,
-    soft_time_limit=600,  # 10 minutes max per batch
-    time_limit=660  # Hard limit 11 minutes
+    soft_time_limit=720,  # 12 minutes max per batch (10 sites @ ~1 min each + buffer)
+    time_limit=780,  # Hard limit 13 minutes
 )
 def run_website_enrichment_batch(
     self,
     batch_size: int = 5,
     icp_tier: Optional[str] = None,
-    priority_domains: Optional[List[str]] = None
+    priority_domains: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
     Run website enrichment on a batch of companies.
@@ -59,17 +61,18 @@ def run_website_enrichment_batch(
     Returns:
         Dict with enrichment results
     """
+    enriched_count = 0
+    errors = []
+
     try:
-        import asyncio
-        from supabase import create_client
         from dotenv import load_dotenv
-        from pathlib import Path
+        from supabase import create_client
 
         # Load env
-        load_dotenv(Path(__file__).parent.parent.parent.parent / '.env')
+        load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
-        supabase_url = os.getenv('SUPABASE_URL')
-        supabase_key = os.getenv('SUPABASE_SERVICE_KEY')
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
 
         if not supabase_url or not supabase_key:
             logger.error("[Enrichment] Missing Supabase credentials")
@@ -80,15 +83,18 @@ def run_website_enrichment_batch(
         logger.info(f"[Enrichment] Starting batch: size={batch_size}, tier={icp_tier}")
 
         # Query companies needing enrichment
-        query = supabase.table('dim_companies').select(
-            'company_id', 'company_name', 'domain'
-        ).not_.is_('domain', 'null').is_('ai_enriched_at', 'null')
+        query = (
+            supabase.table("dim_companies")
+            .select("company_id", "company_name", "domain")
+            .not_.is_("domain", "null")
+            .is_("ai_enriched_at", "null")
+        )
 
         if icp_tier:
-            query = query.eq('icp_tier', icp_tier)
+            query = query.eq("icp_tier", icp_tier)
 
         # Prioritize by ICP tier (Platinum first, then Gold, etc.)
-        query = query.order('icp_score', desc=True).limit(batch_size)
+        query = query.order("icp_score", desc=True).limit(batch_size)
 
         result = query.execute()
         companies = result.data
@@ -98,112 +104,125 @@ def run_website_enrichment_batch(
             return {
                 "status": "success",
                 "enriched": 0,
-                "message": "No companies needing enrichment"
+                "message": "No companies needing enrichment",
             }
 
         logger.info(f"[Enrichment] Found {len(companies)} companies to enrich")
 
-        # NOTE: Automated enrichment is disabled. Use run_enrichment.py manually instead.
-        # The WebsiteScraper module was never created. For now, skip automated enrichment
-        # and return the companies that need enrichment for manual processing.
-        logger.warning(
-            "[Enrichment] Automated scraper not available. Use 'python run_enrichment.py' manually."
-        )
-        return {
-            "status": "skipped",
-            "message": "Automated enrichment disabled. Run manually with: python run_enrichment.py",
-            "companies_needing_enrichment": len(companies),
-            "domains": [c['domain'] for c in companies[:10]]  # First 10 for reference
-        }
+        # Import and run the async scraper
+        from app.services.scrapers.website_scraper import WebsiteScraper
 
-        # DISABLED: WebsiteScraper module does not exist
-        # from app.services.scrapers.website_scraper import WebsiteScraper
-        # scraper = WebsiteScraper()
+        async def run_enrichment():
+            nonlocal enriched_count, errors
 
-        enriched_count = 0
-        errors = []
-
-        for company in companies:
-            company_id = company['company_id']
-            domain = company['domain']
-            company_name = company['company_name']
+            scraper = WebsiteScraper(pool_size=2, max_retries=3)
+            await scraper.initialize()
 
             try:
-                logger.info(f"[Enrichment] Scraping: {domain}")
+                for company in companies:
+                    company_id = company["company_id"]
+                    domain = company["domain"]
+                    company_name = company["company_name"]
 
-                # Run the scraper
-                scrape_result = asyncio.run(scraper.scrape_website(domain))
+                    try:
+                        logger.info(f"[Enrichment] Scraping: {domain}")
 
-                if scrape_result.get('success'):
-                    # Update company with enriched data
-                    update_data = {
-                        'ai_enriched_at': datetime.now(timezone.utc).isoformat(),
-                        'ai_company_story': scrape_result.get('company_story'),
-                        'services_offered': scrape_result.get('services', []),
-                        'oem_brands': scrape_result.get('oem_brands', []),
-                        'service_areas': scrape_result.get('service_areas', []),
-                        'has_maintenance_plan': scrape_result.get('has_maintenance_plan', False),
-                    }
+                        # Run the scraper
+                        scrape_result = await scraper.scrape_domain(domain)
 
-                    supabase.table('dim_companies').update(update_data).eq(
-                        'company_id', company_id
-                    ).execute()
+                        if scrape_result.get("success"):
+                            # Update company with enriched data
+                            update_data = {
+                                "ai_enriched_at": datetime.now(timezone.utc).isoformat(),
+                                "oem_brands": scrape_result.get("oem_brands", []),
+                                "service_areas": scrape_result.get("service_areas", []),
+                                "has_maintenance_plan": scrape_result.get(
+                                    "has_maintenance_plan", False
+                                ),
+                            }
 
-                    # Add any ATL contacts found
-                    contacts = scrape_result.get('contacts', [])
-                    for contact in contacts:
-                        if contact.get('is_atl'):
-                            # Check if contact already exists
-                            existing = supabase.table('dim_contacts').select('contact_id').eq(
-                                'company_id', company_id
-                            ).eq('full_name', contact['name']).execute()
+                            supabase.table("dim_companies").update(update_data).eq(
+                                "company_id", company_id
+                            ).execute()
 
-                            if not existing.data:
-                                supabase.table('dim_contacts').insert({
-                                    'company_id': company_id,
-                                    'full_name': contact['name'],
-                                    'title': contact.get('title'),
-                                    'email': contact.get('email'),
-                                    'phone': contact.get('phone'),
-                                    'is_atl': True,
-                                    'source': 'website_scrape'
-                                }).execute()
+                            # Add any ATL contacts found
+                            contacts = scrape_result.get("contacts", [])
+                            for contact in contacts:
+                                if contact.get("is_atl"):
+                                    # Check if contact already exists
+                                    existing = (
+                                        supabase.table("dim_contacts")
+                                        .select("contact_id")
+                                        .eq("company_id", company_id)
+                                        .eq("full_name", contact["name"])
+                                        .execute()
+                                    )
 
-                    enriched_count += 1
-                    logger.info(f"[Enrichment] ✅ Enriched: {company_name}")
+                                    if not existing.data:
+                                        supabase.table("dim_contacts").insert(
+                                            {
+                                                "company_id": company_id,
+                                                "full_name": contact["name"],
+                                                "title": contact.get("title"),
+                                                "is_atl": True,
+                                                "source": "celery_enrichment",
+                                            }
+                                        ).execute()
 
-                    # Log to audit trail
-                    supabase.table('lead_audit_log').insert({
-                        'company_id': company_id,
-                        'company_name': company_name,
-                        'event_type': 'enrichment_complete',
-                        'details': {
-                            'source': 'celery_enrichment',
-                            'contacts_found': len(contacts),
-                            'oem_brands': len(scrape_result.get('oem_brands', [])),
-                            'service_areas': len(scrape_result.get('service_areas', []))
-                        }
-                    }).execute()
+                            enriched_count += 1
+                            logger.info(f"[Enrichment] ✅ Enriched: {company_name}")
 
-                else:
-                    logger.warning(f"[Enrichment] ⚠️ Scrape failed: {domain}")
-                    errors.append({
-                        'domain': domain,
-                        'error': scrape_result.get('error', 'Unknown error')
-                    })
+                            # Log to audit trail
+                            try:
+                                supabase.table("lead_audit_log").insert(
+                                    {
+                                        "company_id": company_id,
+                                        "company_name": company_name,
+                                        "event_type": "enrichment_complete",
+                                        "details": {
+                                            "source": "celery_enrichment",
+                                            "contacts_found": len(contacts),
+                                            "oem_brands": len(
+                                                scrape_result.get("oem_brands", [])
+                                            ),
+                                            "service_areas": len(
+                                                scrape_result.get("service_areas", [])
+                                            ),
+                                        },
+                                    }
+                                ).execute()
+                            except Exception:
+                                pass  # Audit log is non-critical
 
-            except Exception as e:
-                logger.error(f"[Enrichment] ❌ Error on {domain}: {e}")
-                errors.append({'domain': domain, 'error': str(e)})
+                        else:
+                            logger.warning(f"[Enrichment] ⚠️ Scrape failed: {domain}")
+                            errors.append(
+                                {
+                                    "domain": domain,
+                                    "error": scrape_result.get("error", "Unknown error"),
+                                }
+                            )
 
-        logger.info(f"[Enrichment] Batch complete: {enriched_count}/{len(companies)} enriched")
+                    except Exception as e:
+                        logger.error(f"[Enrichment] ❌ Error on {domain}: {e}")
+                        errors.append({"domain": domain, "error": str(e)})
+
+            finally:
+                await scraper.close()
+
+        # Run async code in sync context
+        asyncio.run(run_enrichment())
+
+        logger.info(
+            f"[Enrichment] Batch complete: {enriched_count}/{len(companies)} enriched"
+        )
 
         return {
             "status": "success",
             "enriched": enriched_count,
             "total": len(companies),
             "errors": len(errors),
-            "error_details": errors[:5]  # Limit error details
+            "error_details": errors[:5],  # Limit error details
         }
 
     except SoftTimeLimitExceeded:
@@ -211,26 +230,16 @@ def run_website_enrichment_batch(
         return {
             "status": "error",
             "error": "Task timeout after 10 minutes",
-            "enriched": enriched_count if 'enriched_count' in dir() else 0
+            "enriched": enriched_count,
         }
 
     except Exception as e:
         logger.error(f"[Enrichment] Task failed: {e}")
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e), "enriched": enriched_count}
 
 
-@celery_app.task(
-    name="run_priority_enrichment",
-    bind=True,
-    max_retries=2
-)
-def run_priority_enrichment(
-    self,
-    company_id: str
-) -> Dict[str, Any]:
+@celery_app.task(name="run_priority_enrichment", bind=True, max_retries=2)
+def run_priority_enrichment(self, company_id: str) -> Dict[str, Any]:
     """
     Run priority enrichment on a specific company.
 
@@ -243,35 +252,35 @@ def run_priority_enrichment(
         Dict with enrichment result
     """
     try:
-        import asyncio
-        from supabase import create_client
         from dotenv import load_dotenv
-        from pathlib import Path
+        from supabase import create_client
 
-        load_dotenv(Path(__file__).parent.parent.parent.parent / '.env')
+        load_dotenv(Path(__file__).parent.parent.parent.parent / ".env")
 
         supabase = create_client(
-            os.getenv('SUPABASE_URL'),
-            os.getenv('SUPABASE_SERVICE_KEY')
+            os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_SERVICE_KEY")
         )
 
         # Get company
-        result = supabase.table('dim_companies').select(
-            'company_id', 'company_name', 'domain'
-        ).eq('company_id', company_id).single().execute()
+        result = (
+            supabase.table("dim_companies")
+            .select("company_id", "company_name", "domain")
+            .eq("company_id", company_id)
+            .single()
+            .execute()
+        )
 
         company = result.data
 
         if not company:
             return {"status": "error", "error": "Company not found"}
 
-        if not company.get('domain'):
+        if not company.get("domain"):
             return {"status": "error", "error": "Company has no domain"}
 
         # Enrich using batch task with size=1
         return run_website_enrichment_batch(
-            batch_size=1,
-            priority_domains=[company['domain']]
+            batch_size=1, priority_domains=[company["domain"]]
         )
 
     except Exception as e:
@@ -281,7 +290,4 @@ def run_priority_enrichment(
 
 # ========== Exports ==========
 
-__all__ = [
-    "run_website_enrichment_batch",
-    "run_priority_enrichment"
-]
+__all__ = ["run_website_enrichment_batch", "run_priority_enrichment"]

@@ -265,12 +265,25 @@ celery_app.conf.update(
             "args": ("book_meeting", 5),  # goal=book_meeting, max_leads=5
             "options": {"queue": "workflows"},
         },
-        # BDR Outreach - every hour on the hour
+        # BDR Outreach - 3x per hour for 72 drafts/day (Dec 8: Tim's volume target)
         # Drafts emails for HOT leads, sends Slack notifications for approval
-        "bdr-outreach-hourly": {
+        # Parallelization: Runs at :00, :20, :40 to spread load across hour
+        "bdr-outreach-1": {
             "task": "run_bdr_batch",
             "schedule": crontab(minute=0),  # Top of each hour
-            "args": (3,),  # 3 leads per hour
+            "args": (1,),  # 1 lead per run
+            "options": {"queue": "workflows"},
+        },
+        "bdr-outreach-2": {
+            "task": "run_bdr_batch",
+            "schedule": crontab(minute=20),  # :20 past each hour
+            "args": (1,),  # 1 lead per run
+            "options": {"queue": "workflows"},
+        },
+        "bdr-outreach-3": {
+            "task": "run_bdr_batch",
+            "schedule": crontab(minute=40),  # :40 past each hour
+            "args": (1,),  # 1 lead per run
             "options": {"queue": "workflows"},
         },
         # ========== ICP CHECKER SCHEDULE ==========
@@ -292,12 +305,15 @@ celery_app.conf.update(
             "options": {"queue": "default"},
         },
         # ========== WEBSITE ENRICHMENT SCHEDULE ==========
-        # Continuous website enrichment - every 5 minutes
+        # Website enrichment - every 30 minutes (Dec 8: cost savings $4.80/day vs $9.60)
         # Scrapes contractor websites for ATL contacts, OEMs, service areas
-        "website-enrichment-continuous": {
+        # Uses WebsiteScraper with Browserbase cloud browser
+        # At 10/batch every 30 min = 480/day enrichment capacity (sufficient for current pipeline)
+        # Parallelization: Runs at :30 offset from BDR (:00, :20, :40) and ICP (:00)
+        "website-enrichment-every-30-min": {
             "task": "run_website_enrichment_batch",
-            "schedule": 300.0,  # 5 minutes in seconds
-            "args": (5,),  # 5 companies per batch
+            "schedule": 1800.0,  # 30 minutes in seconds
+            "args": (10,),  # 10 companies per batch
             "options": {"queue": "enrichment"},
         },
         # ========== CONSOLIDATED BRIEFING SCHEDULE ==========
@@ -328,16 +344,19 @@ celery_app.conf.update(
             "options": {"queue": "workflows"},
         },
         # ========== ELITE TEAM SCHEDULES - Trifecta Hunter Squad ==========
-        # Signal Scout - detect market signals hourly at :15
-        "elite-signal-scout-hourly": {
+        # Signal Scout - detect market signals every 2 hours at :15 (Dec 8: higher signal quality)
+        # Reduced from hourly to prevent noise - quality over quantity
+        # Parallelization: Runs at :15 offset from BDR (:00, :20, :40) and Intake (:05, :10...)
+        "elite-signal-scout-every-2h": {
             "task": "run_signal_scout",
-            "schedule": crontab(minute=15),  # :15 past each hour
+            "schedule": crontab(minute=15, hour="*/2"),  # :15 past every 2 hours (0:15, 2:15, 4:15...)
             "options": {"queue": "default"},
         },
-        # Intake Commander - process incoming leads every 60 seconds
-        "elite-intake-commander-continuous": {
+        # Intake Commander - process incoming leads every 5 minutes (Dec 8: faster triage)
+        # Parallelization: Runs at :05, :10, :15... offset from BDR (:00, :20, :40)
+        "elite-intake-commander-every-5-min": {
             "task": "run_intake_commander",
-            "schedule": 60.0,  # Every 60 seconds
+            "schedule": 300.0,  # 5 minutes in seconds
             "args": (100,),  # Process up to 100 items per cycle
             "options": {"queue": "default"},
         },

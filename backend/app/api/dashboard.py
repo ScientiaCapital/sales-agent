@@ -380,6 +380,7 @@ class WorkQueueItem(BaseModel):
     contact_phone: Optional[str] = None
     contact_email: Optional[str] = None
     notes: Optional[str] = None
+    close_lead_url: Optional[str] = None  # "Open in Close" CRM link
 
 
 class WorkQueueResponse(BaseModel):
@@ -972,14 +973,14 @@ async def get_work_queue():
 
         # HOT leads (excluding customers)
         hot_leads = supabase.table("dim_companies").select(
-            "company_id, company_name, phone, domain, close_lead_id"
+            "company_id, company_name, phone, domain, close_lead_id, close_lead_url"
         ).eq("current_stage", "HOT").not_.in_(
             "current_stage", EXCLUDED_STAGES
         ).limit(10).execute()
 
         # High tier leads (excluding customers)
         high_tier = supabase.table("dim_companies").select(
-            "company_id, company_name, phone, domain, close_lead_id"
+            "company_id, company_name, phone, domain, close_lead_id, close_lead_url"
         ).in_("icp_tier", ["PLATINUM", "GOLD"]).not_.in_(
             "current_stage", EXCLUDED_STAGES
         ).limit(10).execute()
@@ -1009,7 +1010,8 @@ async def get_work_queue():
                 contact_name=contact.get("full_name") if contact else None,
                 contact_phone=contact.get("phone") if contact else c.get("phone"),
                 contact_email=contact.get("email") if contact else None,
-                notes="HOT lead - call today"
+                notes="HOT lead - call today",
+                close_lead_url=c.get("close_lead_url")
             ))
             priority_counts["P1"] += 1
 
@@ -1028,7 +1030,8 @@ async def get_work_queue():
                 contact_name=contact.get("full_name") if contact else None,
                 contact_phone=contact.get("phone") if contact else c.get("phone"),
                 contact_email=contact.get("email") if contact else None,
-                notes="High-value lead"
+                notes="High-value lead",
+                close_lead_url=c.get("close_lead_url")
             ))
             priority_counts["P2"] += 1
 
@@ -1810,3 +1813,561 @@ async def get_agents():
             )
             for a in AGENT_DEFINITIONS
         ]
+
+
+# ============================================================================
+# Revival Candidates Endpoint
+# ============================================================================
+
+class RevivalCandidate(BaseModel):
+    """A lost deal that's ready for re-engagement."""
+    close_opportunity_id: str
+    company_id: Optional[str] = None
+    lead_name: str
+    deal_value: float
+    close_reason: Optional[str] = None
+    date_lost: Optional[str] = None
+    days_since_lost: Optional[int] = None
+    revival_priority: str  # high, medium, low
+    revival_score: int  # 0-100
+    last_contact_date: Optional[str] = None
+    competitor_lost_to: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class RevivalCandidatesResponse(BaseModel):
+    """Response for revival candidates endpoint."""
+    candidates: List[RevivalCandidate]
+    total_count: int
+    total_value: float
+    high_priority_count: int
+    summary: Dict[str, Any]
+
+
+@router.get("/revival-candidates", response_model=RevivalCandidatesResponse)
+async def get_revival_candidates(
+    priority: Optional[str] = Query(None, description="Filter by priority: high, medium, low"),
+    min_value: Optional[float] = Query(None, description="Minimum deal value"),
+    limit: int = Query(50, ge=1, le=200, description="Max results to return"),
+    offset: int = Query(0, ge=0, description="Pagination offset")
+):
+    """
+    Get lost deals ready for re-engagement (6+ months since last contact).
+
+    These are deals from fact_lost_opportunities where is_revival_candidate=true.
+    Sorted by revival_score DESC, deal_value DESC.
+    """
+    try:
+        from app.core.supabase import get_supabase_client
+        supabase = get_supabase_client()
+
+        # Build query
+        query = supabase.table("fact_lost_opportunities").select("*").eq("is_revival_candidate", True)
+
+        # Apply filters
+        if priority:
+            query = query.eq("revival_priority", priority)
+        if min_value:
+            query = query.gte("deal_value", min_value)
+
+        # Get total count first (for pagination info)
+        count_result = supabase.table("fact_lost_opportunities").select(
+            "close_opportunity_id", count="exact"
+        ).eq("is_revival_candidate", True).execute()
+        total_count = count_result.count or 0
+
+        # Get paginated results sorted by score and value
+        result = query.order(
+            "revival_score", desc=True
+        ).order(
+            "deal_value", desc=True
+        ).range(offset, offset + limit - 1).execute()
+
+        candidates = []
+        total_value = 0.0
+        high_priority_count = 0
+
+        for row in (result.data or []):
+            total_value += row.get("deal_value", 0) or 0
+            if row.get("revival_priority") == "high":
+                high_priority_count += 1
+
+            candidates.append(RevivalCandidate(
+                close_opportunity_id=row.get("close_opportunity_id", ""),
+                company_id=row.get("company_id"),
+                lead_name=row.get("lead_name", "Unknown"),
+                deal_value=row.get("deal_value", 0) or 0,
+                close_reason=row.get("close_reason"),
+                date_lost=row.get("date_lost"),
+                days_since_lost=row.get("days_since_lost"),
+                revival_priority=row.get("revival_priority", "low"),
+                revival_score=row.get("revival_score", 0) or 0,
+                last_contact_date=row.get("last_contact_date"),
+                competitor_lost_to=row.get("competitor_lost_to"),
+                notes=row.get("notes")[:200] if row.get("notes") else None  # Truncate notes
+            ))
+
+        # Get summary stats
+        summary_result = supabase.table("fact_lost_opportunities").select(
+            "revival_priority"
+        ).eq("is_revival_candidate", True).execute()
+
+        priority_counts = {"high": 0, "medium": 0, "low": 0}
+        for row in (summary_result.data or []):
+            p = row.get("revival_priority", "low")
+            if p in priority_counts:
+                priority_counts[p] += 1
+
+        return RevivalCandidatesResponse(
+            candidates=candidates,
+            total_count=total_count,
+            total_value=total_value,
+            high_priority_count=high_priority_count,
+            summary={
+                "by_priority": priority_counts,
+                "avg_score": sum(c.revival_score for c in candidates) / len(candidates) if candidates else 0,
+                "filters_applied": {
+                    "priority": priority,
+                    "min_value": min_value,
+                    "limit": limit,
+                    "offset": offset
+                }
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching revival candidates: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+# ============================================================================
+# Mission Control Stats Endpoint (for Contractor Hunter Dashboard)
+# ============================================================================
+
+class MissionControlStatsResponse(BaseModel):
+    """Stats for the MissionControl arcade dashboard."""
+    totalLeads: int
+    totalContacts: int
+    atlContacts: int
+    enrichedLeads: int
+    platinumLeads: int
+    goldLeads: int
+    silverLeads: int
+    bronzeLeads: int
+    hotLeads: int
+    leadsWithPhone: int
+    leadsWithEmail: int
+    leadsAddedToday: int
+    leadsAddedThisWeek: int
+
+
+class TradeVerticalsResponse(BaseModel):
+    """Trade vertical counts."""
+    hvac: int
+    solar: int
+    electrical: int
+    plumbing: int
+    roofing: int
+    generator: int
+    battery: int
+    lowVoltage: int
+    fireSafety: int
+
+
+class MissionControlFullResponse(BaseModel):
+    """Full response for MissionControl dashboard."""
+    stats: MissionControlStatsResponse
+    trades: TradeVerticalsResponse
+    activityLog: List[Dict[str, Any]]
+    pipelineValue: float
+    dealsCount: int
+    winRate: float
+    avgDealSize: float
+    updatedAt: str
+
+
+@router.get("/mission-control", response_model=MissionControlFullResponse)
+async def get_mission_control_stats():
+    """
+    Get all stats needed for the MissionControl arcade dashboard.
+
+    This endpoint provides the same data as direct Supabase queries,
+    but uses the service key so the frontend doesn't need credentials.
+    """
+    try:
+        supabase = get_supabase()
+
+        now = datetime.now(timezone.utc)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_start = today_start - timedelta(days=7)
+
+        # Fetch companies
+        companies_result = supabase.table("dim_companies").select(
+            "company_id, company_name, icp_tier, icp_score, phone, domain, "
+            "services_offered, oem_brands, trade_count, ai_enriched_at, created_at"
+        ).execute()
+        companies = companies_result.data or []
+
+        # Fetch contacts
+        contacts_result = supabase.table("dim_contacts").select(
+            "contact_id, company_id, is_atl, email, phone"
+        ).execute()
+        contacts = contacts_result.data or []
+
+        # Build contact lookup
+        contact_by_company: Dict[str, Dict[str, bool]] = {}
+        for contact in contacts:
+            cid = contact.get("company_id")
+            if cid:
+                if cid not in contact_by_company:
+                    contact_by_company[cid] = {"hasEmail": False, "hasPhone": False, "isAtl": False}
+                if contact.get("email"):
+                    contact_by_company[cid]["hasEmail"] = True
+                if contact.get("phone"):
+                    contact_by_company[cid]["hasPhone"] = True
+                if contact.get("is_atl"):
+                    contact_by_company[cid]["isAtl"] = True
+
+        # Calculate HOT leads (ATL contact with both email AND phone)
+        hot_count = 0
+        for company in companies:
+            cid = company.get("company_id")
+            contact_info = contact_by_company.get(cid, {})
+            if contact_info.get("isAtl") and contact_info.get("hasEmail") and contact_info.get("hasPhone"):
+                hot_count += 1
+
+        # Count ICP tiers
+        tier_counts = {"PLATINUM": 0, "GOLD": 0, "SILVER": 0, "BRONZE": 0}
+        for c in companies:
+            tier = c.get("icp_tier")
+            if tier in tier_counts:
+                tier_counts[tier] += 1
+
+        # Count enriched
+        enriched_count = len([c for c in companies if c.get("ai_enriched_at")])
+
+        # Count with phone (company phone)
+        with_phone = len([c for c in companies if c.get("phone")])
+
+        # Count with email (contacts with email)
+        with_email = len([cid for cid, info in contact_by_company.items() if info.get("hasEmail")])
+
+        # Count today and this week
+        today_count = 0
+        week_count = 0
+        for c in companies:
+            created = c.get("created_at")
+            if created:
+                try:
+                    created_dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                    if created_dt >= today_start:
+                        today_count += 1
+                    if created_dt >= week_start:
+                        week_count += 1
+                except (ValueError, TypeError):
+                    pass
+
+        # Trade verticals detection
+        def services_check(services: list, keywords: list) -> bool:
+            if not services:
+                return False
+            lower_services = [str(s).lower() for s in services]
+            return any(kw in svc for kw in keywords for svc in lower_services)
+
+        def oem_check(oems: list, keywords: list) -> bool:
+            if not oems:
+                return False
+            lower_oems = [str(o).lower() for o in oems]
+            return any(kw in oem for kw in keywords for oem in lower_oems)
+
+        trades = {
+            "hvac": 0, "solar": 0, "electrical": 0, "plumbing": 0,
+            "roofing": 0, "generator": 0, "battery": 0, "lowVoltage": 0, "fireSafety": 0
+        }
+
+        for c in companies:
+            services = c.get("services_offered") or []
+            oems = c.get("oem_brands") or []
+
+            if services_check(services, ["hvac", "heating", "cooling", "air conditioning"]):
+                trades["hvac"] += 1
+            if services_check(services, ["solar", "pv", "photovoltaic"]) or oem_check(oems, ["enphase", "solaredge", "sma"]):
+                trades["solar"] += 1
+            if services_check(services, ["electrical", "electrician"]):
+                trades["electrical"] += 1
+            if services_check(services, ["plumbing", "plumber"]):
+                trades["plumbing"] += 1
+            if services_check(services, ["roofing", "roof"]):
+                trades["roofing"] += 1
+            if services_check(services, ["generator", "backup power"]) or oem_check(oems, ["generac", "kohler", "cummins"]):
+                trades["generator"] += 1
+            if services_check(services, ["battery", "storage"]) or oem_check(oems, ["powerwall", "enphase battery", "pwrcell"]):
+                trades["battery"] += 1
+            if services_check(services, ["low voltage", "security", "alarm", "access control", "surveillance"]):
+                trades["lowVoltage"] += 1
+            if services_check(services, ["fire", "sprinkler", "suppression", "fire alarm"]):
+                trades["fireSafety"] += 1
+
+        # Fetch activity from lead_audit_log
+        activity_log = []
+        try:
+            audit_result = supabase.table("lead_audit_log").select(
+                "id, event_type, company_name, created_at, details"
+            ).order("created_at", desc=True).limit(15).execute()
+
+            event_type_map = {
+                "enrichment_complete": ("ENRICHED", "enrichment"),
+                "lead_qualified": ("QUALIFIED", "success"),
+                "lead_created": ("NEW LEAD", "discovery"),
+                "contact_added": ("CONTACT", "agent"),
+            }
+
+            for log in (audit_result.data or []):
+                event_type = log.get("event_type", "system")
+                label, log_type = event_type_map.get(event_type, (event_type.upper(), "system"))
+                activity_log.append({
+                    "id": log.get("id"),
+                    "text": f"{label}: {log.get('company_name', 'Unknown')}",
+                    "type": log_type,
+                    "timestamp": log.get("created_at", "")[:19].replace("T", " ")
+                })
+        except Exception as audit_err:
+            logger.warning(f"Could not fetch audit log: {audit_err}")
+
+        # Get pipeline metrics from Close CRM
+        pipeline_value = 0.0
+        deals_count = 0
+        win_rate = 0.0
+        avg_deal_size = 15000.0  # Default
+
+        try:
+            _, active_agg = fetch_close_opportunities_filtered(
+                status_type="active",
+                aggregate_only=True
+            )
+            pipeline_value = active_agg.get("total_value_annualized", 0)
+            deals_count = active_agg.get("total_results", 0)
+
+            _, won_agg = fetch_close_opportunities_filtered(
+                status_type="won",
+                date_won_gte=POST_PIVOT_DATE,
+                aggregate_only=True
+            )
+            _, lost_agg = fetch_close_opportunities_filtered(
+                status_type="lost",
+                date_lost_gte=POST_PIVOT_DATE,
+                aggregate_only=True
+            )
+
+            won_count = won_agg.get("total_results", 0)
+            lost_count = lost_agg.get("total_results", 0)
+            total_closed = won_count + lost_count
+
+            if total_closed > 0:
+                win_rate = (won_count / total_closed) * 100
+
+            won_value = won_agg.get("total_value_annualized", 0)
+            if won_count > 0:
+                avg_deal_size = won_value / won_count
+        except Exception as close_err:
+            logger.warning(f"Could not fetch Close CRM data: {close_err}")
+
+        return MissionControlFullResponse(
+            stats=MissionControlStatsResponse(
+                totalLeads=len(companies),
+                totalContacts=len(contacts),
+                atlContacts=len([c for c in contacts if c.get("is_atl")]),
+                enrichedLeads=enriched_count,
+                platinumLeads=tier_counts["PLATINUM"],
+                goldLeads=tier_counts["GOLD"],
+                silverLeads=tier_counts["SILVER"],
+                bronzeLeads=tier_counts["BRONZE"],
+                hotLeads=hot_count,
+                leadsWithPhone=with_phone,
+                leadsWithEmail=with_email,
+                leadsAddedToday=today_count,
+                leadsAddedThisWeek=week_count
+            ),
+            trades=TradeVerticalsResponse(**trades),
+            activityLog=activity_log,
+            pipelineValue=pipeline_value,
+            dealsCount=deals_count,
+            winRate=win_rate,
+            avgDealSize=avg_deal_size,
+            updatedAt=now.isoformat()
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching mission control stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch mission control stats")
+
+
+# ============================================================================
+# Celery Observability Endpoint
+# ============================================================================
+
+class CeleryWorkerStats(BaseModel):
+    """Stats for a single Celery worker."""
+    hostname: str
+    status: str  # online, offline
+    active_tasks: int
+    processed_total: int
+    pool_size: Optional[int] = None
+    concurrency: Optional[int] = None
+
+
+class CeleryTaskStats(BaseModel):
+    """Stats for Celery tasks."""
+    scheduled_count: int
+    active_count: int
+    reserved_count: int
+    recent_tasks: List[Dict[str, Any]]
+
+
+class CeleryStatsResponse(BaseModel):
+    """Response for Celery observability endpoint."""
+    status: str  # healthy, degraded, offline
+    workers: List[CeleryWorkerStats]
+    tasks: CeleryTaskStats
+    redis_connected: bool
+    beat_running: bool
+    summary: Dict[str, Any]
+
+
+@router.get("/celery-stats", response_model=CeleryStatsResponse)
+async def get_celery_stats():
+    """
+    Get real-time Celery worker and task statistics.
+
+    Provides observability into:
+    - Worker health and status
+    - Active/scheduled/reserved task counts
+    - Redis connectivity
+    - Beat scheduler status
+    """
+    try:
+        from app.celery_app import celery_app
+        import redis
+
+        workers = []
+        active_count = 0
+        scheduled_count = 0
+        reserved_count = 0
+        recent_tasks = []
+
+        # Check Redis connectivity
+        redis_connected = False
+        try:
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+            r = redis.from_url(redis_url)
+            r.ping()
+            redis_connected = True
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}")
+
+        # Get worker stats via Celery inspect
+        try:
+            inspector = celery_app.control.inspect(timeout=3.0)
+
+            # Ping workers
+            ping_result = inspector.ping() or {}
+            stats_result = inspector.stats() or {}
+            active_result = inspector.active() or {}
+            scheduled_result = inspector.scheduled() or {}
+            reserved_result = inspector.reserved() or {}
+
+            for hostname, pong in ping_result.items():
+                stats = stats_result.get(hostname, {})
+                active_tasks = active_result.get(hostname, [])
+                scheduled_tasks = scheduled_result.get(hostname, [])
+                reserved_tasks = reserved_result.get(hostname, [])
+
+                workers.append(CeleryWorkerStats(
+                    hostname=hostname,
+                    status="online" if pong else "offline",
+                    active_tasks=len(active_tasks),
+                    processed_total=stats.get("total", {}).get("celery.backend_cleanup", 0) if stats else 0,
+                    pool_size=stats.get("pool", {}).get("max-concurrency") if stats else None,
+                    concurrency=stats.get("pool", {}).get("processes") if stats else None
+                ))
+
+                active_count += len(active_tasks)
+                scheduled_count += len(scheduled_tasks)
+                reserved_count += len(reserved_tasks)
+
+                # Collect recent active tasks
+                for task in active_tasks[:5]:
+                    recent_tasks.append({
+                        "name": task.get("name", "unknown"),
+                        "id": task.get("id", ""),
+                        "args": str(task.get("args", []))[:100],
+                        "started": task.get("time_start"),
+                        "hostname": hostname
+                    })
+
+        except Exception as e:
+            logger.warning(f"Celery inspect failed: {e}")
+
+        # Check Beat status (look for celerybeat-schedule file)
+        beat_running = False
+        try:
+            import os.path
+            beat_schedule_path = "celerybeat-schedule"
+            if os.path.exists(beat_schedule_path):
+                # Check if modified in last 5 minutes
+                mtime = os.path.getmtime(beat_schedule_path)
+                if (datetime.now().timestamp() - mtime) < 300:
+                    beat_running = True
+        except Exception:
+            pass
+
+        # Determine overall status
+        if not redis_connected:
+            status = "offline"
+        elif len(workers) == 0:
+            status = "degraded"
+        elif all(w.status == "online" for w in workers):
+            status = "healthy"
+        else:
+            status = "degraded"
+
+        return CeleryStatsResponse(
+            status=status,
+            workers=workers,
+            tasks=CeleryTaskStats(
+                scheduled_count=scheduled_count,
+                active_count=active_count,
+                reserved_count=reserved_count,
+                recent_tasks=recent_tasks[:10]
+            ),
+            redis_connected=redis_connected,
+            beat_running=beat_running,
+            summary={
+                "total_workers": len(workers),
+                "online_workers": sum(1 for w in workers if w.status == "online"),
+                "total_active_tasks": active_count,
+                "total_scheduled": scheduled_count,
+                "health_score": 100 if status == "healthy" else (50 if status == "degraded" else 0)
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching Celery stats: {e}")
+        return CeleryStatsResponse(
+            status="offline",
+            workers=[],
+            tasks=CeleryTaskStats(
+                scheduled_count=0,
+                active_count=0,
+                reserved_count=0,
+                recent_tasks=[]
+            ),
+            redis_connected=False,
+            beat_running=False,
+            summary={
+                "error": str(e),
+                "total_workers": 0,
+                "online_workers": 0,
+                "health_score": 0
+            }
+        )

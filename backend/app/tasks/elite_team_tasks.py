@@ -71,28 +71,35 @@ def run_signal_scout(self) -> Dict[str, Any]:
 
         logger.info("[Signal Scout] Starting market signal scan")
 
-        # Run the agent
-        agent = SignalScoutAgent()
-        result = asyncio.run(agent.run())
+        # Run the agent - properly wrap async call for Celery sync context
+        async def _run_scan():
+            agent = SignalScoutAgent()
+            return await agent.scan()
+
+        scan_result = asyncio.run(_run_scan())
+
+        # Convert SignalScoutResult to dict for task return
+        # Use model_dump() to serialize Pydantic models correctly
+        signals_detected = scan_result.signals_detected
+        orders = [order.model_dump() for order in scan_result.scraping_orders]
 
         # Record run
         hub.record_agent_run(
             "signal_scout",
             success=True,
-            items_processed=result.get("signals_detected", 0)
+            items_processed=signals_detected
         )
 
-        logger.info(f"[Signal Scout] Complete: {result.get('signals_detected', 0)} signals, {result.get('orders_generated', 0)} orders")
+        logger.info(f"[Signal Scout] Complete: {signals_detected} signals, {len(orders)} orders")
 
         # Emit scraping orders for Deep Hunter
-        orders = result.get("scraping_orders", [])
         for order in orders:
             # Queue Deep Hunter task for each order
             process_scraping_order.delay(order)
 
         return {
             "status": "success",
-            "signals_detected": result.get("signals_detected", 0),
+            "signals_detected": signals_detected,
             "orders_generated": len(orders),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }

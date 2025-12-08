@@ -13,6 +13,10 @@ import httpx
 import logging
 import base64
 import os
+from dotenv import load_dotenv
+
+# Ensure env vars are loaded
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -540,4 +544,193 @@ class CloseEmailClient:
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Close delete email error: {e.response.status_code} - {e.response.text}")
+            raise
+
+    # Close CRM Custom Field IDs
+    # These map to your actual Close account custom fields
+    CUSTOM_FIELDS = {
+        # Source tracking
+        "original_source": "cf_2hfeT2jPdydIahMQmRGXaoaVRVpPPrWcvqRz07ZUb9n",  # Original Source (choices)
+        # Industry
+        "primary_industry": "cf_ly6GNkZzcZXaqMS4yjSCf2hCsjco5Mvl5GJ0VB2HtJP",  # Primary Industry (Verified)
+        # Lead scoring & qualification
+        "tier": "cf_lobJ0ZNFQNmbKG7Wh10LjChXLhbuNLsPvjbYiYY030d",  # tier (hot/warm/cold)
+        "tier_verified": "cf_ewefK5iFmVpBemft6uHTknfwFOxXf6jM6MUvp48NKxq",  # Tier (verified) - S/A/B/C
+        "qualification_score": "cf_mZ89DBTfARHRjVjZLs5PQvmfLiaZSi2GWq9AFQ6ddwO",  # qualification_score (number)
+        "is_atl": "cf_3GYoxBOcie708HxPnMOUExtxjECFpWvN1e61TMqFy0K",  # is_atl (Yes/No)
+        # Company details
+        "area_of_focus": "cf_LxbZDklwgRTXtBRxwnevlT2kKhBD2tkm0B9vxPRElkA",  # Area of Focus (Residential/Commercial)
+        "type_of_work": "cf_QIn6Cb4ongYH794UUUgOdhyn6f1qTjtBVsjHgsXIUmB",  # Type of Work (Construction/Service)
+        "num_employees": "cf_JPeSD7tiaqW9OomxwDvLVJzPZ7Z6sULyg7TurFoCgd8",  # Number of employees (text)
+        "linkedin_url": "cf_hziAFKlGoqQyLtUYfjNlqwFIbon2AS1lZn2R3NrHiWr",  # Lead LinkedIn URL (verified)
+    }
+
+    async def create_lead_with_contact(
+        self,
+        company_name: str,
+        contact_email: str,
+        contact_name: Optional[str] = None,
+        contact_title: Optional[str] = None,
+        company_url: Optional[str] = None,
+        company_phone: Optional[str] = None,
+        # New ICP fields from Supabase
+        icp_tier: Optional[str] = None,
+        qualification_score: Optional[float] = None,
+        primary_industry: Optional[str] = None,
+        area_of_focus: Optional[str] = None,
+        is_atl: Optional[bool] = None,
+        linkedin_url: Optional[str] = None,
+        num_employees: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a lead in Close CRM with one contact and ICP data.
+
+        This is used to auto-import leads from Supabase when staging drafts.
+        Creates the lead with full ICP context so we can then create email drafts.
+
+        Args:
+            company_name: Company/lead name
+            contact_email: Contact email (required for email drafts)
+            contact_name: Contact full name (optional)
+            contact_title: Contact job title (optional)
+            company_url: Company website URL (optional)
+            company_phone: Company phone (optional)
+            icp_tier: ICP tier from Supabase (PLATINUM/GOLD/SILVER/BRONZE)
+            qualification_score: ICP score 0-100
+            primary_industry: Industry vertical (HVAC, Solar, etc.)
+            area_of_focus: Residential/Commercial/Both
+            is_atl: Whether contact is Above The Line decision maker
+            linkedin_url: Company LinkedIn URL
+            num_employees: Employee count or range
+
+        Returns:
+            Dict with lead_id, contact_id, and close_lead_url
+        """
+        try:
+            # Build lead payload
+            payload = {
+                "name": company_name,
+                "contacts": [
+                    {
+                        "name": contact_name or "Contact",
+                        "emails": [{"email": contact_email, "type": "office"}],
+                    }
+                ],
+            }
+
+            # Add optional contact fields
+            if contact_title:
+                payload["contacts"][0]["title"] = contact_title
+
+            # Add optional company fields
+            if company_url:
+                payload["url"] = company_url
+            if company_phone:
+                payload["phones"] = [{"phone": company_phone, "type": "office"}]
+
+            # Set default owner (Tim Kipper)
+            default_owner = os.getenv("CLOSE_DEFAULT_OWNER_USER_ID")
+            if default_owner:
+                payload["user_id"] = default_owner
+
+            # Add source tracking - "AI Outreach" as original source
+            # Note: This must be an existing choice in the Original Source field
+            # Using "Apollo .io" as fallback since it's a valid choice
+            payload[f"custom.{self.CUSTOM_FIELDS['original_source']}"] = "Apollo .io"
+
+            # Map ICP tier to Close tier field
+            # Supabase: PLATINUM/GOLD/SILVER/BRONZE → Close: S/A/B/C
+            if icp_tier:
+                tier_map = {
+                    "PLATINUM": "S",
+                    "GOLD": "A",
+                    "SILVER": "B",
+                    "BRONZE": "C",
+                }
+                close_tier = tier_map.get(icp_tier.upper(), "C")
+                payload[f"custom.{self.CUSTOM_FIELDS['tier_verified']}"] = close_tier
+
+                # Also set hot/warm/cold tier based on ICP
+                temp_map = {
+                    "PLATINUM": "hot",
+                    "GOLD": "hot",
+                    "SILVER": "warm",
+                    "BRONZE": "cold",
+                }
+                payload[f"custom.{self.CUSTOM_FIELDS['tier']}"] = temp_map.get(icp_tier.upper(), "cold")
+
+            # Add qualification score
+            if qualification_score is not None:
+                payload[f"custom.{self.CUSTOM_FIELDS['qualification_score']}"] = qualification_score
+
+            # Map primary industry
+            # Valid choices: Electrical, GC/Construction, Life Safety, Mechanical/HVAC, Other, Solar
+            if primary_industry:
+                industry_map = {
+                    "HVAC": "Mechanical/HVAC",
+                    "Solar": "Solar",
+                    "Electrical": "Electrical",
+                    "Plumbing": "Other",
+                    "Roofing": "GC/Construction",
+                }
+                close_industry = industry_map.get(primary_industry, "Other")
+                payload[f"custom.{self.CUSTOM_FIELDS['primary_industry']}"] = close_industry
+
+            # Map area of focus
+            # Valid choices: Both (Residential & Commercial), Commercial, Residential, Utility
+            if area_of_focus:
+                focus_map = {
+                    "Residential": "Residential",
+                    "Commercial": "Commercial",
+                    "Both": "Both (Residential & Commercial)",
+                }
+                close_focus = focus_map.get(area_of_focus, area_of_focus)
+                payload[f"custom.{self.CUSTOM_FIELDS['area_of_focus']}"] = close_focus
+
+            # Add is_atl flag
+            if is_atl is not None:
+                payload[f"custom.{self.CUSTOM_FIELDS['is_atl']}"] = "Yes" if is_atl else "No"
+
+            # Add LinkedIn URL
+            if linkedin_url:
+                payload[f"custom.{self.CUSTOM_FIELDS['linkedin_url']}"] = linkedin_url
+
+            # Add employee count
+            if num_employees:
+                payload[f"custom.{self.CUSTOM_FIELDS['num_employees']}"] = str(num_employees)
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.BASE_URL}/lead/",
+                    headers=self._get_headers(),
+                    json=payload,
+                    timeout=30.0,
+                )
+
+                response.raise_for_status()
+                result = response.json()
+
+                lead_id = result.get("id")
+                contacts = result.get("contacts", [])
+                contact_id = contacts[0].get("id") if contacts else None
+
+                logger.info(
+                    f"Created Close lead: {lead_id} for {company_name} "
+                    f"(ICP: {icp_tier}, score: {qualification_score}) "
+                    f"with contact {contact_email}"
+                )
+
+                return {
+                    "lead_id": lead_id,
+                    "contact_id": contact_id,
+                    "company_name": company_name,
+                    "contact_email": contact_email,
+                    "close_lead_url": f"https://app.close.com/lead/{lead_id}/",
+                }
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"Close create lead error: {e.response.status_code} - {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to create lead in Close: {e}")
             raise
