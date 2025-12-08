@@ -15,6 +15,8 @@ import {
   Filter,
   CheckCheck,
   Edit,
+  ExternalLink,
+  Upload,
 } from "lucide-react";
 
 interface Draft {
@@ -28,6 +30,7 @@ interface Draft {
   subject: string | null; // Email only
   body: string;
   personal_hooks: Array<{ type: string; hook: string }>;
+  close_lead_url: string | null; // "Open in Close" CRM link
   confidence: number;
   generated_at: string;
   updated_at: string;
@@ -226,6 +229,29 @@ export function DraftReviewQueue() {
       mutate(); // Refresh data
     } catch (err) {
       console.error("Failed to discard:", err);
+    }
+  };
+
+  // Stage draft to Close CRM as a real email draft
+  const stageToClose = async (draftId: string) => {
+    try {
+      const response = await fetch(`${API_BASE}/ai/drafts/${draftId}/stage`, {
+        method: "POST",
+      });
+      const result = await response.json();
+
+      if (response.ok && result.close_lead_url) {
+        // Open Close CRM in new tab so user can review/send the draft
+        window.open(result.close_lead_url, "_blank");
+      } else if (!response.ok) {
+        // Show error message from API
+        alert(result.detail || "Failed to stage draft to Close CRM");
+      }
+
+      mutate(); // Refresh data
+    } catch (err) {
+      console.error("Failed to stage to Close:", err);
+      alert("Failed to stage draft to Close CRM. Check console for details.");
     }
   };
 
@@ -511,6 +537,23 @@ export function DraftReviewQueue() {
                   {/* Action Buttons */}
                   {!isEditing && (
                     <div className="flex items-center gap-2 ml-9 flex-wrap">
+                      {/* Open in Close CRM - shows first when available */}
+                      {draft.close_lead_url && (
+                        <a
+                          href={draft.close_lead_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs border-[var(--turkish-blue)] text-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/10"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Open in Close
+                          </Button>
+                        </a>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -529,6 +572,17 @@ export function DraftReviewQueue() {
                         <RefreshCw className="h-3 w-3 mr-1" />
                         Regenerate
                       </Button>
+                      {/* Stage to Close - only for email drafts */}
+                      {draft.draft_type === "email" && (
+                        <Button
+                          size="sm"
+                          className="h-7 px-2 text-xs bg-[var(--turkish-blue)] hover:bg-[var(--turkish-blue)]/90"
+                          onClick={() => stageToClose(draft.draft_id)}
+                        >
+                          <Upload className="h-3 w-3 mr-1" />
+                          Stage to Close
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         className="h-7 px-2 text-xs bg-green-600 hover:bg-green-700"

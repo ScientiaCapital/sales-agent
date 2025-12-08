@@ -160,6 +160,84 @@ RULES:
 If no personal details found, say so honestly and focus on company-specific angles."""
 
 
+# Signal-aware prompt for contextual outreach
+SIGNAL_AWARE_PROMPT = """You are an expert BDR (Business Development Rep) analyst. Your job is to extract ACTIONABLE sales intelligence and craft contextual outreach based on the signal/trigger.
+
+CRITICAL: This is NOT a cold outreach. We have a SPECIFIC REASON to reach out.
+
+COMPANY INFORMATION:
+- Company: {company_name}
+- Contact: {contact_name} ({contact_title})
+- Services: {services}
+- Brands they carry: {brands}
+- Location: {location}
+
+OUTREACH SIGNAL (THE "WHY NOW"):
+- Signal Type: {signal_type}
+- Reason: {signal_reason}
+- Email Tone: {email_tone}
+- CTA Type: {cta_type}
+
+PRIOR CORRESPONDENCE:
+{correspondence_summary}
+
+SCRAPED WEBSITE CONTENT:
+{scraped_content}
+
+YOUR TASK:
+
+1. Extract PERSONAL HOOKS - things to build rapport:
+   - Family, pets, hobbies, background, community involvement
+   - Reference these in the outreach to make it personal
+
+2. Extract COMPANY INTEL:
+   - Origin story, years in business, core values
+
+3. Generate SIGNAL-APPROPRIATE OUTREACH:
+
+   Based on the signal type, adjust your approach:
+
+   - SQL_BOOKING: They're qualified and ready. Focus on booking a demo/call.
+     "Based on our conversation, I'd love to show you how..."
+
+   - SAL_FOLLOWUP: Sales accepted, needs follow-up sequence.
+     "Following up on our previous discussion about..."
+
+   - NURTURE_REENGAGE: Been a while since contact. Re-engage warmly.
+     "It's been a few months since we connected. Checking in to see if..."
+
+   - OPPORTUNITY_PROGRESS: Active deal, move it forward.
+     "Wanted to touch base on the proposal/next steps..."
+
+   - COLD_NEW: First touch, use personal hooks to stand out.
+     Reference their specific details, brands, or company story.
+
+   - STALE_LEAD: 90+ days since contact. Acknowledge the gap.
+     "I know it's been a while since we last spoke..."
+
+   - REPLY: They responded! Follow up on what they said.
+     Reference their previous message and continue the conversation.
+
+4. MATCH THE TONE to {email_tone}:
+   - booking: Direct, professional, get the meeting
+   - followup: Warm, reference prior conversation
+   - reengagement: Friendly, acknowledge time passed
+   - first_touch: Personal, unique, stand out from spam
+   - qualification: Curious, asking good questions
+   - deal_progression: Business-focused, next steps
+
+5. USE THIS CTA: {cta_type}
+
+RULES:
+- Reference the signal/reason in your outreach
+- If prior correspondence exists, reference it specifically
+- Keep SMS under 160 characters
+- Email should be 2-3 short paragraphs max
+- Voice opener should reference the signal naturally
+
+The goal is contextual, strategic outreach - not spray-and-pray."""
+
+
 # ========== Agent Implementation ==========
 
 class SalesIntelAgent:
@@ -202,6 +280,12 @@ class SalesIntelAgent:
         services: List[str] = None,
         brands: List[str] = None,
         location: str = None,
+        # NEW: Signal context for "why now" outreach
+        signal_type: str = None,
+        signal_reason: str = None,
+        correspondence_summary: str = None,
+        email_tone: str = "first_touch",
+        cta_type: str = "Introduction",
     ) -> SalesIntelResult:
         """
         Analyze scraped content and extract sales intelligence.
@@ -214,6 +298,11 @@ class SalesIntelAgent:
             services: List of services they offer
             brands: List of brands they carry
             location: City, State
+            signal_type: Type of signal (SQL_BOOKING, NURTURE_REENGAGE, etc.)
+            signal_reason: Human-readable reason for outreach
+            correspondence_summary: Summary of prior correspondence
+            email_tone: Tone for the email (booking, followup, reengagement, first_touch)
+            cta_type: Call-to-action type (Schedule a call, Reconnect, etc.)
 
         Returns:
             SalesIntelResult with personal hooks and outreach drafts
@@ -231,12 +320,6 @@ class SalesIntelAgent:
         start_time = time.time()
 
         try:
-            # Build prompt
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", "You are an expert sales intelligence analyst. Extract actionable intel and generate personalized outreach."),
-                ("human", SALES_INTEL_PROMPT)
-            ])
-
             # Prepare inputs
             services_str = ", ".join(services[:8]) if services else "Not specified"
             brands_str = ", ".join(brands[:6]) if brands else "Not specified"
@@ -245,17 +328,57 @@ class SalesIntelAgent:
             # Truncate content to avoid token limits
             content = scraped_content[:8000] if len(scraped_content) > 8000 else scraped_content
 
+            # Choose prompt based on whether we have signal context
+            # Signal-aware = contextual, strategic outreach
+            # Default = cold outreach / first touch
+            has_signal = signal_type and signal_type != "COLD_NEW"
+
+            if has_signal:
+                # Use signal-aware prompt for contextual outreach
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", "You are an expert sales intelligence analyst. Generate contextual outreach based on the signal/trigger."),
+                    ("human", SIGNAL_AWARE_PROMPT)
+                ])
+
+                # Build inputs with signal context
+                inputs = {
+                    "company_name": company_name,
+                    "contact_name": contact_name,
+                    "contact_title": contact_title,
+                    "services": services_str,
+                    "brands": brands_str,
+                    "location": location_str,
+                    "scraped_content": content,
+                    "signal_type": signal_type or "COLD_NEW",
+                    "signal_reason": signal_reason or "First touch outreach",
+                    "correspondence_summary": correspondence_summary or "No prior correspondence",
+                    "email_tone": email_tone or "first_touch",
+                    "cta_type": cta_type or "Introduction",
+                }
+
+                logger.info(f"Using SIGNAL-AWARE prompt for {company_name} (signal: {signal_type})")
+            else:
+                # Use standard cold outreach prompt
+                prompt = ChatPromptTemplate.from_messages([
+                    ("system", "You are an expert sales intelligence analyst. Extract actionable intel and generate personalized outreach."),
+                    ("human", SALES_INTEL_PROMPT)
+                ])
+
+                inputs = {
+                    "company_name": company_name,
+                    "contact_name": contact_name,
+                    "contact_title": contact_title,
+                    "services": services_str,
+                    "brands": brands_str,
+                    "location": location_str,
+                    "scraped_content": content,
+                }
+
+                logger.info(f"Using COLD OUTREACH prompt for {company_name} (no signal context)")
+
             # Run extraction
             chain = prompt | self.chain
-            result = await chain.ainvoke({
-                "company_name": company_name,
-                "contact_name": contact_name,
-                "contact_title": contact_title,
-                "services": services_str,
-                "brands": brands_str,
-                "location": location_str,
-                "scraped_content": content,
-            })
+            result = await chain.ainvoke(inputs)
 
             # Add processing time
             result.processing_time_ms = int((time.time() - start_time) * 1000)
@@ -290,9 +413,31 @@ async def extract_sales_intel(
     services: List[str] = None,
     brands: List[str] = None,
     location: str = None,
+    # NEW: Signal context parameters for contextual outreach
+    signal_type: str = None,
+    signal_reason: str = None,
+    correspondence_summary: str = None,
+    email_tone: str = "first_touch",
+    cta_type: str = "Introduction",
 ) -> Dict[str, Any]:
     """
-    Standalone function to extract sales intel - can be called from scrape_domain.py
+    Standalone function to extract sales intel - can be called from API endpoints.
+
+    Now supports signal context for contextual outreach (not just cold emails).
+
+    Args:
+        company_name: Company name
+        contact_name: Primary contact name
+        contact_title: Contact title
+        scraped_content: Website content
+        services: Services offered
+        brands: OEM brands carried
+        location: City, State
+        signal_type: Type of signal (SQL_BOOKING, NURTURE_REENGAGE, etc.)
+        signal_reason: Human-readable reason for outreach
+        correspondence_summary: Summary of prior correspondence
+        email_tone: Tone for the email
+        cta_type: Call-to-action type
 
     Returns a dict for easy integration into existing code.
     """
@@ -305,6 +450,12 @@ async def extract_sales_intel(
         services=services,
         brands=brands,
         location=location,
+        # Pass signal context through
+        signal_type=signal_type,
+        signal_reason=signal_reason,
+        correspondence_summary=correspondence_summary,
+        email_tone=email_tone,
+        cta_type=cta_type,
     )
 
     return {

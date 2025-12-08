@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-04
+**Last Updated**: 2025-12-08
 
 ---
 
@@ -17,7 +17,58 @@
 
 ---
 
-## LATEST UPDATE (Dec 4 Evening)
+## LATEST UPDATE (Dec 8 - Signal-Based Outreach)
+
+### Signal Detection System - COMPLETE ✅
+
+**The Problem**: Drafts were being generated with ZERO context - no "why now", no signal, no strategy. Just spray-and-pray cold emails.
+
+**The Solution**: Signal-aware draft generation that detects the context before writing.
+
+| Component | File | Status |
+|-----------|------|--------|
+| SignalDetector Service | `app/services/outreach/signal_detector.py` | ✅ NEW |
+| Signal-aware SalesIntelAgent | `app/services/langgraph/agents/sales_intel_agent.py` | ✅ UPDATED |
+| Signal integration in AI outreach | `app/api/ai_outreach.py` | ✅ UPDATED |
+| Database migration | `supabase/migrations/20251208_add_signal_columns.sql` | ✅ NEW |
+
+### Signal Types
+
+| Signal | Priority | Email Tone | When to Use |
+|--------|----------|------------|-------------|
+| `SQL_BOOKING` | 1 | booking | Sales Qualified - ready for demo |
+| `REPLY` | 2 | followup | They responded - immediate follow-up |
+| `OPPORTUNITY_PROGRESS` | 3 | deal_progression | Active opportunity - move deal forward |
+| `SAL_FOLLOWUP` | 4 | followup_sequence | Sales Accepted - needs follow-up sequence |
+| `NURTURE_REENGAGE` | 5 | reengagement | In nurture - checking back in |
+| `STALE_LEAD` | 6 | reengagement | 90+ days since last contact |
+| `COLD_NEW` | 7 | first_touch | Net new lead - first touch |
+
+### New Database Columns (dim_ai_drafts)
+
+```sql
+signal_type TEXT           -- SQL_BOOKING, NURTURE_REENGAGE, etc.
+signal_source TEXT         -- close_status, supabase_icp, activity_date
+signal_reason TEXT         -- Human-readable "why now"
+close_lead_status TEXT     -- Current Close CRM status
+correspondence_summary TEXT -- Recent activity summary
+```
+
+### How It Works
+
+1. **Before generating draft**: Signal detector checks Close CRM lead status + activity history
+2. **Selects appropriate prompt**: SIGNAL_AWARE_PROMPT (contextual) vs SALES_INTEL_PROMPT (cold)
+3. **Generates contextual draft**: Email tone, CTA, and content match the signal
+4. **Stores signal with draft**: Full audit trail of why the draft was created
+
+**Run migration**:
+```bash
+supabase db push
+```
+
+---
+
+## PREVIOUS UPDATE (Dec 4 Evening)
 
 ### ICP Scoring + CRM Export Pipeline - COMPLETE
 
