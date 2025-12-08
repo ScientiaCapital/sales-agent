@@ -33,6 +33,39 @@ interface GameStats {
   leadsAddedThisWeek: number
 }
 
+// ICP Segment tracking - Coperniq MCP+Energy verticals
+interface ICPSegments {
+  hvac: number
+  solar: number
+  electrical: number
+  plumbing: number
+  roofing: number
+  // Market segments
+  resiOnly: number      // Residential only
+  commercial: number    // Pure commercial
+  resimercial: number   // Both resi + commercial
+  cAndI: number         // Large C&I solar
+  // Quality metrics
+  multiTrade: number    // 3+ trades
+  avgTradeCount: number
+  avgLocations: number
+  avgEmployees: number
+}
+
+// Valuation point values - gamified scoring
+const VALUATION_POINTS = {
+  leadBase: 50,              // Every lead = $50
+  enriched: 25,              // +$25 for enrichment
+  atlContact: 100,           // +$100 for decision maker
+  directPhone: 150,          // +$150 for direct dial
+  platinum: 500,             // +$500 for platinum ICP
+  gold: 250,                 // +$250 for gold
+  silver: 100,               // +$100 for silver
+  multiTrade: 200,           // +$200 for 3+ trades (Coperniq sweet spot)
+  hasSolar: 300,             // +$300 for solar capability
+  multiLocation: 150,        // +$150 for multi-location
+}
+
 interface AgentStatus {
   name: string
   icon: string
@@ -89,6 +122,26 @@ export function MissionControl() {
     leadsAddedThisWeek: 0,
   })
 
+  const [segments, setSegments] = useState<ICPSegments>({
+    hvac: 0,
+    solar: 0,
+    electrical: 0,
+    plumbing: 0,
+    roofing: 0,
+    resiOnly: 0,
+    commercial: 0,
+    resimercial: 0,
+    cAndI: 0,
+    multiTrade: 0,
+    avgTradeCount: 0,
+    avgLocations: 0,
+    avgEmployees: 0,
+  })
+
+  const [pipelineValuation, setPipelineValuation] = useState(0)
+  const [displayedValuation, setDisplayedValuation] = useState(0)
+  const [topBrands, setTopBrands] = useState<{name: string, count: number}[]>([])
+
   const [agents, setAgents] = useState<AgentStatus[]>(AGENTS)
   const [activityLog, setActivityLog] = useState<ActivityLog[]>([])
   const [displayedScore, setDisplayedScore] = useState(0)
@@ -100,10 +153,14 @@ export function MissionControl() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Get company counts
+        // Get company counts with ICP segment data
         const { data: companies, error: compError } = await supabase
           .from('dim_companies')
-          .select('id, icp_tier, enrichment_status, has_phone, has_email, created_at')
+          .select(`
+            id, icp_tier, enrichment_status, has_phone, has_email, created_at,
+            services_offered, oem_brands, trade_count, employee_count, location_count,
+            industries_served
+          `)
 
         if (compError) throw compError
 
@@ -134,6 +191,133 @@ export function MissionControl() {
           leadsAddedToday: companies?.filter(c => new Date(c.created_at) >= todayStart).length || 0,
           leadsAddedThisWeek: companies?.filter(c => new Date(c.created_at) >= weekStart).length || 0,
         }
+
+        // Calculate ICP Segments from services_offered and industries_served
+        const servicesCheck = (services: string[] | null, keywords: string[]) => {
+          if (!services) return false
+          const lower = services.map(s => s.toLowerCase())
+          return keywords.some(k => lower.some(s => s.includes(k)))
+        }
+
+        const hvacCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['hvac', 'heating', 'cooling', 'air conditioning', 'furnace'])
+        ).length || 0
+
+        const solarCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['solar', 'pv', 'photovoltaic']) ||
+          servicesCheck(c.industries_served, ['solar', 'renewable'])
+        ).length || 0
+
+        const electricalCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['electrical', 'electrician', 'wiring'])
+        ).length || 0
+
+        const plumbingCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['plumbing', 'plumber', 'pipe'])
+        ).length || 0
+
+        const roofingCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['roofing', 'roof'])
+        ).length || 0
+
+        // Market segment classification
+        const resiCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['residential']) &&
+          !servicesCheck(c.services_offered, ['commercial'])
+        ).length || 0
+
+        const commercialCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['commercial']) &&
+          !servicesCheck(c.services_offered, ['residential'])
+        ).length || 0
+
+        const resimercialCount = companies?.filter(c =>
+          servicesCheck(c.services_offered, ['residential']) &&
+          servicesCheck(c.services_offered, ['commercial'])
+        ).length || 0
+
+        // C&I = Large commercial + industrial solar focus
+        const cAndICount = companies?.filter(c =>
+          (servicesCheck(c.industries_served, ['industrial', 'c&i', 'commercial solar']) ||
+           servicesCheck(c.services_offered, ['industrial', 'commercial solar']))
+        ).length || 0
+
+        // Multi-trade (Coperniq sweet spot: 3+ trades)
+        const multiTradeCount = companies?.filter(c =>
+          c.trade_count && c.trade_count >= 3
+        ).length || 0
+
+        // Calculate averages
+        const withTrades = companies?.filter(c => c.trade_count && c.trade_count > 0) || []
+        const withLocations = companies?.filter(c => c.location_count && c.location_count > 0) || []
+        const withEmployees = companies?.filter(c => c.employee_count) || []
+
+        const avgTradeCount = withTrades.length > 0
+          ? withTrades.reduce((sum, c) => sum + (c.trade_count || 0), 0) / withTrades.length
+          : 0
+
+        const avgLocations = withLocations.length > 0
+          ? withLocations.reduce((sum, c) => sum + (c.location_count || 0), 0) / withLocations.length
+          : 0
+
+        // Parse employee_count which might be text like "50+" or "100-200"
+        const parseEmployees = (emp: string | null): number => {
+          if (!emp) return 0
+          const num = parseInt(emp.replace(/[^0-9]/g, ''))
+          return isNaN(num) ? 0 : num
+        }
+        const avgEmployees = withEmployees.length > 0
+          ? withEmployees.reduce((sum, c) => sum + parseEmployees(c.employee_count), 0) / withEmployees.length
+          : 0
+
+        setSegments({
+          hvac: hvacCount,
+          solar: solarCount,
+          electrical: electricalCount,
+          plumbing: plumbingCount,
+          roofing: roofingCount,
+          resiOnly: resiCount,
+          commercial: commercialCount,
+          resimercial: resimercialCount,
+          cAndI: cAndICount,
+          multiTrade: multiTradeCount,
+          avgTradeCount: Math.round(avgTradeCount * 10) / 10,
+          avgLocations: Math.round(avgLocations * 10) / 10,
+          avgEmployees: Math.round(avgEmployees),
+        })
+
+        // Calculate OEM brand frequency
+        const brandCounts: Record<string, number> = {}
+        companies?.forEach(c => {
+          if (c.oem_brands && Array.isArray(c.oem_brands)) {
+            c.oem_brands.forEach((brand: string) => {
+              brandCounts[brand] = (brandCounts[brand] || 0) + 1
+            })
+          }
+        })
+        const sortedBrands = Object.entries(brandCounts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map(([name, count]) => ({ name, count }))
+        setTopBrands(sortedBrands)
+
+        // Calculate Pipeline Valuation (gamified scoring)
+        let valuation = 0
+        companies?.forEach(c => {
+          valuation += VALUATION_POINTS.leadBase  // Every lead
+          if (c.enrichment_status === 'complete') valuation += VALUATION_POINTS.enriched
+          if (c.has_phone) valuation += VALUATION_POINTS.directPhone
+          if (c.icp_tier === 'PLATINUM') valuation += VALUATION_POINTS.platinum
+          else if (c.icp_tier === 'GOLD') valuation += VALUATION_POINTS.gold
+          else if (c.icp_tier === 'SILVER') valuation += VALUATION_POINTS.silver
+          if (c.trade_count && c.trade_count >= 3) valuation += VALUATION_POINTS.multiTrade
+          if (servicesCheck(c.services_offered, ['solar'])) valuation += VALUATION_POINTS.hasSolar
+          if (c.location_count && c.location_count > 1) valuation += VALUATION_POINTS.multiLocation
+        })
+        // Add value for ATL contacts
+        const atlCount = contacts?.filter(c => c.is_atl).length || 0
+        valuation += atlCount * VALUATION_POINTS.atlContact
+        setPipelineValuation(valuation)
 
         setStats(newStats)
         setIsLoading(false)
@@ -263,6 +447,28 @@ export function MissionControl() {
     return () => clearInterval(timer)
   }, [stats.totalLeads])
 
+  // Animate valuation counter (slightly slower, like a stock ticker)
+  useEffect(() => {
+    if (pipelineValuation === 0) return
+
+    const duration = 3000 // 3 seconds for dramatic effect
+    const steps = 90
+    const increment = pipelineValuation / steps
+    let current = 0
+
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= pipelineValuation) {
+        setDisplayedValuation(pipelineValuation)
+        clearInterval(timer)
+      } else {
+        setDisplayedValuation(Math.floor(current))
+      }
+    }, duration / steps)
+
+    return () => clearInterval(timer)
+  }, [pipelineValuation])
+
   // Auto-scroll terminal
   useEffect(() => {
     if (terminalRef.current) {
@@ -336,6 +542,125 @@ export function MissionControl() {
         <StatBox label="🥈 SILVER" value={stats.silverLeads} icon="🥈" color="gray" />
         <StatBox label="🥉 BRONZE" value={stats.bronzeLeads} icon="🥉" color="orange" />
       </div>
+
+      {/* PIPELINE VALUATION - Stock Ticker Style */}
+      <div className="bg-black border-4 border-yellow-500 rounded-lg p-6 mb-6 relative overflow-hidden">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,215,0,0.02) 1px, transparent 1px)',
+            backgroundSize: '100% 3px',
+          }}
+        />
+        <div className="grid md:grid-cols-3 gap-6 items-center">
+          {/* Valuation Clock */}
+          <div className="text-center">
+            <div className="text-yellow-600 text-sm mb-1">💰 PIPELINE VALUATION</div>
+            <div
+              className="text-4xl md:text-5xl font-bold text-yellow-400 tabular-nums"
+              style={{ textShadow: '0 0 15px rgba(255,215,0,0.4)' }}
+            >
+              ${displayedValuation.toLocaleString()}
+            </div>
+            <div className="text-yellow-700 text-xs mt-1">
+              +${VALUATION_POINTS.leadBase}/lead • +${VALUATION_POINTS.atlContact}/ATL • +${VALUATION_POINTS.hasSolar}/solar
+            </div>
+          </div>
+
+          {/* Quality Metrics */}
+          <div className="text-center border-l border-r border-yellow-500/30 px-4">
+            <div className="text-yellow-600 text-sm mb-2">📊 QUALITY METRICS</div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div className="text-yellow-400 text-lg font-bold">{segments.multiTrade}</div>
+                <div className="text-yellow-700">Multi-Trade</div>
+              </div>
+              <div>
+                <div className="text-yellow-400 text-lg font-bold">{segments.avgTradeCount}</div>
+                <div className="text-yellow-700">Avg Trades</div>
+              </div>
+              <div>
+                <div className="text-yellow-400 text-lg font-bold">{segments.avgEmployees}</div>
+                <div className="text-yellow-700">Avg Staff</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bonus Multipliers */}
+          <div className="text-center">
+            <div className="text-yellow-600 text-sm mb-2">🎯 BONUS POINTS</div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between text-yellow-500">
+                <span>💎 Platinum:</span>
+                <span>+{stats.platinumLeads * VALUATION_POINTS.platinum}</span>
+              </div>
+              <div className="flex justify-between text-yellow-500">
+                <span>☀️ Solar Capable:</span>
+                <span>+{segments.solar * VALUATION_POINTS.hasSolar}</span>
+              </div>
+              <div className="flex justify-between text-yellow-500">
+                <span>🔧 Multi-Trade:</span>
+                <span>+{segments.multiTrade * VALUATION_POINTS.multiTrade}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ICP SEGMENTS - MCP+Energy Verticals */}
+      <div className="grid md:grid-cols-2 gap-6 mb-6">
+        {/* Trade Verticals */}
+        <div className="bg-black border-2 border-purple-500/50 rounded-lg p-4">
+          <div className="text-purple-400 font-bold mb-4 text-center">
+            ═══ MCP+ENERGY VERTICALS ═══
+          </div>
+          <div className="grid grid-cols-5 gap-2 text-center">
+            <VerticalBox label="HVAC" count={segments.hvac} icon="❄️" />
+            <VerticalBox label="SOLAR" count={segments.solar} icon="☀️" />
+            <VerticalBox label="ELEC" count={segments.electrical} icon="⚡" />
+            <VerticalBox label="PLUMB" count={segments.plumbing} icon="🔧" />
+            <VerticalBox label="ROOF" count={segments.roofing} icon="🏠" />
+          </div>
+        </div>
+
+        {/* Market Segments */}
+        <div className="bg-black border-2 border-blue-500/50 rounded-lg p-4">
+          <div className="text-blue-400 font-bold mb-4 text-center">
+            ═══ MARKET SEGMENTS ═══
+          </div>
+          <div className="grid grid-cols-4 gap-2 text-center">
+            <SegmentBox label="RESI" count={segments.resiOnly} color="green" />
+            <SegmentBox label="COMM" count={segments.commercial} color="blue" />
+            <SegmentBox label="RESIMER" count={segments.resimercial} color="purple" />
+            <SegmentBox label="C&I" count={segments.cAndI} color="orange" />
+          </div>
+        </div>
+      </div>
+
+      {/* OEM BRANDS LEADERBOARD */}
+      {topBrands.length > 0 && (
+        <div className="bg-black border-2 border-emerald-500/50 rounded-lg p-4 mb-6">
+          <div className="text-emerald-400 font-bold mb-4 text-center">
+            ═══ TOP OEM BRANDS IN PIPELINE ═══
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {topBrands.map((brand, idx) => (
+              <div
+                key={brand.name}
+                className={`px-3 py-1 rounded-full text-sm ${
+                  idx === 0 ? 'bg-yellow-900/40 text-yellow-400 border border-yellow-500' :
+                  idx === 1 ? 'bg-gray-800/40 text-gray-300 border border-gray-500' :
+                  idx === 2 ? 'bg-orange-900/40 text-orange-400 border border-orange-600' :
+                  'bg-emerald-900/20 text-emerald-400 border border-emerald-700/50'
+                }`}
+              >
+                {idx < 3 && <span className="mr-1">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}</span>}
+                {brand.name}: {brand.count}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* AGENT STATUS PANEL */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -520,6 +845,40 @@ function JourneyMilestone({ year, title, description, icon, status }: {
       {status === 'complete' && <div className="text-green-400 mt-2">✓</div>}
       {status === 'active' && <div className="text-cyan-400 mt-2">●</div>}
       {status === 'pending' && <div className="text-gray-500 mt-2">○</div>}
+    </div>
+  )
+}
+
+function VerticalBox({ label, count, icon }: {
+  label: string
+  count: number
+  icon: string
+}) {
+  return (
+    <div className="p-2 rounded border border-purple-500/30 bg-purple-900/10">
+      <div className="text-xl">{icon}</div>
+      <div className="text-lg font-bold text-purple-400">{count.toLocaleString()}</div>
+      <div className="text-[10px] text-purple-600">{label}</div>
+    </div>
+  )
+}
+
+function SegmentBox({ label, count, color }: {
+  label: string
+  count: number
+  color: 'green' | 'blue' | 'purple' | 'orange'
+}) {
+  const colorClasses = {
+    green: 'border-green-500/30 bg-green-900/10 text-green-400',
+    blue: 'border-blue-500/30 bg-blue-900/10 text-blue-400',
+    purple: 'border-purple-500/30 bg-purple-900/10 text-purple-400',
+    orange: 'border-orange-500/30 bg-orange-900/10 text-orange-400',
+  }
+
+  return (
+    <div className={`p-2 rounded border ${colorClasses[color]}`}>
+      <div className="text-lg font-bold">{count.toLocaleString()}</div>
+      <div className="text-[10px] opacity-70">{label}</div>
     </div>
   )
 }
