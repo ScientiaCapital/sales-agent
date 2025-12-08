@@ -54,6 +54,7 @@ celery_app = Celery(
         "app.tasks.ranking_tasks",
         "app.tasks.sync_tasks",
         "app.tasks.dropin_tasks",
+        "app.tasks.enrichment_tasks",  # Website enrichment
     ]
 )
 
@@ -146,6 +147,9 @@ celery_app.conf.update(
         # Drop-in tasks (on-demand only, no schedule)
         "app.tasks.dropin_tasks.run_dropin_enrichment": {"queue": "enrichment"},
         "app.tasks.dropin_tasks.run_dropin_batch": {"queue": "enrichment"},
+        # Website enrichment tasks (scheduled)
+        "app.tasks.enrichment_tasks.run_website_enrichment_batch": {"queue": "enrichment"},
+        "app.tasks.enrichment_tasks.run_priority_enrichment": {"queue": "enrichment"},
         # Close CRM sync tasks
         "app.tasks.close_sync.sync_close_activities": {"queue": "crm_sync"},
         "app.tasks.close_sync.poll_email_replies": {"queue": "crm_sync"},
@@ -270,13 +274,22 @@ celery_app.conf.update(
             "options": {"queue": "default"},
         },
         # ========== PREDICTION AGENT SCHEDULE ==========
-        # PredictionAgent - every 5 minutes
+        # PredictionAgent - every 12 hours (was 5 min, too heavy)
         # Ranks leads by call-worthiness for Sr. BDR cold outbound
-        "prediction-agent-every-5-min": {
+        "prediction-agent-twice-daily": {
             "task": "run_prediction_market",  # Task name kept for backward compat
-            "schedule": 300.0,  # 5 minutes in seconds
+            "schedule": crontab(hour="6,18", minute=0),  # 6 AM and 6 PM CST
             "args": (1000,),  # Rank up to 1000 companies per run
             "options": {"queue": "default"},
+        },
+        # ========== WEBSITE ENRICHMENT SCHEDULE ==========
+        # Continuous website enrichment - every 5 minutes
+        # Scrapes contractor websites for ATL contacts, OEMs, service areas
+        "website-enrichment-continuous": {
+            "task": "run_website_enrichment_batch",
+            "schedule": 300.0,  # 5 minutes in seconds
+            "args": (5,),  # 5 companies per batch
+            "options": {"queue": "enrichment"},
         },
         # ========== CONSOLIDATED BRIEFING SCHEDULE ==========
         # OLD: Morning Briefing - replaced by briefing-agent-730am-est above
