@@ -22,10 +22,8 @@ from pydantic import BaseModel, Field
 import logging
 import os
 
-# Disable LangSmith tracing BEFORE importing langgraph
-os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
-os.environ.setdefault("LANGSMITH_TRACING", "false")
-os.environ.setdefault("LANGCHAIN_TRACING", "false")
+# LangSmith tracing is configured centrally in celery_app.py
+# Do NOT override here - let the central config control tracing
 
 from langgraph.graph import StateGraph, END
 from app.services.langgraph.agents.base_agent import BaseAgent
@@ -109,7 +107,15 @@ class SyncAgent(BaseAgent):
 
     def __init__(self):
         """Initialize SyncAgent with Close CRM clients and classifiers."""
-        super().__init__(agent_name="SyncAgent")
+        from app.services.langgraph.agents.base_agent import AgentConfig, OptimizationTarget
+
+        # Create config for BaseAgent
+        config = AgentConfig(
+            name="SyncAgent",
+            description="Close CRM synchronization and reply handling agent",
+            optimize_for=OptimizationTarget.COST,  # Use cost-efficient provider
+        )
+        super().__init__(config)
 
         # Close CRM clients
         self.email_client = CloseEmailClient()
@@ -428,6 +434,56 @@ class SyncAgent(BaseAgent):
         )
 
         return state
+
+    # ========================================================================
+    # ABSTRACT METHOD IMPLEMENTATIONS (Required by BaseAgent)
+    # ========================================================================
+
+    def get_system_prompt(self) -> str:
+        """
+        Get system prompt for SyncAgent.
+
+        Required by BaseAgent abstract class.
+        SyncAgent uses LangGraph workflow, not direct LLM calls,
+        but this method is needed for compatibility.
+
+        Returns:
+            System prompt string for CRM synchronization tasks
+        """
+        return """You are the SyncAgent, responsible for Close CRM synchronization.
+
+Your responsibilities:
+1. Sync email/SMS/call activities from Close CRM
+2. Poll for and classify email replies using AI
+3. Route classified replies to appropriate handlers
+4. Advance multi-step outreach sequences
+
+Classification categories:
+- interested: Prospect shows interest, wants to learn more
+- not_interested: Clear rejection, no interest
+- questions: Has questions that need human response
+- out_of_office: Auto-reply, person unavailable
+- meeting_request: Wants to schedule a meeting
+- unsubscribe: Wants to opt out (COMPLIANCE CRITICAL)
+
+Always prioritize:
+- Speed: Sync quickly to catch replies early
+- Accuracy: Classify replies correctly for proper routing
+- Compliance: Handle unsubscribe requests immediately
+"""
+
+    def get_tools(self) -> List:
+        """
+        Get agent-specific tools for SyncAgent.
+
+        Required by BaseAgent abstract class.
+        SyncAgent uses internal workflow steps, not LangChain tools,
+        but this method is needed for compatibility.
+
+        Returns:
+            Empty list (SyncAgent uses internal workflow methods)
+        """
+        return []
 
     # ========================================================================
     # PUBLIC API

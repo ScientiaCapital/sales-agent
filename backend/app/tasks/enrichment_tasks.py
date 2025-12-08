@@ -11,12 +11,12 @@ Runs in the background to scrape contractor websites and extract:
 This replaces the standalone run_enrichment.py script with a scheduled Celery task.
 """
 
+# LangSmith tracing is configured centrally in celery_app.py
+# Do NOT override here - let the central config control tracing
 import os
-os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")
-os.environ.setdefault("LANGSMITH_TRACING", "false")
-os.environ.setdefault("LANGCHAIN_TRACING", "false")
-
 import logging
+
+# Suppress LangSmith warning logs when tracing is disabled
 logging.getLogger("langsmith.client").setLevel(logging.ERROR)
 logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
 
@@ -103,10 +103,22 @@ def run_website_enrichment_batch(
 
         logger.info(f"[Enrichment] Found {len(companies)} companies to enrich")
 
-        # Import the scraper
-        from app.services.scrapers.website_scraper import WebsiteScraper
+        # NOTE: Automated enrichment is disabled. Use run_enrichment.py manually instead.
+        # The WebsiteScraper module was never created. For now, skip automated enrichment
+        # and return the companies that need enrichment for manual processing.
+        logger.warning(
+            "[Enrichment] Automated scraper not available. Use 'python run_enrichment.py' manually."
+        )
+        return {
+            "status": "skipped",
+            "message": "Automated enrichment disabled. Run manually with: python run_enrichment.py",
+            "companies_needing_enrichment": len(companies),
+            "domains": [c['domain'] for c in companies[:10]]  # First 10 for reference
+        }
 
-        scraper = WebsiteScraper()
+        # DISABLED: WebsiteScraper module does not exist
+        # from app.services.scrapers.website_scraper import WebsiteScraper
+        # scraper = WebsiteScraper()
 
         enriched_count = 0
         errors = []

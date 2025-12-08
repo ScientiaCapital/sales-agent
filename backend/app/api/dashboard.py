@@ -19,14 +19,189 @@ Date: Dec 6, 2025
 
 import logging
 import os
+import requests
 from datetime import datetime, timezone, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
+# Close CRM API configuration
+CLOSE_API_KEY = os.getenv("CLOSE_API_KEY")
+CLOSE_API_BASE = "https://api.close.com/api/v1"
+
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+
+# ============================================================================
+# Business Metrics Configuration (Override via environment variables)
+# ============================================================================
+# These are configurable estimates until we have real Close CRM deal data
+ESTIMATED_COST_PER_LEAD = float(os.getenv("DASHBOARD_COST_PER_LEAD", "0.002"))
+ESTIMATED_AVG_DEAL_SIZE = float(os.getenv("DASHBOARD_AVG_DEAL_SIZE", "15000"))
+ESTIMATED_QUALIFICATION_TIME_MS = float(os.getenv("DASHBOARD_AVG_QUALIFICATION_MS", "850"))
+
+# Post-pivot date (Sep 9, 2025 - strategic pivot date)
+POST_PIVOT_DATE = os.getenv("DASHBOARD_POST_PIVOT_DATE", "2025-09-09")
+
+# Fiscal quarter definitions for 2025
+FISCAL_QUARTERS = {
+    "Q3_2025": {"start": "2025-07-01", "end": "2025-09-30", "label": "Q3 2025"},
+    "Q4_2025": {"start": "2025-10-01", "end": "2025-12-31", "label": "Q4 2025"},
+}
+
+# Cache TTL in seconds (5 minutes - balance between freshness and performance)
+CLOSE_CACHE_TTL = int(os.getenv("CLOSE_CACHE_TTL_SECONDS", "300"))
+
+# In-memory cache for Close CRM opportunities
+_close_opportunities_cache: Dict[str, Any] = {
+    "data": [],
+    "last_fetched": None,
+}
+
+
+# ============================================================================
+# Close CRM API Helper (with caching)
+# ============================================================================
+def fetch_close_opportunities_filtered(
+    status_type: str = None,
+    date_won_gte: str = None,
+    date_won_lte: str = None,
+    date_lost_gte: str = None,
+    date_lost_lte: str = None,
+    force_refresh: bool = False,
+    aggregate_only: bool = False
+) -> Tuple[List[Dict], Dict]:
+    """
+    Fetch opportunities from Close CRM API with server-side filtering.
+
+    Uses Close's native filtering to reduce API calls and data transfer.
+    Close API returns aggregates (total_value, total_results) in response.
+
+    Args:
+        status_type: Filter by status ('won', 'lost', 'active') or None for all
+        date_won_gte: Filter won deals on/after this date (YYYY-MM-DD)
+        date_won_lte: Filter won deals on/before this date (YYYY-MM-DD)
+        date_lost_gte: Filter lost deals on/after this date (YYYY-MM-DD)
+        date_lost_lte: Filter lost deals on/before this date (YYYY-MM-DD)
+        force_refresh: If True, bypass cache
+        aggregate_only: If True, skip pagination and just return aggregates (faster!)
+
+    Returns:
+        Tuple of (list of opportunities, aggregates dict)
+    """
+    global _close_opportunities_cache
+
+    if not CLOSE_API_KEY:
+        logger.warning("CLOSE_API_KEY not configured - cannot fetch opportunities")
+        return [], {}
+
+    # Build cache key based on filters
+    cache_key = f"{status_type}_{date_won_gte}_{date_won_lte}_{date_lost_gte}_{date_lost_lte}_{aggregate_only}"
+
+    # Check cache
+    if not force_refresh:
+        cached = _close_opportunities_cache.get(cache_key)
+        if cached:
+            last_fetched = cached.get("last_fetched")
+            if last_fetched:
+                cache_age = (datetime.now(timezone.utc) - last_fetched).total_seconds()
+                if cache_age < CLOSE_CACHE_TTL:
+                    logger.debug(f"Using cached Close opportunities for {cache_key} ({cache_age:.0f}s old)")
+                    return cached.get("data", []), cached.get("aggregates", {})
+
+    all_opps = []
+    aggregates = {}
+    cursor = None
+
+    try:
+        while True:
+            # For aggregate_only, just fetch 1 record to get totals
+            params = {"_limit": 1 if aggregate_only else 100}
+            if status_type:
+                params["status_type"] = status_type
+            if date_won_gte:
+                params["date_won__gte"] = date_won_gte
+            if date_won_lte:
+                params["date_won__lte"] = date_won_lte
+            if date_lost_gte:
+                params["date_lost__gte"] = date_lost_gte
+            if date_lost_lte:
+                params["date_lost__lte"] = date_lost_lte
+            if cursor:
+                params["_cursor"] = cursor
+
+            response = requests.get(
+                f"{CLOSE_API_BASE}/opportunity/",
+                auth=(CLOSE_API_KEY, ""),
+                params=params,
+                timeout=30
+            )
+
+            if response.status_code != 200:
+                logger.error(f"Close API error: {response.status_code} - {response.text}")
+                break
+
+            data = response.json()
+            opps = data.get("data", [])
+
+            # Capture aggregates from first response (Close returns these with list)
+            if not aggregates:
+                aggregates = {
+                    "total_results": data.get("total_results", 0),
+                    "total_value_one_time": data.get("total_value_one_time", 0) / 100,  # cents to dollars
+                    "total_value_monthly": data.get("total_value_monthly", 0) / 100,
+                    "total_value_annual": data.get("total_value_annual", 0) / 100,
+                    "total_value_annualized": data.get("total_value_annualized", 0) / 100,
+                }
+
+            # Convert values from cents to dollars
+            for opp in opps:
+                if opp.get("value"):
+                    opp["value_dollars"] = opp["value"] / 100
+                else:
+                    opp["value_dollars"] = 0
+
+            all_opps.extend(opps)
+
+            # For aggregate_only, break after first call (we have totals from response)
+            if aggregate_only:
+                logger.info(f"Got aggregates from Close CRM (status={status_type}, total={aggregates.get('total_results', 0)})")
+                break
+
+            if not data.get("has_more"):
+                break
+            cursor = data.get("cursor")
+
+        logger.info(f"Fetched {len(all_opps)} opportunities from Close CRM (status={status_type}, won>={date_won_gte})")
+
+        # Update cache
+        _close_opportunities_cache[cache_key] = {
+            "data": all_opps,
+            "aggregates": aggregates,
+            "last_fetched": datetime.now(timezone.utc)
+        }
+
+        return all_opps, aggregates
+
+    except Exception as e:
+        logger.error(f"Error fetching Close opportunities: {e}")
+        # Return stale cache if available
+        cached = _close_opportunities_cache.get(cache_key)
+        if cached:
+            logger.warning("Returning stale cache due to API error")
+            return cached.get("data", []), cached.get("aggregates", {})
+        return [], {}
+
+
+def fetch_close_opportunities(status_type: str = None, force_refresh: bool = False) -> List[Dict]:
+    """
+    Legacy wrapper for backward compatibility.
+    Fetches all opportunities without date filtering.
+    """
+    opps, _ = fetch_close_opportunities_filtered(status_type=status_type, force_refresh=force_refresh)
+    return opps
+
 
 # ============================================================================
 # Supabase Client
@@ -63,6 +238,15 @@ def get_supabase():
 # Response Models
 # ============================================================================
 
+class QuarterlyMetrics(BaseModel):
+    """Metrics for a specific fiscal quarter."""
+    quarter: str  # e.g., "Q3 2025"
+    won_deals: int
+    won_value: float
+    lost_deals: int
+    lost_value: float
+
+
 class MetricsSummary(BaseModel):
     """Executive summary metrics."""
     total_leads: int
@@ -82,6 +266,10 @@ class MetricsSummary(BaseModel):
     avg_deal_size: float
     period_start: str
     period_end: str
+    # Quarterly breakdown (Q3 + Q4)
+    quarterly: Optional[Dict[str, QuarterlyMetrics]] = None
+    # Post-pivot totals (Sep 9 onwards)
+    post_pivot: Optional[Dict[str, Any]] = None
 
 
 class Lead(BaseModel):
@@ -298,23 +486,102 @@ async def get_metrics():
         # Calculate rates
         qualification_rate = qualified / total_leads if total_leads > 0 else 0
 
-        # Estimate meetings/opps from HOT leads
-        meetings_booked = stage_counts.get("HOT", 0)
-        opportunities = int(meetings_booked * 0.6)
-        won_deals = int(opportunities * 0.25)
-        lost_deals = int(opportunities * 0.20)
+        # Get REAL deal metrics directly from Close CRM API
+        # Fetches: (1) Post-pivot data (Sep 9 onwards), (2) Q3 + Q4 quarterly breakdown
+        quarterly_data = {}
+        post_pivot_data = {}
 
-        win_rate = won_deals / opportunities if opportunities > 0 else 0
-        meeting_conversion = opportunities / meetings_booked if meetings_booked > 0 else 0
-        opp_conversion = won_deals / opportunities if opportunities > 0 else 0
+        try:
+            # === POST-PIVOT DATA (Sep 9, 2025 onwards) ===
+            _, won_agg = fetch_close_opportunities_filtered(
+                status_type="won",
+                date_won_gte=POST_PIVOT_DATE,
+                aggregate_only=True
+            )
+            won_deals = won_agg.get("total_results", 0)
+            total_revenue = won_agg.get("total_value_annualized", 0)
 
-        # Cost estimates
-        cost_per_lead = 0.002
+            _, lost_agg = fetch_close_opportunities_filtered(
+                status_type="lost",
+                date_lost_gte=POST_PIVOT_DATE,
+                aggregate_only=True
+            )
+            lost_deals = lost_agg.get("total_results", 0)
+
+            _, active_agg = fetch_close_opportunities_filtered(
+                status_type="active",
+                aggregate_only=True
+            )
+            open_opps = active_agg.get("total_results", 0)
+
+            opportunities = won_deals + lost_deals + open_opps
+            meetings_booked = opportunities
+
+            avg_deal_size = total_revenue / won_deals if won_deals > 0 else 0
+            total_closed = won_deals + lost_deals
+            win_rate = won_deals / total_closed if total_closed > 0 else 0
+            meeting_conversion = opportunities / total_leads if total_leads > 0 else 0
+            opp_conversion = won_deals / opportunities if opportunities > 0 else 0
+
+            post_pivot_data = {
+                "start_date": POST_PIVOT_DATE,
+                "won_deals": won_deals,
+                "won_value": total_revenue,
+                "lost_deals": lost_deals,
+                "lost_value": lost_agg.get("total_value_annualized", 0),
+                "active_deals": open_opps,
+            }
+
+            # === QUARTERLY DATA (Q3 + Q4 2025) ===
+            for qtr_key, qtr_def in FISCAL_QUARTERS.items():
+                _, q_won = fetch_close_opportunities_filtered(
+                    status_type="won",
+                    date_won_gte=qtr_def["start"],
+                    date_won_lte=qtr_def["end"],
+                    aggregate_only=True
+                )
+                _, q_lost = fetch_close_opportunities_filtered(
+                    status_type="lost",
+                    date_lost_gte=qtr_def["start"],
+                    date_lost_lte=qtr_def["end"],
+                    aggregate_only=True
+                )
+                quarterly_data[qtr_key] = QuarterlyMetrics(
+                    quarter=qtr_def["label"],
+                    won_deals=q_won.get("total_results", 0),
+                    won_value=q_won.get("total_value_annualized", 0),
+                    lost_deals=q_lost.get("total_results", 0),
+                    lost_value=q_lost.get("total_value_annualized", 0),
+                )
+
+        except Exception as opp_err:
+            logger.warning(f"Could not fetch Close opportunities from API: {opp_err}")
+            meetings_booked = 0
+            opportunities = 0
+            won_deals = 0
+            lost_deals = 0
+            total_revenue = 0
+            avg_deal_size = 0
+            win_rate = 0
+            meeting_conversion = 0
+            opp_conversion = 0
+
+        # Cost estimates (configurable via env vars - real cost tracking TBD)
+        cost_per_lead = ESTIMATED_COST_PER_LEAD
         total_cost = total_leads * cost_per_lead
 
-        # Revenue estimates
-        avg_deal_size = 15000
-        total_revenue = won_deals * avg_deal_size
+        # Try to get actual avg qualification time from audit logs
+        avg_qual_time = ESTIMATED_QUALIFICATION_TIME_MS
+        try:
+            qual_logs = supabase.table("lead_audit_log").select(
+                "latency_ms"
+            ).eq("event_type", "lead_qualified").not_.is_("latency_ms", "null").limit(100).execute()
+            if qual_logs.data and len(qual_logs.data) > 0:
+                latencies = [r["latency_ms"] for r in qual_logs.data if r.get("latency_ms")]
+                if latencies:
+                    avg_qual_time = sum(latencies) / len(latencies)
+        except Exception as qual_err:
+            logger.debug(f"Could not fetch qualification times from audit: {qual_err}")
 
         now = datetime.now(timezone.utc)
         week_ago = now - timedelta(days=7)
@@ -330,13 +597,17 @@ async def get_metrics():
             meeting_conversion_rate=meeting_conversion,
             opportunity_conversion_rate=opp_conversion,
             win_rate=win_rate,
-            avg_qualification_time_ms=850,
+            avg_qualification_time_ms=avg_qual_time,
             total_cost_usd=total_cost,
             cost_per_lead=cost_per_lead,
             total_revenue=total_revenue,
             avg_deal_size=avg_deal_size,
             period_start=week_ago.isoformat(),
-            period_end=now.isoformat()
+            period_end=now.isoformat(),
+            # Quarterly breakdown (Q3 + Q4 2025)
+            quarterly=quarterly_data if quarterly_data else None,
+            # Post-pivot totals (Sep 9, 2025 onwards)
+            post_pivot=post_pivot_data if post_pivot_data else None,
         )
 
     except Exception as e:
@@ -825,21 +1096,28 @@ async def get_import_history(
 
     except Exception as e:
         logger.error(f"Error fetching import history: {e}", exc_info=True)
-        # Fallback to showing current dim_companies count
-        return ImportHistoryResponse(
-            imports=[
-                ImportRecord(
-                    id="error-fallback",
-                    filename="dim_companies (current)",
-                    status="completed",
-                    total_rows=8891,
-                    processed=8891,
-                    errors=0,
-                    created_at=datetime.now(timezone.utc).isoformat()
-                )
-            ],
-            total=1
-        )
+        # Fallback: try to get real count, or return empty on complete failure
+        try:
+            supabase = get_supabase()
+            companies = supabase.table("dim_companies").select("company_id", count="exact").execute()
+            total_companies = companies.count or 0
+            return ImportHistoryResponse(
+                imports=[
+                    ImportRecord(
+                        id="error-fallback",
+                        filename="dim_companies (current)",
+                        status="completed",
+                        total_rows=total_companies,
+                        processed=total_companies,
+                        errors=0,
+                        created_at=datetime.now(timezone.utc).isoformat()
+                    )
+                ],
+                total=1
+            )
+        except Exception:
+            # Complete failure - return empty
+            return ImportHistoryResponse(imports=[], total=0)
 
 
 @router.get("/outreach", response_model=OutreachResponse)
@@ -1023,7 +1301,7 @@ async def get_lifecycle_funnel(
     period: str = Query(default="7d", description="Period: 7d or mtd")
 ):
     """
-    Get lead lifecycle funnel data.
+    Get lead lifecycle funnel data using REAL Close CRM data.
     """
     try:
         supabase = get_supabase()
@@ -1046,41 +1324,90 @@ async def get_lifecycle_funnel(
         total = len(companies.data or [])
         qualified = tier_counts["PLATINUM"] + tier_counts["GOLD"] + tier_counts["SILVER"]
 
+        # Get REAL opportunity/deal data directly from Close CRM API (post-pivot only)
+        # Uses server-side filtering for efficiency
+        won_count = 0
+        won_value = 0
+        opp_count = 0
+        opp_value = 0
+        try:
+            pivot_cutoff = POST_PIVOT_DATE  # "2025-09-09" - post-pivot start date
+
+            # Fetch won deals - use aggregate_only for efficiency
+            _, won_agg = fetch_close_opportunities_filtered(
+                status_type="won",
+                date_won_gte=pivot_cutoff,
+                aggregate_only=True
+            )
+            won_count = won_agg.get("total_results", 0)
+            won_value = won_agg.get("total_value_annualized", 0)
+
+            # Fetch lost deals - aggregate only (large count, skip pagination!)
+            _, lost_agg = fetch_close_opportunities_filtered(
+                status_type="lost",
+                date_lost_gte=pivot_cutoff,
+                aggregate_only=True
+            )
+            lost_count = lost_agg.get("total_results", 0)
+            lost_value = lost_agg.get("total_value_annualized", 0)
+
+            # Fetch active opportunities - aggregate only
+            _, active_agg = fetch_close_opportunities_filtered(
+                status_type="active",
+                aggregate_only=True
+            )
+            active_count = active_agg.get("total_results", 0)
+            active_value = active_agg.get("total_value_annualized", 0)
+
+            opp_count = won_count + lost_count + active_count
+            opp_value = won_value + lost_value + active_value
+
+        except Exception as opp_err:
+            logger.warning(f"Could not fetch Close opportunities from API for lifecycle: {opp_err}")
+            # Fallback to zeros (no mock data)
+            opp_count = 0
+            won_count = 0
+            won_value = 0
+
+        # Calculate conversion rates from real data
+        meeting_to_opp = opp_count / stage_counts["HOT"] if stage_counts["HOT"] > 0 else 0
+        opp_to_won = won_count / opp_count if opp_count > 0 else 0
+
         stages = [
             LifecycleStage(
                 name="New Leads",
                 count=total,
-                value=total * 100,
+                value=total * 100,  # Nominal value per lead
                 color="#E3F2FD",
                 conversion_rate=1.0
             ),
             LifecycleStage(
                 name="Qualified",
                 count=qualified,
-                value=qualified * 500,
+                value=qualified * 500,  # Nominal qualified lead value
                 color="#BBDEFB",
                 conversion_rate=qualified / total if total > 0 else 0
             ),
             LifecycleStage(
                 name="Meeting Set",
                 count=stage_counts["HOT"],
-                value=stage_counts["HOT"] * 5000,
+                value=stage_counts["HOT"] * 5000,  # Nominal meeting value
                 color="#90CAF9",
                 conversion_rate=stage_counts["HOT"] / qualified if qualified > 0 else 0
             ),
             LifecycleStage(
                 name="Opportunity",
-                count=int(stage_counts["HOT"] * 0.6),
-                value=int(stage_counts["HOT"] * 0.6) * 10000,
+                count=opp_count,
+                value=opp_value,  # REAL pipeline value from Close
                 color="#64B5F6",
-                conversion_rate=0.6
+                conversion_rate=meeting_to_opp
             ),
             LifecycleStage(
                 name="Won",
-                count=int(stage_counts["HOT"] * 0.15),
-                value=int(stage_counts["HOT"] * 0.15) * 15000,
+                count=won_count,
+                value=won_value,  # REAL won revenue from Close
                 color="#2196F3",
-                conversion_rate=0.25
+                conversion_rate=opp_to_won
             )
         ]
 
