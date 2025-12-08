@@ -88,6 +88,9 @@ class Lead(BaseModel):
     """Lead for ICP queue."""
     id: str
     company_name: str
+    domain: Optional[str] = None
+    close_lead_id: Optional[str] = None
+    close_lead_url: Optional[str] = None
     status: str
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
@@ -344,18 +347,30 @@ async def get_metrics():
 @router.get("/icp-queue", response_model=ICPQueueResponse)
 async def get_icp_queue(
     days: int = Query(default=7, description="Days for untouched threshold"),
-    limit: int = Query(default=10, description="Leads per smart view")
+    limit: int = Query(default=10, description="Leads per smart view"),
+    include_customers: bool = Query(default=False, description="Include existing customers")
 ):
     """
     Get ICP queue organized by smart views.
+    Excludes customers and do_not_contact by default.
     """
+    # Stages to exclude from GTM views
+    EXCLUDED_STAGES = ["customer", "do_not_contact"]
+
     try:
         supabase = get_supabase()
 
-        # Get companies with correct column names
-        companies = supabase.table("dim_companies").select(
-            "company_id, company_name, domain, phone, icp_tier, icp_score, current_stage, updated_at"
-        ).execute()
+        # Get companies with Close CRM fields
+        # Filter out customers and do_not_contact at the database level for efficiency
+        query = supabase.table("dim_companies").select(
+            "company_id, company_name, domain, phone, icp_tier, icp_score, current_stage, updated_at, close_lead_id, close_lead_url"
+        )
+
+        if not include_customers:
+            # Use negation filter to exclude customer and do_not_contact stages
+            query = query.not_.in_("current_stage", EXCLUDED_STAGES)
+
+        companies = query.execute()
 
         contacts = supabase.table("dim_contacts").select(
             "contact_id, company_id, full_name, email, phone, is_atl"
@@ -419,10 +434,14 @@ async def get_icp_queue(
         quarter_map = {"Q3": 0, "Q4": 0, "PPL": 0}
 
         for company in (companies.data or []):
+            company_name = company.get("company_name") or ""
             cid = company.get("company_id")
             tier = company.get("icp_tier") or "UNKNOWN"
             stage = company.get("current_stage") or "COLD"
             updated = company.get("updated_at")
+            domain = company.get("domain")
+            close_lead_id = company.get("close_lead_id")
+            close_lead_url = company.get("close_lead_url")
 
             # Calculate days since update
             days_since = 999
@@ -441,7 +460,10 @@ async def get_icp_queue(
 
             lead = Lead(
                 id=str(cid),
-                company_name=company.get("company_name") or "Unknown",
+                company_name=company_name or "Unknown",
+                domain=domain,
+                close_lead_id=close_lead_id,
+                close_lead_url=close_lead_url,
                 status=stage,
                 contact_name=atl_contact.get("full_name") if atl_contact else None,
                 contact_phone=atl_contact.get("phone") if atl_contact else company.get("phone"),
@@ -596,14 +618,20 @@ async def get_activity(
 async def get_attention_queue():
     """
     Get leads needing immediate attention.
+    Excludes customers and do_not_contact.
     """
+    # Stages to exclude from GTM views
+    EXCLUDED_STAGES = ["customer", "do_not_contact"]
+
     try:
         supabase = get_supabase()
         cutoff = datetime.now(timezone.utc) - timedelta(days=7)
 
         companies = supabase.table("dim_companies").select(
-            "company_id, company_name, phone, icp_tier, current_stage, updated_at"
-        ).in_("icp_tier", ["PLATINUM", "GOLD", "SILVER"]).lt(
+            "company_id, company_name, phone, icp_tier, current_stage, updated_at, close_lead_id"
+        ).in_("icp_tier", ["PLATINUM", "GOLD", "SILVER"]).not_.in_(
+            "current_stage", EXCLUDED_STAGES
+        ).lt(
             "updated_at", cutoff.isoformat()
         ).limit(20).execute()
 
@@ -663,17 +691,27 @@ async def get_attention_queue():
 async def get_work_queue():
     """
     Get BDR work queue.
+    Excludes customers and do_not_contact.
     """
+    # Stages to exclude from GTM views
+    EXCLUDED_STAGES = ["customer", "do_not_contact"]
+
     try:
         supabase = get_supabase()
 
+        # HOT leads (excluding customers)
         hot_leads = supabase.table("dim_companies").select(
-            "company_id, company_name, phone, domain"
-        ).eq("current_stage", "HOT").limit(10).execute()
+            "company_id, company_name, phone, domain, close_lead_id"
+        ).eq("current_stage", "HOT").not_.in_(
+            "current_stage", EXCLUDED_STAGES
+        ).limit(10).execute()
 
+        # High tier leads (excluding customers)
         high_tier = supabase.table("dim_companies").select(
-            "company_id, company_name, phone, domain"
-        ).in_("icp_tier", ["PLATINUM", "GOLD"]).limit(10).execute()
+            "company_id, company_name, phone, domain, close_lead_id"
+        ).in_("icp_tier", ["PLATINUM", "GOLD"]).not_.in_(
+            "current_stage", EXCLUDED_STAGES
+        ).limit(10).execute()
 
         contacts = supabase.table("dim_contacts").select(
             "company_id, full_name, phone, email"
