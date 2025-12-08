@@ -8,8 +8,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration from environment
+// Fallbacks ensure production works without Vercel env vars (anon key is public/safe)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://oyyakkuvvtckocncuwwf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95eWFra3V2dnRja29jbmN1d3dmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMTU2MDcsImV4cCI6MjA3ODg5MTYwN30.Ke7KDrRyGbLNFZj4cJuLdLjKEfODzc-hCb4sDlHEr3Q';
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
