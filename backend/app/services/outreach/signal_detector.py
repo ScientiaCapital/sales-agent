@@ -172,7 +172,7 @@ class SignalDetector:
             return None
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     f"https://api.close.com/api/v1/lead/{lead_id}/",
                     auth=(self.api_key, ""),
@@ -197,7 +197,7 @@ class SignalDetector:
             return None
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     "https://api.close.com/api/v1/activity/",
                     auth=(self.api_key, ""),
@@ -214,7 +214,11 @@ class SignalDetector:
                     if data.get("data"):
                         date_str = data["data"][0].get("date_created")
                         if date_str:
-                            return datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                            try:
+                                return datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=None)
+                            except (ValueError, AttributeError) as e:
+                                logger.warning(f"Failed to parse date '{date_str}': {e}")
+                                return None
         except Exception as e:
             logger.warning(f"Error fetching last activity date: {e}")
 
@@ -260,7 +264,7 @@ class SignalDetector:
             return None
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     "https://api.close.com/api/v1/activity/",
                     auth=(self.api_key, ""),
