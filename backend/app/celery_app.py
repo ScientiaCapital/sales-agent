@@ -21,13 +21,15 @@ load_dotenv(Path(__file__).parent.parent.parent / '.env', override=True)
 
 import os
 
-# Disable LangSmith tracing BEFORE any langchain/langgraph imports
-# This prevents the 403 errors from langsmith trying to upload traces without an API key
-os.environ["LANGCHAIN_TRACING_V2"] = "false"
-os.environ["LANGSMITH_TRACING"] = "false"
-os.environ["LANGCHAIN_TRACING"] = "false"
+# LangSmith tracing configuration - READ FROM .env
+# Set LANGCHAIN_TRACING_V2=true in .env to enable tracing
+# Your LangSmith API key should be in LANGSMITH_API_KEY
+langsmith_enabled = os.getenv("LANGCHAIN_TRACING_V2", "false").lower() == "true"
+os.environ["LANGCHAIN_TRACING_V2"] = "true" if langsmith_enabled else "false"
+os.environ["LANGSMITH_TRACING"] = "true" if langsmith_enabled else "false"
+os.environ["LANGCHAIN_TRACING"] = "true" if langsmith_enabled else "false"
 
-# Suppress LangSmith warning logs (they're noisy when API key is missing)
+# Suppress LangSmith warning logs when tracing is disabled
 import logging
 logging.getLogger("langsmith.client").setLevel(logging.ERROR)
 logging.getLogger("langsmith.utils").setLevel(logging.ERROR)
@@ -56,6 +58,7 @@ celery_app = Celery(
         "app.tasks.dropin_tasks",
         "app.tasks.enrichment_tasks",  # Website enrichment
         "app.tasks.elite_team_tasks",  # Trifecta Hunter Elite Squad
+        "app.tasks.intake_commander_tasks",  # IntakeCommander (separate from elite_team_tasks)
     ]
 )
 
@@ -143,8 +146,8 @@ celery_app.conf.update(
         "app.tasks.ranking_tasks.run_ranking_for_company_task": {"queue": "default"},
         "app.tasks.ranking_tasks.get_ranking_stats": {"queue": "default"},
         # Sync tasks (Phase 1 consolidation)
-        "app.tasks.sync_tasks.run_sync_cycle": {"queue": "crm_sync"},
-        "app.tasks.sync_tasks.sync_single_activity": {"queue": "crm_sync"},
+        "run_sync_cycle": {"queue": "crm_sync"},
+        "sync_single_activity": {"queue": "crm_sync"},
         # Drop-in tasks (on-demand only, no schedule)
         "app.tasks.dropin_tasks.run_dropin_enrichment": {"queue": "enrichment"},
         "app.tasks.dropin_tasks.run_dropin_batch": {"queue": "enrichment"},
@@ -201,7 +204,7 @@ celery_app.conf.update(
         },
         # Sync Agent - sync Close CRM activities every 5 minutes
         "sync-agent-every-5-min": {
-            "task": "app.tasks.sync_tasks.run_sync_cycle",
+            "task": "run_sync_cycle",
             "schedule": 300.0,  # 5 minutes in seconds
             "options": {"queue": "crm_sync"},
         },

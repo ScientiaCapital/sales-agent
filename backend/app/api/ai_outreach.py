@@ -589,7 +589,7 @@ async def send_draft(
         )
 
     # TODO: Implement actual Close CRM integration
-    # For now, just mark as sent
+    # For now, just mark as sent (Close activity logging is handled by CloseSyncAgent)
     try:
         supabase.table('dim_ai_drafts').update({
             'status': DraftStatus.SENT.value,
@@ -597,13 +597,13 @@ async def send_draft(
             'updated_at': datetime.utcnow().isoformat()
         }).eq('draft_id', draft_id).execute()
 
-        logger.info(f"Sent draft {draft_id} via Close CRM")
+        logger.info(f"Sent draft {draft_id} - Close CRM write pending via CloseSyncAgent")
 
         return SendDraftResponse(
             draft_id=draft_id,
             status="sent",
-            message="Draft sent successfully",
-            close_activity_id="mock_activity_123"  # TODO: Real Close CRM activity ID
+            message="Draft sent successfully - Close CRM sync handled by background agent",
+            close_activity_id=None  # Will be populated by CloseSyncAgent
         )
 
     except Exception as e:
