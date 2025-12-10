@@ -23,6 +23,7 @@ import redis.asyncio as redis
 
 from .cartesia_service import CartesiaService, VoiceConfig, VoiceEmotion, VoiceSpeed
 from .cerebras import CerebrasService
+from .voice.intent_classifier import SalesIntentClassifier, SalesIntent
 from app.core.exceptions import VoiceSessionNotFoundError, MissingAPIKeyError
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,7 @@ class VoiceTurn:
     turn_id: str
     user_audio: Optional[bytes] = None
     user_transcript: Optional[str] = None
+    intent: Optional[str] = None  # Classified sales intent (SalesIntent enum value)
     ai_response: Optional[str] = None
     ai_audio: Optional[bytes] = None
     stt_latency_ms: Optional[int] = None
@@ -89,7 +91,8 @@ If you don't understand something, ask for clarification naturally."""
         self,
         transcript: str,
         context: Dict[str, Any],
-        lead_data: Optional[Dict[str, Any]] = None
+        lead_data: Optional[Dict[str, Any]] = None,
+        intent: Optional[SalesIntent] = None
     ) -> str:
         """
         Generate AI response with ultra-fast reasoning.
@@ -98,12 +101,13 @@ If you don't understand something, ask for clarification naturally."""
             transcript: User's speech transcript
             context: Conversation context
             lead_data: Optional lead information
+            intent: Classified sales intent for context-aware responses
 
         Returns:
             AI response text optimized for speech
         """
-        # Build context-aware prompt
-        prompt = self._build_prompt(transcript, context, lead_data)
+        # Build context-aware prompt with intent
+        prompt = self._build_prompt(transcript, context, lead_data, intent)
 
         # Use Cerebras for ultra-fast inference
         response = await self.cerebras.generate(
@@ -119,10 +123,19 @@ If you don't understand something, ask for clarification naturally."""
         self,
         transcript: str,
         context: Dict[str, Any],
-        lead_data: Optional[Dict[str, Any]]
+        lead_data: Optional[Dict[str, Any]],
+        intent: Optional[SalesIntent] = None
     ) -> str:
-        """Build context-aware prompt for reasoning."""
+        """Build context-aware prompt for reasoning with intent guidance."""
         prompt_parts = []
+
+        # Add intent-specific guidance
+        if intent:
+            intent_guidance = self._get_intent_guidance(intent)
+            if intent_guidance:
+                prompt_parts.append(f"[Intent: {intent.value}]")
+                prompt_parts.append(intent_guidance)
+                prompt_parts.append("")
 
         # Add lead context if available
         if lead_data:
@@ -147,6 +160,43 @@ If you don't understand something, ask for clarification naturally."""
 
         return "\n".join(prompt_parts)
 
+    def _get_intent_guidance(self, intent: SalesIntent) -> Optional[str]:
+        """Get intent-specific guidance for the AI response."""
+        intent_guides = {
+            SalesIntent.MEETING_SCHEDULE: (
+                "The user wants to schedule a meeting or demo. "
+                "Offer available times and make scheduling easy. "
+                "Mention your calendar availability."
+            ),
+            SalesIntent.PRICING_INQUIRY: (
+                "The user is asking about pricing. "
+                "Provide clear pricing information or explain pricing tiers. "
+                "Focus on value, not just cost."
+            ),
+            SalesIntent.PRODUCT_INFO: (
+                "The user wants product information. "
+                "Describe key features and benefits concisely. "
+                "Focus on how it solves their problems."
+            ),
+            SalesIntent.LEAD_QUALIFICATION: (
+                "The user is sharing information about their company/needs. "
+                "Ask relevant qualifying questions to understand their fit. "
+                "Be curious about their business."
+            ),
+            SalesIntent.WARM_TRANSFER: (
+                "The user wants to speak with a human representative. "
+                "Acknowledge their request professionally and offer to connect them. "
+                "Make the transfer smooth and reassuring."
+            ),
+            SalesIntent.OBJECTION: (
+                "The user has expressed an objection or lack of interest. "
+                "Acknowledge their concern respectfully. "
+                "Don't be pushy - respect their decision while leaving the door open."
+            ),
+            SalesIntent.GENERAL: None  # No specific guidance for general conversation
+        }
+        return intent_guides.get(intent)
+
 
 class VoiceAgent:
     """
@@ -164,14 +214,17 @@ class VoiceAgent:
         """Initialize voice agent with all required services."""
         # Initialize services
         self.cartesia = CartesiaService()
-        
+
+        # Initialize intent classifier
+        self.intent_classifier = SalesIntentClassifier()
+
         # Initialize Cerebras service (optional - may fail if SDK not installed)
         try:
             self.cerebras = CerebrasService()
         except (ImportError, MissingAPIKeyError):
             self.cerebras = None
             logger.warning("CerebrasService unavailable. Voice agent features will be limited.")
-        
+
         if self.cerebras:
             self.talking_node = TalkingNode(self.cerebras)
         else:
@@ -189,7 +242,7 @@ class VoiceAgent:
         self.latency_buffer: List[int] = []
         self.max_buffer_size = 100
 
-        logger.info("VoiceAgent initialized with TalkingNode pattern")
+        logger.info("VoiceAgent initialized with TalkingNode pattern and intent routing")
 
     async def initialize(self):
         """Initialize async resources."""
@@ -306,6 +359,16 @@ class VoiceAgent:
                 "latency_ms": turn.stt_latency_ms
             }
 
+            # Classify intent (fast pattern matching - negligible latency)
+            intent = self.intent_classifier.classify_intent(turn.user_transcript)
+            turn.intent = intent.value
+
+            yield {
+                "type": "intent",
+                "intent": intent.value,
+                "transcript": turn.user_transcript
+            }
+
             # Update state
             session.state = ConversationState.PROCESSING
             yield {
@@ -321,11 +384,12 @@ class VoiceAgent:
             if session.lead_id:
                 lead_data = await self._get_lead_data(session.lead_id)
 
-            # Generate response using TalkingNode
+            # Generate response using TalkingNode with intent context
             ai_response = await self.talking_node.reason(
                 transcript=turn.user_transcript,
                 context=session.context,
-                lead_data=lead_data
+                lead_data=lead_data,
+                intent=intent
             )
 
             turn.ai_response = ai_response
