@@ -131,8 +131,14 @@ class MockCerebrasService:
 
 
 @pytest.fixture
-def mock_voice_agent():
+def mock_voice_agent(monkeypatch):
     """Create a voice agent with mocked services."""
+    # Mock CartesiaService to avoid requiring the SDK
+    monkeypatch.setattr(
+        'app.services.voice_agent.CartesiaService',
+        lambda: MockCartesiaService()
+    )
+
     agent = VoiceAgent()
     agent.cartesia = MockCartesiaService()
     agent.cerebras = MockCerebrasService()
@@ -384,8 +390,14 @@ async def test_error_handling(mock_voice_agent):
 
 
 @pytest.mark.asyncio
-async def test_latency_compliance():
+async def test_latency_compliance(monkeypatch):
     """Test that we meet latency targets consistently."""
+    # Mock CartesiaService to avoid requiring the SDK
+    monkeypatch.setattr(
+        'app.services.voice_agent.CartesiaService',
+        lambda: MockCartesiaService()
+    )
+
     # Create agent with specific latencies
     agent = VoiceAgent()
     agent.cartesia = MockCartesiaService()

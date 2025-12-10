@@ -14,8 +14,28 @@ import time
 import asyncio
 import logging
 from typing import AsyncIterator, Dict, List, Any
-from openai import AsyncOpenAI
-from tenacity import retry, stop_after_attempt, wait_exponential
+
+try:
+    from openai import AsyncOpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    AsyncOpenAI = None
+
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential
+    TENACITY_AVAILABLE = True
+except ImportError:
+    TENACITY_AVAILABLE = False
+    # Provide no-op decorators if tenacity is not available
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    def stop_after_attempt(*args, **kwargs):
+        return None
+    def wait_exponential(*args, **kwargs):
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +55,11 @@ class RunPodVLLMService:
         Args:
             endpoint_id: RunPod vLLM endpoint ID (defaults to env var)
         """
+        if not OPENAI_AVAILABLE:
+            raise RuntimeError(
+                "OpenAI SDK not installed. Install with: pip install openai"
+            )
+
         self.endpoint_id = endpoint_id or os.getenv("RUNPOD_VLLM_ENDPOINT_ID")
         self.api_key = os.getenv("RUNPOD_API_KEY")
 

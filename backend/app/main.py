@@ -19,7 +19,7 @@ from app.api import ai_outreach  # AI-powered outreach draft management
 from app.api import dashboard  # Dashboard endpoints for frontend
 from app.api import sync_from_scraper  # Dealer scraper webhook endpoint
 
-# GTM Automation Infrastructure (14)
+# GTM Automation Infrastructure (15)
 from app.api import supabase_auth  # Supabase authentication
 from app.api import langgraph_agents
 from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
@@ -35,6 +35,7 @@ from app.api import cockpit_websocket  # WebSocket for BDR Cockpit real-time upd
 from app.api import rankings  # Lead prediction market rankings
 from app.api import slack_commands  # Slack slash commands (/enrich)
 from app.api import claude_chat  # Claude chat API for CEO/CTO interaction
+from app.api import voice_routes  # Twilio voice calling integration
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -235,7 +236,7 @@ app.include_router(ai_outreach.router, prefix=settings.API_V1_PREFIX)  # AI outr
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)  # Dashboard endpoints for frontend
 app.include_router(sync_from_scraper.router, prefix=settings.API_V1_PREFIX)  # Dealer scraper webhook endpoint
 
-# GTM Automation Infrastructure (14)
+# GTM Automation Infrastructure (15)
 app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
 app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # LangGraph agent endpoints
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
@@ -252,6 +253,7 @@ app.include_router(cockpit_websocket.router, prefix=settings.API_V1_PREFIX)  # W
 app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead prediction market rankings
 app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slack slash commands (/enrich)
 app.include_router(claude_chat.router, prefix=settings.API_V1_PREFIX)  # Claude chat API for CEO/CTO interaction
+app.include_router(voice_routes.router, prefix=settings.API_V1_PREFIX)  # Twilio voice calling integration
 
 
 @app.get("/")
