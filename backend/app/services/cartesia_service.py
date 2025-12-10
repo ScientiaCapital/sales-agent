@@ -50,6 +50,35 @@ class VoiceSpeed(str, Enum):
     FASTEST = "fastest"
 
 
+# Sales-specific voice presets for different sales scenarios
+SALES_VOICE_PRESETS = {
+    "sales_closer": {
+        "voice_id": "a0e99841-438c-4a64-b679-ae501e7d6091",
+        "description": "Confident, persuasive sales closer",
+        "emotion": VoiceEmotion.PROFESSIONAL,
+        "speed": VoiceSpeed.NORMAL,
+    },
+    "lead_qualifier": {
+        "voice_id": "79a125e8-cd45-4c13-8a67-188112f4dd22",
+        "description": "Friendly, curious lead qualifier",
+        "emotion": VoiceEmotion.CURIOUS,
+        "speed": VoiceSpeed.NORMAL,
+    },
+    "meeting_scheduler": {
+        "voice_id": "694f9389-aac1-45b6-b726-9d9369183238",
+        "description": "Efficient, helpful scheduler",
+        "emotion": VoiceEmotion.NEUTRAL,
+        "speed": VoiceSpeed.FAST,
+    },
+    "warm_transfer": {
+        "voice_id": "a0e99841-438c-4a64-b679-ae501e7d6091",
+        "description": "Smooth, reassuring handoff voice",
+        "emotion": VoiceEmotion.EMPATHETIC,
+        "speed": VoiceSpeed.SLOW,
+    },
+}
+
+
 @dataclass
 class VoiceConfig:
     """Voice configuration for synthesis."""
@@ -419,6 +448,44 @@ class CartesiaService:
         except Exception as e:
             logger.error(f"Failed to list voices: {e}")
             raise
+
+    def get_sales_preset(
+        self,
+        preset_name: str,
+        model: Optional[str] = None,
+        language: Optional[str] = None
+    ) -> VoiceConfig:
+        """
+        Get a sales-specific voice preset configuration.
+
+        Args:
+            preset_name: Name of the sales preset (sales_closer, lead_qualifier, etc.)
+            model: Optional model override (sonic-2 or sonic-turbo)
+            language: Optional language override (default: en)
+
+        Returns:
+            VoiceConfig configured for the specified sales preset
+
+        Raises:
+            ValueError: If preset_name is not found in SALES_VOICE_PRESETS
+        """
+        if preset_name not in SALES_VOICE_PRESETS:
+            available_presets = ", ".join(SALES_VOICE_PRESETS.keys())
+            raise ValueError(
+                f"Unknown sales preset: '{preset_name}'. "
+                f"Available presets: {available_presets}"
+            )
+
+        preset = SALES_VOICE_PRESETS[preset_name]
+
+        # Create VoiceConfig with preset values and optional overrides
+        return VoiceConfig(
+            voice_id=preset["voice_id"],
+            language=language or "en",
+            model=model or "sonic-2",
+            emotion=preset["emotion"],
+            speed=preset["speed"]
+        )
 
     def _map_emotion(self, emotion: VoiceEmotion) -> List[str]:
         """
