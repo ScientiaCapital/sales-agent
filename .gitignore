@@ -127,8 +127,8 @@ htmlcov/
 # Redis
 dump.rdb
 
-# Celery
-celerybeat-schedule
+# Celery beat schedule (runtime generated)
+celerybeat-schedule*
 celerybeat.pid
 
 # Editor directories and files

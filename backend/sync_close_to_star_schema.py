@@ -69,7 +69,7 @@ async def fetch_close_leads(client: httpx.AsyncClient, limit: int = 10000) -> li
             params={
                 "_skip": skip,
                 "_limit": 100,
-                "_fields": "id,display_name,status_label,contacts,custom,created_by,date_created,date_updated",
+                "_fields": "id,display_name,status_label,contacts,custom,url,created_by,date_created,date_updated",
             },
             timeout=30.0
         )
@@ -185,46 +185,63 @@ async def fetch_close_activities(client: httpx.AsyncClient, days: int = 90) -> l
     return activities
 
 
+def should_exclude_status(status_label: str) -> bool:
+    """
+    Check if a Close CRM status should be EXCLUDED from sync entirely.
+
+    These leads are junk/dead OR protected - never sync to Supabase, never enrich.
+    """
+    status_lower = status_label.lower().strip()
+
+    # PROTECTED - Customers are OFF LIMITS for agents
+    if "customer" in status_lower:
+        return True
+
+    # JUNK STATUSES - Never sync these
+    if "do not sell" in status_lower:
+        return True
+    if "junk" in status_lower:
+        return True
+    if "out of business" in status_lower:
+        return True
+    if "unqualified" in status_lower:
+        return True
+
+    return False
+
+
 def map_close_status_to_stage(status_label: str) -> str:
     """
     Map Close CRM status_label to our current_stage.
 
-    This is critical for filtering out customers, disqualified, etc.
-    from the BDR Work Queue.
+    NOTE: Excluded statuses (Customer, Junk, etc.) are filtered out
+    by should_exclude_status() BEFORE this function is called.
     """
     status_lower = status_label.lower().strip()
 
-    # Exclude statuses - these should NOT appear in work queues
-    if "customer" in status_lower:
-        return "customer"
-    if "not interested" in status_lower:
-        return "not_interested"
-    if "disqualified" in status_lower:
-        return "disqualified"
-    if "bad" in status_lower or "junk" in status_lower:
-        return "bad_data"
-    if "do not contact" in status_lower or "dnc" in status_lower:
-        return "do_not_contact"
-    if "lost" in status_lower:
-        return "lost"
-    if "won" in status_lower:
-        return "won"
+    # Evangelist - advocates, low priority for outreach
+    if "evangelist" in status_lower:
+        return "evangelist"
 
-    # Active statuses - these appear in work queues
+    # Win-back opportunities - CAN be contacted
+    if "churned" in status_lower:
+        return "churned"  # OK to enrich and contact for win-back
+
+    # Active pipeline statuses - work queue eligible
     if "hot" in status_lower:
         return "qualified"
-    if "atl" in status_lower or "validated" in status_lower:
+    if "sql" in status_lower:
         return "qualified"
-    if "btl" in status_lower:
+    if "sal" in status_lower:
+        return "qualified"
+    if "mql" in status_lower:
         return "contacted"
     if "nurture" in status_lower:
         return "nurture"
-    if "meeting" in status_lower or "scheduled" in status_lower:
-        return "meeting_booked"
     if "opportunity" in status_lower or "opp" in status_lower:
         return "opportunity"
-    if "contacted" in status_lower:
-        return "contacted"
+    if "raw" in status_lower:
+        return "imported"
 
     # Default for unrecognized statuses
     return "imported"
@@ -254,10 +271,19 @@ def transform_lead_to_company(lead: dict) -> dict:
         tier = "BRONZE"
         score = 40
 
+    # Website is in the 'url' field, not custom fields
+    website_url = lead.get("url")
+
+    # Extract domain from URL for the domain field
+    domain = None
+    if website_url:
+        domain = website_url.replace("https://", "").replace("http://", "").split("/")[0].lower()
+
     return {
         "company_name": lead.get("display_name", "Unknown"),
         "phone": phones[0].get("phone") if phones else None,
-        "website": custom.get("Website") or custom.get("website"),
+        "website": website_url,
+        "domain": domain,
         "city": custom.get("City") or custom.get("city"),
         "state": custom.get("State") or custom.get("state"),
         "icp_score": score,
@@ -271,13 +297,21 @@ def transform_lead_to_company(lead: dict) -> dict:
 
 async def upsert_companies(client: httpx.AsyncClient, leads: list, batch_size: int = 100) -> int:
     """Insert/update leads into dim_companies using batch upserts."""
-    print(f"\nUpserting {len(leads)} companies to dim_companies...", flush=True)
+    # Filter out excluded statuses (Customer, Junk, Do Not Sell, etc.)
+    filtered_leads = [
+        lead for lead in leads
+        if not should_exclude_status(lead.get("status_label", ""))
+    ]
+    excluded_count = len(leads) - len(filtered_leads)
+
+    print(f"\nFiltering leads: {len(leads)} total, {excluded_count} excluded (Customer/Junk/etc), {len(filtered_leads)} to sync", flush=True)
+    print(f"Upserting {len(filtered_leads)} companies to dim_companies...", flush=True)
 
     success = 0
     errors = 0
 
-    # Transform all leads to company format
-    companies = [transform_lead_to_company(lead) for lead in leads]
+    # Transform filtered leads to company format
+    companies = [transform_lead_to_company(lead) for lead in filtered_leads]
 
     # Batch upsert
     for i in range(0, len(companies), batch_size):

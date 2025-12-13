@@ -3,6 +3,7 @@
 **Project**: sales-agent
 **Last Updated**: 2025-12-07 (Vite Migration Complete)
 **Sprint**: Current
+**NOTE**: Last updated Dec 7. For current status, see TASK.md (updated Dec 13). BACKLOG needs refresh with latest progress on website enrichment and VLM integration.
 
 ---
 
