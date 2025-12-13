@@ -56,6 +56,9 @@ from .hunter_tools import (
 
 from .website_scraping_tools import (
     scrape_company_team_tool,
+    scrape_website_content_tool,
+    analyze_website_screenshot_tool,
+    scrape_team_free_tool,
 )
 
 from .cartesia_tools import (
@@ -236,10 +239,14 @@ def get_hunter_tools():
 
 def get_website_scraping_tools():
     """
-    Get all website scraping tools for contact discovery.
+    Get all website scraping tools for contact discovery and content extraction.
 
     Returns:
-        List of website scraping tools: [scrape_company_team_tool]
+        List of website scraping tools:
+        - scrape_company_team_tool: Full team scraping (BeautifulSoup + Browserbase fallback)
+        - scrape_website_content_tool: Landing page content extraction
+        - analyze_website_screenshot_tool: VLM-powered screenshot analysis (Qwen 2.5 VL)
+        - scrape_team_free_tool: FREE BeautifulSoup-only team scraping
 
     Example:
         ```python
@@ -249,16 +256,19 @@ def get_website_scraping_tools():
         scraping_tools = get_website_scraping_tools()
         agent = create_react_agent(llm, scraping_tools)
 
-        # Agent can now scrape company websites for ATL contacts
+        # Agent can now scrape websites for ATL contacts, content, and with VLM
         result = await agent.ainvoke({
             "messages": [HumanMessage(
-                content="Find team members at https://acme.com"
+                content="Scrape https://acme.com for team members and company signals"
             )]
         })
         ```
     """
     return [
         scrape_company_team_tool,
+        scrape_website_content_tool,
+        analyze_website_screenshot_tool,
+        scrape_team_free_tool,
     ]
 
 
@@ -537,6 +547,9 @@ __all__ = [
 
     # Website Scraping Tools
     "scrape_company_team_tool",
+    "scrape_website_content_tool",
+    "analyze_website_screenshot_tool",
+    "scrape_team_free_tool",
 
     # Cartesia Voice Tools
     "cartesia_text_to_speech",
