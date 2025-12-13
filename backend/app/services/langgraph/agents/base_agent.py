@@ -58,6 +58,17 @@ from langchain_core.language_models import BaseChatModel
 from app.core.logging import setup_logging
 from app.services.cost_tracking import get_cost_optimizer
 
+# AI-Core integration for LangSmith tracing (optional)
+try:
+    from app.middleware.ai_core_integration import (
+        traced_agent,
+        get_usage_callback,
+        get_traced_llm,
+    )
+    AI_CORE_AVAILABLE = True
+except ImportError:
+    AI_CORE_AVAILABLE = False
+
 logger = setup_logging(__name__)
 
 
@@ -492,4 +503,38 @@ CONTEXT GUIDELINES:
             ),
             "cache_enabled": self.config.use_cache,
             "optimization_target": self.config.optimize_for.value,
+            "ai_core_enabled": AI_CORE_AVAILABLE,
         }
+
+    def get_langsmith_callbacks(self) -> list:
+        """
+        Get LangSmith callbacks for tracing LLM calls.
+
+        Returns empty list if ai-core not available.
+
+        Usage:
+            callbacks = self.get_langsmith_callbacks()
+            response = self.llm.invoke(messages, config={"callbacks": callbacks})
+        """
+        if not AI_CORE_AVAILABLE:
+            return []
+
+        callback = get_usage_callback()
+        return [callback] if callback else []
+
+    @classmethod
+    def with_tracing(cls, name: str, tags: list[str] | None = None):
+        """
+        Class method decorator for tracing agent methods in LangSmith.
+
+        Usage:
+            @BaseAgent.with_tracing("QualificationAgent", ["sales"])
+            async def run_qualification(self, lead_data):
+                ...
+        """
+        if not AI_CORE_AVAILABLE:
+            def decorator(func):
+                return func
+            return decorator
+
+        return traced_agent(name, tags=tags or [])
