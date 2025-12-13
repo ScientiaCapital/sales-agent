@@ -49,6 +49,18 @@ from app.core.exceptions import (
 # Configure logging
 logger = setup_logging(__name__)
 
+# Configure LangSmith tracing via ai-core (early initialization)
+try:
+    from ai_core.langsmith import configure_tracing
+    configure_tracing(
+        project=os.getenv("LANGSMITH_PROJECT", "sales-agent"),
+        tags=["production", "sales-agent"],
+        enabled=os.getenv("LANGSMITH_TRACING", "true").lower() == "true"
+    )
+    logger.info("LangSmith tracing configured via ai-core")
+except ImportError:
+    logger.warning("ai-core not installed, LangSmith tracing not configured")
+
 
 # Security Headers Middleware
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
