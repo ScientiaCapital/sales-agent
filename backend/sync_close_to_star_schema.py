@@ -296,7 +296,15 @@ def transform_lead_to_company(lead: dict) -> dict:
 
 
 async def upsert_companies(client: httpx.AsyncClient, leads: list, batch_size: int = 100) -> int:
-    """Insert/update leads into dim_companies using batch upserts."""
+    """
+    Insert/update leads into dim_companies using sync_company_from_close() RPC.
+
+    This uses the database function that:
+    1. Checks for existing company by close_lead_id first
+    2. Falls back to checking by normalized_name
+    3. Updates if found, inserts if not
+    4. Prevents duplicates via normalized_name unique constraint
+    """
     # Filter out excluded statuses (Customer, Junk, Do Not Sell, etc.)
     filtered_leads = [
         lead for lead in leads
@@ -305,34 +313,45 @@ async def upsert_companies(client: httpx.AsyncClient, leads: list, batch_size: i
     excluded_count = len(leads) - len(filtered_leads)
 
     print(f"\nFiltering leads: {len(leads)} total, {excluded_count} excluded (Customer/Junk/etc), {len(filtered_leads)} to sync", flush=True)
-    print(f"Upserting {len(filtered_leads)} companies to dim_companies...", flush=True)
+    print(f"Upserting {len(filtered_leads)} companies via sync_company_from_close()...", flush=True)
 
     success = 0
     errors = 0
 
-    # Transform filtered leads to company format
-    companies = [transform_lead_to_company(lead) for lead in filtered_leads]
+    # Process each lead through the dedup-safe RPC function
+    for i, lead in enumerate(filtered_leads):
+        company = transform_lead_to_company(lead)
 
-    # Batch upsert
-    for i in range(0, len(companies), batch_size):
-        batch = companies[i:i + batch_size]
-
+        # Call the sync_company_from_close RPC function
         response = await client.post(
-            f"{SUPABASE_URL}/rest/v1/dim_companies",
-            headers={**get_supabase_headers(), "Prefer": "resolution=merge-duplicates"},
-            json=batch,
-            timeout=60.0
+            f"{SUPABASE_URL}/rest/v1/rpc/sync_company_from_close",
+            headers=get_supabase_headers(),
+            json={
+                "p_close_lead_id": company.get("close_lead_id"),
+                "p_company_name": company.get("company_name"),
+                "p_domain": company.get("domain"),
+                "p_website": company.get("website"),
+                "p_phone": company.get("phone"),
+                "p_city": company.get("city"),
+                "p_state": company.get("state"),
+                "p_icp_score": company.get("icp_score"),
+                "p_icp_tier": company.get("icp_tier"),
+            },
+            timeout=10.0
         )
 
         if response.status_code in (200, 201, 204):
-            success += len(batch)
-            if (i + batch_size) % 500 == 0 or (i + len(batch)) >= len(companies):
-                print(f"  Progress: {success}/{len(companies)} companies...", flush=True)
+            success += 1
         else:
-            errors += len(batch)
-            print(f"  Batch error at {i}: {response.status_code} - {response.text[:200]}", flush=True)
+            errors += 1
+            if errors <= 5:  # Only log first 5 errors
+                print(f"  Error syncing {company.get('company_name')}: {response.status_code}", flush=True)
 
-    print(f"Successfully upserted {success}/{len(leads)} companies ({errors} errors)", flush=True)
+        # Progress logging
+        if (i + 1) % 100 == 0:
+            print(f"  Progress: {i + 1}/{len(filtered_leads)} ({success} success, {errors} errors)...", flush=True)
+
+    print(f"Successfully synced {success}/{len(filtered_leads)} companies ({errors} errors)", flush=True)
     return success
 
 
