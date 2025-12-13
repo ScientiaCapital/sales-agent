@@ -25,7 +25,7 @@ class CerebrasLLM(LLM):
     """LangChain wrapper for Cerebras Inference API.
 
     Uses OpenAI SDK with custom base_url for ultra-fast inference.
-    Target latency: 633ms for llama3.1-8b model.
+    Target latency: 633ms for llama-3.3-70b model.
     Cost: $0.10/M input tokens, $0.10/M output tokens.
 
     Features:
@@ -42,7 +42,7 @@ class CerebrasLLM(LLM):
         # Initialize
         llm = CerebrasLLM(
             api_key="csk-...",
-            model="llama3.1-8b",
+            model="llama-3.3-70b",
             temperature=0.7,
             streaming=True
         )
@@ -77,8 +77,8 @@ class CerebrasLLM(LLM):
     )
 
     model: str = Field(
-        default="llama3.1-8b",
-        description="Model name (llama3.1-8b for ultra-fast, llama3.1-70b for quality)"
+        default="llama-3.3-70b",
+        description="Model name (llama-3.3-70b for ultra-fast, llama3.1-70b for quality)"
     )
 
     temperature: float = Field(
@@ -151,7 +151,7 @@ class CerebrasLLM(LLM):
     @classmethod
     def validate_model(cls, v: str) -> str:
         """Validate model name is supported."""
-        supported_models = ["llama3.1-8b", "llama3.1-70b"]
+        supported_models = ["llama-3.3-70b", "llama3.1-70b"]
         if v not in supported_models:
             logger.warning(
                 f"Model '{v}' may not be supported. "
@@ -476,7 +476,7 @@ class CerebrasLLM(LLM):
         """Calculate API call cost based on token usage.
 
         Cerebras pricing (as of January 2025):
-        - llama3.1-8b: $0.10/M input, $0.10/M output
+        - llama-3.3-70b: $0.10/M input, $0.10/M output
         - llama3.1-70b: $0.60/M input, $0.60/M output
 
         Args:
@@ -488,7 +488,7 @@ class CerebrasLLM(LLM):
         """
         # Pricing per million tokens
         pricing = {
-            "llama3.1-8b": {"input": 0.10, "output": 0.10},
+            "llama-3.3-70b": {"input": 0.10, "output": 0.10},
             "llama3.1-70b": {"input": 0.60, "output": 0.60}
         }
 
@@ -506,7 +506,7 @@ class CerebrasLLM(LLM):
 
 
 def get_cerebras_llm(
-    model: str = "llama3.1-8b",
+    model: str = "llama-3.3-70b",
     temperature: float = 0.7,
     max_tokens: int = 500,
     streaming: bool = True,
@@ -517,7 +517,7 @@ def get_cerebras_llm(
     Automatically loads API key from environment variable CEREBRAS_API_KEY.
 
     Args:
-        model: Model name (llama3.1-8b or llama3.1-70b)
+        model: Model name (llama-3.3-70b or llama3.1-70b)
         temperature: Sampling temperature (0.0-2.0)
         max_tokens: Maximum tokens to generate
         streaming: Enable streaming

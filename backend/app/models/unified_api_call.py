@@ -45,7 +45,7 @@ class APICallLog(Base):
 
     # Provider & Model Info
     provider = Column(SQLEnum(ProviderType), nullable=False, index=True)
-    model = Column(String(100), nullable=False, index=True)  # e.g., 'llama3.1-8b', 'claude-3-sonnet'
+    model = Column(String(100), nullable=False, index=True)  # e.g., 'llama-3.3-70b', 'claude-3-sonnet'
     endpoint = Column(String(200), nullable=False)  # e.g., '/chat/completions', '/v1/messages'
 
     # Token Usage

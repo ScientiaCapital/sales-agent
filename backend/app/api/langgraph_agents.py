@@ -77,7 +77,7 @@ class InvokeAgentRequest(BaseModel):
     )
     model: Optional[str] = Field(
         default=None,
-        description="Model ID (auto-selects if None). Examples: llama3.1-8b, claude-3-haiku-20240307, deepseek-chat, llama3.1:8b"
+        description="Model ID (auto-selects if None). Examples: llama-3.3-70b, claude-3-haiku-20240307, deepseek-chat, llama3.1:8b"
     )
 
 

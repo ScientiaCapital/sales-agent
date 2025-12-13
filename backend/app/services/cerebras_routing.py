@@ -144,7 +144,7 @@ class CerebrasRouter:
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        model: str = "llama3.1-8b",
+        model: str = "llama-3.3-70b",
         temperature: float = 0.7,
         max_tokens: int = 500,
         preferred_method: Optional[CerebrasAccessMethod] = None,
@@ -156,7 +156,7 @@ class CerebrasRouter:
         Args:
             prompt: User prompt
             system_prompt: Optional system prompt
-            model: Cerebras model (llama3.1-8b, llama3.1-70b, llama-3.3-70b)
+            model: Cerebras model (llama-3.3-70b, llama3.1-70b, llama-3.3-70b)
             temperature: Model temperature
             max_tokens: Maximum completion tokens
             preferred_method: Optional preferred access method
@@ -312,7 +312,7 @@ class CerebrasRouter:
         Call Cerebras directly via official SDK.
         
         Fastest method with lowest latency (~945ms for lead qualification)
-        Cost: $0.10/M tokens for llama3.1-8b
+        Cost: $0.10/M tokens for llama-3.3-70b
         """
         if not self.cerebras_direct_client:
             raise RuntimeError("Cerebras direct client not initialized")
@@ -375,7 +375,7 @@ class CerebrasRouter:
         
         # Map model names to OpenRouter format
         model_map = {
-            "llama3.1-8b": "meta-llama/llama-3.1-8b-instruct",
+            "llama-3.3-70b": "meta-llama/llama-3.1-8b-instruct",
             "llama3.1-70b": "meta-llama/llama-3.1-70b-instruct",
             "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct"
         }
@@ -515,7 +515,7 @@ class CerebrasRouter:
         self,
         prompt: str,
         system_prompt: Optional[str] = None,
-        model: str = "llama3.1-8b",
+        model: str = "llama-3.3-70b",
         temperature: float = 0.7,
         max_tokens: int = 500,
         preferred_method: Optional[CerebrasAccessMethod] = None
@@ -628,7 +628,7 @@ class CerebrasRouter:
         messages.append({"role": "user", "content": prompt})
         
         model_map = {
-            "llama3.1-8b": "meta-llama/llama-3.1-8b-instruct",
+            "llama-3.3-70b": "meta-llama/llama-3.1-8b-instruct",
             "llama3.1-70b": "meta-llama/llama-3.1-70b-instruct",
             "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct"
         }

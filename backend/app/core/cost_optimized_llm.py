@@ -9,7 +9,7 @@ import os
 
 # LangChain imports for real provider calls
 from langchain_core.messages import HumanMessage
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI  # Used for DeepSeek via OpenRouter
 
@@ -28,7 +28,7 @@ class LLMConfig:
         user_id: User ID for per-user tracking (optional)
         mode: "passthrough" (use agent's provider) or "smart_router" (optimize)
         provider: Provider for passthrough mode (e.g., "cerebras", "claude")
-        model: Model for passthrough mode (e.g., "llama3.1-8b")
+        model: Model for passthrough mode (e.g., "llama-3.3-70b")
     """
     agent_type: str
     lead_id: Optional[int] = None

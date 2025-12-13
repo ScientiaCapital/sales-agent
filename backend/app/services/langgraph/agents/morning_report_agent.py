@@ -33,7 +33,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langchain_anthropic import ChatAnthropic
 
 from app.core.logging import setup_logging
@@ -149,7 +149,7 @@ Generate the morning briefing:""")
     ):
         """Initialize MorningReportAgent."""
         self.provider = provider
-        self.model = model or ("llama3.1-8b" if provider == "cerebras" else "claude-3-haiku-20240307")
+        self.model = model or ("llama-3.3-70b" if provider == "cerebras" else "claude-3-haiku-20240307")
 
         if provider == "cerebras":
             api_key = os.getenv("CEREBRAS_API_KEY")

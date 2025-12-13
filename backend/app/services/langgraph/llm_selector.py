@@ -93,7 +93,7 @@ PROVIDER_CAPABILITIES = {
 # ========== Default Models Per Provider ==========
 
 DEFAULT_MODELS = {
-    "cerebras": "llama3.1-8b",
+    "cerebras": "llama-3.3-70b",
     "deepseek": "deepseek/deepseek-chat",  # DeepSeek v3
     "qwen": "qwen/qwen-2.5-72b-instruct",  # Qwen 2.5
     "claude": "claude-3-5-haiku-20241022",  # Haiku for speed/cost balance
@@ -191,11 +191,11 @@ def get_llm_for_capability(
 
     # Use default model if not specified
     if not model:
-        model = DEFAULT_MODELS.get(provider, "llama3.1-8b")
+        model = DEFAULT_MODELS.get(provider, "llama-3.3-70b")
 
     # Initialize LLM based on provider
     if provider == "cerebras":
-        from langchain_cerebras import ChatCerebras
+        from app.services.langchain_cerebras_compat import ChatCerebras
 
         api_key = os.getenv("CEREBRAS_API_KEY")
         if not api_key:

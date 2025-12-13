@@ -232,7 +232,7 @@ class CustomerService:
                 deployment_id=deployment_id,
                 status="deployed",
                 config=config or {},
-                model=model or "llama3.1-8b",
+                model=model or "llama-3.3-70b",
                 total_tasks=0,
                 completed_tasks=0,
                 failed_tasks=0,

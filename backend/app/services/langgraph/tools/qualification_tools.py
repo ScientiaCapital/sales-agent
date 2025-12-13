@@ -140,7 +140,7 @@ async def qualify_lead_tool(
         # Initialize QualificationAgent (defaults to Cerebras for speed)
         agent = QualificationAgent(
             provider="cerebras",
-            model="llama3.1-8b",
+            model="llama-3.3-70b",
             use_cache=True,
             track_costs=True
         )
@@ -183,7 +183,7 @@ async def qualify_lead_tool(
             "recommendations": result.recommendations or [],
             "latency_ms": latency_ms,
             "provider": metadata.get("provider", "cerebras"),
-            "model": metadata.get("model", "llama3.1-8b"),
+            "model": metadata.get("model", "llama-3.3-70b"),
             "tokens_used": metadata.get("tokens_used", 0),
             "cost_usd": metadata.get("cost_usd", 0.0),
             "cache_hit": metadata.get("cache_hit", False)
