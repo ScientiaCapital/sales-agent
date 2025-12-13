@@ -294,3 +294,27 @@ Company phone         +10 pts
 - **DNS Resolution Check**: Validates resolved IP isn't private (prevents DNS rebinding)
 - **Integration**: All scrapers call `validate_website_url()` before making requests
 - **Impact**: Protects against SSRF attacks that could expose cloud credentials or internal services
+
+### ADR-012: Company Deduplication & Prevention System
+- **Date**: 2025-12-13
+- **Decision**: Implement database-level deduplication with unique constraints and RPC functions
+- **Rationale**: Found 62% duplicate rate in dim_companies (14,801 → 5,687 unique) due to lack of unique constraint
+- **Implementation**:
+  - `backend/supabase_deduplicate.py` - One-time cleanup script with batch processing
+  - `supabase/migrations/025_prevent_duplicates.sql` - Prevention migration
+  - `backend/app/services/company_dedup.py` - Python helper for safe upserts
+- **Deduplication Priority**:
+  1. Keep record with `close_lead_id` (linked to CRM)
+  2. If tie: keep highest `icp_score`
+  3. If tie: keep most recent `updated_at`
+- **Prevention Components**:
+  - `normalize_company_name()` - PostgreSQL function for name normalization
+  - Trigger: Auto-populates `normalized_name` on INSERT/UPDATE
+  - `UNIQUE INDEX` on `normalized_name` (partial, ignores NULL)
+  - `upsert_company()` - RPC function for safe inserts
+  - `sync_company_from_close()` - RPC function for Close CRM sync
+- **Migration Order**:
+  1. Run `supabase_deduplicate.py --execute` (one-time cleanup)
+  2. Apply migration 025 (prevents future duplicates)
+  3. Update sync scripts to use RPC functions
+- **Impact**: Guarantees 1 company = 1 record, prevents duplicate accumulation
