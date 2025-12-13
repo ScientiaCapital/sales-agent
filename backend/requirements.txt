@@ -1,8 +1,8 @@
 # Core Framework
 fastapi==0.115.0
 uvicorn[standard]==0.32.0
-pydantic==2.9.2
-pydantic-settings==2.6.0
+pydantic>=2.9.2,<3.0.0
+pydantic-settings>=2.10.1,<3.0.0  # Updated for langchain-community 0.4.x
 
 # Database
 psycopg[binary]==3.2.3  # Modern PostgreSQL adapter (psycopg3)
@@ -39,6 +39,7 @@ supabase==2.10.0  # Supabase client for authentication and database
 
 # Monitoring & Logging
 sentry-sdk[fastapi]==2.15.0
+structlog==25.5.0  # Structured logging for application logs
 # ddtrace==2.18.0  # Datadog APM (commented out - requires Rust toolchain)
 
 # Testing
@@ -53,33 +54,34 @@ flake8==7.1.1
 mypy==1.11.2
 pre-commit==4.0.1
 
-# AI/ML - LangChain/LangGraph Framework
-langchain==0.3.15  # Core LangChain framework
-langchain-core==0.3.31  # LangChain core abstractions
-langchain-community==0.3.14  # Community integrations
-langgraph==0.2.60  # StateGraph orchestration for complex agents
-langsmith==0.2.6  # LangSmith tracing and observability
+# AI/ML - LangChain/LangGraph Framework (Updated Dec 2025 for v1.0)
+langchain>=1.1.0,<2.0.0  # Core LangChain framework v1.0+
+langchain-core>=1.2.0,<2.0.0  # LangChain core abstractions
+langchain-community>=0.4.0,<1.0.0  # Community integrations
+langgraph>=1.0.0,<2.0.0  # StateGraph orchestration for complex agents (v1.0+)
+langgraph-checkpoint-redis>=0.3.0  # Redis checkpointer for LangGraph state persistence
+langsmith>=0.4.0,<1.0.0  # LangSmith tracing and observability
 
 # Deep Agents Implementation (Custom - 2025)
 # Note: Using custom implementation based on LangChain patterns
 # No external dependencies needed - built on existing LangChain/LangGraph
 
-# LangChain Vector Store Integrations (NEW: 2025)
-# langchain-postgres==0.0.12  # REMOVED: Conflicts with numpy>=2.1.0, unused in production (only in enhanced_vector_store.py which is not imported)
-langchain-community==0.3.14  # Community integrations (FAISS, Chroma, Qdrant)
-# langchain-huggingface==0.1.0  # REMOVED: Not used in production, no imports found
-# langchain-ollama==0.1.0  # REMOVED: Conflicts with langchain-core>=0.3.31 (requires <0.3.0), not used in production
-langchain-text-splitters==0.3.3  # Advanced text splitting strategies (required >=0.3.3 by langchain 0.3.15)
+# LangChain Vector Store Integrations (Updated Dec 2025)
+# langchain-postgres==0.0.12  # REMOVED: Conflicts with numpy>=2.1.0, unused in production
+# langchain-community already included above - provides FAISS, Chroma, Qdrant
+# langchain-huggingface==0.1.0  # REMOVED: Not used in production
+langchain-ollama>=0.3.0  # Local models via Ollama (lang-core compatible)
+langchain-text-splitters>=0.3.3  # Advanced text splitting strategies
 
 # LangChain Integrations
-langchain-anthropic==0.3.3  # Anthropic Claude integration
-langchain-openai==0.3.0  # OpenAI integration (for Cerebras via custom base_url)
-langchain-cerebras==0.5.0  # Official Cerebras LangChain integration (NEW: 2025)
+langchain-anthropic>=1.3.0,<2.0.0  # Anthropic Claude integration (updated for lang-core compatibility)
+langchain-openai>=1.0.0,<2.0.0  # OpenAI integration (updated for langchain-core 1.x)
+# langchain-cerebras==0.5.0  # REMOVED: Requires Python <3.13, use cerebras-cloud-sdk directly
 
 # AI/ML - Model Providers
 cerebras-cloud-sdk==1.9.0  # Official Cerebras SDK (NEW: TCP warming, 21% faster than OpenAI wrapper)
 openai>=1.58.1,<2.0.0  # For OpenAI-compatible APIs (RunPod/Cerebras via OpenAI client) - DOWNGRADED: langchain-openai 0.3.0 requires <2.0.0
-anthropic==0.69.0  # Claude streaming and batch API support (aligned with venv_requirements.txt)
+anthropic>=0.75.0,<1.0.0  # Claude streaming and batch API support (updated for langchain-anthropic 1.3.0)
 
 # Cloud Infrastructure - RunPod
 # Note: Using RunPod for compute, not Firebase/GCP

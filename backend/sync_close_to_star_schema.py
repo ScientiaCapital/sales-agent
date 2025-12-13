@@ -55,7 +55,7 @@ def get_supabase_headers():
     }
 
 
-async def fetch_close_leads(client: httpx.AsyncClient, limit: int = 500) -> list:
+async def fetch_close_leads(client: httpx.AsyncClient, limit: int = 10000) -> list:
     """Fetch leads from Close CRM (Tim's leads or all)."""
     leads = []
     skip = 0
@@ -230,87 +230,75 @@ def map_close_status_to_stage(status_label: str) -> str:
     return "imported"
 
 
-async def upsert_companies(client: httpx.AsyncClient, leads: list) -> int:
-    """Insert/update leads into dim_companies."""
+def transform_lead_to_company(lead: dict) -> dict:
+    """Transform a Close lead to dim_companies format."""
+    custom = lead.get("custom", {})
+    contacts = lead.get("contacts", [])
+    primary_contact = contacts[0] if contacts else {}
+    phones = primary_contact.get("phones", [])
+
+    status = lead.get("status_label", "")
+    current_stage = map_close_status_to_stage(status)
+
+    # Determine ICP tier from status
+    if "Hot" in status:
+        tier = "PLATINUM"
+        score = 85
+    elif "Validated" in status or "ATL" in status:
+        tier = "GOLD"
+        score = 75
+    elif "BTL" in status:
+        tier = "SILVER"
+        score = 55
+    else:
+        tier = "BRONZE"
+        score = 40
+
+    return {
+        "company_name": lead.get("display_name", "Unknown"),
+        "phone": phones[0].get("phone") if phones else None,
+        "website": custom.get("Website") or custom.get("website"),
+        "city": custom.get("City") or custom.get("city"),
+        "state": custom.get("State") or custom.get("state"),
+        "icp_score": score,
+        "icp_tier": tier,
+        "current_stage": current_stage,
+        "close_lead_id": lead.get("id"),
+        "source_type": "close_crm",
+        "first_seen_at": lead.get("date_created"),
+    }
+
+
+async def upsert_companies(client: httpx.AsyncClient, leads: list, batch_size: int = 100) -> int:
+    """Insert/update leads into dim_companies using batch upserts."""
     print(f"\nUpserting {len(leads)} companies to dim_companies...", flush=True)
 
     success = 0
-    for lead in leads:
-        # Extract custom fields
-        custom = lead.get("custom", {})
+    errors = 0
 
-        # Extract Close CRM metadata fields (Phase 0 enhancement)
-        lead_url = lead.get("url")  # Close lead URL
-        created_by = lead.get("created_by")  # User ID who created the lead
-        description = lead.get("description", "")  # Lead description/notes
-        status_id = lead.get("status_id")  # Status ID for filtering
-        raw_data = lead  # Full API response for audit trail
+    # Transform all leads to company format
+    companies = [transform_lead_to_company(lead) for lead in leads]
 
-        # Extract ALL custom fields dynamically (not hardcoded list)
-        custom_fields = {}
-        for key, value in custom.items():
-            custom_fields[key] = value
+    # Batch upsert
+    for i in range(0, len(companies), batch_size):
+        batch = companies[i:i + batch_size]
 
-        # Get primary contact
-        contacts = lead.get("contacts", [])
-        primary_contact = contacts[0] if contacts else {}
-        phones = primary_contact.get("phones", [])
-        emails = primary_contact.get("emails", [])
-
-        # Get status and map to current_stage
-        status = lead.get("status_label", "")
-        current_stage = map_close_status_to_stage(status)
-
-        # Determine ICP tier from status
-        if "Hot" in status:
-            tier = "PLATINUM"
-            score = 85
-        elif "Validated" in status or "ATL" in status:
-            tier = "GOLD"
-            score = 75
-        elif "BTL" in status:
-            tier = "SILVER"
-            score = 55
-        else:
-            tier = "BRONZE"
-            score = 40
-
-        company = {
-            "company_name": lead.get("display_name", "Unknown"),
-            "phone": phones[0].get("phone") if phones else None,
-            "website": custom.get("Website") or custom.get("website"),
-            "city": custom.get("City") or custom.get("city"),
-            "state": custom.get("State") or custom.get("state"),
-            "icp_score": score,
-            "icp_tier": tier,
-            "current_stage": current_stage,
-            "close_lead_id": lead.get("id"),
-            "close_lead_url": lead_url,  # NEW: Direct link to Close dashboard
-            "close_created_by": created_by,  # NEW: Who created this lead
-            "close_description": description,  # NEW: Description/notes from Close
-            "close_status_id": status_id,  # NEW: Status ID for filtering
-            "close_raw_data": raw_data,  # NEW: Full API response
-            "close_custom_fields": custom_fields,  # NEW: All custom fields dynamically
-            "source_type": "close_crm",
-            "first_seen_at": lead.get("date_created"),
-            "updated_at": datetime.utcnow().isoformat(),
-        }
-
-        # Upsert to Supabase
         response = await client.post(
             f"{SUPABASE_URL}/rest/v1/dim_companies",
             headers={**get_supabase_headers(), "Prefer": "resolution=merge-duplicates"},
-            json=company,
-            timeout=10.0
+            json=batch,
+            timeout=60.0
         )
 
         if response.status_code in (200, 201, 204):
-            success += 1
+            success += len(batch)
+            if (i + batch_size) % 500 == 0 or (i + len(batch)) >= len(companies):
+                print(f"  Progress: {success}/{len(companies)} companies...", flush=True)
         else:
-            if success < 3:  # Only print first few errors
-                print(f"  Error upserting {lead.get('display_name')}: {response.status_code}", flush=True)
+            errors += len(batch)
+            print(f"  Batch error at {i}: {response.status_code} - {response.text[:200]}", flush=True)
 
-    print(f"Successfully upserted {success}/{len(leads)} companies", flush=True)
+    print(f"Successfully upserted {success}/{len(leads)} companies ({errors} errors)", flush=True)
     return success
 
 
@@ -462,7 +450,7 @@ async def main():
     parser = argparse.ArgumentParser(description="Sync Close CRM to Star Schema")
     parser.add_argument("--leads-only", action="store_true", help="Only sync leads")
     parser.add_argument("--activities-only", action="store_true", help="Only sync activities")
-    parser.add_argument("--limit", type=int, default=500, help="Max leads to fetch")
+    parser.add_argument("--limit", type=int, default=10000, help="Max leads to fetch")
     parser.add_argument("--days", type=int, default=90, help="Days of activities to fetch")
     args = parser.parse_args()
 
