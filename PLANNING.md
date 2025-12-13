@@ -1,6 +1,6 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-02
+**Last Updated**: 2025-12-13
 
 ---
 
@@ -256,3 +256,41 @@ Company phone         +10 pts
   - **Generators**: Generac, Kohler, Cummins, Briggs & Stratton
 - **Maintenance Plans Extraction**: Detects membership/subscription names (Comfort Club, Service Agreement, etc.) for BDR openers
 - **Impact**: Full-spectrum contractor identification for Coperniq intelligence layer
+
+### ADR-010: FREE Website Enrichment with VLM Fallback
+- **Date**: 2025-12-13
+- **Decision**: Create FREE BeautifulSoup-based website scraping with VLM fallback for JS-heavy sites
+- **Rationale**: Need to enrich 3,320 companies with websites without expensive Browserbase costs
+- **Components Created**:
+  - `beautifulsoup_team_scraper.py` - FREE ATL extraction from team/about pages
+  - `website_content_scraper.py` - Landing page content and signal detection
+  - `vlm_website_analyzer.py` - Qwen 2.5 VL screenshot analysis via OpenRouter
+  - `url_validator.py` - SSRF protection for all scrapers
+- **LangGraph Tools**: 4 new tools added to `website_scraping_tools.py`
+  - `scrape_company_team_tool` - Full scraping with Browserbase fallback
+  - `scrape_website_content_tool` - Signal extraction (hiring, funding, tech stack)
+  - `analyze_website_screenshot_tool` - VLM-powered screenshot analysis
+  - `scrape_team_free_tool` - FREE BeautifulSoup-only scraping
+- **VLM Integration**: `scientia-vlm-core` v0.1.0 installed from local repo
+  - 3 model tiers: fast ($0.0003), balanced ($0.0008), best ($0.0015) per image
+  - Circuit breaker + retry patterns for resilience
+- **Cost Structure**:
+  - BeautifulSoup: FREE
+  - VLM (if needed): ~$0.0008/image for 30B model
+  - Est. 3,320 sites @ 10% VLM fallback = ~$2.65 total
+- **Impact**: Can enrich all 3,320 companies for under $3
+
+### ADR-011: SSRF Protection for All Scrapers
+- **Date**: 2025-12-13
+- **Decision**: Add URL validation to prevent Server-Side Request Forgery attacks
+- **Rationale**: Security audit identified critical SSRF vulnerability in all URL-accepting functions
+- **Implementation**: `url_validator.py` with `validate_website_url()` function
+- **Blocked Targets**:
+  - Localhost and loopback addresses (127.0.0.1, ::1)
+  - Private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+  - Cloud metadata endpoints (169.254.169.254, metadata.google.internal)
+  - File URLs and non-HTTP schemes
+  - .local and .internal domain suffixes
+- **DNS Resolution Check**: Validates resolved IP isn't private (prevents DNS rebinding)
+- **Integration**: All scrapers call `validate_website_url()` before making requests
+- **Impact**: Protects against SSRF attacks that could expose cloud credentials or internal services
