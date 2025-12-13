@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-08
+**Last Updated**: 2025-12-13
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Total Companies | 8,891 |
-| With Domains | 3,511 |
+| Total Companies | 4,408 |
+| With Websites | 3,320 |
 | ATL Contacts | 476 |
 | Legit ATLs | 469 |
 | Companies with 2+ ATLs | 64 |
@@ -17,7 +17,70 @@
 
 ---
 
-## LATEST UPDATE (Dec 8 - Signal-Based Outreach)
+## LATEST UPDATE (Dec 13 - Website Enrichment + VLM Integration)
+
+### FREE Website Enrichment System - COMPLETE ✅
+
+**The Problem**: Need to scrape 3,320 company websites for ATL contacts and signals without expensive Browserbase costs.
+
+**The Solution**: BeautifulSoup-based FREE scraping with VLM fallback for JS-heavy sites.
+
+| Component | File | Status |
+|-----------|------|--------|
+| BeautifulSoup Team Scraper | `app/services/beautifulsoup_team_scraper.py` | ✅ NEW |
+| Website Content Scraper | `app/services/website_content_scraper.py` | ✅ NEW |
+| VLM Website Analyzer | `app/services/vlm_website_analyzer.py` | ✅ NEW |
+| URL Validator (SSRF Protection) | `app/services/url_validator.py` | ✅ NEW |
+| LangGraph Tools | `app/services/langgraph/tools/website_scraping_tools.py` | ✅ UPDATED |
+
+### New LangGraph Tools
+
+| Tool | Purpose | Cost |
+|------|---------|------|
+| `scrape_company_team_tool` | ATL extraction (BS + Browserbase fallback) | FREE-$$ |
+| `scrape_website_content_tool` | Landing page signals | FREE |
+| `analyze_website_screenshot_tool` | VLM screenshot analysis (Qwen 2.5 VL) | ~$0.0008/img |
+| `scrape_team_free_tool` | FREE BeautifulSoup-only scraping | FREE |
+
+### VLM Integration (vlm-core)
+
+Integrated `scientia-vlm-core` v0.1.0 for Vision Language Model analysis:
+- Uses Qwen 2.5 VL via OpenRouter
+- 3 model tiers: fast ($0.0003), balanced ($0.0008), best ($0.0015) per image
+- Circuit breaker + retry patterns for resilience
+
+### Security Hardening
+
+**SSRF Protection** - All scrapers now validate URLs before making requests:
+- Blocks: localhost, private IPs (192.168.x.x, 10.x.x.x)
+- Blocks: Cloud metadata endpoints (169.254.169.254, metadata.google.internal)
+- Blocks: File URLs, non-HTTP schemes
+
+### Signal Detection (Website Content)
+
+| Signal | Detection | Use Case |
+|--------|-----------|----------|
+| `is_hiring` | "we're hiring", "join our team" | Growth indicator |
+| `has_funding` | "Series A", "raised $X" | Funded startup |
+| `tech_stack` | Salesforce, AWS, React, etc. | Tech fit |
+| `growth_indicators` | "Inc 5000", "fastest growing" | Success signals |
+
+### Test Results
+
+| Site | ATL Contacts | Hiring | Funding | Method |
+|------|--------------|--------|---------|--------|
+| linear.app | 20 | ✅ | ✅ | BeautifulSoup |
+| stripe.com | 8 | ✅ | ✅ | BeautifulSoup |
+
+### Next Steps (Tomorrow)
+
+1. Run FREE enrichment on 3,320 companies with websites
+2. Use VLM fallback for JS-heavy sites with no ATL results
+3. Store signals in Supabase for agent context
+
+---
+
+## PREVIOUS UPDATE (Dec 8 - Signal-Based Outreach)
 
 ### Signal Detection System - COMPLETE ✅
 
