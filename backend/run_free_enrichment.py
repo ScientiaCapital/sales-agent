@@ -126,24 +126,40 @@ async def save_atl_contacts(
 async def mark_company_enriched(
     client: httpx.AsyncClient,
     company_id: str,
-    method: str = "beautifulsoup"
+    method: str = "beautifulsoup",
+    team_page_url: str = None,
+    enrichment_status: str = None
 ):
-    """Mark company as enriched."""
-    # Only update last_enriched_at (enrichment_method column may not exist)
+    """Mark company as enriched with metadata for smart Browserbase targeting."""
+    update_data = {
+        "last_enriched_at": datetime.now().isoformat()
+    }
+
+    # Add team page metadata if provided
+    if team_page_url is not None:
+        update_data["team_page_url"] = team_page_url
+    if enrichment_status is not None:
+        update_data["enrichment_status"] = enrichment_status
+
     await client.patch(
         f"{SUPABASE_URL}/rest/v1/dim_companies",
         headers=get_supabase_headers(),
         params={"company_id": f"eq.{company_id}"},
-        json={
-            "last_enriched_at": datetime.now().isoformat()
-        },
+        json=update_data,
         timeout=10.0
     )
 
 
-async def scrape_company_free(website: str) -> List[Dict[str, str]]:
+async def scrape_company_free(website: str) -> Dict[str, Any]:
     """
     Scrape a company's team page using BeautifulSoup (FREE).
+
+    Returns:
+        {
+            "contacts": [...],
+            "team_page_url": "https://..." or None,
+            "enrichment_status": "found_contacts" | "found_page_no_contacts" | "no_team_page"
+        }
     """
     sys.path.insert(0, str(Path(__file__).parent))
     from app.services.beautifulsoup_team_scraper import BeautifulSoupTeamScraper
@@ -151,11 +167,12 @@ async def scrape_company_free(website: str) -> List[Dict[str, str]]:
     scraper = BeautifulSoupTeamScraper()
 
     try:
-        contacts = await scraper.scrape_team_page(website)
-        return contacts
+        # Use new method that returns metadata
+        result = await scraper.scrape_team_page_with_metadata(website)
+        return result
     except Exception as e:
         console.print(f"[red]Scrape error: {e}[/red]")
-        return []
+        return {"contacts": [], "team_page_url": None, "enrichment_status": "error"}
 
 
 async def test_scraper():
@@ -239,20 +256,31 @@ async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = Fa
                 console.print(f"[{i+1}/{len(batch)}] {display_name:<40}", end=" ")
 
                 try:
-                    # Scrape website
-                    contacts = await scrape_company_free(website)
+                    # Scrape website (now returns metadata)
+                    result = await scrape_company_free(website)
+                    contacts = result.get("contacts", [])
+                    team_page_url = result.get("team_page_url")
+                    enrichment_status = result.get("enrichment_status", "unknown")
 
                     if contacts:
                         # Save contacts
                         saved = await save_atl_contacts(supabase_client, company_id, contacts)
                         total_atl_found += saved
                         console.print(f"[green]{saved} ATL[/green]")
+                    elif enrichment_status == "found_page_no_contacts":
+                        # Found team page but no contacts - BROWSERBASE CANDIDATE
+                        console.print(f"[yellow]BB candidate[/yellow] ({team_page_url})")
+                        total_empty += 1
                     else:
-                        console.print("[dim]No ATL[/dim]")
+                        console.print(f"[dim]{enrichment_status}[/dim]")
                         total_empty += 1
 
-                    # Mark as enriched
-                    await mark_company_enriched(supabase_client, company_id, "beautifulsoup")
+                    # Mark as enriched with team page metadata
+                    await mark_company_enriched(
+                        supabase_client, company_id, "beautifulsoup",
+                        team_page_url=team_page_url,
+                        enrichment_status=enrichment_status
+                    )
                     total_scraped += 1
 
                     # Small delay to be nice to servers
@@ -262,7 +290,10 @@ async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = Fa
                     console.print(f"[red]ERR: {str(e)[:40]}[/red]")
                     total_errors += 1
                     # Still mark as enriched to avoid retrying bad sites
-                    await mark_company_enriched(supabase_client, company_id, "beautifulsoup_error")
+                    await mark_company_enriched(
+                        supabase_client, company_id, "beautifulsoup_error",
+                        enrichment_status="error"
+                    )
 
             # Batch summary
             console.print(
