@@ -59,8 +59,8 @@ class CerebrasService:
             timeout=30.0  # 30 second timeout for inference calls
         )
 
-        # Default model (llama3.1-8b is fastest for sub-100ms inference)
-        self.default_model = os.getenv("CEREBRAS_DEFAULT_MODEL", "llama3.1-8b")
+        # Default model (llama-3.3-70b is fastest for sub-100ms inference)
+        self.default_model = os.getenv("CEREBRAS_DEFAULT_MODEL", "llama-3.3-70b")
 
     def qualify_lead(
         self,
@@ -237,7 +237,7 @@ Provide your response in this exact JSON format:
         Calculate API call cost based on token usage
 
         Cerebras pricing (as of Oct 2024):
-        - llama3.1-8b: $0.10/M input tokens, $0.10/M output tokens
+        - llama-3.3-70b: $0.10/M input tokens, $0.10/M output tokens
 
         Args:
             prompt_tokens: Number of input tokens
@@ -251,7 +251,7 @@ Provide your response in this exact JSON format:
 
         # Pricing per million tokens (update as needed)
         pricing = {
-            "llama3.1-8b": {"input": 0.10, "output": 0.10},
+            "llama-3.3-70b": {"input": 0.10, "output": 0.10},
             "llama3.1-70b": {"input": 0.60, "output": 0.60}
         }
 

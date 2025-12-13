@@ -61,7 +61,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.messages import HumanMessage
 from langchain_anthropic import ChatAnthropic
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langgraph.graph import StateGraph, END
 
 from app.services.langgraph.state_schemas import GrowthAgentState
@@ -129,7 +129,7 @@ class GrowthAgent:
 
     def __init__(
         self,
-        model: str = "llama3.1-8b",
+        model: str = "llama-3.3-70b",
         provider: Literal["cerebras", "anthropic", "deepseek"] = "cerebras",
         temperature: float = 0.4,
         max_tokens: int = 500,

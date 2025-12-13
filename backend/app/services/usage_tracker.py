@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Provider pricing (USD per million tokens or per request)
 PROVIDER_PRICING = {
     ProviderType.CEREBRAS: {
-        "model": "llama3.1-8b",
+        "model": "llama-3.3-70b",
         "per_request": 0.000006,  # $0.000006 per request
         "type": "per_request"
     },

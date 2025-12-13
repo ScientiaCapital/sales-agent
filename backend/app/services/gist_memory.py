@@ -204,7 +204,7 @@ class GistMemory:
                 )
 
                 response = client.chat.completions.create(
-                    model="llama3.1-8b",
+                    model="llama-3.3-70b",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=50,
                     temperature=0.3
@@ -302,7 +302,7 @@ class GistMemory:
         )
 
         response = client.chat.completions.create(
-            model="llama3.1-8b",
+            model="llama-3.3-70b",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=200,
             temperature=0.3
@@ -351,7 +351,7 @@ class GistMemory:
             )
 
             response = client.chat.completions.create(
-                model="llama3.1-8b",
+                model="llama-3.3-70b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=100,
                 temperature=0.2
@@ -423,7 +423,7 @@ class GistMemory:
             )
 
             response = client.chat.completions.create(
-                model="llama3.1-8b",
+                model="llama-3.3-70b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=300,
                 temperature=0.5

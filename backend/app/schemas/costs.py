@@ -109,7 +109,7 @@ class CostBreakdownItem(BaseModel):
     model_config = {
         "json_schema_extra": {
             "examples": [{
-                "group_name": "llama3.1-8b",
+                "group_name": "llama-3.3-70b",
                 "total_cost_usd": 0.0024,
                 "total_requests": 400,
                 "percentage_of_total": 45.3
@@ -132,7 +132,7 @@ class CostBreakdownResponse(BaseModel):
                 "group_by": "model",
                 "breakdown": [
                     {
-                        "group_name": "llama3.1-8b",
+                        "group_name": "llama-3.3-70b",
                         "total_cost_usd": 0.0024,
                         "total_requests": 400,
                         "percentage_of_total": 45.3
@@ -268,7 +268,7 @@ class CostExportRecord(BaseModel):
             "examples": [{
                 "timestamp": "2025-01-08T12:00:00Z",
                 "provider": "cerebras",
-                "model": "llama3.1-8b",
+                "model": "llama-3.3-70b",
                 "operation_type": "qualification",
                 "cost_usd": 0.000006,
                 "prompt_tokens": 150,

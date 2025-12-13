@@ -40,7 +40,7 @@ class AgentDeploymentRequest(BaseModel):
     agent_type: str = Field(..., description="Agent type: lead_qualifier, outreach, researcher, etc.")
     agent_role: Optional[str] = None
     config: Optional[Dict] = Field(default_factory=dict)
-    model: Optional[str] = Field("llama3.1-8b", description="AI model to use")
+    model: Optional[str] = Field("llama-3.3-70b", description="AI model to use")
 
 
 class AgentDeploymentResponse(BaseModel):

@@ -16,7 +16,7 @@ class CerebrasAPICall(Base):
 
     # Request Details
     endpoint = Column(String(200), nullable=False, index=True)  # e.g., '/chat/completions'
-    model = Column(String(100), nullable=False, index=True)  # e.g., 'llama3.1-8b'
+    model = Column(String(100), nullable=False, index=True)  # e.g., 'llama-3.3-70b'
     prompt_tokens = Column(Integer, nullable=False)
     completion_tokens = Column(Integer, nullable=False)
     total_tokens = Column(Integer, nullable=False)

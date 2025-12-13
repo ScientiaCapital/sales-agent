@@ -73,7 +73,7 @@ def get_agent_middleware(
     Example:
         middleware = get_agent_middleware(budget=50000)
         agent = create_agent(
-            model="cerebras/llama3.1-8b",
+            model="cerebras/llama-3.3-70b",
             middleware=middleware,
         )
     """
@@ -163,9 +163,9 @@ def get_traced_llm(
     if not _check_lang_core():
         # Fallback to direct Cerebras if lang-core unavailable
         logger.warning("lang-core unavailable, using direct Cerebras")
-        from langchain_cerebras import ChatCerebras
+        from app.services.langchain_cerebras_compat import ChatCerebras
         return ChatCerebras(
-            model="llama3.1-8b",
+            model="llama-3.3-70b",
             temperature=temperature,
             api_key=os.getenv("CEREBRAS_API_KEY"),
         )

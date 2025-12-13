@@ -48,8 +48,8 @@ class MessageGenerator:
             base_url=self.api_base
         )
         
-        # Default model (llama3.1-8b for sub-1s inference)
-        self.default_model = os.getenv("CEREBRAS_DEFAULT_MODEL", "llama3.1-8b")
+        # Default model (llama-3.3-70b for sub-1s inference)
+        self.default_model = os.getenv("CEREBRAS_DEFAULT_MODEL", "llama-3.3-70b")
     
     def generate_message_variants(
         self,
