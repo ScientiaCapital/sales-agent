@@ -133,7 +133,8 @@ typer==0.15.1  # Modern CLI framework built on Click with type hints
 # Graph Database (Relationship Mapping - NEW: Nov 2025)
 neo4j==5.26.0  # Official Neo4j Python driver for warm path discovery
 
-# AI-Core Middleware Library (Internal - Dec 2025)
-# Provides: LangChain middleware, LangSmith integration, multi-provider LLM selector
+# Lang-Core: Scientia Capital LangChain/LangGraph/LangSmith Stack (Dec 2025)
+# Provides: LangChain middleware, LangSmith integration, LangGraph utilities,
+#           multi-provider LLM selector, Celery tasks, FastAPI utilities, Redis utils
 # Local development path - change to git URL for production
-ai-core @ file:///Users/tmkipper/Desktop/tk_projects/ai-core
+lang-core @ file:///Users/tmkipper/Desktop/tk_projects/lang-core
