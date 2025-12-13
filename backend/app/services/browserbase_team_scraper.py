@@ -143,6 +143,148 @@ class BrowserbaseTeamScraper:
                 logger.error(f"Browserbase scraping failed for {website_url}: {e}", exc_info=True)
                 return []
 
+    async def scrape_single_url(self, url: str) -> List[Dict[str, str]]:
+        """
+        Scrape a SINGLE known URL directly - no URL discovery.
+
+        Use this when you already know the exact team page URL (e.g., from BeautifulSoup).
+
+        Args:
+            url: The exact URL to scrape (e.g., "https://acme.com/about-us")
+
+        Returns:
+            List of ATL contacts found.
+        """
+        global _last_scrape_time
+
+        if not self.api_key or not self.project_id:
+            logger.error("Browserbase not configured - cannot scrape")
+            return []
+
+        semaphore = _get_semaphore()
+        async with semaphore:
+            # Rate limiting
+            if MIN_DELAY_BETWEEN_SCRAPES > 0:
+                elapsed = time.time() - _last_scrape_time
+                if elapsed < MIN_DELAY_BETWEEN_SCRAPES:
+                    wait_time = MIN_DELAY_BETWEEN_SCRAPES - elapsed
+                    logger.info(f"Rate limiting: waiting {wait_time:.1f}s")
+                    await asyncio.sleep(wait_time)
+                _last_scrape_time = time.time()
+
+            try:
+                logger.info(f"Browserbase scraping single URL: {url}")
+
+                session_id, connect_url = await self._create_session()
+                contacts = await self._scrape_single_url_with_session(session_id, url, connect_url)
+                await self._close_session(session_id)
+
+                logger.info(f"Browserbase single URL complete: {url} ({len(contacts)} contacts)")
+                return contacts
+
+            except Exception as e:
+                logger.error(f"Browserbase scraping failed for {url}: {e}", exc_info=True)
+                return []
+
+    async def _scrape_single_url_with_session(
+        self,
+        session_id: str,
+        url: str,
+        connect_url: str
+    ) -> List[Dict[str, str]]:
+        """Scrape a single URL directly without trying multiple patterns."""
+        from playwright.async_api import async_playwright
+
+        contacts = []
+
+        try:
+            async with async_playwright() as p:
+                logger.info(f"Connecting to Browserbase session: {session_id}")
+                browser = await p.chromium.connect_over_cdp(connect_url)
+
+                contexts = browser.contexts
+                if not contexts:
+                    logger.error("No browser contexts available")
+                    return []
+
+                context = contexts[0]
+                pages = context.pages
+                page = pages[0] if pages else await context.new_page()
+
+                # Navigate to the exact URL
+                logger.info(f"Navigating to: {url}")
+                response = await page.goto(url, wait_until="networkidle", timeout=15000)
+
+                if not response or response.status >= 400:
+                    logger.warning(f"Page not accessible: {url} (status: {response.status if response else 'None'})")
+                    await browser.close()
+                    return []
+
+                logger.info(f"Successfully loaded: {url}")
+
+                # Wait for JS to render
+                await page.wait_for_timeout(3000)
+
+                # Extract team members
+                team_cards = await page.query_selector_all(
+                    'div[class*="team"], div[class*="member"], '
+                    'div[class*="person"], article[class*="team"], '
+                    'section[class*="team"], div[class*="staff"], '
+                    'div[class*="leadership"], div[class*="executive"]'
+                )
+
+                for card in team_cards:
+                    try:
+                        name_element = await card.query_selector(
+                            'h2, h3, h4, strong, [class*="name"], [class*="Name"]'
+                        )
+                        name = await name_element.inner_text() if name_element else None
+
+                        title_element = await card.query_selector(
+                            'p, span[class*="title"], div[class*="role"], '
+                            '[class*="position"], [class*="job"]'
+                        )
+                        title = await title_element.inner_text() if title_element else None
+
+                        email_element = await card.query_selector('a[href^="mailto:"]')
+                        email = None
+                        if email_element:
+                            href = await email_element.get_attribute('href')
+                            email = href.replace('mailto:', '') if href else None
+
+                        # Clean using shared utilities
+                        if name:
+                            name = name.strip()
+                            fixed_name, extracted_title = split_concatenated_name(name)
+                            if extracted_title:
+                                name = fixed_name
+                                if not title:
+                                    title = extracted_title
+
+                        if title:
+                            title = clean_title(title.strip())
+
+                        if is_garbage_name(name):
+                            continue
+
+                        if name and title and is_atl_title(title):
+                            contacts.append({
+                                "name": name,
+                                "title": title,
+                                "email": email
+                            })
+                            logger.info(f"Found ATL contact: {name} ({title})")
+
+                    except Exception as card_error:
+                        logger.debug(f"Error extracting card: {card_error}")
+
+                await browser.close()
+                return contacts
+
+        except Exception as e:
+            logger.error(f"Browserbase single URL scraping failed: {e}", exc_info=True)
+            return []
+
     async def _create_session(self) -> tuple:
         """
         Create a new Browserbase browser session.

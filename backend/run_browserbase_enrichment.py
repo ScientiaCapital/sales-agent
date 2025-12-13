@@ -54,25 +54,29 @@ def get_supabase_headers():
 
 async def get_companies_to_scrape(limit: int = 100, high_icp_only: bool = True) -> List[Dict[str, Any]]:
     """
-    Get companies that were enriched by BeautifulSoup but have NO ATL contacts.
+    Get companies with REAL team pages that BeautifulSoup couldn't extract contacts from.
 
-    These are JS-heavy sites that need Browserbase (browser automation).
-    Prioritizes by ICP score (highest first).
+    SMART TARGETING:
+    - Only targets companies where BeautifulSoup found a valid team page (200 OK)
+    - But couldn't extract contacts (likely JS-rendered)
+    - Uses the EXACT team_page_url - no more guessing URLs!
 
     Args:
         limit: Max companies to return
         high_icp_only: If True, only return companies with ICP >= 50
     """
-    console.print("[cyan]Fetching companies enriched by BeautifulSoup but with NO ATL contacts...[/cyan]")
+    console.print("[cyan]Fetching Browserbase candidates (found_page_no_contacts)...[/cyan]")
 
     async with httpx.AsyncClient() as client:
-        # Step 1: Get enriched companies (have last_enriched_at)
+        # SMART QUERY: Only get companies where:
+        # 1. BeautifulSoup found a team page (team_page_url is NOT null)
+        # 2. But couldn't extract contacts (enrichment_status = 'found_page_no_contacts')
         params = {
-            "select": "company_id,company_name,website,domain,icp_score,current_stage,last_enriched_at",
-            "domain": "not.is.null",
-            "last_enriched_at": "not.is.null",  # Already tried BeautifulSoup
+            "select": "company_id,company_name,website,domain,icp_score,team_page_url,enrichment_status",
+            "enrichment_status": "eq.found_page_no_contacts",  # THE KEY FILTER!
+            "team_page_url": "not.is.null",  # Must have a known team page URL
             "order": "icp_score.desc",
-            "limit": 2000  # Fetch more to filter
+            "limit": limit
         }
 
         if high_icp_only:
@@ -87,38 +91,15 @@ async def get_companies_to_scrape(limit: int = 100, high_icp_only: bool = True) 
 
         if response.status_code != 200:
             console.print(f"[red]Error fetching companies: {response.status_code}[/red]")
+            console.print(f"[dim]Response: {response.text[:200]}[/dim]")
             return []
 
-        enriched_companies = response.json()
-        console.print(f"[dim]Found {len(enriched_companies)} enriched companies[/dim]")
+        companies = response.json()
+        console.print(f"[green]Found {len(companies)} Browserbase candidates with known team pages[/green]")
 
-        # Step 2: Get companies that have contacts (to exclude)
-        contacts_response = await client.get(
-            f"{SUPABASE_URL}/rest/v1/dim_contacts",
-            headers=get_supabase_headers(),
-            params={
-                "select": "company_id",
-            },
-            timeout=60.0
-        )
-
-        companies_with_contacts = set()
-        if contacts_response.status_code == 200:
-            for c in contacts_response.json():
-                if c.get("company_id"):
-                    companies_with_contacts.add(c["company_id"])
-
-        console.print(f"[dim]{len(companies_with_contacts)} companies already have contacts[/dim]")
-
-        # Step 3: Filter to companies WITHOUT contacts (need Browserbase)
-        companies_needing_browserbase = [
-            c for c in enriched_companies
-            if c["company_id"] not in companies_with_contacts
-        ]
-
-        # Apply limit
-        companies = companies_needing_browserbase[:limit]
-        console.print(f"[green]Found {len(companies)} companies needing Browserbase[/green]")
+        # Show sample URLs
+        for c in companies[:3]:
+            console.print(f"[dim]  → {c.get('company_name', 'Unknown')[:30]}: {c.get('team_page_url', 'N/A')}[/dim]")
 
         return companies
 
@@ -181,20 +162,27 @@ async def mark_company_enriched(client: httpx.AsyncClient, company_id: str):
     )
 
 
-async def scrape_company_with_browserbase(website: str) -> List[Dict[str, str]]:
+async def scrape_company_with_browserbase(team_page_url: str) -> List[Dict[str, str]]:
     """
-    Scrape a company's team/about page using Browserbase.
+    Scrape a KNOWN team page URL using Browserbase.
 
-    Returns list of ATL contacts found.
+    This is called with the exact team_page_url discovered by BeautifulSoup,
+    so no URL discovery is needed - just render the JS and extract contacts.
+
+    Args:
+        team_page_url: The exact URL to the team page (e.g., "https://acme.com/about-us")
+
+    Returns:
+        List of ATL contacts found.
     """
-    # Import the existing Browserbase scraper
     sys.path.insert(0, str(Path(__file__).parent))
     from app.services.browserbase_team_scraper import BrowserbaseTeamScraper
 
     scraper = BrowserbaseTeamScraper()
 
     try:
-        contacts = await scraper.scrape_team_page(website)
+        # Use scrape_single_url - directly scrapes the known URL without pattern discovery
+        contacts = await scraper.scrape_single_url(team_page_url)
         return contacts
     except Exception as e:
         console.print(f"[red]Scrape error: {e}[/red]")
@@ -246,13 +234,20 @@ async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = Fa
             for i, company in enumerate(batch):
                 company_id = company["company_id"]
                 company_name = company["company_name"]
-                website = company.get("website") or f"https://{company.get('domain')}"
+                # Use the KNOWN team_page_url directly - no more guessing!
+                team_page_url = company.get("team_page_url")
+                if not team_page_url:
+                    # Fallback to website (shouldn't happen with smart targeting)
+                    team_page_url = company.get("website") or f"https://{company.get('domain')}"
+                    console.print(f"[{i+1}/{len(batch)}] {company_name[:40]:<40}", end=" ")
+                    console.print("[yellow]no team_page_url![/yellow]")
+                    continue
 
                 console.print(f"[{i+1}/{len(batch)}] {company_name[:40]:<40}", end=" ")
 
                 try:
-                    # Scrape website
-                    contacts = await scrape_company_with_browserbase(website)
+                    # Scrape the KNOWN team page URL directly
+                    contacts = await scrape_company_with_browserbase(team_page_url)
 
                     if contacts:
                         # Save contacts

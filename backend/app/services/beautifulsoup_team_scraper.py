@@ -18,7 +18,7 @@ Limitations: Won't work on JS-rendered pages (React SPAs, etc.)
 
 import asyncio
 import re
-from typing import List, Dict, Optional, Set
+from typing import List, Dict, Optional, Set, Any
 from urllib.parse import urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
@@ -333,6 +333,112 @@ class BeautifulSoupTeamScraper:
         )
 
         return unique_contacts
+
+    async def scrape_team_page_with_metadata(self, website: str) -> Dict[str, Any]:
+        """
+        Scrape team page and return contacts WITH metadata about what was found.
+
+        Returns:
+            {
+                "contacts": [...],
+                "team_page_url": "https://..." or None,
+                "enrichment_status": "found_contacts" | "found_page_no_contacts" | "no_team_page"
+            }
+        """
+        # SSRF Protection: Validate URL before making any requests
+        website = validate_website_url(website)
+
+        base_url = website.rstrip("/")
+        all_contacts: List[Dict[str, str]] = []
+        visited_urls: Set[str] = set()
+        found_team_page_url: Optional[str] = None
+
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(self.timeout),
+            follow_redirects=True,
+            headers={"User-Agent": self.user_agent}
+        ) as client:
+            # Step 1: Try to find team pages
+            team_urls = await self._discover_team_pages(client, base_url)
+
+            if not team_urls:
+                # Try common patterns directly
+                team_urls = [f"{base_url}{pattern}" for pattern in TEAM_PAGE_PATTERNS[:5]]
+
+            # Step 2: Scrape each team page
+            pages_scraped = 0
+            for url in team_urls:
+                if pages_scraped >= self.max_pages:
+                    break
+                if url in visited_urls:
+                    continue
+
+                visited_urls.add(url)
+
+                try:
+                    contacts = await self._scrape_page(client, url)
+
+                    # Track the FIRST valid page we find (200 OK)
+                    if found_team_page_url is None:
+                        found_team_page_url = url
+                        logger.info(f"Found valid team page: {url}")
+
+                    all_contacts.extend(contacts)
+                    pages_scraped += 1
+
+                    if contacts:
+                        logger.info(
+                            "Found contacts on page",
+                            url=url,
+                            count=len(contacts)
+                        )
+                except Exception as e:
+                    logger.debug(f"Failed to scrape {url}: {e}")
+                    continue
+
+        # Deduplicate by name and clean up
+        seen_names: Set[str] = set()
+        unique_contacts = []
+        for contact in all_contacts:
+            raw_name = contact.get("name", "").strip()
+            raw_title = contact.get("title", "").strip()
+
+            name, title = self._clean_and_extract_title(raw_name, raw_title)
+
+            if not name:
+                continue
+
+            name_lower = name.lower()
+            if name_lower in seen_names:
+                continue
+
+            if not self._is_valid_contact(name, title):
+                continue
+
+            seen_names.add(name_lower)
+            unique_contacts.append({"name": name, "title": title})
+
+        # Determine enrichment status
+        if unique_contacts:
+            enrichment_status = "found_contacts"
+        elif found_team_page_url:
+            enrichment_status = "found_page_no_contacts"  # Browserbase candidate!
+        else:
+            enrichment_status = "no_team_page"
+
+        logger.info(
+            "Team scrape with metadata complete",
+            website=website,
+            total_contacts=len(unique_contacts),
+            team_page_url=found_team_page_url,
+            enrichment_status=enrichment_status
+        )
+
+        return {
+            "contacts": unique_contacts,
+            "team_page_url": found_team_page_url,
+            "enrichment_status": enrichment_status
+        }
 
     def _clean_and_extract_title(self, name: str, existing_title: str = "") -> tuple[str, str]:
         """
