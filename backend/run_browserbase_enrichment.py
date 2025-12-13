@@ -52,27 +52,36 @@ def get_supabase_headers():
     }
 
 
-async def get_companies_to_scrape(limit: int = 100) -> List[Dict[str, Any]]:
+async def get_companies_to_scrape(limit: int = 100, high_icp_only: bool = True) -> List[Dict[str, Any]]:
     """
-    Get companies that have websites but haven't been enriched yet.
+    Get companies that were enriched by BeautifulSoup but have NO ATL contacts.
 
+    These are JS-heavy sites that need Browserbase (browser automation).
     Prioritizes by ICP score (highest first).
+
+    Args:
+        limit: Max companies to return
+        high_icp_only: If True, only return companies with ICP >= 50
     """
-    console.print("[cyan]Fetching companies with websites (not yet enriched)...[/cyan]")
+    console.print("[cyan]Fetching companies enriched by BeautifulSoup but with NO ATL contacts...[/cyan]")
 
     async with httpx.AsyncClient() as client:
-        # Get companies with domain, ordered by ICP score
-        # Exclude already enriched (last_enriched_at is not null)
+        # Step 1: Get enriched companies (have last_enriched_at)
+        params = {
+            "select": "company_id,company_name,website,domain,icp_score,current_stage,last_enriched_at",
+            "domain": "not.is.null",
+            "last_enriched_at": "not.is.null",  # Already tried BeautifulSoup
+            "order": "icp_score.desc",
+            "limit": 2000  # Fetch more to filter
+        }
+
+        if high_icp_only:
+            params["icp_score"] = "gte.50"  # High-ICP only
+
         response = await client.get(
             f"{SUPABASE_URL}/rest/v1/dim_companies",
             headers=get_supabase_headers(),
-            params={
-                "select": "company_id,company_name,website,domain,icp_score,current_stage",
-                "domain": "not.is.null",
-                "last_enriched_at": "is.null",  # Not yet enriched
-                "order": "icp_score.desc",
-                "limit": limit
-            },
+            params=params,
             timeout=60.0
         )
 
@@ -80,8 +89,37 @@ async def get_companies_to_scrape(limit: int = 100) -> List[Dict[str, Any]]:
             console.print(f"[red]Error fetching companies: {response.status_code}[/red]")
             return []
 
-        companies = response.json()
-        console.print(f"[green]Found {len(companies)} companies to scrape[/green]")
+        enriched_companies = response.json()
+        console.print(f"[dim]Found {len(enriched_companies)} enriched companies[/dim]")
+
+        # Step 2: Get companies that have contacts (to exclude)
+        contacts_response = await client.get(
+            f"{SUPABASE_URL}/rest/v1/dim_contacts",
+            headers=get_supabase_headers(),
+            params={
+                "select": "company_id",
+            },
+            timeout=60.0
+        )
+
+        companies_with_contacts = set()
+        if contacts_response.status_code == 200:
+            for c in contacts_response.json():
+                if c.get("company_id"):
+                    companies_with_contacts.add(c["company_id"])
+
+        console.print(f"[dim]{len(companies_with_contacts)} companies already have contacts[/dim]")
+
+        # Step 3: Filter to companies WITHOUT contacts (need Browserbase)
+        companies_needing_browserbase = [
+            c for c in enriched_companies
+            if c["company_id"] not in companies_with_contacts
+        ]
+
+        # Apply limit
+        companies = companies_needing_browserbase[:limit]
+        console.print(f"[green]Found {len(companies)} companies needing Browserbase[/green]")
+
         return companies
 
 
@@ -163,15 +201,18 @@ async def scrape_company_with_browserbase(website: str) -> List[Dict[str, str]]:
         return []
 
 
-async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = False):
+async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = False, high_icp_only: bool = True):
     """Main enrichment loop."""
+    target_mode = "High-ICP (>=50) companies without ATL" if high_icp_only else "ALL companies without ATL"
+
     console.print(Panel.fit(
         "[bold cyan]BROWSERBASE WEBSITE ENRICHMENT[/bold cyan]\n\n"
+        f"Target: [yellow]{target_mode}[/yellow]\n"
         f"Batch Size: [yellow]{batch_size}[/yellow]\n"
         f"Max Companies: [magenta]{limit}[/magenta]\n"
         f"Mode: [green]{'Auto' if auto else 'Interactive'}[/green]\n\n"
         "[dim]Uses Browserbase ($200/mo flat rate)[/dim]\n"
-        "[dim]Does NOT use Hunter.io or Apollo[/dim]",
+        "[dim]Targets companies where BeautifulSoup found NO contacts[/dim]",
         title="Configuration"
     ))
 
@@ -180,8 +221,8 @@ async def run_enrichment(batch_size: int = 10, limit: int = 100, auto: bool = Fa
         console.print("[red]ERROR: BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID required[/red]")
         return
 
-    # Get companies to scrape
-    companies = await get_companies_to_scrape(limit)
+    # Get companies to scrape (those needing Browserbase)
+    companies = await get_companies_to_scrape(limit, high_icp_only=high_icp_only)
 
     if not companies:
         console.print("[yellow]No companies to scrape![/yellow]")
@@ -266,9 +307,15 @@ async def main():
     parser.add_argument("--batch", type=int, default=10, help="Companies per batch (default: 10)")
     parser.add_argument("--limit", type=int, default=100, help="Max companies to process (default: 100)")
     parser.add_argument("--auto", action="store_true", help="Run without prompts")
+    parser.add_argument("--all", action="store_true", help="Include all ICP scores (default: only ICP >= 50)")
     args = parser.parse_args()
 
-    await run_enrichment(batch_size=args.batch, limit=args.limit, auto=args.auto)
+    await run_enrichment(
+        batch_size=args.batch,
+        limit=args.limit,
+        auto=args.auto,
+        high_icp_only=not args.all  # Default to high-ICP only unless --all specified
+    )
 
 
 if __name__ == "__main__":

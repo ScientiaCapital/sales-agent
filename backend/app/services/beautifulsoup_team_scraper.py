@@ -28,41 +28,149 @@ from app.services.url_validator import validate_website_url
 
 logger = structlog.get_logger(__name__)
 
-# Common team page URL patterns
+# Common team page URL patterns - expanded for better coverage
 TEAM_PAGE_PATTERNS = [
+    # Primary about/team pages
     "/about",
     "/about-us",
     "/about-us/",
+    "/about/",
     "/team",
     "/our-team",
+    "/our-team/",
+    "/meet-the-team",
+    "/meet-our-team",
+    "/the-team",
+    # Leadership/management
     "/leadership",
+    "/leadership/",
+    "/our-leadership",
     "/management",
-    "/people",
-    "/who-we-are",
+    "/management-team",
+    "/executives",
+    "/executive-team",
+    "/senior-leadership",
+    # Company info
     "/company",
+    "/company/",
     "/company/team",
     "/company/about",
+    "/company/leadership",
+    "/who-we-are",
+    "/our-story",
+    "/our-company",
+    # People/staff
+    "/people",
+    "/our-people",
     "/staff",
-    "/executives",
+    "/our-staff",
+    "/employees",
+    # Contact/services (sometimes has owner info)
+    "/contact",
+    "/contact-us",
+    "/contact/",
+    # Nested paths
     "/about/team",
     "/about/leadership",
+    "/about/our-team",
+    "/about/management",
+    "/about/people",
+    # Industry-specific
+    "/meet-us",
+    "/founders",
+    "/owners",
+    "/principals",
+    "/partners",
+    "/board",
+    "/board-of-directors",
 ]
 
-# Title patterns that indicate ATL (Above The Line) executives
+# =============================================================================
+# ATL vs BTL Title Classification
+# =============================================================================
+# ATL (Above The Line) = Decision makers who can sign contracts/approve deals
+# BTL (Below The Line) = Implementers who execute but don't have signing authority
+#
+# Key insight: In construction/trades, "Owner" and "President" are gold.
+# VP+ titles are decision makers. Director depends on context.
+# =============================================================================
+
+# ATL (Above The Line) - DECISION MAKERS - these are your sales targets
 ATL_TITLE_PATTERNS = [
-    r"\b(CEO|Chief Executive|President)\b",
-    r"\b(CFO|Chief Financial|Finance Director)\b",
-    r"\b(COO|Chief Operating|Operations Director)\b",
-    r"\b(CTO|Chief Technology|Tech Director|VP Engineering)\b",
-    r"\b(CMO|Chief Marketing|Marketing Director|VP Marketing)\b",
-    r"\b(CRO|Chief Revenue|Revenue Director|VP Sales)\b",
-    r"\b(CSO|Chief Sales|Sales Director)\b",
-    r"\b(CPO|Chief Product|Product Director|VP Product)\b",
-    r"\b(CHRO|Chief Human|HR Director|VP HR|People Director)\b",
-    r"\b(Managing Director|General Manager|Partner)\b",
-    r"\b(Founder|Co-Founder|Owner)\b",
-    r"\b(Vice President|VP|SVP|EVP)\b",
-    r"\b(Director)\b",  # Broad but useful
+    # C-Suite (always ATL)
+    r"\b(CEO|Chief\s+Executive\s+Officer)\b",
+    r"\b(CFO|Chief\s+Financial\s+Officer)\b",
+    r"\b(COO|Chief\s+Operating\s+Officer)\b",
+    r"\b(CTO|Chief\s+Technology\s+Officer)\b",
+    r"\b(CMO|Chief\s+Marketing\s+Officer)\b",
+    r"\b(CRO|Chief\s+Revenue\s+Officer)\b",
+    r"\b(CSO|Chief\s+Sales\s+Officer|Chief\s+Strategy\s+Officer)\b",
+    r"\b(CPO|Chief\s+Product\s+Officer|Chief\s+People\s+Officer)\b",
+    r"\b(CHRO|Chief\s+Human\s+Resources\s+Officer)\b",
+    r"\b(CIO|Chief\s+Information\s+Officer)\b",
+    r"\b(CLO|Chief\s+Legal\s+Officer)\b",
+    r"\b(Chief\s+\w+\s+Officer)\b",  # Catch-all for any Chief X Officer
+
+    # Ownership & Founders (GOLD for construction/trades)
+    r"\b(Owner|Co-Owner)\b",
+    r"\b(Founder|Co-Founder)\b",
+    r"\b(Partner|Managing\s+Partner|General\s+Partner)\b",
+    r"\b(Principal)\b",
+    r"\b(Proprietor)\b",
+
+    # President-level (decision makers)
+    r"\b(President)\b",
+    r"\b(Vice\s+President|VP)\b",
+    r"\b(SVP|Senior\s+Vice\s+President)\b",
+    r"\b(EVP|Executive\s+Vice\s+President)\b",
+    r"\b(AVP|Assistant\s+Vice\s+President)\b",
+
+    # Director-level (usually decision makers)
+    r"\b(Managing\s+Director)\b",
+    r"\b(General\s+Manager|GM)\b",
+    r"\b(Executive\s+Director)\b",
+    r"\b(Director\s+of\s+\w+)\b",  # Director of Operations, Director of Sales, etc.
+    r"\b(Regional\s+Director)\b",
+    r"\b(Director)\b",  # Catch-all for director titles
+
+    # Board-level
+    r"\b(Chairman|Chairwoman|Chair)\b",
+    r"\b(Board\s+Member)\b",
+]
+
+# BTL (Below The Line) - IMPLEMENTERS - not primary sales targets but useful for referrals
+# These are NOT used for filtering, just for reference and potential future use
+BTL_TITLE_PATTERNS = [
+    # Managers (execute, don't decide)
+    r"\b(Project\s+Manager)\b",
+    r"\b(Operations\s+Manager)\b",
+    r"\b(Sales\s+Manager)\b",  # Can influence but usually can't sign
+    r"\b(Account\s+Manager)\b",
+    r"\b(Office\s+Manager)\b",
+    r"\b(Warehouse\s+Manager)\b",
+    r"\b(Service\s+Manager)\b",
+    r"\b(Manager)\b",  # Generic manager
+
+    # Supervisors & Leads
+    r"\b(Supervisor)\b",
+    r"\b(Foreman)\b",
+    r"\b(Team\s+Lead|Lead)\b",
+    r"\b(Crew\s+Lead)\b",
+
+    # Technical/Field roles
+    r"\b(Technician)\b",
+    r"\b(Installer)\b",
+    r"\b(Electrician|Master\s+Electrician)\b",
+    r"\b(Engineer(?!ing\s+Director))\b",  # Engineer but not Engineering Director
+    r"\b(Estimator)\b",
+
+    # Support roles
+    r"\b(Coordinator)\b",
+    r"\b(Administrator)\b",
+    r"\b(Assistant)\b",
+    r"\b(Specialist)\b",
+    r"\b(Analyst)\b",
+    r"\b(Representative|Rep)\b",
 ]
 
 # Patterns to identify name + title blocks
@@ -95,7 +203,18 @@ GARBAGE_NAMES = {
 # Patterns that indicate concatenated names (e.g., "JohnCEO", "MaryDirector")
 # More specific to avoid false positives like "McCall"
 CONCATENATED_PATTERNS = [
-    r'\w+(CEO|CFO|CTO|COO|CMO|VP|Vice|Director|Manager|Owner|Founder|President|Customer|Advocate|Designer|Specialist|Crew|Lead|Installer|Technician|Roofing)$',
+    r'\w+(CEO|CFO|CTO|COO|CMO|VP|Vice|Director|Manager|Owner|Founder|President|Customer|Advocate|Designer|Specialist|Crew|Lead|Installer|Technician|Roofing|Partner|Foreman)$',
+]
+
+# Additional garbage patterns
+GARBAGE_NAME_PATTERNS = [
+    r'roofing installer',
+    r'shingle installer',
+    r'metal roof installer',
+    r'solar tech',
+    r'comp shingle',
+    r'plumbing & heating',
+    r'solar technician',
 ]
 
 
@@ -186,11 +305,12 @@ class BeautifulSoupTeamScraper:
         seen_names: Set[str] = set()
         unique_contacts = []
         for contact in all_contacts:
-            name = contact.get("name", "").strip()
-            title = contact.get("title", "").strip()
+            raw_name = contact.get("name", "").strip()
+            raw_title = contact.get("title", "").strip()
 
-            # Clean up name (remove title suffixes that got concatenated)
-            name = self._clean_name(name)
+            # Clean up name AND extract concatenated title (FIX, don't reject!)
+            # "Becky BrandborgOwner/ Partner" -> ("Becky Brandborg", "Owner/ Partner")
+            name, title = self._clean_and_extract_title(raw_name, raw_title)
 
             if not name:
                 continue
@@ -214,23 +334,116 @@ class BeautifulSoupTeamScraper:
 
         return unique_contacts
 
-    def _clean_name(self, name: str) -> str:
-        """Clean up a name by removing common suffixes."""
-        # Remove title suffixes that got concatenated (e.g., "John SmithCEO")
-        patterns_to_remove = [
-            r'(CEO|CFO|CTO|COO|CMO|CPO|CRO|CHRO)$',
-            r'Co-?founder.*$',
-            r'Founder.*$',
-            r'President.*$',
-            r'Director.*$',
-            r'VP.*$',
-            r'Vice\s+President.*$',
+    def _clean_and_extract_title(self, name: str, existing_title: str = "") -> tuple[str, str]:
+        """
+        Clean up a name and extract concatenated title.
+
+        "Becky BrandborgOwner/ Partner" -> ("Becky Brandborg", "Owner/ Partner")
+        "CodyTear Off Crew" -> ("Cody", "Tear Off Crew")
+        "SofiaOffice Administrator" -> ("Sofia", "Office Administrator")
+
+        Returns (cleaned_name, extracted_title)
+        """
+        if not name:
+            return name, existing_title
+
+        # First clean up the title if provided - strip "READ BIO" and similar suffixes
+        cleaned_existing_title = self._clean_title(existing_title)
+
+        # Patterns that indicate titles/roles concatenated to names
+        # Order matters - more specific patterns first
+        title_patterns = [
+            # Compound titles
+            (r'(Owner/?.*Partner)$', r'\1'),
+            (r'(President\s*&?\s*Owner)$', r'\1'),
+            # Executive titles
+            (r'(CEO|CFO|CTO|COO|CMO|CPO|CRO|CHRO)$', r'\1'),
+            (r'(Co-?[Ff]ounder.*)$', r'\1'),
+            (r'(Founder.*)$', r'\1'),
+            (r'(President.*)$', r'\1'),
+            (r'(Vice\s*President.*)$', r'\1'),
+            (r'(Director.*)$', r'\1'),
+            (r'(VP.*)$', r'\1'),
+            (r'(General\s*Manager.*)$', r'\1'),
+            (r'(GM)$', r'\1'),
+            # Operational roles (crews, teams)
+            (r'(Tear\s*Off\s*(?:Crew|Lead).*)$', r'\1'),
+            (r'((?:Crew|Team)\s*(?:Lead|Leader|Member).*)$', r'\1'),
+            (r'(Office\s*(?:Administrator|Manager|Assistant).*)$', r'\1'),
+            (r'(Project\s*Manager.*)$', r'\1'),
+            (r'(Account(?:s)?\s*Manager.*)$', r'\1'),
+            (r'(Sales\s*(?:Manager|Rep|Representative).*)$', r'\1'),
+            (r'(Service\s*Manager.*)$', r'\1'),
+            (r'(Operations\s*Manager.*)$', r'\1'),
+            # Generic roles
+            (r'(Manager.*)$', r'\1'),
+            (r'(Partner)$', r'\1'),
+            (r'(Owner)$', r'\1'),
+            (r'(Foreman.*)$', r'\1'),
+            (r'(Supervisor.*)$', r'\1'),
+            (r'(Technician.*)$', r'\1'),
+            (r'(Installer.*)$', r'\1'),
+            (r'(Estimator.*)$', r'\1'),
+            (r'(Auditor.*)$', r'\1'),
+            (r'(Customer\s*(?:Advocate|Service).*)$', r'\1'),
+            (r'(Administrator.*)$', r'\1'),
         ]
 
-        for pattern in patterns_to_remove:
-            name = re.sub(pattern, '', name, flags=re.I).strip()
+        extracted_title = ""
+        cleaned_name = name
 
-        return name
+        for pattern, _ in title_patterns:
+            match = re.search(pattern, name, re.IGNORECASE)
+            if match:
+                extracted_title = match.group(1).strip()
+                # Remove title from name
+                cleaned_name = name[:match.start()].strip()
+                break
+
+        # Clean up extracted title
+        extracted_title = self._clean_title(extracted_title)
+
+        # If we extracted a title and there's no existing title, use extracted
+        final_title = cleaned_existing_title if cleaned_existing_title else extracted_title
+
+        # CRITICAL: Check if title contains another person's name (merged contacts)
+        # e.g., name="Jim Boyce" title="Jason BoyceVice President" - two different people!
+        if final_title:
+            # Check if title starts with what looks like another person's name
+            title_name_match = re.match(r'^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)(CEO|CFO|VP|Vice|President|Owner|Director|Manager|Founder)', final_title)
+            if title_name_match:
+                # Title has another person's name - extract just the role
+                final_title = final_title[title_name_match.end(1):].strip()
+
+        return cleaned_name, final_title
+
+    def _clean_title(self, title: str) -> str:
+        """
+        Clean up a title - strip READ BIO, pipe separators, etc.
+
+        "CO-FOUNDER | READ BIO" -> "CO-FOUNDER"
+        "VP of Sales | READ BIO" -> "VP of Sales"
+        """
+        if not title:
+            return title
+
+        # Strip "READ BIO" and similar suffixes
+        title = re.sub(r'\s*\|\s*READ\s*BIO\s*$', '', title, flags=re.IGNORECASE)
+        title = re.sub(r'\s*-\s*READ\s*BIO\s*$', '', title, flags=re.IGNORECASE)
+        title = re.sub(r'\s*READ\s*BIO\s*$', '', title, flags=re.IGNORECASE)
+
+        # Strip "View Profile", "Learn More" etc.
+        title = re.sub(r'\s*\|\s*(?:VIEW|LEARN|READ)\s*(?:PROFILE|MORE|BIO)\s*$', '', title, flags=re.IGNORECASE)
+
+        # Strip trailing pipes and dashes
+        title = re.sub(r'\s*[\|\-]\s*$', '', title)
+
+        return title.strip()
+
+    def _clean_name(self, name: str) -> str:
+        """Legacy method - just clean the name."""
+        cleaned, _ = self._clean_and_extract_title(name)
+        return cleaned
 
     def _is_valid_contact(self, name: str, title: str) -> bool:
         """Final validation that a contact is legitimate."""
@@ -257,10 +470,12 @@ class BeautifulSoupTeamScraper:
             logger.debug(f"Filtered garbage name: {name}")
             return False
 
-        # Check for concatenated names (e.g., "John SmithCEO")
-        for pattern in CONCATENATED_PATTERNS:
-            if re.search(pattern, name):
-                logger.debug(f"Filtered concatenated name: {name}")
+        # Check for garbage name patterns (service roles in name)
+        # NOTE: Concatenated names like "BeckyOwner" are now FIXED in _clean_and_extract_title
+        # We only filter TRUE garbage here (not valuable data with bad formatting)
+        for pattern in GARBAGE_NAME_PATTERNS:
+            if re.search(pattern, name_lower):
+                logger.debug(f"Filtered garbage pattern: {name}")
                 return False
 
         # Filter names containing social media keywords
