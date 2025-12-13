@@ -4,6 +4,8 @@ Browserbase Team Scraper Service
 Uses Browserbase browser automation to scrape team/about pages from JavaScript-heavy websites.
 This is a fallback for when BeautifulSoup fails (client-side rendered content).
 
+IMPORTANT: Uses shared patterns from scraper_patterns.py to stay in sync with BeautifulSoup scraper.
+
 Performance: ~10-15 seconds per scrape (browser automation overhead)
 Cost: Browserbase session pricing (check https://browserbase.com/pricing)
 
@@ -27,6 +29,18 @@ from dotenv import load_dotenv
 _env_path = Path(__file__).resolve().parents[3] / '.env'
 if _env_path.exists():
     load_dotenv(_env_path, override=True)
+
+# Import shared patterns and utilities - KEEPS BROWSERBASE IN SYNC WITH BEAUTIFULSOUP
+from app.services.scraper_patterns import (
+    TEAM_PAGE_PATTERNS,
+    ATL_TITLE_KEYWORDS,
+    GARBAGE_NAMES,
+    TITLE_QUALIFIERS,
+    is_atl_title,
+    is_garbage_name,
+    clean_title,
+    split_concatenated_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,19 +76,9 @@ class BrowserbaseTeamScraper:
     Browserbase API Reference:
     - Sessions API: https://docs.browserbase.com/api-reference/sessions
     - Extensions: Can add custom scrapers as extensions
-    """
 
-    # ATL title keywords for filtering
-    ATL_TITLES = [
-        "ceo", "chief executive",
-        "cto", "chief technology",
-        "cfo", "chief financial",
-        "coo", "chief operating",
-        "president", "vp", "vice president",
-        "founder", "co-founder", "owner",
-        "director", "head of",
-        "partner", "managing director"
-    ]
+    NOTE: Uses shared patterns from scraper_patterns.py for consistency with BeautifulSoup scraper.
+    """
 
     def __init__(self):
         self.api_key = os.getenv("BROWSERBASE_API_KEY")
@@ -185,16 +189,9 @@ class BrowserbaseTeamScraper:
         contacts = []
 
         try:
-            # Team page paths to try
-            # Optimized path list - prioritized by frequency, reduced from 8 to 5
-            # Most HVAC/contractor sites use /about or /about-us, rarely /leadership
-            team_paths = [
-                "/about-us",    # Most common for small businesses
-                "/about",       # Second most common
-                "/team",        # Explicit team page
-                "/our-team",    # Alternative team naming
-                "/leadership",  # Larger companies only (skip /about/team, /company/team, /people)
-            ]
+            # Use shared TEAM_PAGE_PATTERNS from scraper_patterns.py
+            # Prioritize first 10 most common patterns for efficiency
+            team_paths = TEAM_PAGE_PATTERNS[:10]
 
             async with async_playwright() as p:
                 # Connect to Browserbase session via CDP using the API-provided connect URL
@@ -248,7 +245,8 @@ class BrowserbaseTeamScraper:
                         team_cards = await page.query_selector_all(
                             'div[class*="team"], div[class*="member"], '
                             'div[class*="person"], article[class*="team"], '
-                            'section[class*="team"]'
+                            'section[class*="team"], div[class*="staff"], '
+                            'div[class*="leadership"], div[class*="executive"]'
                         )
 
                         for card in team_cards:
@@ -273,11 +271,29 @@ class BrowserbaseTeamScraper:
                                     href = await email_element.get_attribute('href')
                                     email = href.replace('mailto:', '') if href else None
 
-                                # Validate and filter for ATL titles
-                                if name and title and self._is_atl_title(title):
+                                # Clean name and title using shared utilities
+                                if name:
+                                    name = name.strip()
+                                    # Check for concatenated name+title
+                                    fixed_name, extracted_title = split_concatenated_name(name)
+                                    if extracted_title:
+                                        name = fixed_name
+                                        if not title:
+                                            title = extracted_title
+
+                                if title:
+                                    title = clean_title(title.strip())
+
+                                # Validate: skip garbage names
+                                if is_garbage_name(name):
+                                    logger.debug(f"Skipping garbage name: {name}")
+                                    continue
+
+                                # Validate and filter for ATL titles using shared utility
+                                if name and title and is_atl_title(title):
                                     contacts.append({
-                                        "name": name.strip(),
-                                        "title": title.strip(),
+                                        "name": name,
+                                        "title": title,
                                         "email": email
                                     })
                                     logger.info(f"Found ATL contact: {name} ({title})")
@@ -327,14 +343,6 @@ class BrowserbaseTeamScraper:
                 logger.info(f"Browserbase session closed: {session_id}")
         except Exception as e:
             logger.error(f"Failed to close Browserbase session {session_id}: {e}")
-
-    def _is_atl_title(self, title: str) -> bool:
-        """Check if title is Above The Line."""
-        if not title:
-            return False
-
-        title_lower = title.lower()
-        return any(keyword in title_lower for keyword in self.ATL_TITLES)
 
 
 # Singleton instance
