@@ -71,6 +71,33 @@ NAME_PATTERNS = [
     r"^[A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?$",
 ]
 
+# GARBAGE FILTER: Names that are NOT real people
+GARBAGE_NAMES = {
+    # Service/product categories
+    "installation types", "battery storage", "industrial solar", "commercial solar",
+    "residential solar", "solar panels", "solar energy", "solar power",
+    "heating", "cooling", "plumbing", "electrical", "hvac", "roofing",
+    "air conditioning", "water heater", "energy", "services",
+    "ev charging", "ev chargers", "solar installation", "solar installer",
+    "heat pump", "ductless", "mini split", "geothermal",
+    # Placeholder names
+    "john doe", "jane doe", "test user", "sample name", "your name",
+    "first last", "name here", "full name",
+    # Navigation/UI text
+    "learn more", "read more", "click here", "view all", "see more",
+    "schedule now", "call now", "get quote", "request quote", "contact us",
+    "about us", "our team", "meet the team", "leadership", "management",
+    "follow us", "follow us:",
+    # Social media
+    "facebook", "twitter", "linkedin", "instagram", "youtube", "tiktok",
+}
+
+# Patterns that indicate concatenated names (e.g., "JohnCEO", "MaryDirector")
+# More specific to avoid false positives like "McCall"
+CONCATENATED_PATTERNS = [
+    r'\w+(CEO|CFO|CTO|COO|CMO|VP|Vice|Director|Manager|Owner|Founder|President|Customer|Advocate|Designer|Specialist|Crew|Lead|Installer|Technician|Roofing)$',
+]
+
 
 class BeautifulSoupTeamScraper:
     """
@@ -222,6 +249,29 @@ class BeautifulSoupTeamScraper:
 
         # Title should not be a long paragraph
         if '\n' in title or title.count(' ') > 15:
+            return False
+
+        # GARBAGE FILTER: Check for known non-person names
+        name_lower = name.lower().strip()
+        if name_lower in GARBAGE_NAMES:
+            logger.debug(f"Filtered garbage name: {name}")
+            return False
+
+        # Check for concatenated names (e.g., "John SmithCEO")
+        for pattern in CONCATENATED_PATTERNS:
+            if re.search(pattern, name):
+                logger.debug(f"Filtered concatenated name: {name}")
+                return False
+
+        # Filter names containing social media keywords
+        social_keywords = ['linkedin', 'facebook', 'twitter', 'instagram', 'visit', 'follow']
+        if any(kw in name_lower for kw in social_keywords):
+            logger.debug(f"Filtered social media name: {name}")
+            return False
+
+        # Filter names that start/end with "Visit" (social media artifacts)
+        if name.startswith("Visit ") or name.endswith(" Visit"):
+            logger.debug(f"Filtered visit artifact: {name}")
             return False
 
         return True
