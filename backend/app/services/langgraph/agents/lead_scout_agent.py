@@ -59,7 +59,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langchain_anthropic import ChatAnthropic
 
 from app.core.logging import setup_logging
@@ -210,10 +210,10 @@ Generate your analysis:""")
     def _default_model(self, provider: str) -> str:
         """Get default model for provider."""
         defaults = {
-            "cerebras": "llama3.1-8b",
+            "cerebras": "llama-3.3-70b",
             "claude": "claude-3-haiku-20240307"
         }
-        return defaults.get(provider, "llama3.1-8b")
+        return defaults.get(provider, "llama-3.3-70b")
 
     async def scout(
         self,

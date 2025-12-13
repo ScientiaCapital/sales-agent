@@ -27,7 +27,7 @@ Usage:
     config = AgentConfig(
         name="qualification",
         provider="cerebras",
-        model="llama3.1-8b",
+        model="llama-3.3-70b",
         optimize_for="speed"
     )
     agent = BaseAgent(config)
@@ -50,7 +50,7 @@ from enum import Enum
 from abc import ABC, abstractmethod
 
 from langchain_core.tools import BaseTool
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langchain_anthropic import ChatAnthropic  # Used for Claude AND DeepSeek (Anthropic-compatible API)
 from langchain_community.chat_models import ChatOllama
 from langchain_core.language_models import BaseChatModel
@@ -128,7 +128,7 @@ class AgentConfig:
 
 PROVIDER_COSTS = {
     "cerebras": {
-        "llama3.1-8b": {"per_m_tokens": 0.10, "avg_latency_ms": 500},
+        "llama-3.3-70b": {"per_m_tokens": 0.10, "avg_latency_ms": 500},
         "llama3.1-70b": {"per_m_tokens": 0.60, "avg_latency_ms": 800},
         "llama-3.3-70b": {"per_m_tokens": 0.60, "avg_latency_ms": 633},
     },
@@ -147,7 +147,7 @@ PROVIDER_COSTS = {
 
 # Auto-selection mapping
 OPTIMIZATION_DEFAULTS = {
-    OptimizationTarget.SPEED: ("cerebras", "llama3.1-8b"),
+    OptimizationTarget.SPEED: ("cerebras", "llama-3.3-70b"),
     OptimizationTarget.COST: ("deepseek", "deepseek-chat"),
     OptimizationTarget.QUALITY: ("claude", "claude-3-5-sonnet-20241022"),
     OptimizationTarget.LOCAL: ("ollama", "llama3.1:8b"),

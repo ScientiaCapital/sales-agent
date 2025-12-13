@@ -16,7 +16,7 @@ This agent works WITH the BDRAgent:
 
 Performance:
     - Target: <3000ms for extraction + draft generation
-    - Model: llama3.1-8b via Cerebras (fast, cheap)
+    - Model: llama-3.3-70b via Cerebras (fast, cheap)
     - Cost: ~$0.00005 per analysis
 
 Usage:
@@ -46,7 +46,7 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 
 from app.core.logging import setup_logging
 

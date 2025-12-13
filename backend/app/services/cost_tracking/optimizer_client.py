@@ -21,7 +21,7 @@ Usage:
     # Log LLM call
     await optimizer.log_llm_call(
         provider="cerebras",
-        model="llama3.1-8b",
+        model="llama-3.3-70b",
         prompt="Qualify this lead...",
         response="Hot lead, score: 95...",
         tokens_in=50,
@@ -63,7 +63,7 @@ logger = setup_logging(__name__)
 class LLMCallLog(BaseModel):
     """Model for logging LLM API calls."""
     provider: str  # cerebras, claude, deepseek, ollama
-    model: str  # llama3.1-8b, claude-3-5-haiku, deepseek-chat
+    model: str  # llama-3.3-70b, claude-3-5-haiku, deepseek-chat
     prompt: str
     response: str
     tokens_in: int

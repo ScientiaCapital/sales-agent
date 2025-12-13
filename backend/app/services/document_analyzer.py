@@ -201,7 +201,7 @@ class DocumentAnalyzer:
                 )
 
                 response = client.chat.completions.create(
-                    model="llama3.1-8b",
+                    model="llama-3.3-70b",
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=400,
                     temperature=0.4
@@ -245,7 +245,7 @@ class DocumentAnalyzer:
             )
 
             response = client.chat.completions.create(
-                model="llama3.1-8b",
+                model="llama-3.3-70b",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=500,
                 temperature=0.3

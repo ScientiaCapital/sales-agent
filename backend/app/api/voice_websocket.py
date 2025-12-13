@@ -4,7 +4,7 @@ Twilio Media Stream WebSocket Handler for Real-Time Voice
 Handles real-time audio streaming from Twilio with:
 - STT via Deepgram Nova-2
 - Intent classification
-- LLM response via Cerebras llama3.1-8b
+- LLM response via Cerebras llama-3.3-70b
 - TTS via Cartesia sonic-turbo
 - Audio format conversion (mulaw 8kHz <-> linear16 16kHz)
 

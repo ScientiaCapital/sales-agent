@@ -2,7 +2,7 @@
 QualificationAgent - Multi-Provider Lead Qualification
 
 Supports multiple LLM providers with free-form JSON generation and parsing:
-- Cerebras (llama3.1-8b, llama3.1-70b) - Ultra-fast, cost-effective
+- Cerebras (llama-3.3-70b, llama3.1-70b) - Ultra-fast, cost-effective
 - Claude (haiku, sonnet) - High quality reasoning
 - DeepSeek (v3) - Cost-effective analysis
 - Ollama (local) - Private inference
@@ -11,7 +11,7 @@ Architecture:
     Input → ChatPromptTemplate → LLM → Free-form JSON → Parse → Result
 
 Performance Targets:
-    - Cerebras llama3.1-8b: <500ms, $0.00001/request
+    - Cerebras llama-3.3-70b: <500ms, $0.00001/request
     - Cerebras llama3.1-70b: <800ms, $0.00006/request
     - Claude Haiku: <2000ms, $0.0005/request
     - DeepSeek v3: <3000ms, $0.00003/request
@@ -22,7 +22,7 @@ Usage:
     from app.services.langgraph.agents import QualificationAgent
 
     # Cerebras (default)
-    agent = QualificationAgent(provider="cerebras", model="llama3.1-8b")
+    agent = QualificationAgent(provider="cerebras", model="llama-3.3-70b")
 
     # Claude
     agent = QualificationAgent(provider="claude", model="claude-3-haiku-20240307")
@@ -55,7 +55,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_cerebras import ChatCerebras
+from app.services.langchain_cerebras_compat import ChatCerebras
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI  # For DeepSeek (OpenAI-compatible API)
 from langchain_community.chat_models import ChatOllama
@@ -144,7 +144,7 @@ class QualificationAgent:
     # Provider pricing (per million tokens, combined input+output for simplicity)
     PROVIDER_PRICING = {
         "cerebras": {
-            "llama3.1-8b": 0.10,
+            "llama-3.3-70b": 0.10,
             "llama3.1-70b": 0.60,
         },
         "claude": {
@@ -206,7 +206,7 @@ class QualificationAgent:
         # Auto-select model if not provided
         if model is None:
             model_map = {
-                "cerebras": "llama3.1-8b",
+                "cerebras": "llama-3.3-70b",
                 "claude": "claude-3-haiku-20240307",
                 "deepseek": "deepseek-chat",
                 "ollama": "llama3.1:8b"

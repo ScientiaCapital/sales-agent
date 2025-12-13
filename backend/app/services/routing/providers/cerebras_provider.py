@@ -38,7 +38,7 @@ class CerebrasProvider(BaseProvider):
         )
         
         # Cerebras-specific configuration
-        self.model = config.model or "llama3.1-8b"
+        self.model = config.model or "llama-3.3-70b"
         self.max_tokens = config.max_tokens or 512
         self.temperature = config.temperature or 0.7
         

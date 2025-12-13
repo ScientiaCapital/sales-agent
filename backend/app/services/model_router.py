@@ -90,7 +90,7 @@ class ModelRouter:
             TaskType.QUALIFICATION: [
                 ModelConfig(
                     provider="cerebras",
-                    model="llama3.1-8b",
+                    model="llama-3.3-70b",
                     max_latency_ms=1000,
                     max_cost_usd=0.0001
                 )
