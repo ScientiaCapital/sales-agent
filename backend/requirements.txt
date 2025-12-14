@@ -138,5 +138,4 @@ neo4j==5.26.0  # Official Neo4j Python driver for warm path discovery
 # Lang-Core: Scientia Capital LangChain/LangGraph/LangSmith Stack (Dec 2025)
 # Provides: LangChain middleware, LangSmith integration, LangGraph utilities,
 #           multi-provider LLM selector, Celery tasks, FastAPI utilities, Redis utils
-# Local development path - change to git URL for production
-lang-core @ file:///Users/tmkipper/Desktop/tk_projects/lang-core
+lang-core @ git+https://github.com/ScientiaCapital/lang-core.git
