@@ -219,3 +219,4 @@ test_*.csv
 .audit-saas.yaml
 !dashboard/src/lib/
 CLAUDE.md
+LICENSE.md
