@@ -6,7 +6,11 @@ STT Providers:
 - AssemblyAI: Real-time streaming with advanced features (sentiment, entity detection)
 
 TTS Provider:
-- Cartesia: 58 emotions, ultra-low latency streaming
+- Cartesia: 58 emotions, ultra-low latency streaming, voice cloning
+
+Voice Cloning:
+- Clone Tim Kipper's voice for scalable personalized outreach
+- Dynamic emotion based on conversation context
 
 Telephony:
 - Twilio: Voice API for outbound/inbound calls
@@ -17,6 +21,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+# Import voice cloning support
+try:
+    from .voice_clone import VoiceCloneManager, VoiceProfile, VoiceEmotion
+    VOICE_CLONE_AVAILABLE = True
+except ImportError:
+    VoiceCloneManager = None
+    VoiceProfile = None
+    VoiceEmotion = None
+    VOICE_CLONE_AVAILABLE = False
 
 
 class STTProvider(str, Enum):
@@ -61,6 +75,10 @@ class VoicePipeline:
     Supports multiple STT providers with automatic fallback:
     1. Primary: Deepgram (real-time WebSocket streaming)
     2. Fallback: AssemblyAI (real-time streaming with sentiment/entity detection)
+
+    Voice cloning support:
+    - Use Tim Kipper's cloned voice for personalized outreach
+    - Dynamic emotion based on conversation context
     """
 
     def __init__(
@@ -72,6 +90,7 @@ class VoicePipeline:
         twilio_from_number: Optional[str] = None,
         assemblyai_api_key: Optional[str] = None,
         stt_provider: STTProvider = STTProvider.DEEPGRAM,
+        voice_profile: str = "tim_kipper",
     ):
         """Initialize the voice pipeline with provider credentials.
 
@@ -83,8 +102,10 @@ class VoicePipeline:
             twilio_from_number: Twilio phone number to call from
             assemblyai_api_key: AssemblyAI API key for STT (alternative)
             stt_provider: Preferred STT provider (deepgram or assemblyai)
+            voice_profile: Voice profile to use for TTS (tim_kipper, default)
         """
         self.stt_provider = stt_provider
+        self.voice_profile_name = voice_profile
 
         # Track provider availability
         self.deepgram_available = DeepgramSTT is not None and deepgram_api_key
@@ -117,6 +138,18 @@ class VoicePipeline:
         else:
             self.cartesia = None
             logger.warning("Cartesia TTS not available - voice-core not installed")
+
+        # Initialize Voice Clone Manager
+        self.voice_clone_available = VOICE_CLONE_AVAILABLE
+        if self.voice_clone_available:
+            self.voice_clone_manager = VoiceCloneManager(
+                default_profile=voice_profile,
+                cartesia_api_key=cartesia_api_key,
+            )
+            logger.info(f"Voice clone manager initialized with profile: {voice_profile}")
+        else:
+            self.voice_clone_manager = None
+            logger.warning("Voice clone manager not available")
 
         # Initialize Twilio Voice
         if self.twilio_available:
@@ -217,4 +250,128 @@ class VoicePipeline:
             logger.info(f"Call ended and cleaned up: {call_sid}")
             return True
         logger.warning(f"Attempted to end non-existent call: {call_sid}")
+        return False
+
+    def get_tts_config(
+        self,
+        text: str,
+        context: str = "professional",
+        emotion_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get TTS configuration with voice cloning and emotion support.
+
+        Args:
+            text: Text to synthesize
+            context: Conversation context (greeting, qualifying, objection, closing, farewell)
+            emotion_override: Override automatic emotion selection
+
+        Returns:
+            Dict with Cartesia TTS parameters including voice_id and emotion
+        """
+        if self.voice_clone_available and self.voice_clone_manager:
+            # Use voice clone manager for emotion-aware config
+            emotion = None
+            if emotion_override and VoiceEmotion:
+                try:
+                    emotion = VoiceEmotion(emotion_override)
+                except ValueError:
+                    logger.warning(f"Unknown emotion: {emotion_override}, using context default")
+
+            return self.voice_clone_manager.get_tts_config(
+                text=text,
+                context=context,
+                emotion_override=emotion,
+            )
+        else:
+            # Fallback to basic config without voice cloning
+            return {
+                "text": text,
+                "voice_id": "",
+                "emotion": "professional",
+                "speed": 1.0,
+            }
+
+    async def generate_tts(
+        self,
+        text: str,
+        context: str = "professional",
+        emotion_override: Optional[str] = None,
+        stream: bool = True,
+    ) -> Any:
+        """Generate TTS audio using cloned voice with context-aware emotion.
+
+        Args:
+            text: Text to speak
+            context: Conversation context for emotion selection
+            emotion_override: Override automatic emotion selection
+            stream: Whether to stream audio (default True for low latency)
+
+        Returns:
+            Audio data or stream from Cartesia
+        """
+        if not self.cartesia_available or self.cartesia is None:
+            logger.error("Cannot generate TTS: Cartesia provider not available")
+            raise RuntimeError(
+                "Cartesia provider not available. Ensure voice-core is installed."
+            )
+
+        # Get voice-cloned TTS config with emotion
+        config = self.get_tts_config(
+            text=text,
+            context=context,
+            emotion_override=emotion_override,
+        )
+
+        logger.debug(
+            f"Generating TTS: voice={self.voice_profile_name}, "
+            f"emotion={config.get('emotion')}, text={text[:50]}..."
+        )
+
+        try:
+            if stream:
+                # Streaming mode for low-latency real-time calls
+                return await self.cartesia.stream_tts(
+                    text=config["text"],
+                    voice_id=config["voice_id"],
+                    emotion=config.get("emotion"),
+                    speed=config.get("speed", 1.0),
+                )
+            else:
+                # Non-streaming mode for complete audio
+                return await self.cartesia.generate(
+                    text=config["text"],
+                    voice_id=config["voice_id"],
+                    emotion=config.get("emotion"),
+                    speed=config.get("speed", 1.0),
+                )
+        except Exception as e:
+            logger.error(f"TTS generation failed: {e}")
+            raise
+
+    def get_voice_profile(self) -> Optional[Any]:
+        """Get the current voice profile.
+
+        Returns:
+            VoiceProfile if voice cloning is available, None otherwise
+        """
+        if self.voice_clone_available and self.voice_clone_manager:
+            return self.voice_clone_manager.get_profile(self.voice_profile_name)
+        return None
+
+    def set_voice_profile(self, profile_name: str) -> bool:
+        """Set the active voice profile.
+
+        Args:
+            profile_name: Name of the voice profile to use
+
+        Returns:
+            True if profile was set successfully
+        """
+        if self.voice_clone_available and self.voice_clone_manager:
+            profile = self.voice_clone_manager.get_profile(profile_name)
+            if profile:
+                self.voice_profile_name = profile_name
+                logger.info(f"Voice profile set to: {profile_name}")
+                return True
+        logger.warning(f"Could not set voice profile: {profile_name}")
         return False
