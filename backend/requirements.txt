@@ -14,7 +14,7 @@ redis==5.1.1
 hiredis==3.0.0
 
 # Background Tasks
-celery[redis]==5.4.0  # Async task queue with Redis support
+celery[redis]==5.6.0  # Async task queue with Redis support (upgraded: memory leak fixes, security improvements)
 flower==2.0.1  # Celery monitoring UI
 
 # HTTP Client
