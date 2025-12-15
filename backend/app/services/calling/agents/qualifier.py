@@ -62,6 +62,21 @@ class QualifierAgent:
         WorkflowType.COLD_CALL: "cold_call.md",
     }
 
+    # Map prompt emotions to Cartesia TTS voice emotions
+    EMOTION_MAP = {
+        "curiosity": "curious",
+        "empathy": "empathetic",
+        "determination": "confident",
+        "warmth": "warm",
+        "enthusiasm": "enthusiastic",
+        "gratitude": "appreciative",
+        "joy": "excited",
+        "sadness": "sympathetic",
+        "professional": "professional",
+        "friendly": "friendly",
+        "confident": "confident",
+    }
+
     def __init__(
         self,
         llm_provider: Any,
@@ -87,6 +102,21 @@ class QualifierAgent:
         self.workflow = workflow
         self.prompt = self._load_prompt(workflow)
         logger.info(f"Workflow changed to: {workflow.value}")
+
+    def _map_emotion_to_cartesia(self, prompt_emotion: str) -> str:
+        """Map prompt emotion names to Cartesia voice emotions.
+
+        Args:
+            prompt_emotion: Emotion from prompt (e.g., "curiosity", "empathy")
+
+        Returns:
+            Cartesia-compatible emotion string
+        """
+        # Handle compound emotions (e.g., "empathy + curiosity")
+        if "+" in prompt_emotion:
+            primary = prompt_emotion.split("+")[0].strip()
+            return self.EMOTION_MAP.get(primary, "professional")
+        return self.EMOTION_MAP.get(prompt_emotion, "professional")
 
     @staticmethod
     def detect_workflow(lead_context: Dict[str, Any]) -> WorkflowType:
@@ -187,13 +217,17 @@ Be direct, not salesy. If they're not interested, exit gracefully."""
             transfer_to = "human"
             logger.info("Human transfer requested")
 
+        # Map LLM emotion to Cartesia-compatible emotion
+        raw_emotion = llm_result.get("emotion", "friendly")
+        cartesia_emotion = self._map_emotion_to_cartesia(raw_emotion)
+
         return QualificationResult(
             next_response=llm_result.get("response", ""),
             status=status,
             signals=signals,
             should_end_call=should_end,
             transfer_to=transfer_to,
-            emotion=llm_result.get("emotion", "friendly"),
+            emotion=cartesia_emotion,
             pain_points=llm_result.get("pain_points", []),
             demo_type=llm_result.get("demo_type", ""),
             trade_type=llm_result.get("trade_type", ""),

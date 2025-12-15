@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-13
+**Last Updated**: 2025-12-15
 
 ---
 
@@ -17,7 +17,41 @@
 
 ---
 
-## LATEST UPDATE (Dec 13 - Website Enrichment + VLM Integration)
+## LATEST UPDATE (Dec 15 - Voice AI Calling System)
+
+### Voice AI Prompt Refactoring - COMPLETE
+
+Refactored all 6 voice AI prompts with industry best practices from Vapi AI, Retell AI, and Cartesia.
+
+| Component | File | Status |
+|-----------|------|--------|
+| Voice AI Template | `app/services/calling/prompts/_template.md` | NEW |
+| Cold Outreach Script | `app/services/calling/prompts/cold_outreach.md` | REFACTORED |
+| Warm Inbound Script | `app/services/calling/prompts/warm_inbound.md` | REFACTORED |
+| Cold Call Script | `app/services/calling/prompts/cold_call.md` | REFACTORED |
+| Qualifier Script | `app/services/calling/prompts/qualifier.md` | REFACTORED |
+| Objection Handler | `app/services/calling/prompts/objection_handler.md` | REFACTORED |
+| Closer Script | `app/services/calling/prompts/closer.md` | REFACTORED |
+| QualifierAgent | `app/services/calling/agents/qualifier.py` | UPDATED |
+
+### Key Improvements
+
+| Feature | Before | After |
+|---------|--------|-------|
+| Wait tags | 0 | 12+ per script |
+| Identity section | No | Yes |
+| Style Guardrails | No | Yes |
+| Speech Formatting | No | Yes |
+| Guardrails DO/DON'T | No | Yes |
+| Numbers | "$5-50M" | "five to fifty million" |
+| Phone format | "415-430-9465" | "four one five, four three oh, nine four six five" |
+| Emotion mapping | 6 basic | 11 Cartesia emotions |
+
+### Tests: 145 passed
+
+---
+
+## PREVIOUS UPDATE (Dec 13 - Website Enrichment + VLM Integration)
 
 ### FREE Website Enrichment System - COMPLETE ✅
 
