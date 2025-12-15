@@ -1670,10 +1670,26 @@ async def scrape_one(company_id, company_name, domain, extra_pages=None):
     return result
 
 
-def sync_to_supabase(supabase, results):
-    """Sync results back to Supabase."""
+def sync_to_supabase(supabase, results, source='all'):
+    """Sync results back to Supabase.
+
+    Args:
+        supabase: Supabase client
+        results: Enrichment results
+        source: 'pipeline', 'archive', or 'all' - determines which company table to update
+                Contacts ALWAYS go to dim_contacts (pipeline) regardless of source
+    """
     companies_updated = 0
     contacts_added = 0
+
+    # Determine company table to update based on source
+    # Note: When source='all', we need to detect which table the company is in
+    # For simplicity, try pipeline first, then archive
+    company_tables = ['dim_companies']
+    if source == 'archive':
+        company_tables = ['dim_companies_close']
+    elif source == 'all':
+        company_tables = ['dim_companies', 'dim_companies_close']
 
     for r in results:
         if not r['success']:
@@ -1735,17 +1751,29 @@ def sync_to_supabase(supabase, results):
             if personal_hooks:
                 update_data['ai_personal_hooks'] = personal_hooks
 
-        try:
-            supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
-            companies_updated += 1
-        except Exception as e:
-            # If new columns don't exist yet, fall back to basic fields
-            fallback_data = {'last_enriched_at': datetime.now().isoformat()}
+        # Update company in the correct table
+        updated = False
+        for table in company_tables:
             try:
-                supabase.table('dim_companies').update(fallback_data).eq('company_id', company_id).execute()
-                companies_updated += 1
-            except Exception as e2:
-                print(f"    Update error: {e2}")
+                result = supabase.table(table).update(update_data).eq('company_id', company_id).execute()
+                if result.data:  # Update succeeded (found the company)
+                    companies_updated += 1
+                    updated = True
+                    break
+            except Exception as e:
+                # If new columns don't exist yet, fall back to basic fields
+                fallback_data = {'last_enriched_at': datetime.now().isoformat()}
+                try:
+                    result = supabase.table(table).update(fallback_data).eq('company_id', company_id).execute()
+                    if result.data:
+                        companies_updated += 1
+                        updated = True
+                        break
+                except Exception as e2:
+                    continue  # Try next table
+
+        if not updated:
+            print(f"    Warning: Could not update company {company_id}")
 
         # Add ALL contacts (ATL + BTL) with proper is_atl flag
         for contact in r['atl_contacts']:
@@ -1842,14 +1870,38 @@ def sync_to_supabase(supabase, results):
     return companies_updated, contacts_added
 
 
-def get_unenriched_batch(supabase, batch_size):
-    """Get next batch of unenriched companies with domains."""
-    result = supabase.table('dim_companies')\
-        .select('company_id, company_name, domain')\
+def get_unenriched_batch(supabase, batch_size, source='all', source_filter=None):
+    """Get next batch of unenriched companies with domains.
+
+    Args:
+        supabase: Supabase client
+        batch_size: Number of companies to fetch
+        source: 'pipeline' (dim_companies only), 'archive' (dim_companies_close only),
+                or 'all' (v_all_companies unified view - default)
+        source_filter: Comma-separated prefixes to filter original_source (e.g., 'spw,amicus')
+    """
+    # Choose table based on source
+    if source == 'pipeline':
+        table = 'dim_companies'
+    elif source == 'archive':
+        table = 'dim_companies_close'
+    else:  # 'all' - use unified view
+        table = 'v_all_companies'
+
+    query = supabase.table(table)\
+        .select('company_id, company_name, domain, original_source')\
         .not_.is_('domain', 'null')\
-        .is_('last_enriched_at', 'null')\
-        .limit(batch_size)\
-        .execute()
+        .is_('last_enriched_at', 'null')
+
+    # Apply source filter if provided (e.g., --filter spw,amicus)
+    if source_filter:
+        prefixes = [p.strip().lower() for p in source_filter.split(',')]
+        # Build OR filter for original_source LIKE patterns
+        # Using ilike for case-insensitive matching
+        filter_patterns = [f"original_source.ilike.{prefix}%" for prefix in prefixes]
+        query = query.or_(','.join(filter_patterns))
+
+    result = query.limit(batch_size).execute()
     return result.data
 
 
@@ -2023,6 +2075,10 @@ async def main():
     parser.add_argument('--test', action='store_true', help='Test mode: max 5 companies, adds rate limiting')
     parser.add_argument('--domain', type=str, help='Test single domain (e.g., acmeheating.com)')
     parser.add_argument('--domains', type=str, help='Test multiple domains, comma-separated (max 5, e.g., acme.com,techcorp.com)')
+    parser.add_argument('--source', type=str, default='all', choices=['all', 'pipeline', 'archive'],
+                        help='Source table: pipeline (your leads), archive (Close CRM), all (both via v_all_companies, default)')
+    parser.add_argument('--filter', type=str, default=None,
+                        help='Filter by original_source prefix (e.g., spw, amicus, spw,amicus). Matches sources starting with these prefixes.')
     args = parser.parse_args()
 
     # Validate
@@ -2065,18 +2121,18 @@ async def main():
         
         # Run test batch
         results = await run_batch(supabase, companies, test_mode=True)
-        
-        # Sync
+
+        # Sync (test mode uses args.source)
         print("\n  Syncing to Supabase...", end=" ")
-        updated, contacts = sync_to_supabase(supabase, results)
+        updated, contacts = sync_to_supabase(supabase, results, source=args.source)
         print(f"{updated} companies, {contacts} contacts")
-        
+
         # Stats
         successful = sum(1 for r in results if r['success'])
         failed = len(results) - successful
         if failed > 0:
             print(f"  ⚠️  {failed} failed")
-        
+
         print(f"\n{'='*60}")
         print("TEST COMPLETE")
         print(f"{'='*60}")
@@ -2089,10 +2145,30 @@ async def main():
     # Normal mode (existing logic)
     # Get stats
     batch_size = min(max(args.batch_size, 1), 10)  # Clamp between 1 and 10
-    total = supabase.table('dim_companies').select('company_id', count='exact').not_.is_('domain', 'null').is_('last_enriched_at', 'null').execute()
+
+    # Choose source table
+    source = args.source
+    if source == 'pipeline':
+        source_table = 'dim_companies'
+    elif source == 'archive':
+        source_table = 'dim_companies_close'
+    else:  # 'all'
+        source_table = 'v_all_companies'
+
+    # Build count query with optional filter
+    count_query = supabase.table(source_table).select('company_id', count='exact').not_.is_('domain', 'null').is_('last_enriched_at', 'null')
+    if args.filter:
+        prefixes = [p.strip().lower() for p in args.filter.split(',')]
+        filter_patterns = [f"original_source.ilike.{prefix}%" for prefix in prefixes]
+        count_query = count_query.or_(','.join(filter_patterns))
+    total = count_query.execute()
+
     print(f"\n{'='*60}")
     print(f"ENRICHMENT RUNNER {'(AUTO MODE)' if args.auto else ''}")
     print(f"{'='*60}")
+    print(f"Source: {source_table}")
+    if args.filter:
+        print(f"Filter: original_source LIKE '{args.filter}%'")
     print(f"Companies needing enrichment: {total.count}")
     print(f"Batch size: {batch_size}")
     print(f"Estimated batches: {(total.count + batch_size - 1) // batch_size}")
@@ -2113,7 +2189,7 @@ async def main():
             break
 
         # Get next batch
-        companies = get_unenriched_batch(supabase, batch_size)
+        companies = get_unenriched_batch(supabase, batch_size, source=source, source_filter=args.filter)
 
         if not companies:
             print("\n✅ ALL COMPANIES ENRICHED!")
@@ -2128,9 +2204,9 @@ async def main():
         # Run batch
         results = await run_batch(supabase, companies, test_mode=False)
 
-        # Sync
+        # Sync to correct tables based on source
         print("\n  Syncing to Supabase...", end=" ")
-        updated, contacts = sync_to_supabase(supabase, results)
+        updated, contacts = sync_to_supabase(supabase, results, source=source)
         print(f"{updated} companies, {contacts} contacts")
 
         total_enriched += updated
@@ -2168,7 +2244,11 @@ async def main():
             print("="*50)
 
             # Apollo Paid prompt - default NO to prevent accidental credit usage
-            apollo_response = input("\n🔥 Run Apollo Paid to get verified emails/phones? [y/N]: ").strip().lower()
+            # Skip prompt in auto mode
+            if args.auto:
+                apollo_response = 'n'
+            else:
+                apollo_response = input("\n🔥 Run Apollo Paid to get verified emails/phones? [y/N]: ").strip().lower()
             if apollo_response == 'y':
                 # Build domain list for Apollo
                 domains_str = ','.join([d for d in batch_domains if d])
