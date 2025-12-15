@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.calling.voice_pipeline import VoicePipeline, CallState
+from app.services.calling.voice_pipeline import VoicePipeline, CallState, STTProvider
 
 
 @pytest.mark.asyncio
@@ -16,8 +16,72 @@ async def test_voice_pipeline_initializes_providers():
     # Providers are None when voice-core not installed (test environment)
     # But availability flags should be set
     assert hasattr(pipeline, 'deepgram_available')
+    assert hasattr(pipeline, 'assemblyai_available')
     assert hasattr(pipeline, 'cartesia_available')
     assert hasattr(pipeline, 'twilio_available')
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_assemblyai_provider():
+    """Pipeline should support AssemblyAI as STT provider."""
+    pipeline = VoicePipeline(
+        assemblyai_api_key="test_aai_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        stt_provider=STTProvider.ASSEMBLYAI,
+    )
+
+    assert hasattr(pipeline, 'assemblyai')
+    assert hasattr(pipeline, 'assemblyai_available')
+    assert pipeline.stt_provider == STTProvider.ASSEMBLYAI
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_stt_available_property():
+    """stt_available should return True if any STT provider is available."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+
+    # In test env, voice-core not installed, so both unavailable
+    assert hasattr(pipeline, 'stt_available')
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_get_active_stt():
+    """get_active_stt should return the preferred STT provider."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        stt_provider=STTProvider.DEEPGRAM,
+    )
+
+    # Method should exist and return None when providers not installed
+    stt = pipeline.get_active_stt()
+    assert stt is None  # voice-core not installed in test env
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_dual_stt_providers():
+    """Pipeline should accept both Deepgram and AssemblyAI keys."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        assemblyai_api_key="test_aai_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        stt_provider=STTProvider.DEEPGRAM,
+    )
+
+    assert hasattr(pipeline, 'deepgram')
+    assert hasattr(pipeline, 'assemblyai')
+    assert pipeline.stt_provider == STTProvider.DEEPGRAM
 
 
 @pytest.mark.asyncio
