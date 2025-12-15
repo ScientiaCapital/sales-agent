@@ -36,6 +36,7 @@ from app.api import rankings  # Lead prediction market rankings
 from app.api import slack_commands  # Slack slash commands (/enrich)
 from app.api import claude_chat  # Claude chat API for CEO/CTO interaction
 from app.api import voice_routes  # Twilio voice calling integration
+from app.api.routes import voice as voice_api_routes  # Voice API routes (Twilio webhooks, Slack callbacks)
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -266,6 +267,7 @@ app.include_router(rankings.router, prefix=settings.API_V1_PREFIX)  # Lead predi
 app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slack slash commands (/enrich)
 app.include_router(claude_chat.router, prefix=settings.API_V1_PREFIX)  # Claude chat API for CEO/CTO interaction
 app.include_router(voice_routes.router, prefix=settings.API_V1_PREFIX)  # Twilio voice calling integration
+app.include_router(voice_api_routes.router, prefix=settings.API_V1_PREFIX)  # Voice API routes (Twilio webhooks, Slack callbacks)
 
 
 @app.get("/")
