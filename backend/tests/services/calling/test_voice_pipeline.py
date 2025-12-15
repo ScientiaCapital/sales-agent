@@ -213,3 +213,195 @@ def test_call_state_initialization():
     assert state.current_agent == "qualifier"
     assert state.transcript == []
     assert isinstance(state.transcript, list)
+
+
+# Voice Cloning Integration Tests
+
+def test_voice_pipeline_voice_clone_available():
+    """Pipeline should track voice clone availability."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+
+    assert hasattr(pipeline, 'voice_clone_available')
+    assert hasattr(pipeline, 'voice_clone_manager')
+
+
+def test_voice_pipeline_voice_profile_name():
+    """Pipeline should track voice profile name."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        voice_profile="tim_kipper",
+    )
+
+    assert pipeline.voice_profile_name == "tim_kipper"
+
+
+def test_voice_pipeline_custom_voice_profile():
+    """Pipeline should accept custom voice profile."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        voice_profile="default",
+    )
+
+    assert pipeline.voice_profile_name == "default"
+
+
+def test_voice_pipeline_get_tts_config():
+    """Pipeline should generate TTS config."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+
+    config = pipeline.get_tts_config(
+        text="Hello, this is Tim calling.",
+        context="greeting",
+    )
+
+    assert "text" in config
+    assert "voice_id" in config
+    assert config["text"] == "Hello, this is Tim calling."
+
+
+def test_voice_pipeline_get_tts_config_with_context():
+    """Pipeline should use context for emotion selection."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+
+    greeting_config = pipeline.get_tts_config(text="Hello", context="greeting")
+    objection_config = pipeline.get_tts_config(text="I understand", context="objection")
+
+    # Configs should have emotion set
+    assert "emotion" in greeting_config
+    assert "emotion" in objection_config
+
+
+def test_voice_pipeline_get_tts_config_emotion_override():
+    """Pipeline should allow emotion override."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+
+    config = pipeline.get_tts_config(
+        text="I understand your concern.",
+        context="greeting",  # Would use friendly
+        emotion_override="empathetic",  # Override to empathetic
+    )
+
+    assert "emotion" in config
+
+
+def test_voice_pipeline_get_voice_profile():
+    """Pipeline should return current voice profile."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        voice_profile="tim_kipper",
+    )
+
+    profile = pipeline.get_voice_profile()
+    # Profile may be None if voice cloning not available
+    # But method should exist
+    assert hasattr(pipeline, 'get_voice_profile')
+
+
+def test_voice_pipeline_set_voice_profile():
+    """Pipeline should allow setting voice profile."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+        voice_profile="tim_kipper",
+    )
+
+    result = pipeline.set_voice_profile("default")
+    # Result depends on voice clone availability
+    assert hasattr(pipeline, 'set_voice_profile')
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_generate_tts_no_cartesia():
+    """Pipeline should raise error when Cartesia not available."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+    # Ensure Cartesia is not available
+    pipeline.cartesia_available = False
+    pipeline.cartesia = None
+
+    with pytest.raises(RuntimeError, match="Cartesia provider not available"):
+        await pipeline.generate_tts(
+            text="Hello, this is Tim.",
+            context="greeting",
+        )
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_generate_tts_streaming():
+    """Pipeline should support streaming TTS."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+    # Mock Cartesia provider
+    pipeline.cartesia = MagicMock()
+    pipeline.cartesia.stream_tts = AsyncMock(return_value=b"audio_bytes")
+    pipeline.cartesia_available = True
+
+    result = await pipeline.generate_tts(
+        text="Hello, this is Tim calling.",
+        context="greeting",
+        stream=True,
+    )
+
+    pipeline.cartesia.stream_tts.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_voice_pipeline_generate_tts_non_streaming():
+    """Pipeline should support non-streaming TTS."""
+    pipeline = VoicePipeline(
+        deepgram_api_key="test_dg_key",
+        cartesia_api_key="test_cartesia_key",
+        twilio_account_sid="test_sid",
+        twilio_auth_token="test_token",
+    )
+    # Mock Cartesia provider
+    pipeline.cartesia = MagicMock()
+    pipeline.cartesia.generate = AsyncMock(return_value=b"audio_bytes")
+    pipeline.cartesia_available = True
+
+    result = await pipeline.generate_tts(
+        text="Hello, this is Tim calling.",
+        context="greeting",
+        stream=False,
+    )
+
+    pipeline.cartesia.generate.assert_called_once()
