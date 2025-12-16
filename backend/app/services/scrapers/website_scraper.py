@@ -379,13 +379,46 @@ class WebsiteScraper:
         return list(phones)
 
     @staticmethod
+    def decode_cloudflare_email(encoded: str) -> Optional[str]:
+        """
+        Decode Cloudflare-protected email addresses.
+
+        Cloudflare encodes emails using XOR with a key (first 2 hex chars).
+        Example: data-cfemail="cda4a3aba28d..." -> info@domain.com
+        """
+        if not encoded or len(encoded) < 4:
+            return None
+        try:
+            key = int(encoded[:2], 16)
+            decoded = ''.join([
+                chr(int(encoded[i:i+2], 16) ^ key)
+                for i in range(2, len(encoded), 2)
+            ])
+            if '@' in decoded and '.' in decoded:
+                return decoded.lower()
+            return None
+        except (ValueError, IndexError):
+            return None
+
+    @staticmethod
     def extract_emails(content: str) -> List[str]:
-        """Extract email addresses from content."""
-        pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
+        """Extract email addresses from content, including Cloudflare-protected ones."""
         emails = set()
+
+        # Method 1: Standard email pattern
+        pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
         for email in re.findall(pattern, content):
             if not any(x in email.lower() for x in ["example.com", "domain.com", "noreply"]):
                 emails.add(email.lower())
+
+        # Method 2: Cloudflare-encoded emails (data-cfemail="xxx")
+        cf_pattern = r'data-cfemail=["\']([a-fA-F0-9]+)["\']'
+        for cf_encoded in re.findall(cf_pattern, content):
+            decoded = WebsiteScraper.decode_cloudflare_email(cf_encoded)
+            if decoded and not any(x in decoded for x in ["example.com", "domain.com", "noreply"]):
+                emails.add(decoded)
+                logger.debug(f"Decoded Cloudflare email: {decoded}")
+
         return list(emails)
 
     def extract_contacts(self, content: str) -> List[Dict]:
