@@ -72,7 +72,9 @@ def get_supabase_client() -> Client:
 async def fetch_enriched_companies(
     supabase: Client,
     min_icp_score: int,
-    limit: int
+    limit: int,
+    skip_icp_filter: bool = False,
+    source_filter: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
     Fetch enriched companies from Supabase that haven't been pushed to Close.
@@ -81,20 +83,51 @@ async def fetch_enriched_companies(
         supabase: Supabase client
         min_icp_score: Minimum ICP score threshold
         limit: Maximum companies to fetch
+        skip_icp_filter: If True, skip ICP score filtering
+        source_filter: If set, only fetch companies with contacts from this source
 
     Returns:
         List of company dictionaries
     """
-    logger.info(f"Fetching companies with ICP >= {min_icp_score}, limit {limit}")
+    # If source filter is specified, first get company IDs with contacts from that source
+    target_company_ids = None
+    if source_filter:
+        logger.info(f"Filtering to companies with {source_filter} ATL contacts with emails...")
+        contacts_resp = supabase.table("dim_contacts") \
+            .select("company_id") \
+            .eq("source", source_filter) \
+            .eq("is_atl", True) \
+            .not_.is_("email", "null") \
+            .execute()
+        target_company_ids = list(set(c["company_id"] for c in contacts_resp.data if c.get("company_id")))
+        logger.info(f"Found {len(target_company_ids)} companies with {source_filter} ATL contacts")
 
-    # Query companies without Close lead ID and with sufficient ICP score
-    response = supabase.table("dim_companies") \
+        if not target_company_ids:
+            return []
+
+    if skip_icp_filter:
+        logger.info(f"Fetching companies (no ICP filter), limit {limit}")
+    else:
+        logger.info(f"Fetching companies with ICP >= {min_icp_score}, limit {limit}")
+
+    # Query companies without Close lead ID
+    query = supabase.table("dim_companies") \
         .select("*") \
-        .is_("close_lead_id", "null") \
-        .gte("icp_score", min_icp_score) \
-        .order("icp_score", desc=True) \
-        .limit(limit) \
-        .execute()
+        .is_("close_lead_id", "null")
+
+    # Filter to target companies if source filter applied
+    if target_company_ids:
+        query = query.in_("company_id", target_company_ids[:100])  # Limit to avoid URL length issues
+
+    # Apply ICP filter unless skipped
+    if not skip_icp_filter:
+        query = query.gte("icp_score", min_icp_score)
+        query = query.order("icp_score", desc=True)
+    else:
+        # When skipping ICP, order by created_at
+        query = query.order("created_at", desc=True)
+
+    response = query.limit(limit).execute()
 
     companies = response.data or []
     logger.info(f"Found {len(companies)} companies to process")
@@ -179,17 +212,17 @@ def build_leads_data(
 
         # Skip companies without contacts
         if not contacts:
-            logger.debug(f"Skipping {company.get('name')} - no contacts")
+            logger.debug(f"Skipping {company.get('company_name')} - no contacts")
             continue
 
         # Build lead data structure
         lead = {
             "company_id": company_id,
-            "company_name": company.get("name"),
+            "company_name": company.get("company_name"),
             "domain": company.get("domain"),
             "industry": company.get("industry"),
             "qualification_score": company.get("icp_score", 0),
-            "tier": get_tier(company.get("icp_score", 0)),
+            "tier": get_tier(company.get("icp_score")),
             "oem_brands": company.get("oem_brands", []),
             "service_areas": company.get("service_areas", []),
             "certifications": company.get("certifications", []),
@@ -198,7 +231,7 @@ def build_leads_data(
             "has_emergency_services": company.get("has_emergency_services"),
             "contacts": [
                 {
-                    "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or c.get("name"),
+                    "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or c.get("full_name") or c.get("name"),
                     "first_name": c.get("first_name"),
                     "last_name": c.get("last_name"),
                     "title": c.get("title") or c.get("position"),
@@ -220,8 +253,10 @@ def build_leads_data(
     return leads_data
 
 
-def get_tier(icp_score: int) -> str:
+def get_tier(icp_score: Optional[int]) -> str:
     """Get tier name from ICP score."""
+    if icp_score is None:
+        return "unscored"
     if icp_score >= 90:
         return "platinum"
     elif icp_score >= 80:
@@ -240,7 +275,9 @@ async def run_push(
     atl_only: bool,
     min_icp_score: int,
     sequence_name: Optional[str] = None,
-    batch_size: int = 10
+    batch_size: int = 10,
+    skip_icp_filter: bool = False,
+    source_filter: Optional[str] = None
 ) -> BulkPushResult:
     """
     Main orchestration function for pushing leads to Close CRM.
@@ -252,6 +289,8 @@ async def run_push(
         min_icp_score: Minimum ICP score threshold
         sequence_name: Optional sequence to subscribe contacts to
         batch_size: Leads per batch
+        skip_icp_filter: If True, skip ICP score filtering
+        source_filter: If set, only include companies with contacts from this source
 
     Returns:
         BulkPushResult with operation statistics
@@ -263,7 +302,12 @@ async def run_push(
     logger.info(f"  Limit: {limit}")
     logger.info(f"  Dry Run: {dry_run}")
     logger.info(f"  ATL Only: {atl_only}")
-    logger.info(f"  Min ICP Score: {min_icp_score} ({get_tier(min_icp_score).upper()})")
+    if skip_icp_filter:
+        logger.info(f"  ICP Filter: DISABLED")
+    else:
+        logger.info(f"  Min ICP Score: {min_icp_score} ({get_tier(min_icp_score).upper()})")
+    if source_filter:
+        logger.info(f"  Source Filter: {source_filter}")
     logger.info(f"  Sequence: {sequence_name or 'None'}")
     logger.info(f"  Batch Size: {batch_size}")
     logger.info("=" * 60)
@@ -284,7 +328,9 @@ async def run_push(
     companies = await fetch_enriched_companies(
         supabase=supabase,
         min_icp_score=min_icp_score,
-        limit=limit
+        limit=limit,
+        skip_icp_filter=skip_icp_filter,
+        source_filter=source_filter
     )
 
     if not companies:
@@ -448,6 +494,19 @@ ICP Thresholds:
     )
 
     parser.add_argument(
+        "--no-icp-filter",
+        action="store_true",
+        help="Skip ICP score filtering (for testing with un-scored companies)"
+    )
+
+    parser.add_argument(
+        "--source",
+        type=str,
+        default=None,
+        help="Filter to companies with contacts from this source (e.g., 'hunter_io')"
+    )
+
+    parser.add_argument(
         "--sequence",
         type=str,
         help="Sequence name to subscribe contacts to (e.g., 'cold-outbound post-pivot')"
@@ -499,7 +558,9 @@ ICP Thresholds:
             atl_only=atl_only,
             min_icp_score=args.min_icp_score,
             sequence_name=args.sequence,
-            batch_size=args.batch_size
+            batch_size=args.batch_size,
+            skip_icp_filter=args.no_icp_filter,
+            source_filter=args.source
         ))
 
         # Exit with error code if failures
