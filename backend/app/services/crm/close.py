@@ -362,7 +362,7 @@ class CloseProvider(CRMProvider):
 
             # Determine priority label for description (not status!)
             if is_atl:
-                if qualification_score >= 70:
+                if qualification_score and qualification_score >= 70:
                     priority_label = "🔥 Hot ATL"
                 else:
                     priority_label = "⭐ Validated ATL"
@@ -371,7 +371,7 @@ class CloseProvider(CRMProvider):
 
             # Add enrichment metadata to description
             description_parts = []
-            if qualification_score > 0:
+            if qualification_score and qualification_score > 0:
                 description_parts.append(f"Qualification Score: {qualification_score}/100")
             if contact_level and contact_level != "Unknown":
                 description_parts.append(f"Contact Level: {contact_level}")
@@ -629,7 +629,7 @@ class CloseProvider(CRMProvider):
                 # Determine priority label for description (not status!)
                 first_contact_is_atl = discovered_contacts[0].get("is_atl", False)
                 if first_contact_is_atl:
-                    if qualification_score >= 70:
+                    if qualification_score and qualification_score >= 70:
                         priority_label = "🔥 Hot ATL"
                     else:
                         priority_label = "⭐ Validated ATL"
@@ -640,7 +640,7 @@ class CloseProvider(CRMProvider):
                 description_parts = [
                     priority_label,
                     "",
-                    f"Qualification Score: {qualification_score}/100",
+                    f"Qualification Score: {qualification_score if qualification_score is not None else 'N/A'}/100",
                     f"Hunter.io ATL Contacts: {len(discovered_contacts)}"
                 ]
 
@@ -663,22 +663,22 @@ class CloseProvider(CRMProvider):
                     description_parts.append("24/7 Emergency Service: Yes")
 
                 # Build lead data with ALL contacts
+                # Build custom fields, filtering out None values (Close API rejects them)
+                # Note: Only include fields that actually exist in Close CRM
+                custom_fields = {
+                    "is_atl": "Yes" if first_contact_is_atl else "No",  # Close uses choices field (Yes/No)
+                    "priority_label": priority_label,
+                }
+                # Only add optional fields if they have values
+                if qualification_score is not None:
+                    custom_fields["qualification_score"] = qualification_score
+
                 lead_data = {
                     "name": lead_name,
                     "contacts": contacts_data,
                     "status_id": status_id,  # Always "Raw"
                     "description": "\n".join(description_parts),
-                    "custom": {
-                        "qualification_score": qualification_score,
-                        "is_atl": "Yes" if first_contact_is_atl else "No",  # Close uses choices field (Yes/No)
-                        "priority_label": priority_label,
-                        "tier": lead.get("tier", "unknown"),  # hot/warm/cold/unqualified
-                        # NEW: Enrichment fields for filtering in Close (Dec 3, 2025)
-                        "oem_count": len(lead.get("oem_brands", [])),
-                        "has_maintenance_plan": "Yes" if lead.get("maintenance_plans") else "No",
-                        "years_in_business": lead.get("years_in_business"),
-                        "has_24_7_service": "Yes" if lead.get("has_emergency_services") else "No"
-                    }
+                    "custom": custom_fields
                 }
 
                 # Assign default owner (Tim Kipper)
@@ -707,8 +707,10 @@ class CloseProvider(CRMProvider):
                         self._handle_rate_limit_error(response)
                     elif response.status_code >= 400:
                         error_data = response.json() if response.text else {}
+                        logger.error(f"Close API error response: {error_data}")
+                        error_msg = error_data.get('error') or error_data.get('errors') or error_data
                         raise CRMValidationError(
-                            f"Failed to create lead in Close CRM: {error_data.get('error', response.status_code)}"
+                            f"Failed to create lead in Close CRM: {error_msg}"
                         )
 
                     result = response.json()

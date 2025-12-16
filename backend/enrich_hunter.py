@@ -21,6 +21,7 @@ Usage:
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 import time
@@ -48,7 +49,72 @@ SUPABASE_SERVICE_KEY = os.getenv('SUPABASE_SERVICE_KEY')
 HUNTER_API_KEY = os.getenv('HUNTER_API_KEY')
 
 BATCH_SIZE = 5
-RATE_LIMIT_DELAY = 2  # 2 seconds between companies (Hunter.io allows more requests)
+RATE_LIMIT_DELAY = 0.5  # 0.5 seconds between companies (Hunter.io allows 15/sec, we use 2/sec)
+LOG_FILE = Path(__file__).parent / 'logs' / 'enrichment_log.json'
+
+
+def log_enrichment_run(
+    companies_data: List[Dict],
+    total_cost: float,
+    source: str = 'hunter_io'
+):
+    """Log enrichment run to JSON file for tracking and reporting.
+
+    companies_data: List of dicts with company_name, domain, contacts_found, atl, btl
+    """
+    try:
+        # Ensure logs directory exists
+        LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+        # Load existing log or create new
+        if LOG_FILE.exists():
+            with open(LOG_FILE, 'r') as f:
+                log_data = json.load(f)
+        else:
+            log_data = {
+                "enrichment_runs": [],
+                "summary": {
+                    "total_companies_enriched": 0,
+                    "total_contacts_found": 0,
+                    "total_cost_usd": 0.0,
+                    "total_atl_contacts": 0,
+                    "total_btl_contacts": 0
+                }
+            }
+
+        # Calculate totals from companies_data
+        total_contacts = sum(c.get('contacts_found', 0) for c in companies_data)
+        total_atl = sum(c.get('atl', 0) for c in companies_data)
+        total_btl = sum(c.get('btl', 0) for c in companies_data)
+
+        # Add this run with per-company breakdown
+        run_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "source": source,
+            "companies_enriched": len(companies_data),
+            "contacts_found": total_contacts,
+            "atl_contacts": total_atl,
+            "btl_contacts": total_btl,
+            "cost_usd": round(total_cost, 2),
+            "companies": companies_data  # Per-company breakdown
+        }
+        log_data["enrichment_runs"].append(run_entry)
+
+        # Update summary
+        log_data["summary"]["total_companies_enriched"] += len(companies_data)
+        log_data["summary"]["total_contacts_found"] += total_contacts
+        log_data["summary"]["total_cost_usd"] = round(log_data["summary"]["total_cost_usd"] + total_cost, 2)
+        log_data["summary"]["total_atl_contacts"] += total_atl
+        log_data["summary"]["total_btl_contacts"] += total_btl
+
+        # Save
+        with open(LOG_FILE, 'w') as f:
+            json.dump(log_data, f, indent=2)
+
+        print(f"  📊 Logged to {LOG_FILE}")
+    except Exception as e:
+        print(f"  ⚠️  Logging error: {e}")
 
 
 def get_supabase():
@@ -77,12 +143,26 @@ def get_companies_for_hunter_enrichment(supabase, batch_size: int, test_domains:
                 companies.append(result.data[0])
         return companies
     
-    # Normal mode: get companies that need Hunter.io enrichment
-    result = supabase.table('dim_companies')\
-        .select('company_id, company_name, domain')\
-        .not_.is_('domain', 'null')\
-        .not_.is_('last_enriched_at', 'null')\
-        .is_('hunter_enriched_at', 'null')\
+    # Normal mode: get companies with domains that DON'T already have hunter_io contacts
+    # First, get company_ids that already have hunter_io contacts
+    hunter_enriched = supabase.table('dim_contacts')\
+        .select('company_id')\
+        .eq('source', 'hunter_io')\
+        .execute()
+
+    enriched_ids = list(set(c['company_id'] for c in hunter_enriched.data if c.get('company_id')))
+
+    # Get companies NOT in the enriched list, prioritized by ICP score
+    query = supabase.table('dim_companies')\
+        .select('company_id, company_name, domain, icp_score')\
+        .not_.is_('domain', 'null')
+
+    # Exclude already-enriched companies (if any)
+    if enriched_ids:
+        # Use NOT IN filter - Supabase uses .not_.in_()
+        query = query.not_.in_('company_id', enriched_ids)
+
+    result = query.order('icp_score', desc=True)\
         .limit(batch_size)\
         .execute()
     return result.data
@@ -107,8 +187,8 @@ async def enrich_company_with_hunter(hunter: HunterService, company_id: str, com
     }
     
     try:
-        # Hunter.io domain search (gets ATL contacts with emails)
-        contacts = await hunter.domain_search(domain, limit=25, atl_only=True)
+        # Hunter.io domain search (gets ALL contacts with emails - ATL and BTL)
+        contacts = await hunter.domain_search(domain, limit=25, atl_only=False)
         
         if contacts:
             result['contacts'] = contacts
@@ -125,94 +205,125 @@ async def enrich_company_with_hunter(hunter: HunterService, company_id: str, com
 
 def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tuple:
     """Sync Hunter.io enrichment data to Supabase.
-    
+
     Returns: (companies_updated, contacts_added, total_cost)
     """
     companies_updated = 0
     contacts_added = 0
     total_cost = 0.0
-    
+
     for r in results:
-        if not r['success']:
-            continue
-        
         company_id = r['company_id']
         contacts = r.get('contacts', [])
         cost = r.get('cost', 0.0)
         total_cost += cost
-        
+
+        # Mark company as Hunter.io checked (even if no contacts found)
+        # This prevents re-checking the same companies
+        if not r['success'] and r.get('error') == 'No contacts found':
+            # Insert a marker to track we checked this company
+            try:
+                marker_data = {
+                    'company_id': company_id,
+                    'email': f"hunter_checked_{company_id[:8]}@marker.internal",
+                    'source': 'hunter_io',
+                    'full_name': 'No contacts in Hunter.io',
+                    'is_atl': False,
+                }
+                supabase.table('dim_contacts').insert(marker_data).execute()
+                companies_updated += 1
+            except Exception as e:
+                print(f"    Marker insert error: {e}")
+            continue
+        elif not r['success']:
+            # Real error (not just "no contacts") - skip
+            continue
+
         # Update company with Hunter.io enrichment timestamp
         update_data = {
-            'hunter_enriched_at': datetime.now().isoformat()
+            'last_enriched_at': datetime.now().isoformat()
         }
-        
+
         try:
             supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
             companies_updated += 1
         except Exception as e:
             print(f"    Company update error: {e}")
         
-        # Add contacts from Hunter.io (ATL contacts with verified emails)
+        # Add contacts from Hunter.io (ALL contacts - ATL and BTL)
         for contact in contacts:
             email = contact.get('email')
             if not email:
                 continue
-            
+
             name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
-            if not name:
-                continue
-            
+            # Allow contacts without names (generic emails like info@, contact@)
+            # They're still valuable for company outreach
+
             title = contact.get('position', '')
             phone = contact.get('phone_number')
             linkedin_url = contact.get('linkedin')
             confidence = contact.get('confidence', 0)
             
+            # Build full_name properly (avoid "None None")
+            full_name = name[:100] if name else None
+
+            # Get verification status and twitter
+            verification = contact.get('verification', {})
+            is_validated = verification.get('status') == 'valid' if isinstance(verification, dict) else None
+            twitter = contact.get('twitter')
+
             contact_data = {
                 'company_id': company_id,
-                'full_name': name[:100],
-                'first_name': contact.get('first_name', name.split()[0] if name.split() else '')[:50],
-                'last_name': contact.get('last_name', ' '.join(name.split()[1:]) if len(name.split()) > 1 else '')[:50],
+                'full_name': full_name,
+                'first_name': contact.get('first_name', '')[:50] if contact.get('first_name') else None,
+                'last_name': contact.get('last_name', '')[:50] if contact.get('last_name') else None,
                 'email': email,
                 'title': title[:100] if title else None,
                 'phone': phone,
                 'linkedin_url': linkedin_url,
-                'is_atl': True,  # Hunter.io domain_search with atl_only=True
+                'twitter_handle': twitter,
+                'is_atl': contact.get('is_atl', False),
                 'source': 'hunter_io',
-                'confidence': confidence
+                'confidence': confidence,
+                'seniority': contact.get('seniority'),
+                'department': contact.get('department'),
+                'validated': is_validated,
             }
             
             try:
                 # Check if contact already exists (by email)
                 existing = supabase.table('dim_contacts')\
-                    .select('contact_id')\
+                    .select('contact_id, phone, linkedin_url, confidence')\
                     .eq('company_id', company_id)\
                     .eq('email', email)\
                     .execute()
-                
+
                 if not existing.data:
                     supabase.table('dim_contacts').insert(contact_data).execute()
                     contacts_added += 1
                 else:
-                    # Update with Hunter.io data if better
+                    # Update with Hunter.io data if we have better info
                     existing_contact = existing.data[0]
                     update_contact = {}
-                    
-                    if not existing_contact.get('email') and email:
-                        update_contact['email'] = email
-                    if not existing_contact.get('phone') and phone:
+
+                    # Add phone if we have it and they don't
+                    if phone and not existing_contact.get('phone'):
                         update_contact['phone'] = phone
-                    if not existing_contact.get('linkedin_url') and linkedin_url:
+                    # Add LinkedIn if we have it and they don't
+                    if linkedin_url and not existing_contact.get('linkedin_url'):
                         update_contact['linkedin_url'] = linkedin_url
+                    # Update confidence if ours is higher
                     if confidence > (existing_contact.get('confidence') or 0):
                         update_contact['confidence'] = confidence
-                    
+
                     if update_contact:
                         supabase.table('dim_contacts')\
                             .update(update_contact)\
                             .eq('contact_id', existing_contact['contact_id'])\
                             .execute()
             except Exception as e:
-                print(f"    Contact error: {e}")
+                print(f"    Contact error ({email}): {e}")
     
     return companies_updated, contacts_added, total_cost
 
@@ -239,10 +350,10 @@ async def run_hunter_batch(hunter: HunterService, supabase, companies: List[Dict
         
         if result['success']:
             contacts_count = len(result['contacts'])
-            atl_count = contacts_count  # All are ATL since atl_only=True
+            atl_count = sum(1 for c in result['contacts'] if c.get('is_atl'))
             cost = result['cost']
-            
-            print(f"✅ ({contacts_count} ATL contacts, ${cost:.2f})")
+
+            print(f"✅ ({atl_count} ATL, {contacts_count - atl_count} BTL, ${cost:.2f})")
         else:
             print(f"❌ {result['error']}")
     
@@ -323,18 +434,26 @@ async def main():
         return
     
     # Normal mode
-    # Get stats
-    total = supabase.table('dim_companies')\
+    # Get accurate count of unenriched companies
+    hunter_enriched = supabase.table('dim_contacts')\
+        .select('company_id')\
+        .eq('source', 'hunter_io')\
+        .execute()
+    enriched_ids = list(set(c['company_id'] for c in hunter_enriched.data if c.get('company_id')))
+
+    total_with_domains = supabase.table('dim_companies')\
         .select('company_id', count='exact')\
         .not_.is_('domain', 'null')\
-        .not_.is_('last_enriched_at', 'null')\
-        .is_('hunter_enriched_at', 'null')\
         .execute()
-    
+
+    unenriched_count = total_with_domains.count - len(enriched_ids)
+
     print(f"\n{'='*60}")
     print(f"HUNTER.IO ENRICHMENT {'(AUTO MODE)' if args.auto else ''}")
     print(f"{'='*60}")
-    print(f"Companies needing Hunter.io enrichment: {total.count}")
+    print(f"Companies with domains: {total_with_domains.count}")
+    print(f"Already enriched: {len(enriched_ids)}")
+    print(f"Remaining to enrich: {unenriched_count}")
     print(f"Batch size: {BATCH_SIZE}")
     print(f"Rate limiting: {RATE_LIMIT_DELAY}s delay between companies")
     print(f"💰 Cost: ~$0.01 per domain searched")
@@ -351,6 +470,9 @@ async def main():
     total_enriched = 0
     total_contacts = 0
     total_cost = 0.0
+    total_atl = 0
+    total_btl = 0
+    all_companies_data = []  # Track per-company results for logging
     
     while True:
         # Check limit
@@ -366,7 +488,7 @@ async def main():
             break
         
         batch_num += 1
-        remaining = total.count - total_enriched
+        remaining = unenriched_count - total_enriched
         print(f"\n{'='*60}")
         print(f"BATCH {batch_num} ({remaining} remaining)")
         print(f"{'='*60}")
@@ -382,14 +504,30 @@ async def main():
         total_enriched += updated
         total_contacts += contacts
         total_cost += cost
-        
+
+        # Count ATL/BTL and collect per-company data
+        for r in results:
+            if r['success']:
+                company_atl = sum(1 for c in r['contacts'] if c.get('is_atl'))
+                company_btl = sum(1 for c in r['contacts'] if not c.get('is_atl'))
+                total_atl += company_atl
+                total_btl += company_btl
+
+                all_companies_data.append({
+                    "company_name": r['company_name'],
+                    "domain": r['domain'],
+                    "contacts_found": len(r['contacts']),
+                    "atl": company_atl,
+                    "btl": company_btl
+                })
+
         # Stats
         successful = sum(1 for r in results if r['success'])
         failed = len(results) - successful
         if failed > 0:
             print(f"  ⚠️  {failed} failed (will retry later)")
-        
-        print(f"\n  Session total: {total_enriched} enriched, {total_contacts} contacts, ${total_cost:.2f}")
+
+        print(f"\n  Session total: {total_enriched} enriched, {total_contacts} contacts ({total_atl} ATL, {total_btl} BTL), ${total_cost:.2f}")
         
         # Prompt (skip in auto mode)
         if not args.auto:
@@ -405,7 +543,17 @@ async def main():
     print(f"{'='*60}")
     print(f"Companies enriched: {total_enriched}")
     print(f"Contacts found: {total_contacts}")
+    print(f"  - ATL (decision makers): {total_atl}")
+    print(f"  - BTL (other): {total_btl}")
     print(f"Total cost: ${total_cost:.2f}")
+
+    # Log this run for reporting
+    if all_companies_data:
+        log_enrichment_run(
+            companies_data=all_companies_data,
+            total_cost=total_cost,
+            source='hunter_io'
+        )
 
 
 if __name__ == '__main__':
