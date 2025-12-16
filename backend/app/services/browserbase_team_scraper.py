@@ -64,6 +64,38 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _semaphore
 
 
+def decode_cloudflare_email(encoded: str) -> Optional[str]:
+    """
+    Decode Cloudflare-protected email addresses.
+
+    Cloudflare encodes emails using XOR with a key (first 2 hex chars).
+    Example: data-cfemail="cda4a3aba28dfcbfa2a2aba1a1aee3aea2a0" -> info@1roofllc.com
+
+    Args:
+        encoded: The hex-encoded email string from data-cfemail attribute
+
+    Returns:
+        Decoded email address or None if decoding fails
+    """
+    if not encoded or len(encoded) < 4:
+        return None
+    try:
+        # First 2 hex chars are the XOR key
+        key = int(encoded[:2], 16)
+        # Remaining chars are the encoded email
+        decoded = ''.join([
+            chr(int(encoded[i:i+2], 16) ^ key)
+            for i in range(2, len(encoded), 2)
+        ])
+        # Validate it looks like an email
+        if '@' in decoded and '.' in decoded:
+            return decoded.lower()
+        return None
+    except (ValueError, IndexError) as e:
+        logger.debug(f"Failed to decode Cloudflare email: {e}")
+        return None
+
+
 class BrowserbaseTeamScraper:
     """
     Scrapes team/about pages using Browserbase browser automation.
@@ -246,11 +278,22 @@ class BrowserbaseTeamScraper:
                         )
                         title = await title_element.inner_text() if title_element else None
 
+                        # Try standard mailto: links first
                         email_element = await card.query_selector('a[href^="mailto:"]')
                         email = None
                         if email_element:
                             href = await email_element.get_attribute('href')
                             email = href.replace('mailto:', '') if href else None
+
+                        # Try Cloudflare-protected emails if no mailto found
+                        if not email:
+                            cf_email_element = await card.query_selector('[data-cfemail]')
+                            if cf_email_element:
+                                cf_encoded = await cf_email_element.get_attribute('data-cfemail')
+                                if cf_encoded:
+                                    email = decode_cloudflare_email(cf_encoded)
+                                    if email:
+                                        logger.debug(f"Decoded Cloudflare email: {email}")
 
                         # Clean using shared utilities
                         if name:
@@ -277,6 +320,50 @@ class BrowserbaseTeamScraper:
 
                     except Exception as card_error:
                         logger.debug(f"Error extracting card: {card_error}")
+
+                # Fallback: Extract emails from entire page if no team card contacts found
+                if not contacts:
+                    logger.debug("No team cards found, scanning entire page for emails")
+                    seen_emails = set()
+
+                    # Method 1: Standard mailto links
+                    mailto_links = await page.query_selector_all('a[href^="mailto:"]')
+                    for mailto_el in mailto_links:
+                        try:
+                            href = await mailto_el.get_attribute('href')
+                            if href:
+                                email = href.replace('mailto:', '').split('?')[0].strip().lower()
+                                if email and '@' in email and email not in seen_emails:
+                                    # Filter out generic/info emails for ATL, but still capture
+                                    seen_emails.add(email)
+                                    contacts.append({
+                                        "name": None,
+                                        "title": None,
+                                        "email": email,
+                                        "source": "page_mailto_scan"
+                                    })
+                                    logger.info(f"Found mailto email on page: {email}")
+                        except Exception as mail_err:
+                            logger.debug(f"Error extracting mailto: {mail_err}")
+
+                    # Method 2: Cloudflare-encoded emails (if JS didn't decode them)
+                    cf_email_elements = await page.query_selector_all('[data-cfemail]')
+                    for cf_el in cf_email_elements:
+                        try:
+                            cf_encoded = await cf_el.get_attribute('data-cfemail')
+                            if cf_encoded:
+                                decoded_email = decode_cloudflare_email(cf_encoded)
+                                if decoded_email and decoded_email not in seen_emails:
+                                    seen_emails.add(decoded_email)
+                                    contacts.append({
+                                        "name": None,
+                                        "title": None,
+                                        "email": decoded_email,
+                                        "source": "cloudflare_page_scan"
+                                    })
+                                    logger.info(f"Found Cloudflare email on page: {decoded_email}")
+                        except Exception as cf_err:
+                            logger.debug(f"Error extracting CF email: {cf_err}")
 
                 await browser.close()
                 return contacts

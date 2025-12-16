@@ -485,6 +485,98 @@ class CloseSequencesClient:
         logger.info(f"Stopped {stopped} sequences for contact {contact_id}")
         return stopped
 
+    async def bulk_subscribe(
+        self,
+        contact_ids: List[str],
+        sequence_id: str,
+        sender_email: Optional[str] = None,
+        sender_name: Optional[str] = None,
+        sender_account_id: Optional[str] = None,
+        skip_already_subscribed: bool = True
+    ) -> Dict[str, Any]:
+        """
+        Subscribe multiple contacts to a sequence.
+
+        Args:
+            contact_ids: List of Close contact IDs (cont_xxx)
+            sequence_id: Close sequence ID (seq_xxx)
+            sender_email: Override sender email (optional)
+            sender_name: Override sender name (optional)
+            sender_account_id: Connected account ID (optional)
+            skip_already_subscribed: Skip contacts already in sequence (default True)
+
+        Returns:
+            Dict with:
+                - subscribed_count: Number of contacts newly subscribed
+                - already_subscribed: Number skipped (already in sequence)
+                - failed_count: Number of failed subscriptions
+                - errors: List of error messages
+                - subscriptions: List of subscription objects created
+        """
+        result = {
+            "subscribed_count": 0,
+            "already_subscribed": 0,
+            "failed_count": 0,
+            "errors": [],
+            "subscriptions": []
+        }
+
+        # Handle empty input
+        if not contact_ids:
+            return result
+
+        for contact_id in contact_ids:
+            try:
+                # Check if already subscribed (if skip enabled)
+                if skip_already_subscribed:
+                    existing_subs = await self.get_contact_subscriptions(
+                        contact_id=contact_id,
+                        active_only=True
+                    )
+                    # Check if already in this specific sequence
+                    in_sequence = any(
+                        sub.get("sequence_id") == sequence_id
+                        for sub in existing_subs
+                    )
+                    if in_sequence:
+                        result["already_subscribed"] += 1
+                        logger.debug(
+                            f"Contact {contact_id} already subscribed to {sequence_id}"
+                        )
+                        continue
+
+                # Subscribe the contact
+                subscription = await self.subscribe_contact(
+                    sequence_id=sequence_id,
+                    contact_id=contact_id,
+                    sender_account_id=sender_account_id,
+                    sender_name=sender_name,
+                    sender_email=sender_email
+                )
+
+                if subscription:
+                    result["subscribed_count"] += 1
+                    result["subscriptions"].append(subscription)
+                else:
+                    result["failed_count"] += 1
+                    result["errors"].append(
+                        f"Failed to subscribe contact {contact_id} - no response"
+                    )
+
+            except Exception as e:
+                result["failed_count"] += 1
+                error_msg = f"Failed to subscribe contact {contact_id}: {str(e)}"
+                result["errors"].append(error_msg)
+                logger.error(error_msg)
+
+        logger.info(
+            f"Bulk subscribe complete: {result['subscribed_count']} subscribed, "
+            f"{result['already_subscribed']} already subscribed, "
+            f"{result['failed_count']} failed"
+        )
+
+        return result
+
     # ========== Subscription Queries ==========
 
     async def list_active_subscriptions(
