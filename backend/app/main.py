@@ -15,13 +15,39 @@ from starlette.responses import Response
 
 # Essential Dashboard Imports (3)
 from app.api import health
-from app.api import ai_outreach  # AI-powered outreach draft management
-from app.api import dashboard  # Dashboard endpoints for frontend
-from app.api import sync_from_scraper  # Dealer scraper webhook endpoint
+try:
+    from app.api import ai_outreach  # AI-powered outreach draft management
+except (ImportError, ModuleNotFoundError) as e:
+    if 'langchain' not in str(e):
+        raise
+    ai_outreach = None
+
+try:
+    from app.api.dashboard import router as dashboard_router  # Dashboard endpoints for frontend (refactored into modules)
+    # Create a mock module object to maintain compatibility with existing code
+    class DashboardModule:
+        router = dashboard_router
+    dashboard = DashboardModule()
+except (ImportError, ModuleNotFoundError) as e:
+    if 'langchain' not in str(e):
+        raise
+    dashboard = None
+
+try:
+    from app.api import sync_from_scraper  # Dealer scraper webhook endpoint
+except (ImportError, ModuleNotFoundError) as e:
+    if 'langchain' not in str(e):
+        raise
+    sync_from_scraper = None
 
 # GTM Automation Infrastructure (15)
 from app.api import supabase_auth  # Supabase authentication
-from app.api import langgraph_agents
+try:
+    from app.api import langgraph_agents
+except (ImportError, ModuleNotFoundError) as e:
+    if 'langchain' not in str(e):
+        raise
+    langgraph_agents = None
 from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
 from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.api import audit  # Lead audit trail for GTM agents

@@ -494,17 +494,17 @@ class TestErrorHandlingConsistency:
         
         # Test all methods that can raise LeadNotFoundError
         methods_to_test = [
-            ("get_lead", (mock_db_session, 1)),
-            ("update_lead", (mock_db_session, 1, company_name="Test")),
-            ("update_qualification", (mock_db_session, 1, 85.5, "reasoning", "model")),
-            ("update_enrichment", (mock_db_session, 1, {"test": "data"})),
-            ("delete_lead", (mock_db_session, 1))
+            ("get_lead", (mock_db_session, 1), {}),
+            ("update_lead", (mock_db_session, 1), {"company_name": "Test"}),
+            ("update_qualification", (mock_db_session, 1, 85.5, "reasoning", "model"), {}),
+            ("update_enrichment", (mock_db_session, 1, {"test": "data"}), {}),
+            ("delete_lead", (mock_db_session, 1), {})
         ]
         
-        for method_name, args in methods_to_test:
+        for method_name, args, kwargs in methods_to_test:
             method = getattr(lead_service, method_name)
             with pytest.raises(LeadNotFoundError):
-                method(*args)
+                method(*args, **kwargs)
     
     @pytest.mark.unit
     def test_all_methods_handle_database_errors(self, lead_service, mock_db_session, mock_lead):
@@ -514,16 +514,16 @@ class TestErrorHandlingConsistency:
         
         # Test methods that perform database operations
         methods_to_test = [
-            ("update_lead", (mock_db_session, 1, company_name="Test")),
-            ("update_qualification", (mock_db_session, 1, 85.5, "reasoning", "model")),
-            ("update_enrichment", (mock_db_session, 1, {"test": "data"})),
-            ("delete_lead", (mock_db_session, 1))
+            ("update_lead", (mock_db_session, 1), {"company_name": "Test"}),
+            ("update_qualification", (mock_db_session, 1, 85.5, "reasoning", "model"), {}),
+            ("update_enrichment", (mock_db_session, 1, {"test": "data"}), {}),
+            ("delete_lead", (mock_db_session, 1), {})
         ]
-        
-        for method_name, args in methods_to_test:
+
+        for method_name, args, kwargs in methods_to_test:
             method = getattr(lead_service, method_name)
             with pytest.raises(DatabaseError):
-                method(*args)
+                method(*args, **kwargs)
             
             # Verify rollback was called
             mock_db_session.rollback.assert_called()
