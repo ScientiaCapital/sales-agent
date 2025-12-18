@@ -476,7 +476,7 @@ async def trigger_interested_reply_call(
     (e.g., "Yes, I'm interested" or "Tell me more") and wants to escalate
     to a phone call.
 
-    Replaces VozLux integration with native Close CRM call tracking.
+    Replaces external voice integration with native Close CRM call tracking.
 
     Args:
         email: Prospect email address

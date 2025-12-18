@@ -85,7 +85,7 @@ class PipelineOrchestrator:
 
     Integration Points:
     - Qualifier (this) → Sender (cold-reach): Email sequence enrollment
-    - Sender (cold-reach) → VozLux: Voice call trigger on "interested" reply
+    - Sender (cold-reach) → Voice Agent: Voice call trigger on "interested" reply
 
     Tracks latency and cost per stage for observability.
     """
