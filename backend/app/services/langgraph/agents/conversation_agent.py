@@ -83,6 +83,12 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 
+# GTME Content Integration
+from app.content import (
+    get_call_context,
+    record_touch,
+)
+
 logger = setup_logging(__name__)
 
 
@@ -238,12 +244,28 @@ class ConversationAgent:
         context = state.get("conversation_context", {})
         lead_id = context.get("lead_id")
         purpose = context.get("purpose", "general_conversation")
+        campaign_key = context.get("campaign_key", "solar-plus-plus")
+
+        # Fetch GTME call script context
+        gtme_script_context = ""
+        try:
+            call_ctx = await get_call_context(campaign_key)
+            if call_ctx:
+                gtme_script_context = f"""
+GTME CALL SCRIPT ({campaign_key}):
+- Opener: {call_ctx.get('script', {}).get('cold_openers', [{}])[0].get('script', '')[:200] if call_ctx.get('script') else ''}
+- Key Objections: {', '.join([o.get('objection', '') for o in call_ctx.get('objections', [])[:3]])}
+- Tone: Professional, conversational, contractor-focused
+"""
+                logger.info(f"Loaded GTME call context for campaign: {campaign_key}")
+        except Exception as e:
+            logger.warning(f"Failed to fetch GTME call context: {e}")
 
         system_prompt = f"""You are a helpful AI assistant in a voice conversation.
 
 Conversation purpose: {purpose}
 {f'Lead ID: {lead_id}' if lead_id else ''}
-
+{gtme_script_context}
 Guidelines for voice responses:
 - Keep responses concise (2-3 sentences max)
 - Use natural, conversational language
@@ -438,6 +460,20 @@ Remember: This is a VOICE conversation - be concise and natural!"""
             f"cost: ${result['total_cost_usd']:.6f}"
         )
 
+        # Record GTME telemetry for voice conversation
+        try:
+            await record_touch(
+                channel="call",
+                touch_type="voice_conversation",
+                campaign_key=context.get("campaign_key") if context else None,
+                outcome="completed",
+                call_duration_seconds=int(estimated_duration_ms / 1000),
+                notes=f"ConversationAgent single-turn: {text[:100]}",
+            )
+            logger.info("GTME telemetry recorded for voice conversation")
+        except Exception as e:
+            logger.warning(f"Failed to record GTME telemetry: {e}")
+
         return ConversationTurnResult(
             user_input=text,
             assistant_response=result["assistant_response"],
@@ -562,6 +598,20 @@ Remember: This is a VOICE conversation - be concise and natural!"""
             f"Multi-turn complete in {total_latency_ms}ms, "
             f"turn #{result['turn_count']}, cost: ${result['total_cost_usd']:.6f}"
         )
+
+        # Record GTME telemetry for voice conversation
+        try:
+            await record_touch(
+                channel="call",
+                touch_type="voice_conversation",
+                campaign_key=context.get("campaign_key") if context else None,
+                outcome="completed",
+                call_duration_seconds=int(estimated_duration_ms / 1000),
+                notes=f"ConversationAgent turn #{result['turn_count']}: {text[:100]}",
+            )
+            logger.info(f"GTME telemetry recorded for turn #{result['turn_count']}")
+        except Exception as e:
+            logger.warning(f"Failed to record GTME telemetry: {e}")
 
         return ConversationTurnResult(
             user_input=text,

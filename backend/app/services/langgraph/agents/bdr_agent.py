@@ -86,6 +86,14 @@ from app.core.logging import setup_logging
 from app.core.exceptions import ValidationError
 from app.core.cost_optimized_llm import CostOptimizedLLMProvider
 
+# GTME Content Integration
+from app.content import (
+    recommend_sequence,
+    get_sequence_for_engine,
+    record_touch,
+    get_campaign,
+)
+
 logger = setup_logging(__name__)
 
 
@@ -118,6 +126,11 @@ class BDRAgentState(TypedDict):
     # Execution phase
     sent_at: Optional[str]
     final_version: Optional[str]
+
+    # GTME Integration
+    gtme_sequence_key: Optional[str]
+    gtme_campaign_key: Optional[str]
+    gtme_pain_patterns: Optional[list]
 
     # Metadata
     total_cost_usd: float
@@ -272,8 +285,31 @@ Focus on insights that enable personalized outreach."""
 
         logger.info(f"Research complete in {latency_ms}ms, cost: ${cost_usd:.6f}")
 
+        # Route to optimal GTME sequence based on pain patterns
+        gtme_sequence_key = None
+        gtme_campaign_key = None
+        gtme_pain_patterns = []
+
+        try:
+            # Use lead_id as company_id for routing (if stored in dim_companies)
+            rec = await recommend_sequence(str(state["lead_id"]))
+            gtme_sequence_key = rec.get("sequence_key")
+            gtme_campaign_key = rec.get("campaign_key")
+            gtme_pain_patterns = rec.get("pain_patterns", [])
+            logger.info(
+                f"GTME routing: sequence={gtme_sequence_key}, "
+                f"campaign={gtme_campaign_key}, pains={gtme_pain_patterns}"
+            )
+        except Exception as e:
+            logger.warning(f"GTME routing failed, using defaults: {e}")
+            gtme_sequence_key = "solar-plus-plus-sequence"
+            gtme_campaign_key = "solar-plus-plus"
+
         return {
             "research_summary": response.content,
+            "gtme_sequence_key": gtme_sequence_key,
+            "gtme_campaign_key": gtme_campaign_key,
+            "gtme_pain_patterns": gtme_pain_patterns,
             "generation_metadata": {
                 "research": {
                     "provider": self.research_provider,
@@ -297,6 +333,23 @@ Focus on insights that enable personalized outreach."""
         if state.get("approval_feedback"):
             revision_context = f"\n\nREVISION FEEDBACK: {state['approval_feedback']}\n\nPlease incorporate this feedback into the revised draft."
 
+        # Fetch GTME campaign messaging if available
+        gtme_context = ""
+        if state.get("gtme_campaign_key"):
+            try:
+                campaign = await get_campaign(state["gtme_campaign_key"])
+                if campaign:
+                    messaging = campaign.get("messaging_framework", {})
+                    gtme_context = f"""
+GTME CAMPAIGN MESSAGING ({state['gtme_campaign_key']}):
+- Value Prop: {messaging.get('value_proposition', '')}
+- Pain Points: {', '.join(state.get('gtme_pain_patterns', []))}
+- Tone: Professional, conversational, contractor-focused
+"""
+                    logger.info(f"Injected GTME campaign context: {state['gtme_campaign_key']}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch GTME campaign: {e}")
+
         prompt = f"""Draft a highly personalized cold email for this B2B prospect:
 
 Company: {state['company_name']}
@@ -305,6 +358,7 @@ Title: {state.get('contact_title', 'Decision Maker')}
 
 RESEARCH INSIGHTS:
 {state.get('research_summary', 'No research available')}
+{gtme_context}
 {revision_context}
 
 Create an email (200-250 words) with:
@@ -404,6 +458,20 @@ BODY:
         final_version = f"Subject: {state['draft_subject']}\n\n{state['draft_body']}"
 
         logger.info(f"Email sent successfully at {sent_at}")
+
+        # Record GTME telemetry for attribution
+        try:
+            await record_touch(
+                channel="email",
+                touch_type="bdr_outreach",
+                sequence_key=state.get("gtme_sequence_key"),
+                campaign_key=state.get("gtme_campaign_key"),
+                outcome="sent",
+                notes=f"BDRAgent approved email to {state['contact_name']} at {state['company_name']}",
+            )
+            logger.info("GTME telemetry recorded for BDR send")
+        except Exception as e:
+            logger.warning(f"Failed to record GTME telemetry: {e}")
 
         return {
             "sent_at": sent_at,
@@ -570,6 +638,9 @@ BODY:
             "approval_feedback": None,
             "sent_at": None,
             "final_version": None,
+            "gtme_sequence_key": None,
+            "gtme_campaign_key": None,
+            "gtme_pain_patterns": None,
             "total_cost_usd": 0.0,
             "generation_metadata": {}
         }, config=config)

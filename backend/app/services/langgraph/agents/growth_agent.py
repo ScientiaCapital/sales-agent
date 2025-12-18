@@ -72,6 +72,14 @@ from app.services.cost_tracking import get_cost_optimizer
 # Lazy import to avoid circular dependency
 # from app.services.langgraph.tools import get_transfer_tools
 
+# GTME Content Integration
+from app.content import (
+    recommend_sequence,
+    get_sequence_for_engine,
+    record_touch,
+    get_campaign,
+)
+
 logger = setup_logging(__name__)
 
 
@@ -290,13 +298,33 @@ Provide a 2-3 sentence analysis."""
         goal = state.get("metadata", {}).get("goal", "engagement")
         learnings = state.get("learnings", [])
 
+        # Fetch GTME sequence content for this cycle
+        gtme_context = ""
+        gtme_sequence_key = state.get("metadata", {}).get("gtme_sequence_key")
+        if gtme_sequence_key:
+            try:
+                seq = await get_sequence_for_engine(gtme_sequence_key)
+                if seq and seq.get("steps"):
+                    step_num = min(cycle_count - 1, len(seq["steps"]) - 1)
+                    step = seq["steps"][step_num]
+                    gtme_context = f"""
+GTME SEQUENCE CONTENT (Step {step_num + 1} of {gtme_sequence_key}):
+- Channel: {step.get('channel', 'email')}
+- Subject: {step.get('subject', '')}
+- Preview: {step.get('body', '')[:200]}...
+Use this messaging framework as inspiration.
+"""
+                    logger.info(f"Fetched GTME sequence step {step_num + 1} for cycle {cycle_count}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch GTME sequence: {e}")
+
         # Build strategy prompt
         prompt = f"""Based on the analysis, design the next outreach touch for cycle {cycle_count}.
 
 **Analysis**: {analysis}
 **Goal**: {goal}
 **Learnings**: {', '.join(learnings) if learnings else 'First touch - no learnings yet'}
-
+{gtme_context}
 **Task**: Design a specific outreach strategy. Include:
 1. Touch type (email, LinkedIn, phone, etc.)
 2. Key message/angle
@@ -365,6 +393,23 @@ Confirm execution with a brief note about what was sent."""
         # Update state
         executed_touches = state.get("executed_touches", [])
         executed_touches.append(touch_record)
+
+        # Record GTME telemetry for attribution
+        try:
+            gtme_sequence_key = state.get("metadata", {}).get("gtme_sequence_key")
+            gtme_campaign_key = state.get("metadata", {}).get("gtme_campaign_key")
+            await record_touch(
+                channel=touch_record.get("touch_type", "email"),
+                touch_type="growth_campaign",
+                sequence_key=gtme_sequence_key,
+                campaign_key=gtme_campaign_key,
+                sequence_step_number=cycle_count,
+                outcome="sent",
+                notes=f"GrowthAgent cycle {cycle_count}: {current_strategy[:100]}",
+            )
+            logger.info(f"GTME telemetry recorded for cycle {cycle_count}")
+        except Exception as e:
+            logger.warning(f"Failed to record GTME telemetry: {e}")
 
         return {
             **state,
@@ -599,6 +644,22 @@ Confirm execution with a brief note about what was sent."""
                 f"Use 'book_meeting', 'get_reply', or 'engagement'"
             )
 
+        # Route to optimal GTME sequence based on lead
+        gtme_sequence_key = None
+        gtme_campaign_key = None
+        try:
+            rec = await recommend_sequence(str(lead_id))
+            gtme_sequence_key = rec.get("sequence_key")
+            gtme_campaign_key = rec.get("campaign_key")
+            logger.info(
+                f"GTME routing for growth campaign: sequence={gtme_sequence_key}, "
+                f"campaign={gtme_campaign_key}"
+            )
+        except Exception as e:
+            logger.warning(f"GTME routing failed, using defaults: {e}")
+            gtme_sequence_key = "solar-plus-plus-cold-sequence"
+            gtme_campaign_key = "solar-plus-plus"
+
         # Initialize state
         initial_state: GrowthAgentState = {
             "messages": [],
@@ -617,7 +678,9 @@ Confirm execution with a brief note about what was sent."""
             "metadata": {
                 "goal": goal,
                 "provider": self.provider,
-                "model": self.model
+                "model": self.model,
+                "gtme_sequence_key": gtme_sequence_key,
+                "gtme_campaign_key": gtme_campaign_key,
             }
         }
 

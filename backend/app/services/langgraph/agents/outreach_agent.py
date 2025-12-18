@@ -83,6 +83,15 @@ from app.services.langgraph.tools.outreach_tools import OUTREACH_TOOLS
 from app.services.langgraph.tools.sequence_tools import SEQUENCE_TOOLS
 from app.core.logging import setup_logging
 
+# GTME Content Integration
+from app.content import (
+    recommend_sequence,
+    get_sequence_for_engine,
+    record_touch,
+    get_call_context,
+    get_campaign,
+)
+
 logger = setup_logging(__name__)
 
 # Combined tools for OutreachAgent (email/SMS/call + sequence management)
@@ -286,6 +295,27 @@ Determine the appropriate action and execute using the available tools."""
                 f"Outreach agent processed {action} for lead {lead_id} "
                 f"in {latency_ms}ms"
             )
+
+            # Record GTME telemetry for attribution tracking
+            channel_map = {
+                "send_email": "email",
+                "draft_email": "email",
+                "send_sms": "sms",
+                "log_call": "call",
+            }
+            if action in channel_map:
+                try:
+                    await record_touch(
+                        channel=channel_map[action],
+                        touch_type=f"outreach_{action}",
+                        close_lead_id=lead_id,
+                        sequence_key=input_data.get("sequence_key"),
+                        campaign_key=input_data.get("campaign_key"),
+                        outcome="sent" if action != "draft_email" else "drafted",
+                        notes=f"Via OutreachAgent: {action}",
+                    )
+                except Exception as tel_err:
+                    logger.warning(f"Failed to record telemetry: {tel_err}")
 
             return {
                 "success": True,
