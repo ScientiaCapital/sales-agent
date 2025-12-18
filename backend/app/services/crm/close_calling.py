@@ -2,7 +2,7 @@
 Close CRM Voice Call Integration
 
 Enables voice call activity logging and triggers through Close CRM.
-Replaces VozLux integration with native Close CRM call tracking.
+Native Close CRM call tracking for integrated communication.
 
 API Documentation: https://developer.close.com/resources/activities/
 """

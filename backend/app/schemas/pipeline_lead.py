@@ -2,7 +2,7 @@
 Pipeline Lead Schema - Shared data contract for GTM stack integration.
 
 This schema represents a lead flowing through the entire pipeline:
-Prospector (dealer-scraper) → Qualifier (sales-agent) → Sender (cold-reach) → VozLux
+Prospector (dealer-scraper) → Qualifier (sales-agent) → Sender (cold-reach) → Voice Agent
 
 Matches the dealer-scraper CSV output format.
 """
@@ -111,7 +111,7 @@ class PipelineLead(BaseModel):
     reply_received: bool = Field(default=False, description="Whether reply was received")
     reply_intent: Optional[str] = Field(None, description="Classified reply intent")
 
-    # Call tracking (filled by VozLux)
+    # Call tracking (filled by voice agent)
     last_call_at: Optional[datetime] = Field(None, description="Last call timestamp")
     calls_made: int = Field(default=0, description="Total calls made")
     call_outcome: Optional[str] = Field(None, description="Latest call outcome")

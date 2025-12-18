@@ -17,7 +17,7 @@ New Tables:
 Integration:
 - Extends existing 'leads' table with tier field and cold-outreach relationships
 - Foreign keys to leads table for prospect tracking
-- Signal processing feeds into VozLux call triggers
+- Signal processing feeds into voice agent call triggers
 
 Architecture:
 - Async-first design compatible with SQLAlchemy 2.0

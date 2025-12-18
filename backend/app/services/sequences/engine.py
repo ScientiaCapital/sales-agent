@@ -4,9 +4,9 @@ Sequence Engine - Core orchestration for multi-step email campaigns.
 This is the CRITICAL component that:
 1. Enrolls prospects from Qualifier (sales-agent) into email sequences
 2. Executes sequence steps on schedule
-3. Processes replies and triggers signals to VozLux for calls
+3. Processes replies and triggers signals to voice agent for calls
 
-Flow: Qualifier → SequenceEngine → EmailSender → SignalProcessor → VozLux
+Flow: Qualifier → SequenceEngine → EmailSender → SignalProcessor → Voice Agent
 """
 import asyncio
 import logging
@@ -35,7 +35,7 @@ class SequenceEngine:
     - Execute scheduled email steps
     - Track sequence progress
     - Process replies and trigger signals
-    - Coordinate with VozLux for call triggers
+    - Coordinate with voice agent for call triggers
     """
 
     def __init__(self, session: AsyncSession):
