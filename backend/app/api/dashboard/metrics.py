@@ -47,7 +47,8 @@ class QuarterlyMetrics(BaseModel):
 
 class MetricsSummary(BaseModel):
     """Executive summary metrics."""
-    total_leads: int
+    total_leads: int  # Legacy field (same as total_companies)
+    total_companies: int  # Total companies in pipeline
     qualified_leads: int
     meetings_booked: int
     opportunities: int
@@ -68,10 +69,16 @@ class MetricsSummary(BaseModel):
     quarterly: Optional[Dict[str, QuarterlyMetrics]] = None
     # Post-pivot totals (Sep 9 onwards)
     post_pivot: Optional[Dict[str, Any]] = None
-    # NEW: Executive Dashboard KPIs
+    # Executive Dashboard KPIs - Companies
     icp_fit_count: int  # Platinum + Gold tier companies
+    # Executive Dashboard KPIs - Contacts
+    total_contacts: int  # All contacts
     atl_contacts: int  # Above-the-line decision makers
+    btl_contacts: int  # Below-the-line contacts
     call_ready: int  # Contacts with phone numbers
+    email_and_phone: int  # Contacts with both email AND phone
+    email_only: int  # Contacts with email but no phone
+    phone_only: int  # Contacts with phone but no email
     outreach_sent: int  # Emails/SMS sent today
 
 
@@ -131,19 +138,39 @@ async def get_metrics():
         qualified = tier_counts["PLATINUM"] + tier_counts["GOLD"] + tier_counts["SILVER"]
 
         # Get REAL contacts count
-        total_contacts = supabase.table("dim_contacts").select("contact_id", count="exact").execute()
-        atl_contacts_count = supabase.table("dim_contacts").select("contact_id", count="exact").eq("is_atl", True).execute()
+        total_contacts_resp = supabase.table("dim_contacts").select("contact_id", count="exact").execute()
+        total_contacts = total_contacts_resp.count or 0
+
+        atl_contacts_resp = supabase.table("dim_contacts").select("contact_id", count="exact").eq("is_atl", True).execute()
+        atl_contacts = atl_contacts_resp.count or 0
+        btl_contacts = total_contacts - atl_contacts
+
+        # Phone availability
         contacts_with_phone = supabase.table("dim_contacts").select("contact_id", count="exact").neq("phone", None).execute()
+        call_ready = contacts_with_phone.count or 0
+
+        # Email + Phone combinations
+        # Contacts with BOTH email AND phone
+        email_and_phone_resp = supabase.table("dim_contacts").select(
+            "contact_id", count="exact"
+        ).neq("email", None).neq("phone", None).execute()
+        email_and_phone = email_and_phone_resp.count or 0
+
+        # Contacts with email but NO phone
+        email_only_resp = supabase.table("dim_contacts").select(
+            "contact_id", count="exact"
+        ).neq("email", None).is_("phone", "null").execute()
+        email_only = email_only_resp.count or 0
+
+        # Contacts with phone but NO email
+        phone_only_resp = supabase.table("dim_contacts").select(
+            "contact_id", count="exact"
+        ).is_("email", "null").neq("phone", None).execute()
+        phone_only = phone_only_resp.count or 0
 
         # NEW: Executive Dashboard KPIs
         # ICP Fit Count (Platinum + Gold tier companies)
         icp_fit_count = tier_counts["PLATINUM"] + tier_counts["GOLD"]
-
-        # ATL Contacts (Above-the-line decision makers) - use real count
-        atl_contacts = atl_contacts_count.count or 0
-
-        # Call Ready (contacts with phone numbers) - use real count
-        call_ready = contacts_with_phone.count or 0
 
         # Outreach Sent (emails/SMS sent today)
         # Query fact_close_activities for today's outreach
@@ -264,6 +291,7 @@ async def get_metrics():
 
         return MetricsSummary(
             total_leads=total_leads,
+            total_companies=total_leads,  # Same value, clearer name
             qualified_leads=qualified,
             meetings_booked=meetings_booked,
             opportunities=opportunities,
@@ -284,10 +312,16 @@ async def get_metrics():
             quarterly=quarterly_data if quarterly_data else None,
             # Post-pivot totals (Sep 9, 2025 onwards)
             post_pivot=post_pivot_data if post_pivot_data else None,
-            # NEW: Executive Dashboard KPIs
+            # Executive Dashboard KPIs - Companies
             icp_fit_count=icp_fit_count,
+            # Executive Dashboard KPIs - Contacts
+            total_contacts=total_contacts,
             atl_contacts=atl_contacts,
+            btl_contacts=btl_contacts,
             call_ready=call_ready,
+            email_and_phone=email_and_phone,
+            email_only=email_only,
+            phone_only=phone_only,
             outreach_sent=outreach_sent,
         )
 
