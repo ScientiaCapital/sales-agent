@@ -5,7 +5,7 @@ This module provides the core orchestration for:
 - Enrolling prospects into email sequences
 - Executing scheduled email steps
 - Processing replies and triggering signals
-- Coordinating with VozLux for call triggers
+- Coordinating with voice agent for call triggers
 
 Migrated from cold-reach into sales-agent for native integration.
 """

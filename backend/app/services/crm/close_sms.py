@@ -2,7 +2,7 @@
 Close CRM SMS Integration
 
 Enables SMS sending and history retrieval through Close CRM's SMS activity API.
-Close SMS is preferred over VozLux for integrated CRM communication tracking.
+Close SMS is preferred for integrated CRM communication tracking.
 
 API Documentation: https://developer.close.com/resources/activities/
 """

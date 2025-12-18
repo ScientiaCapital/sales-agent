@@ -56,7 +56,7 @@ class Signal(Base):
     processed = Column(Boolean, default=False, nullable=False, index=True)
     processed_at = Column(DateTime(timezone=True))
     routed_to = Column(String(100))
-    # routed_to values: "sales_agent", "vozlux_call", "human_review", "auto_reply", "ignored"
+    # routed_to values: "sales_agent", "voice_call", "human_review", "auto_reply", "ignored"
 
     # Timestamps
     received_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

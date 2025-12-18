@@ -26,7 +26,7 @@ from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (mod
 from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.api import audit  # Lead audit trail for GTM agents
 from app.api import sync
-from app.api import close_outreach  # Close CRM SMS/Voice integration (replaces VozLux)
+from app.api import close_outreach  # Close CRM SMS/Voice integration
 from app.api import sequences  # Email sequence management
 from app.api import alerts  # Alert management for BDR workflow
 from app.api import batch  # Batch processing with parallel execution

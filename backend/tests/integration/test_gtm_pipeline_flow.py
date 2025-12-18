@@ -3,7 +3,7 @@ GTM Pipeline Flow Integration Tests
 
 Tests the complete lead pipeline flow:
 1. CSV Import → Qualification → Enrichment → Close CRM → Cold Reach Enrollment
-2. Cold Reach Reply → VozLux Call Trigger
+2. Cold Reach Reply → Voice Agent Call Trigger
 
 All tests use test mode (no actual emails, calls, or CRM writes).
 
@@ -285,11 +285,11 @@ class TestEnrollmentModels:
 # ============================================================================
 
 class TestSignalToCallTrigger:
-    """Test cold-reach to VozLux call trigger flow."""
+    """Test cold-reach to voice agent call trigger flow."""
 
     def test_interested_reply_should_trigger_call(self):
         """
-        Test that "interested" reply intent should trigger VozLux call.
+        Test that "interested" reply intent should trigger voice agent call.
 
         In test mode, calls are logged but not actually dialed.
         The call_sid starts with TEST_ prefix.
@@ -324,7 +324,7 @@ class TestSignalToCallTrigger:
 
     def test_test_mode_call_response_format(self):
         """Test expected format of test mode call response."""
-        # This is what VozLux returns in test mode
+        # This is what voice agent returns in test mode
         test_response = {
             "success": True,
             "call_sid": "TEST_abc123def456",
@@ -352,7 +352,7 @@ class TestGTMPipelineFlow:
         # Tier A should:
         # 1. Go to Close CRM (always)
         # 2. Get enrolled in high_priority_solar sequence
-        # 3. On "interested" reply, trigger VozLux call
+        # 3. On "interested" reply, trigger voice agent call
 
         tier = sample_tier_a_lead.qualification_tier
 
