@@ -223,3 +223,4 @@ test_*.csv
 !dashboard/src/lib/
 CLAUDE.md
 LICENSE.md
+.env*.local
