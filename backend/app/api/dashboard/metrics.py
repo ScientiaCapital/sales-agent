@@ -100,39 +100,50 @@ async def get_metrics():
     try:
         supabase = get_supabase()
 
-        # Get company counts by stage (using correct column names)
-        companies = supabase.table("dim_companies").select(
-            "company_id, icp_tier, current_stage"
-        ).execute()
-        total_leads = len(companies.data) if companies.data else 0
+        # Get REAL total company count (not limited by default 1000 row limit)
+        total_count = supabase.table("dim_companies").select("company_id", count="exact").execute()
+        total_leads = total_count.count or 0
 
-        # Count by tier
-        tier_counts = {}
-        stage_counts = {"COLD": 0, "WARM": 0, "HOT": 0}
-        for c in (companies.data or []):
-            tier = c.get("icp_tier") or "UNKNOWN"
-            tier_counts[tier] = tier_counts.get(tier, 0) + 1
-            stage = c.get("current_stage") or "COLD"
-            if stage in stage_counts:
-                stage_counts[stage] += 1
+        # Get tier counts using individual queries (faster than fetching all rows)
+        platinum = supabase.table("dim_companies").select("company_id", count="exact").eq("icp_tier", "PLATINUM").execute()
+        gold = supabase.table("dim_companies").select("company_id", count="exact").eq("icp_tier", "GOLD").execute()
+        silver = supabase.table("dim_companies").select("company_id", count="exact").eq("icp_tier", "SILVER").execute()
+        bronze = supabase.table("dim_companies").select("company_id", count="exact").eq("icp_tier", "BRONZE").execute()
+
+        tier_counts = {
+            "PLATINUM": platinum.count or 0,
+            "GOLD": gold.count or 0,
+            "SILVER": silver.count or 0,
+            "BRONZE": bronze.count or 0,
+            "UNKNOWN": total_leads - (platinum.count or 0) - (gold.count or 0) - (silver.count or 0) - (bronze.count or 0)
+        }
+
+        # Get stage counts
+        hot = supabase.table("dim_companies").select("company_id", count="exact").eq("current_stage", "HOT").execute()
+        warm = supabase.table("dim_companies").select("company_id", count="exact").eq("current_stage", "WARM").execute()
+        stage_counts = {
+            "HOT": hot.count or 0,
+            "WARM": warm.count or 0,
+            "COLD": total_leads - (hot.count or 0) - (warm.count or 0)
+        }
 
         # Qualified = SILVER or better
-        qualified = tier_counts.get("PLATINUM", 0) + tier_counts.get("GOLD", 0) + tier_counts.get("SILVER", 0)
+        qualified = tier_counts["PLATINUM"] + tier_counts["GOLD"] + tier_counts["SILVER"]
 
-        # Get contacts count (using correct column: is_atl instead of contact_type)
-        contacts = supabase.table("dim_contacts").select(
-            "contact_id, is_atl, email, phone"
-        ).execute()
+        # Get REAL contacts count
+        total_contacts = supabase.table("dim_contacts").select("contact_id", count="exact").execute()
+        atl_contacts_count = supabase.table("dim_contacts").select("contact_id", count="exact").eq("is_atl", True).execute()
+        contacts_with_phone = supabase.table("dim_contacts").select("contact_id", count="exact").neq("phone", None).execute()
 
         # NEW: Executive Dashboard KPIs
         # ICP Fit Count (Platinum + Gold tier companies)
-        icp_fit_count = tier_counts.get("PLATINUM", 0) + tier_counts.get("GOLD", 0)
+        icp_fit_count = tier_counts["PLATINUM"] + tier_counts["GOLD"]
 
-        # ATL Contacts (Above-the-line decision makers)
-        atl_contacts = len([c for c in (contacts.data or []) if c.get("is_atl")])
+        # ATL Contacts (Above-the-line decision makers) - use real count
+        atl_contacts = atl_contacts_count.count or 0
 
-        # Call Ready (contacts with phone numbers)
-        call_ready = len([c for c in (contacts.data or []) if c.get("phone")])
+        # Call Ready (contacts with phone numbers) - use real count
+        call_ready = contacts_with_phone.count or 0
 
         # Outreach Sent (emails/SMS sent today)
         # Query fact_close_activities for today's outreach
