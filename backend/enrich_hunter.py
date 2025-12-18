@@ -255,7 +255,7 @@ def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
             # Set hunter_enriched_at timestamp to prevent re-checking
             try:
                 supabase.table('dim_companies').update({
-                    'hunter_enriched_at': datetime.now().isoformat()
+                    'hunter_enriched_at': datetime.utcnow().isoformat()
                 }).eq('company_id', company_id).execute()
                 companies_updated += 1
             except Exception as e:
@@ -267,8 +267,8 @@ def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
 
         # Update company with Hunter.io enrichment timestamp
         update_data = {
-            'last_enriched_at': datetime.now().isoformat(),
-            'hunter_enriched_at': datetime.now().isoformat()  # Track Hunter.io specifically
+            'last_enriched_at': datetime.utcnow().isoformat(),
+            'hunter_enriched_at': datetime.utcnow().isoformat()  # Track Hunter.io specifically
         }
 
         try:
