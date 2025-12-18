@@ -14,6 +14,9 @@ CLAUDE.md
 !CSV_TEMPLATE.csv
 !backend/app/tests/**/*.csv
 
+# Exports directory (Hunter enrichment, lead exports)
+exports/
+
 # Company/Lead Data - All data directories
 data/
 backend/data/
