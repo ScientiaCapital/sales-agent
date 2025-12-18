@@ -8,12 +8,12 @@
 -- First, deduplicate: Keep the most recently created record for each normalized_name
 -- Delete older duplicates (keeping the one with the highest id/latest created_at)
 DELETE FROM dim_companies
-WHERE id IN (
-    SELECT id FROM (
-        SELECT id,
+WHERE company_id IN (
+    SELECT company_id FROM (
+        SELECT company_id,
                ROW_NUMBER() OVER (
                    PARTITION BY normalized_name
-                   ORDER BY created_at DESC NULLS LAST, id DESC
+                   ORDER BY created_at DESC NULLS LAST, company_id DESC
                ) as rn
         FROM dim_companies
         WHERE normalized_name IS NOT NULL
@@ -31,12 +31,12 @@ ADD CONSTRAINT uq_dim_companies_normalized_name UNIQUE (normalized_name);
 -- Also add unique constraint on email for dim_contacts (for upsert contacts)
 -- First dedupe contacts by email
 DELETE FROM dim_contacts
-WHERE id IN (
-    SELECT id FROM (
-        SELECT id,
+WHERE contact_id IN (
+    SELECT contact_id FROM (
+        SELECT contact_id,
                ROW_NUMBER() OVER (
                    PARTITION BY email
-                   ORDER BY created_at DESC NULLS LAST, id DESC
+                   ORDER BY created_at DESC NULLS LAST, contact_id DESC
                ) as rn
         FROM dim_contacts
         WHERE email IS NOT NULL
