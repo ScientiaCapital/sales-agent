@@ -5,19 +5,18 @@ from unittest.mock import Mock, AsyncMock
 import asyncio
 from datetime import datetime
 
-from app.services.retry_handler import RetryHandler, RetryConfig, RetryExhaustedError
+from app.services.retry_handler import RetryWithBackoff, RetryStrategies, RetryExhaustedError
 
 
 @pytest.fixture
 def retry_handler():
-    """Create RetryHandler with test configuration."""
-    config = RetryConfig(
-        max_attempts=3,
-        base_delay_ms=100,
-        max_delay_ms=1000,
+    """Create RetryWithBackoff with test configuration."""
+    return RetryWithBackoff(
+        max_retries=3,
+        base_delay=0.1,
+        max_delay=1.0,
         exponential_base=2
     )
-    return RetryHandler(config)
 
 
 class TestRetryHandler:
