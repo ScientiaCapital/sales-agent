@@ -25,6 +25,7 @@ import json
 import os
 import sys
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -124,11 +125,11 @@ def get_supabase():
 
 def get_companies_for_hunter_enrichment(supabase, batch_size: int, test_domains: Optional[List[str]] = None):
     """Get companies that need Hunter.io enrichment.
-    
+
     Criteria:
     - Have domain (required)
-    - Have been website-enriched (have last_enriched_at)
-    - Don't have hunter_enriched_at yet (or need refresh)
+    - Don't have hunter_enriched_at yet (not enriched by Hunter.io)
+    - Not from Close CRM archive (close_lead_id is NULL)
     """
     if test_domains:
         # Test mode: get specific domains
@@ -142,39 +143,36 @@ def get_companies_for_hunter_enrichment(supabase, batch_size: int, test_domains:
             if result.data:
                 companies.append(result.data[0])
         return companies
-    
-    # Normal mode: get companies with domains that DON'T already have hunter_io contacts
-    # First, get company_ids that already have hunter_io contacts
-    hunter_enriched = supabase.table('dim_contacts')\
-        .select('company_id')\
-        .eq('source', 'hunter_io')\
-        .execute()
 
-    enriched_ids = list(set(c['company_id'] for c in hunter_enriched.data if c.get('company_id')))
-
-    # Get companies NOT in the enriched list, prioritized by ICP score
-    query = supabase.table('dim_companies')\
+    # Normal mode: get companies with domains that haven't been Hunter.io enriched
+    # Use hunter_enriched_at timestamp (more efficient than NOT IN with contact table)
+    # CRITICAL: Exclude Close CRM archive leads (they already exist in dim_companies_close)
+    result = supabase.table('dim_companies')\
         .select('company_id, company_name, domain, icp_score')\
-        .not_.is_('domain', 'null')
-
-    # Exclude already-enriched companies (if any)
-    if enriched_ids:
-        # Use NOT IN filter - Supabase uses .not_.in_()
-        query = query.not_.in_('company_id', enriched_ids)
-
-    result = query.order('icp_score', desc=True)\
+        .not_.is_('domain', 'null')\
+        .is_('close_lead_id', 'null')\
+        .is_('hunter_enriched_at', 'null')\
+        .order('icp_score', desc=True)\
         .limit(batch_size)\
         .execute()
     return result.data
 
 
-async def enrich_company_with_hunter(hunter: HunterService, company_id: str, company_name: str, domain: str) -> Dict[str, Any]:
+async def enrich_company_with_hunter(
+    hunter: HunterService,
+    company_id: str,
+    company_name: str,
+    domain: str,
+    batch_id: str,
+    supabase
+) -> Dict[str, Any]:
     """Enrich one company with Hunter.io domain search.
-    
+
     Returns dict with:
     - contacts: List of ATL contacts with emails, phones, LinkedIn
     - success: bool
     - error: str if failed
+    - latency_ms: response time in milliseconds
     """
     result = {
         'company_id': company_id,
@@ -183,23 +181,56 @@ async def enrich_company_with_hunter(hunter: HunterService, company_id: str, com
         'success': False,
         'contacts': [],
         'error': '',
-        'cost': 0.0
+        'cost': 0.0,
+        'latency_ms': 0
     }
-    
+
     try:
+        # Track response time
+        start_time = time.time()
+
         # Hunter.io domain search (gets ALL contacts with emails - ATL and BTL)
         contacts = await hunter.domain_search(domain, limit=25, atl_only=False)
-        
+
+        # Calculate latency
+        response_time_ms = (time.time() - start_time) * 1000
+        result['latency_ms'] = int(response_time_ms)
+
         if contacts:
             result['contacts'] = contacts
             result['success'] = True
             result['cost'] = 0.01  # Hunter.io cost per domain search
         else:
             result['error'] = 'No contacts found'
-        
+
     except Exception as e:
         result['error'] = str(e)[:100]
-    
+        result['latency_ms'] = int((time.time() - start_time) * 1000) if 'start_time' in locals() else 0
+
+    # Log enrichment attempt to fact_enrichment_attempts
+    contacts = result.get('contacts', [])
+    attempt_data = {
+        'company_id': str(company_id) if company_id else None,
+        'company_name': company_name,
+        'domain': domain,
+        'source': 'hunter_io',
+        'success': result['success'],
+        'contacts_found': len(contacts),
+        'atl_found': len([c for c in contacts if c.get('is_atl')]),
+        'btl_found': len([c for c in contacts if not c.get('is_atl')]),
+        'emails_found': len([c for c in contacts if c.get('email')]),
+        'phones_found': len([c for c in contacts if c.get('phone_number')]),
+        'cost_usd': result['cost'],
+        'latency_ms': result['latency_ms'],
+        'batch_id': str(batch_id),
+        'attempted_at': datetime.utcnow().isoformat()
+    }
+
+    try:
+        supabase.table('fact_enrichment_attempts').insert(attempt_data).execute()
+    except Exception as e:
+        print(f"\n    ⚠️  Failed to log enrichment attempt: {e}")
+
     return result
 
 
@@ -221,19 +252,14 @@ def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
         # Mark company as Hunter.io checked (even if no contacts found)
         # This prevents re-checking the same companies
         if not r['success'] and r.get('error') == 'No contacts found':
-            # Insert a marker to track we checked this company
+            # Set hunter_enriched_at timestamp to prevent re-checking
             try:
-                marker_data = {
-                    'company_id': company_id,
-                    'email': f"hunter_checked_{company_id[:8]}@marker.internal",
-                    'source': 'hunter_io',
-                    'full_name': 'No contacts in Hunter.io',
-                    'is_atl': False,
-                }
-                supabase.table('dim_contacts').insert(marker_data).execute()
+                supabase.table('dim_companies').update({
+                    'hunter_enriched_at': datetime.now().isoformat()
+                }).eq('company_id', company_id).execute()
                 companies_updated += 1
             except Exception as e:
-                print(f"    Marker insert error: {e}")
+                print(f"    Company update error: {e}")
             continue
         elif not r['success']:
             # Real error (not just "no contacts") - skip
@@ -241,7 +267,8 @@ def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
 
         # Update company with Hunter.io enrichment timestamp
         update_data = {
-            'last_enriched_at': datetime.now().isoformat()
+            'last_enriched_at': datetime.now().isoformat(),
+            'hunter_enriched_at': datetime.now().isoformat()  # Track Hunter.io specifically
         }
 
         try:
@@ -331,32 +358,34 @@ def sync_hunter_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
 async def run_hunter_batch(hunter: HunterService, supabase, companies: List[Dict], test_mode: bool = False) -> List[Dict[str, Any]]:
     """Run Hunter.io enrichment on a batch of companies."""
     results = []
-    
+    batch_id = uuid.uuid4()  # Generate batch_id for this enrichment run
+
     for i, company in enumerate(companies, 1):
         # Rate limiting: delay between companies
         if test_mode and i > 1:
             await asyncio.sleep(RATE_LIMIT_DELAY)
         elif not test_mode and i > 1:
             await asyncio.sleep(RATE_LIMIT_DELAY)
-        
+
         company_id = company['company_id']
         name = company['company_name']
         domain = company['domain']
-        
+
         print(f"  [{i}/{len(companies)}] {name} ({domain})...", end=" ", flush=True)
-        
-        result = await enrich_company_with_hunter(hunter, company_id, name, domain)
+
+        result = await enrich_company_with_hunter(hunter, company_id, name, domain, str(batch_id), supabase)
         results.append(result)
-        
+
         if result['success']:
             contacts_count = len(result['contacts'])
             atl_count = sum(1 for c in result['contacts'] if c.get('is_atl'))
             cost = result['cost']
+            latency = result.get('latency_ms', 0)
 
-            print(f"✅ ({atl_count} ATL, {contacts_count - atl_count} BTL, ${cost:.2f})")
+            print(f"✅ ({atl_count} ATL, {contacts_count - atl_count} BTL, ${cost:.2f}, {latency}ms)")
         else:
             print(f"❌ {result['error']}")
-    
+
     return results
 
 
@@ -434,25 +463,28 @@ async def main():
         return
     
     # Normal mode
-    # Get accurate count of unenriched companies
-    hunter_enriched = supabase.table('dim_contacts')\
-        .select('company_id')\
-        .eq('source', 'hunter_io')\
-        .execute()
-    enriched_ids = list(set(c['company_id'] for c in hunter_enriched.data if c.get('company_id')))
-
+    # Get accurate count of unenriched companies (using hunter_enriched_at timestamp)
     total_with_domains = supabase.table('dim_companies')\
         .select('company_id', count='exact')\
         .not_.is_('domain', 'null')\
+        .is_('close_lead_id', 'null')\
         .execute()
 
-    unenriched_count = total_with_domains.count - len(enriched_ids)
+    unenriched_result = supabase.table('dim_companies')\
+        .select('company_id', count='exact')\
+        .not_.is_('domain', 'null')\
+        .is_('close_lead_id', 'null')\
+        .is_('hunter_enriched_at', 'null')\
+        .execute()
+
+    unenriched_count = unenriched_result.count
+    enriched_count = total_with_domains.count - unenriched_count
 
     print(f"\n{'='*60}")
     print(f"HUNTER.IO ENRICHMENT {'(AUTO MODE)' if args.auto else ''}")
     print(f"{'='*60}")
-    print(f"Companies with domains: {total_with_domains.count}")
-    print(f"Already enriched: {len(enriched_ids)}")
+    print(f"Companies with domains (non-Close): {total_with_domains.count}")
+    print(f"Already Hunter.io enriched: {enriched_count}")
     print(f"Remaining to enrich: {unenriched_count}")
     print(f"Batch size: {BATCH_SIZE}")
     print(f"Rate limiting: {RATE_LIMIT_DELAY}s delay between companies")
