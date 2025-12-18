@@ -631,7 +631,7 @@ class ResourceNotFoundError(SalesAgentException):
 
 class ResourceConflictError(SalesAgentException):
     """Resource conflict (duplicate, version mismatch)"""
-    
+
     def __init__(
         self,
         message: str,
@@ -641,6 +641,43 @@ class ResourceConflictError(SalesAgentException):
             message=message,
             error_code="RESOURCE_CONFLICT",
             status_code=409,
+            context=context
+        )
+
+
+# ============================================================================
+# ROUTING EXCEPTIONS
+# ============================================================================
+
+
+class RoutingError(SalesAgentException):
+    """Model routing error"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="ROUTING_ERROR",
+            status_code=500,
+            context=context
+        )
+
+
+class ProviderError(SalesAgentException):
+    """AI provider error"""
+
+    def __init__(
+        self,
+        message: str,
+        context: Optional[Dict[str, Any]] = None
+    ):
+        super().__init__(
+            message=message,
+            error_code="PROVIDER_ERROR",
+            status_code=502,
             context=context
         )
 
@@ -684,4 +721,6 @@ ERROR_CODE_MAPPING = {
     "DATABASE_CONNECTION_ERROR": DatabaseConnectionError,
     "RESOURCE_NOT_FOUND": ResourceNotFoundError,
     "RESOURCE_CONFLICT": ResourceConflictError,
+    "ROUTING_ERROR": RoutingError,
+    "PROVIDER_ERROR": ProviderError,
 }

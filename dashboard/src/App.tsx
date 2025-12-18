@@ -9,6 +9,7 @@ import {
   OutreachMetrics,
   AgentHealth,
 } from "@/components/dashboard";
+import { ExecutiveDashboard } from "@/components/executive";
 import { MissionControl } from "@/components/MissionControl";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Zap, Mail, Target, ClipboardList, BarChart3, Gamepad2 } from "lucide-react";
@@ -83,14 +84,9 @@ export default function App() {
           <RecentActivity />
         </TabsContent>
 
-        {/* CEO/CTO Executive View */}
-        <TabsContent value="executive" className="space-y-6">
-          <ExecutiveSummary />
-          <div className="grid gap-6 md:grid-cols-2">
-            <LeadLifecycleFunnel />
-            <OutreachMetrics />
-          </div>
-          <AgentHealth />
+        {/* CEO/CTO Executive View - New Chart.js Dashboard */}
+        <TabsContent value="executive" className="-mx-4 -my-8">
+          <ExecutiveDashboard />
         </TabsContent>
       </Tabs>
     </div>

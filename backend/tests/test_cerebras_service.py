@@ -248,13 +248,11 @@ class TestCerebrasServiceIntegration:
     """Integration tests for CerebrasService (require actual API key)."""
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        not pytest.config.getoption("--run-integration"),
-        reason="Integration tests require --run-integration flag"
-    )
-    def test_real_api_call(self):
+    def test_real_api_call(self, request):
         """Test actual API call to Cerebras (requires real API key)."""
         import os
+        if not request.config.getoption("--run-integration"):
+            pytest.skip("Integration tests require --run-integration flag")
         if not os.getenv("CEREBRAS_API_KEY"):
             pytest.skip("CEREBRAS_API_KEY not set")
 
