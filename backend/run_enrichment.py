@@ -37,6 +37,14 @@ load_dotenv(Path(__file__).parent.parent / '.env', override=True)
 
 import httpx
 
+# Import audit logging (added Dec 19, 2025)
+try:
+    from app.services.enrichment_logger import log_enrichment_attempt, log_stage_transition
+    AUDIT_LOGGING_ENABLED = True
+except ImportError:
+    AUDIT_LOGGING_ENABLED = False
+    print("⚠️ Audit logging not available (enrichment_logger not found)")
+
 try:
     from playwright.async_api import async_playwright
 except ImportError:
@@ -1693,6 +1701,29 @@ def sync_to_supabase(supabase, results, source='all'):
 
     for r in results:
         if not r['success']:
+            # Log failed enrichment attempt (Dec 19, 2025)
+            if AUDIT_LOGGING_ENABLED:
+                try:
+                    log_enrichment_attempt(
+                        supabase_client=supabase,
+                        company_id=r.get('company_id'),
+                        method='browserbase_free',
+                        success=False,
+                        contacts_found=0,
+                        atl_found=0,
+                        emails_found=0,
+                        cost_usd=0.0,
+                        error_message=r.get('error', 'Unknown error')
+                    )
+                    # Update enrichment_status to 'failed'
+                    try:
+                        supabase.table('dim_companies').update({
+                            'enrichment_status': 'failed'
+                        }).eq('company_id', r.get('company_id')).execute()
+                    except Exception:
+                        pass
+                except Exception:
+                    pass  # Don't break on logging failure
             continue
 
         company_id = r['company_id']
@@ -1774,6 +1805,58 @@ def sync_to_supabase(supabase, results, source='all'):
 
         if not updated:
             print(f"    Warning: Could not update company {company_id}")
+
+        # AUDIT LOGGING (Dec 19, 2025) - Log enrichment attempt to fact_enrichments
+        if AUDIT_LOGGING_ENABLED and updated:
+            try:
+                # Calculate contacts found (ATL = decision makers)
+                all_contacts = r.get('atl_contacts', [])
+                atl_count = sum(1 for c in all_contacts if c.get('is_atl', True))  # ATL contacts
+                btl_count = len(all_contacts) - atl_count  # BTL contacts
+                total_count = len(all_contacts)
+                email_count = sum(1 for c in all_contacts if c.get('email'))
+
+                # Get current enrichment status for stage transition logging
+                current_status = 'pending'  # Default
+                try:
+                    status_result = supabase.table('dim_companies').select('enrichment_status').eq('company_id', company_id).single().execute()
+                    if status_result.data:
+                        current_status = status_result.data.get('enrichment_status') or 'pending'
+                except Exception:
+                    pass  # Use default 'pending' if query fails
+
+                # Log enrichment attempt
+                log_enrichment_attempt(
+                    supabase_client=supabase,
+                    company_id=company_id,
+                    method='browserbase_free',  # Free website scraping
+                    success=True,
+                    contacts_found=total_count,
+                    atl_found=atl_count,  # Added ATL tracking
+                    emails_found=email_count,
+                    cost_usd=0.0,  # FREE enrichment
+                    latency_ms=int(r.get('elapsed', 0) * 1000) if r.get('elapsed') else None
+                )
+
+                # Log stage transition (use actual current status)
+                log_stage_transition(
+                    supabase_client=supabase,
+                    company_id=company_id,
+                    from_stage=current_status,
+                    to_stage='free_enriched'
+                )
+
+                # Update enrichment_status to 'free_enriched'
+                try:
+                    supabase.table('dim_companies').update({
+                        'enrichment_status': 'free_enriched'
+                    }).eq('company_id', company_id).execute()
+                except Exception:
+                    pass  # Non-critical if this fails
+
+            except Exception as audit_error:
+                # Don't break enrichment if audit logging fails
+                print(f"    ⚠️ Audit logging failed: {audit_error}")
 
         # Add ALL contacts (ATL + BTL) with proper is_atl flag
         for contact in r['atl_contacts']:
@@ -1971,16 +2054,23 @@ def find_or_create_company_by_domain(supabase, domain, company_name=None):
     return result.data[0] if result.data else None
 
 
-def get_companies_for_test(supabase, domains=None, limit=None):
-    """Get companies for test mode - by domain(s) or random."""
+def get_companies_for_test(supabase, domains=None, limit=None, source='pipeline'):
+    """Get companies for test mode - by domain(s) or random.
+
+    Args:
+        supabase: Supabase client
+        domains: Comma-separated domains to test
+        limit: Max companies (capped at 5)
+        source: 'pipeline' (dim_companies - DEFAULT), 'archive', or 'all'
+    """
     companies = []
-    
+
     if domains:
         # Process specific domains
         domain_list = [d.strip() for d in domains.split(',')]
         # Enforce max 5 domains
         domain_list = domain_list[:5]
-        
+
         for domain in domain_list:
             company = find_or_create_company_by_domain(supabase, domain)
             if company:
@@ -1988,8 +2078,10 @@ def get_companies_for_test(supabase, domains=None, limit=None):
     else:
         # Get random companies from Supabase (limit enforced)
         batch_size = min(limit or 3, 5)  # Max 5 for test mode
-        companies = get_unenriched_batch(supabase, batch_size)
-    
+        # Use source parameter - defaults to 'pipeline' (dim_companies only)
+        # This ensures FK constraints work for fact tables
+        companies = get_unenriched_batch(supabase, batch_size, source=source)
+
     return companies
 
 
@@ -2098,18 +2190,20 @@ async def main():
             print(f"Rate limiting: 2.5s delay between companies")
             print(f"Max companies: 5")
         
-        # Get companies for test
+        # Get companies for test - use source parameter (defaults to 'pipeline')
+        # This ensures FK constraints work for audit logging
+        source = args.source if args.source != 'all' else 'pipeline'
         if args.domain:
             print(f"Testing single domain: {args.domain}")
-            companies = get_companies_for_test(supabase, domains=args.domain)
+            companies = get_companies_for_test(supabase, domains=args.domain, source=source)
         elif args.domains:
             print(f"Testing multiple domains: {args.domains}")
-            companies = get_companies_for_test(supabase, domains=args.domains)
+            companies = get_companies_for_test(supabase, domains=args.domains, source=source)
         else:
             # Default to 3 random companies if no domain specified
             test_limit = min(args.limit or 3, 5)
-            print(f"Testing {test_limit} random companies from Supabase")
-            companies = get_companies_for_test(supabase, limit=test_limit)
+            print(f"Testing {test_limit} random companies from dim_companies")
+            companies = get_companies_for_test(supabase, limit=test_limit, source=source)
         
         if not companies:
             print("\n❌ No companies found to test")

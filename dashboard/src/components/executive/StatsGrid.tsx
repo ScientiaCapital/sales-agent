@@ -14,7 +14,21 @@ import {
   UserCog,
   PhoneCall,
   MailCheck,
+  Globe,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Sparkles,
 } from "lucide-react";
+
+interface EnrichmentStatusBreakdown {
+  pending: number;
+  free_enriched: number;
+  paid_enriched: number;
+  enriched: number;
+  failed: number;
+  found_page_no_contacts: number;
+}
 
 interface MetricsSummary {
   total_leads: number;
@@ -45,6 +59,9 @@ interface MetricsSummary {
   email_only: number;
   phone_only: number;
   outreach_sent: number;
+  // Enrichment Pipeline Status (Dec 2025)
+  enrichment_status?: EnrichmentStatusBreakdown;
+  companies_with_domain: number;
 }
 
 interface ICPQueueResponse {
@@ -272,6 +289,51 @@ export function StatsGrid() {
     },
   ];
 
+  // Row 4: Enrichment Pipeline Status
+  const enrichment = metrics.enrichment_status;
+  const companiesWithDomain = metrics.companies_with_domain || 0;
+  const totalEnriched = enrichment
+    ? enrichment.free_enriched + enrichment.paid_enriched + enrichment.enriched
+    : 0;
+  const enrichmentRate = companiesWithDomain > 0
+    ? ((totalEnriched / companiesWithDomain) * 100).toFixed(1)
+    : "0";
+
+  const row4Cards = enrichment ? [
+    {
+      title: "Pending Enrichment",
+      value: enrichment.pending.toLocaleString(),
+      subtitle: `${companiesWithDomain.toLocaleString()} with domains`,
+      icon: Clock,
+      color: "text-yellow-400",
+      bgColor: "bg-yellow-500",
+    },
+    {
+      title: "FREE Enriched",
+      value: enrichment.free_enriched.toLocaleString(),
+      subtitle: "BeautifulSoup + Hunter free",
+      icon: Sparkles,
+      color: "text-green-400",
+      bgColor: "bg-green-500",
+    },
+    {
+      title: "PAID Enriched",
+      value: enrichment.paid_enriched.toLocaleString(),
+      subtitle: "Apollo + Browserbase paid",
+      icon: Globe,
+      color: "text-blue-400",
+      bgColor: "bg-blue-500",
+    },
+    {
+      title: "Enrichment Rate",
+      value: `${enrichmentRate}%`,
+      subtitle: `${totalEnriched} / ${companiesWithDomain} enriched`,
+      icon: CheckCircle2,
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500",
+    },
+  ] : [];
+
   return (
     <div className="space-y-6">
       {/* Row 1: Company & Contact Overview */}
@@ -309,6 +371,20 @@ export function StatsGrid() {
           ))}
         </div>
       </div>
+
+      {/* Row 4: Enrichment Pipeline (Dec 2025) */}
+      {row4Cards.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+            Enrichment Pipeline
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {row4Cards.map((card) => (
+              <StatCard key={card.title} {...card} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
