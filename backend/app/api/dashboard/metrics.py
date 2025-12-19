@@ -45,6 +45,16 @@ class QuarterlyMetrics(BaseModel):
     lost_value: float
 
 
+class EnrichmentStatusBreakdown(BaseModel):
+    """Enrichment status breakdown for pipeline tracking."""
+    pending: int  # Companies not yet enriched
+    free_enriched: int  # After FREE enrichment (BeautifulSoup, Hunter free)
+    paid_enriched: int  # After PAID enrichment (Apollo, Browserbase paid)
+    enriched: int  # Fully enriched (legacy status)
+    failed: int  # Enrichment failed
+    found_page_no_contacts: int  # Page found but no contacts
+
+
 class MetricsSummary(BaseModel):
     """Executive summary metrics."""
     total_leads: int  # Legacy field (same as total_companies)
@@ -80,6 +90,9 @@ class MetricsSummary(BaseModel):
     email_only: int  # Contacts with email but no phone
     phone_only: int  # Contacts with phone but no email
     outreach_sent: int  # Emails/SMS sent today
+    # Enrichment Pipeline Status (Dec 2025)
+    enrichment_status: Optional[EnrichmentStatusBreakdown] = None
+    companies_with_domain: int = 0  # Companies that have a domain (enrichable)
 
 
 class CombinedStatsResponse(BaseModel):
@@ -185,6 +198,53 @@ async def get_metrics():
             outreach_sent = outreach_response.count or 0
         except Exception as outreach_err:
             logger.debug(f"Could not fetch outreach count: {outreach_err}")
+
+        # Enrichment Status Breakdown (Dec 2025)
+        # Query counts for each enrichment_status value
+        enrichment_status_breakdown = None
+        companies_with_domain = 0
+        try:
+            # Count companies with domain (enrichable)
+            domain_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).neq("domain", None).execute()
+            companies_with_domain = domain_count.count or 0
+
+            # Count by enrichment_status
+            pending_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).or_("enrichment_status.is.null,enrichment_status.eq.pending").execute()
+
+            free_enriched_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).eq("enrichment_status", "free_enriched").execute()
+
+            paid_enriched_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).eq("enrichment_status", "paid_enriched").execute()
+
+            enriched_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).eq("enrichment_status", "enriched").execute()
+
+            failed_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).eq("enrichment_status", "failed").execute()
+
+            no_contacts_count = supabase.table("dim_companies").select(
+                "company_id", count="exact"
+            ).eq("enrichment_status", "found_page_no_contacts").execute()
+
+            enrichment_status_breakdown = EnrichmentStatusBreakdown(
+                pending=pending_count.count or 0,
+                free_enriched=free_enriched_count.count or 0,
+                paid_enriched=paid_enriched_count.count or 0,
+                enriched=enriched_count.count or 0,
+                failed=failed_count.count or 0,
+                found_page_no_contacts=no_contacts_count.count or 0
+            )
+        except Exception as enrichment_err:
+            logger.debug(f"Could not fetch enrichment status: {enrichment_err}")
 
         # Calculate rates
         qualification_rate = qualified / total_leads if total_leads > 0 else 0
@@ -323,6 +383,9 @@ async def get_metrics():
             email_only=email_only,
             phone_only=phone_only,
             outreach_sent=outreach_sent,
+            # Enrichment Pipeline Status (Dec 2025)
+            enrichment_status=enrichment_status_breakdown,
+            companies_with_domain=companies_with_domain,
         )
 
     except Exception as e:
