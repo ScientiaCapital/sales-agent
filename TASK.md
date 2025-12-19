@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-15
+**Last Updated**: 2025-12-18
 
 ---
 
@@ -8,16 +8,50 @@
 
 | Metric | Count |
 |--------|-------|
-| Total Companies | 4,408 |
+| Total Companies | 3,420 |
+| Total Contacts | 19,170 |
+| ATL (Decision Makers) | 7,590 |
+| BTL Contacts | 11,580 |
+| Email + Phone | 381 |
+| Email Only | 15,086 |
 | With Websites | 3,320 |
-| ATL Contacts | 476 |
-| Legit ATLs | 469 |
-| Companies with 2+ ATLs | 64 |
-| Exported for Outreach | 15 |
 
 ---
 
-## LATEST UPDATE (Dec 15 - Voice AI Calling System)
+## LATEST UPDATE (Dec 18 - Executive Dashboard + Infrastructure Fixes)
+
+### Executive Dashboard Enhancement - COMPLETE ✅
+
+| Component | File | Status |
+|-----------|------|--------|
+| Executive Dashboard | `dashboard/src/components/executive/ExecutiveDashboard.tsx` | ✅ ENHANCED |
+| Stats Grid (12 KPIs) | `dashboard/src/components/executive/StatsGrid.tsx` | ✅ MAJOR UPDATE |
+| Metrics API | `backend/app/api/dashboard/metrics.py` | ✅ ENHANCED |
+| Chart.js Integration | Executive Dashboard | ✅ 4 Charts |
+
+### Key Improvements
+
+| Feature | Before | After |
+|---------|--------|-------|
+| KPI Cards | 8 | 12 (3 rows of 4) |
+| Contact Breakdown | None | ATL/BTL detailed |
+| Email/Phone Metrics | None | 4 availability tiers |
+| Charts | None | 4 Chart.js visualizations |
+| Supabase Queries | Limited 1000 rows | count='exact' for accuracy |
+
+### Infrastructure Fixes
+
+| Fix | Files | Impact |
+|-----|-------|--------|
+| SQLAlchemy Pool for SQLite | `backend/app/models/database.py` | Tests now collect (976 tests) |
+| Pydantic V2 Migration | `lead_scorer.py`, `search_agent.py`, `analysis_agent.py` | No more V1 deprecation warnings |
+| Port Standardization | `vite.config.ts`, `.env.example` (3 files) | All pointing to 8000 |
+
+### Tests: 739 passed (76%), 0 collection errors
+
+---
+
+## PREVIOUS UPDATE (Dec 15 - Voice AI Calling System)
 
 ### Voice AI Prompt Refactoring - COMPLETE
 

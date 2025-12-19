@@ -10,6 +10,10 @@ import {
   DollarSign,
   CircleDollarSign,
   Percent,
+  UserCheck,
+  UserCog,
+  PhoneCall,
+  MailCheck,
 } from "lucide-react";
 
 interface MetricsSummary {
@@ -30,10 +34,16 @@ interface MetricsSummary {
   avg_deal_size: number;
   period_start: string;
   period_end: string;
-  // Executive Dashboard KPIs
+  // Executive Dashboard KPIs - Companies
   icp_fit_count: number;
+  // Executive Dashboard KPIs - Contacts
+  total_contacts: number;
   atl_contacts: number;
+  btl_contacts: number;
   call_ready: number;
+  email_and_phone: number;
+  email_only: number;
+  phone_only: number;
   outreach_sent: number;
 }
 
@@ -132,7 +142,7 @@ export function StatsGrid() {
   if (metricsLoading || icpLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(8)].map((_, i) => (
+        {[...Array(12)].map((_, i) => (
           <StatCardSkeleton key={i} />
         ))}
       </div>
@@ -145,11 +155,16 @@ export function StatsGrid() {
 
   // Use real KPI data from backend
   const icpFitCount = metrics.icp_fit_count || 0;
+  const totalContacts = metrics.total_contacts || 0;
   const atlContacts = metrics.atl_contacts || 0;
+  const btlContacts = metrics.btl_contacts || 0;
   const callReady = metrics.call_ready || 0;
+  const emailAndPhone = metrics.email_and_phone || 0;
+  const emailOnly = metrics.email_only || 0;
+  const phoneOnly = metrics.phone_only || 0;
   const outreachSent = metrics.outreach_sent || 0;
 
-  // Row 1: Sales-Focused KPIs
+  // Row 1: Company & Contact Overview
   const row1Cards = [
     {
       title: "ICP Fit Count",
@@ -160,33 +175,69 @@ export function StatsGrid() {
       bgColor: "bg-green-500",
     },
     {
-      title: "ATL Contacts",
-      value: atlContacts.toLocaleString(),
-      subtitle: "Above-the-line decision makers",
+      title: "Total Contacts",
+      value: totalContacts.toLocaleString(),
+      subtitle: `${atlContacts.toLocaleString()} ATL / ${btlContacts.toLocaleString()} BTL`,
       icon: Users,
       color: "text-purple-400",
       bgColor: "bg-purple-500",
     },
     {
-      title: "Call-Ready",
-      value: callReady.toLocaleString(),
-      subtitle: "Contacts with phone numbers",
-      icon: Phone,
+      title: "ATL Contacts",
+      value: atlContacts.toLocaleString(),
+      subtitle: "Above-the-line decision makers",
+      icon: UserCheck,
+      color: "text-indigo-400",
+      bgColor: "bg-indigo-500",
+    },
+    {
+      title: "BTL Contacts",
+      value: btlContacts.toLocaleString(),
+      subtitle: "Below-the-line staff",
+      icon: UserCog,
+      color: "text-cyan-400",
+      bgColor: "bg-cyan-500",
+    },
+  ];
+
+  // Row 2: Contact Availability
+  const row2Cards = [
+    {
+      title: "Email + Phone",
+      value: emailAndPhone.toLocaleString(),
+      subtitle: "Contacts with both channels",
+      icon: MailCheck,
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500",
+    },
+    {
+      title: "Email Only",
+      value: emailOnly.toLocaleString(),
+      subtitle: "Email available, no phone",
+      icon: Mail,
       color: "text-blue-400",
       bgColor: "bg-blue-500",
     },
     {
-      title: "Outreach Sent",
-      value: outreachSent.toLocaleString(),
-      subtitle: "Emails/SMS sent today",
-      icon: Mail,
-      color: "text-orange-400",
-      bgColor: "bg-orange-500",
+      title: "Phone Only",
+      value: phoneOnly.toLocaleString(),
+      subtitle: "Phone available, no email",
+      icon: Phone,
+      color: "text-teal-400",
+      bgColor: "bg-teal-500",
+    },
+    {
+      title: "Call-Ready",
+      value: callReady.toLocaleString(),
+      subtitle: "All contacts with phone numbers",
+      icon: PhoneCall,
+      color: "text-sky-400",
+      bgColor: "bg-sky-500",
     },
   ];
 
-  // Row 2: Pipeline-Focused KPIs
-  const row2Cards = [
+  // Row 3: Pipeline-Focused KPIs
+  const row3Cards = [
     {
       title: "Total Leads",
       value: metrics.total_leads.toLocaleString(),
@@ -223,10 +274,10 @@ export function StatsGrid() {
 
   return (
     <div className="space-y-6">
-      {/* Row 1: Sales-Focused */}
+      {/* Row 1: Company & Contact Overview */}
       <div>
         <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
-          Sales Metrics
+          Company & Contact Overview
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {row1Cards.map((card) => (
@@ -235,13 +286,25 @@ export function StatsGrid() {
         </div>
       </div>
 
-      {/* Row 2: Pipeline-Focused */}
+      {/* Row 2: Contact Availability */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
+          Contact Availability
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {row2Cards.map((card) => (
+            <StatCard key={card.title} {...card} />
+          ))}
+        </div>
+      </div>
+
+      {/* Row 3: Pipeline Performance */}
       <div>
         <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">
           Pipeline Performance
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {row2Cards.map((card) => (
+          {row3Cards.map((card) => (
             <StatCard key={card.title} {...card} />
           ))}
         </div>
