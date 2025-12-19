@@ -10,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.exc import OperationalError, DBAPIError
+from sqlalchemy.pool import SingletonThreadPool
 import os
 import logging
 from app.core.exceptions import DatabaseConnectionError
@@ -26,30 +27,43 @@ if not DATABASE_URL:
         "Example: DATABASE_URL=postgresql+psycopg://user:password@host:port/database"
     )
 
+# Check if this is SQLite (for testing) vs PostgreSQL (production)
+IS_SQLITE = DATABASE_URL.startswith("sqlite")
+
 # Convert postgresql:// to postgresql+psycopg:// for psycopg3 compatibility
 if DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-# Create SQLAlchemy engine with connection resilience
-engine = create_engine(
-    DATABASE_URL,
-    echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",  # Environment-controlled SQL logging
-    
-    # Connection Pool Configuration
-    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),  # Base pool size
-    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),  # Additional connections when pool exhausted
-    
-    # Connection Resilience
-    pool_pre_ping=True,  # Test connection before use (prevents stale connection errors)
-    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),  # Recycle connections after 1 hour
-    pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "30")),  # Wait 30s for available connection
-    
-    # Query Configuration
-    connect_args={
-        "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10")),  # 10s connection timeout
-        "options": "-c statement_timeout=30000"  # 30s query timeout
+# Build engine kwargs conditionally based on database type
+# SQLite uses SingletonThreadPool which doesn't support pool_size/max_overflow/pool_timeout
+if IS_SQLITE:
+    engine_kwargs = {
+        "echo": os.getenv("DATABASE_ECHO", "false").lower() == "true",
+        # SQLite-specific: use check_same_thread=False for multi-threaded tests
+        "connect_args": {"check_same_thread": False},
+        # Force SingletonThreadPool for SQLite (recommended for in-memory/file-based DBs)
+        "poolclass": SingletonThreadPool,
     }
-)
+else:
+    # PostgreSQL with full connection pooling
+    engine_kwargs = {
+        "echo": os.getenv("DATABASE_ECHO", "false").lower() == "true",
+        # Connection Pool Configuration (QueuePool only)
+        "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        # Connection Resilience
+        "pool_pre_ping": True,
+        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "3600")),
+        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        # Query Configuration (PostgreSQL-specific)
+        "connect_args": {
+            "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10")),
+            "options": "-c statement_timeout=30000",
+        },
+    }
+
+# Create SQLAlchemy engine with connection resilience
+engine = create_engine(DATABASE_URL, **engine_kwargs)
 
 # Create sessionmaker (sync)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -61,27 +75,36 @@ Base = declarative_base()
 # Async Database Support (for LeadAuditService and future async services)
 # =========================================================================
 
-# Convert to async URL (postgresql+psycopg_async for async psycopg3)
-ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql+psycopg://")
+# Only create async engine for PostgreSQL (not SQLite)
+if not IS_SQLITE:
+    # Convert to async URL (postgresql+psycopg_async for async psycopg3)
+    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+psycopg://", "postgresql+psycopg://")
 
-# Create async engine
-async_engine = create_async_engine(
-    ASYNC_DATABASE_URL,
-    echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",
-    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
-    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
-    pool_pre_ping=True,
-    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),
-)
+    # Create async engine with PostgreSQL pool settings
+    async_engine = create_async_engine(
+        ASYNC_DATABASE_URL,
+        echo=os.getenv("DATABASE_ECHO", "false").lower() == "true",
+        pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+        max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "10")),
+        pool_pre_ping=True,
+        pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "3600")),
+    )
+else:
+    # SQLite async not typically used, but create a minimal engine for imports
+    async_engine = None
 
-# Create async sessionmaker
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+# Create async sessionmaker (only for PostgreSQL)
+if async_engine is not None:
+    AsyncSessionLocal = async_sessionmaker(
+        bind=async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
+else:
+    # SQLite fallback - async not supported
+    AsyncSessionLocal = None
 
 
 async def get_async_db():
@@ -96,7 +119,14 @@ async def get_async_db():
         @router.get("/audit")
         async def get_audit(db: AsyncSession = Depends(get_async_db)):
             ...
+
+    Note: Only available for PostgreSQL. SQLite does not support async.
     """
+    if AsyncSessionLocal is None:
+        raise RuntimeError(
+            "Async database sessions are not available. "
+            "Async is only supported with PostgreSQL, not SQLite."
+        )
     async with AsyncSessionLocal() as session:
         try:
             yield session
