@@ -2,7 +2,7 @@
 Multi-factor lead scoring service for intelligent lead qualification
 """
 from typing import Dict, Any, Optional, List
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, model_validator
 
 from app.core.logging import setup_logging
 
@@ -15,14 +15,13 @@ class ScoringWeights(BaseModel):
     industry: float = Field(default=0.25, ge=0, le=1.0, description="Weight for industry factor")
     signals: float = Field(default=0.45, ge=0, le=1.0, description="Weight for buying signals factor")
 
-    @validator('*')
-    def validate_weight_sum(cls, v, values):
+    @model_validator(mode='after')
+    def validate_weight_sum(self) -> 'ScoringWeights':
         """Ensure weights sum to 1.0"""
-        if len(values) == 2:  # All three values are set
-            total = sum(values.values()) + v
-            if not (0.99 <= total <= 1.01):  # Allow small floating point errors
-                raise ValueError(f"Weights must sum to 1.0, got {total}")
-        return v
+        total = self.company_size + self.industry + self.signals
+        if not (0.99 <= total <= 1.01):  # Allow small floating point errors
+            raise ValueError(f"Weights must sum to 1.0, got {total}")
+        return self
 
     model_config = {
         "json_schema_extra": {

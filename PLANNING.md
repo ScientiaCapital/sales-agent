@@ -1,12 +1,12 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-13
+**Last Updated**: 2025-12-18
 
 ---
 
 ## Tech Stack
 
-Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph | Browserbase
+Python 3.11 | FastAPI | PostgreSQL | Redis | Supabase | Cerebras | LangGraph | Browserbase | Chart.js
 
 ---
 
@@ -318,3 +318,40 @@ Company phone         +10 pts
   2. Apply migration 025 (prevents future duplicates)
   3. Update sync scripts to use RPC functions
 - **Impact**: Guarantees 1 company = 1 record, prevents duplicate accumulation
+
+### ADR-013: SQLAlchemy Pool Configuration for Test Compatibility
+- **Date**: 2025-12-18
+- **Decision**: Make database pool parameters conditional based on database type (SQLite vs PostgreSQL)
+- **Rationale**: Test collection failing with 7 errors - SQLite's SingletonThreadPool doesn't support `pool_size`, `max_overflow`, `pool_timeout` parameters
+- **Implementation**: `backend/app/models/database.py`
+  - Added `IS_SQLITE` check based on `DATABASE_URL` prefix
+  - SQLite: Uses `SingletonThreadPool` with `check_same_thread=False`
+  - PostgreSQL: Uses `QueuePool` with full pooling parameters
+  - Async engine disabled for SQLite with runtime error in `get_async_db()`
+- **Impact**:
+  - Test collection: 7 errors → 0 errors
+  - Tests collecting: 976 tests
+  - Tests passing: 739 (76%)
+
+### ADR-014: Pydantic V1 to V2 Validator Migration
+- **Date**: 2025-12-18
+- **Decision**: Migrate Pydantic V1 validators to V2 patterns
+- **Rationale**: Deprecation warnings appearing for V1-style `@validator` decorators
+- **Files Updated**:
+  - `backend/app/services/lead_scorer.py`: `@validator('*')` → `@model_validator(mode='after')`
+  - `backend/app/services/agents/search_agent.py`: `@validator` → `@field_validator` + `@classmethod`
+  - `backend/app/services/agents/analysis_agent.py`: Same pattern
+- **V2 Patterns**:
+  - Single field: `@field_validator('field_name')` + `@classmethod` + type hints
+  - All fields: `@model_validator(mode='after')` returning `self`
+- **Impact**: Cleaner validator code, no deprecation warnings, V3 ready
+
+### ADR-015: Port Standardization (8000)
+- **Date**: 2025-12-18
+- **Decision**: Standardize all backend port references to 8000
+- **Rationale**: Mixed references to ports 8000 and 8001 causing connectivity issues
+- **Files Updated**:
+  - `dashboard/vite.config.ts` - Proxy target
+  - `dashboard/.env.example` - API URL
+  - Root `.env.example` - ngrok, LinkedIn, HubSpot callbacks
+- **Impact**: Consistent backend connectivity across all environments

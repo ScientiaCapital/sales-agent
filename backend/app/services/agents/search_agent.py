@@ -14,7 +14,7 @@ import json
 import logging
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import aiohttp
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
@@ -86,8 +86,9 @@ class CompanyResearch(BaseModel):
     total_cost: float = 0.0
     total_latency_ms: int = 0
 
-    @validator('confidence')
-    def validate_confidence(cls, v):
+    @field_validator('confidence')
+    @classmethod
+    def validate_confidence(cls, v: float) -> float:
         """Ensure confidence is between 0 and 1"""
         return max(0.0, min(1.0, v))
 class SearchAgent:

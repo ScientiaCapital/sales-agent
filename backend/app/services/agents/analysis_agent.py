@@ -12,7 +12,7 @@ import json
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.services.llm_router import LLMRouter, RoutingStrategy
 from .search_agent import CompanyResearch
@@ -42,8 +42,9 @@ class StrategicInsights(BaseModel):
     analysis_timestamp: datetime = Field(default_factory=datetime.utcnow)
     total_cost: float = 0.0
     
-    @validator('urgency_score', 'confidence_score')
-    def validate_scores(cls, v):
+    @field_validator('urgency_score', 'confidence_score')
+    @classmethod
+    def validate_scores(cls, v: float) -> float:
         """Ensure scores are between 0 and 1"""
         return max(0.0, min(1.0, v))
 
