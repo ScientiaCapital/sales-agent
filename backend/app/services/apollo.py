@@ -132,7 +132,7 @@ class ApolloService:
             webhook_base = os.getenv('APOLLO_WEBHOOK_BASE_URL')
             if webhook_base:
                 params["reveal_phone_number"] = "true"
-                params["webhook_url"] = f"{webhook_base}/api/v1/apollo/webhooks/phone-reveal"
+                params["webhook_url"] = f"{webhook_base}/api/v1/webhooks/apollo/phone-reveal"
                 logger.info(f"Phone reveal enabled with webhook: {params['webhook_url']}")
             else:
                 logger.warning("Phone reveal requested but APOLLO_WEBHOOK_BASE_URL not configured")
@@ -407,7 +407,7 @@ class ApolloService:
             webhook_base = os.getenv('APOLLO_WEBHOOK_BASE_URL')
             if webhook_base:
                 params["reveal_phone_number"] = "true"
-                params["webhook_url"] = f"{webhook_base}/api/v1/apollo/webhooks/phone-reveal"
+                params["webhook_url"] = f"{webhook_base}/api/v1/webhooks/apollo/phone-reveal"
                 phone_webhook_pending = True
                 logger.info(f"Phone reveal enabled with webhook: {params['webhook_url']}")
             else:
