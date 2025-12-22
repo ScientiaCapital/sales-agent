@@ -28,6 +28,7 @@ import argparse
 import httpx
 from bs4 import BeautifulSoup
 import re
+from collections import Counter
 
 load_dotenv(Path(__file__).parent.parent / '.env')
 
@@ -71,15 +72,39 @@ SIGNAL_PATTERNS = {
 }
 
 
+def extract_contacts(text: str) -> list:
+    """
+    Extract contact names from text.
+    Looks for capitalized names (2-3 words) that appear multiple times.
+    """
+    # Find all potential names (2-3 capitalized words)
+    name_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b'
+    potential_names = re.findall(name_pattern, text)
+
+    # Filter out common non-names
+    stopwords = {'The', 'Our', 'About', 'Contact', 'Services', 'Home', 'Team', 'And',
+                 'With', 'From', 'When', 'This', 'That', 'More', 'All', 'New', 'Get',
+                 'North', 'South', 'East', 'West', 'United States', 'North Florida'}
+
+    filtered = [name for name in potential_names if name not in stopwords and len(name) > 3]
+
+    # Count frequency - names mentioned 2+ times are likely real people
+    name_counts = Counter(filtered)
+    contacts = [{"name": name, "title": ""} for name, count in name_counts.items() if count >= 2]
+
+    return contacts[:10]  # Max 10 contacts per company
+
+
 async def fast_scrape(website: str) -> dict:
     """
-    Fast scraper - only checks essential pages with timeout
+    Fast scraper - checks essential pages with timeout, extracts signals + contacts
     """
     if not website.startswith('http'):
         website = f'https://{website}'
 
     signals = {key: False for key in SIGNAL_PATTERNS.keys()}
     all_text = ""
+    all_text_original = ""  # Keep original case for name extraction
 
     try:
         async with httpx.AsyncClient(
@@ -101,8 +126,9 @@ async def fast_scrape(website: str) -> dict:
                         for tag in soup(['script', 'style', 'meta', 'link']):
                             tag.decompose()
 
-                        text = soup.get_text(separator=' ', strip=True).lower()
-                        all_text += " " + text
+                        text = soup.get_text(separator=' ', strip=True)
+                        all_text += " " + text.lower()
+                        all_text_original += " " + text  # Keep original case
 
                 except (httpx.HTTPError, Exception):
                     # Skip failed pages silently
@@ -115,14 +141,57 @@ async def fast_scrape(website: str) -> dict:
                         signals[signal_name] = True
                         break
 
-            return {"signals": signals, "error": None}
+            # Extract contacts from original case text
+            contacts = extract_contacts(all_text_original)
+
+            return {"signals": signals, "contacts": contacts, "error": None}
 
     except Exception as e:
-        return {"signals": signals, "error": str(e)}
+        return {"signals": signals, "contacts": [], "error": str(e)}
+
+
+async def save_contacts(company_id: str, contacts: list):
+    """Save extracted contacts to dim_contacts"""
+    if not contacts:
+        return 0
+
+    saved = 0
+    for contact in contacts:
+        name = contact.get("name", "").strip()
+        if not name or len(name) < 3:
+            continue
+
+        # Parse first/last name
+        name_parts = name.split()
+        first_name = name_parts[0] if name_parts else ""
+        last_name = " ".join(name_parts[1:]) if len(name_parts) > 1 else ""
+
+        contact_data = {
+            "company_id": company_id,
+            "full_name": name,
+            "first_name": first_name,
+            "last_name": last_name,
+            "title": contact.get("title", ""),
+            "is_atl": True,  # Assume ATL (mentioned on website)
+            "source": "website_scraper_fast",
+            "confidence": 60,  # Medium-low confidence (no title)
+        }
+
+        try:
+            # Upsert to avoid duplicates
+            supabase.table("dim_contacts").upsert(
+                contact_data,
+                on_conflict="company_id,full_name"
+            ).execute()
+            saved += 1
+        except:
+            pass  # Ignore duplicate/error
+
+    return saved
 
 
 async def scrape_and_save(company: dict):
-    """Scrape company website and save ICP signals"""
+    """Scrape company website and save ICP signals + contacts"""
     company_id = company["company_id"]
     company_name = company["company_name"]
     website = company.get("website") or company.get("domain")
@@ -145,6 +214,7 @@ async def scrape_and_save(company: dict):
             return {"status": "failed"}
 
         signals = result.get("signals", {})
+        contacts = result.get("contacts", [])
 
         # Update database
         update_data = {
@@ -170,19 +240,22 @@ async def scrape_and_save(company: dict):
             'ai_enriched_at': datetime.utcnow().isoformat(),
         }
 
-        # Save to database
+        # Save signals to database
         supabase.table('dim_companies').update(update_data).eq('company_id', company_id).execute()
+
+        # Save contacts to database
+        contacts_saved = await save_contacts(company_id, contacts)
 
         # Count signals
         signal_count = sum(1 for k, v in update_data.items() if k.startswith('has_') and v == True)
 
-        # Show WHICH signals (first 3)
-        detected = [k.replace('has_', '') for k, v in update_data.items() if k.startswith('has_') and v == True]
-        signal_preview = ', '.join(detected[:3]) if detected else 'none'
+        # Show WHICH signals (first 2) + contacts
+        detected = [k.replace('has_', '')[:8] for k, v in update_data.items() if k.startswith('has_') and v == True]
+        signal_preview = ', '.join(detected[:2]) if detected else 'none'
 
-        print(f"✅ {signal_count}/13 ({signal_preview})")
+        print(f"✅ {signal_count}/13 ({signal_preview}) +{contacts_saved}👤")
 
-        return {"status": "success", "signals": signal_count}
+        return {"status": "success", "signals": signal_count, "contacts": contacts_saved}
 
     except asyncio.TimeoutError:
         print(f"⏱️  timeout (>{TIMEOUT_PER_COMPANY}s)")
