@@ -41,10 +41,23 @@ IMPORTANT_PAGES = [
     "/solutions",  # Solutions
     "/pricing",    # Pricing - business model
     "/careers",    # Careers - hiring signals
+    "/jobs",       # Jobs - alternate careers page
     "/contact",    # Contact - location info
     "/team",       # Team - leadership
     "/customers",  # Customers - social proof
     "/case-studies",
+    "/service-areas",      # Service areas/locations
+    "/service-area",       # NEW: Singular variant
+    "/reviews",            # NEW: Customer reviews/testimonials (social proof)
+    "/testimonials",       # NEW: Testimonials variant
+    "/awards",             # NEW: Awards/recognition (social proof)
+    "/residential",        # NEW: Residential services
+    "/commercial",         # Commercial services
+    "/commercial-hvac",    # Commercial HVAC (common variant)
+    "/industrial",         # NEW: Industrial services (HIGH VALUE)
+    "/generators",         # Generator offerings
+    "/home-generators",    # Home generators (common variant)
+    "/standby-generators", # Standby generators (common variant)
 ]
 
 # Signals to detect on pages
@@ -73,6 +86,168 @@ GROWTH_SIGNALS = [
     r"industry\s+leader",
     r"trusted\s+by\s+\d+",
     r"serving\s+\d+\s+(customers?|clients?|companies)",
+]
+
+MAINTENANCE_PLAN_SIGNALS = [
+    r"preventive\s+maintenance",
+    r"preventative\s+maintenance",
+    r"maintenance\s+(plan|agreement|contract|program)",
+    r"service\s+(plan|agreement|contract)",
+    r"annual\s+maintenance",
+    r"planned\s+maintenance",
+    r"(pm|ppm)\s+program",  # Preventive Maintenance Program
+]
+
+GENERATOR_SIGNALS = [
+    r"generator\s+(sales|installation|service|repair)",
+    r"standby\s+generator",
+    r"backup\s+generator",
+    r"home\s+generator",
+    r"commercial\s+generator",
+    r"whole[\s-]house\s+generator",
+    r"generac|kohler|cummins",  # Major generator brands
+]
+
+COMMERCIAL_SIGNALS = [
+    r"commercial\s+(hvac|plumbing|electrical)",
+    r"commercial\s+services",
+    r"business\s+services",
+    r"multi[\s-]family",
+    r"property\s+management",
+]
+
+# NEW: Industrial signals (HIGH VALUE - factories, plants, manufacturing)
+INDUSTRIAL_SIGNALS = [
+    r"industrial\s+(hvac|plumbing|electrical|services)",
+    r"manufacturing\s+(plants|facilities)",
+    r"factory\s+electrical",
+    r"plant\s+maintenance",
+    r"industrial\s+controls",
+    r"process\s+control",
+]
+
+# NEW: Membership/MVP program signals (recurring revenue)
+MEMBERSHIP_SIGNALS = [
+    r"mvp\s+(program|plan|membership)",
+    r"membership\s+(program|plan)",
+    r"club\s+member",
+    r"vip\s+(program|member)",
+    r"service\s+club",
+    r"protection\s+plan",
+    r"priority\s+(service|member)",
+]
+
+# NEW: Specials/promotions signals (active marketing)
+SPECIALS_SIGNALS = [
+    r"special\s+(offer|deal|pricing)",
+    r"promotion",
+    r"discount",
+    r"coupon",
+    r"\$\d+\s+off",           # "$50 off"
+    r"\d+%\s+off",            # "10% Off", "20% off"
+    r"limited\s+time",
+    r"save\s+(\$|up\s+to)",
+    r"first\s+(service|call)\s+(call|discount)",  # "10% Off Your First Service Call"
+]
+
+# NEW: Financing signals (mature company indicator)
+FINANCING_SIGNALS = [
+    r"financing\s+(available|options)",
+    r"payment\s+plans",
+    r"0%\s+(apr|financing)",
+    r"easy\s+financing",
+    r"flexible\s+financing",
+]
+
+# NEW: OEM Partnership signals (certified installer = HIGH ICP)
+OEM_PARTNERSHIP_SIGNALS = [
+    r"carrier|trane|lennox|rheem|ruud|york|american\s+standard|goodman",  # HVAC OEMs
+    r"bradford\s+white|a\.?o\.?\s+smith|navien|rinnai|bosch",  # Water heater OEMs
+    r"weil[\s-]mclain|burnham|slant[\s-]fin|peerless",  # Boiler OEMs
+    r"generac|kohler|cummins|briggs",  # Generator OEMs
+    r"authorized\s+(dealer|installer|service\s+provider)",
+    r"certified\s+(dealer|installer|technician)",
+    r"factory[\s-]authorized",
+    r"premier\s+dealer",
+]
+
+# NEW: Emergency Service signals (mature operations)
+EMERGENCY_SERVICE_SIGNALS = [
+    r"24[\s/]7|twenty[\s-]four[\s-]seven",
+    r"emergency\s+(service|repair)",
+    r"same[\s-]day\s+service",
+    r"available\s+24\s+hours",
+]
+
+# NEW: Design-Build signals (HIGH VALUE - integrated design + construction)
+DESIGN_BUILD_SIGNALS = [
+    r"design[\s-]build",
+    r"design[\s/]build",
+    r"design\s+and\s+build",
+    r"turnkey\s+solutions?",
+    r"single[\s-]source\s+solution",
+]
+
+# NEW: Engineering capabilities (HIGH VALUE - in-house technical expertise)
+ENGINEERING_SIGNALS = [
+    r"cad\s+department",
+    r"engineering\s+department",
+    r"in[\s-]house\s+engineer(s|ing)",
+    r"licensed\s+engineer(s)?",
+    r"professional\s+engineer(s)?",
+    r"pe\s+certified",
+    r"project\s+engineer(s)?",
+]
+
+# NEW: Medical/Healthcare specialization (HIGH VALUE - regulated/complex work)
+MEDICAL_SIGNALS = [
+    r"medical\s+gas(\s+piping)?",
+    r"healthcare\s+(facilities|projects)",
+    r"hospital\s+(projects|hvac|plumbing)",
+    r"clean\s+room",
+    r"laboratory\s+(hvac|systems)",
+    r"surgical\s+suite",
+]
+
+# NEW: Building Automation/Controls (HIGH VALUE - smart buildings)
+AUTOMATION_SIGNALS = [
+    r"building\s+automation",
+    r"(bms|bas)\s+system",  # Building Management/Automation System
+    r"building\s+controls?",
+    r"(hvac|system)\s+controls?",
+    r"energy\s+management\s+system",
+    r"smart\s+building",
+    r"(scada|ddc)\s+system",  # Supervisory Control / Direct Digital Control
+]
+
+# NEW: Awards/Recognition (social proof/credibility)
+AWARDS_SIGNALS = [
+    r"award[\s-]winning",
+    r"best\s+of\s+(the\s+)?year",
+    r"industry\s+awards?",
+    r"excellence\s+award",
+    r"top\s+(contractor|company|employer)",
+    r"angi\s+(super|elite)\s+service",
+    r"carrier\s+president'?s?\s+award",
+]
+
+# NEW: Detailed MEP capability detection
+MEP_CAPABILITIES = {
+    "plumbing": r"plumbing|plumber",
+    "drains": r"drain|clog|line\s+cleaning",
+    "sewer": r"sewer|septic|waste\s+water",  # NEW: Separate from drains
+    "hvac": r"hvac|heating|cooling|air\s+conditioning|furnace",
+    "electrical": r"electric|electrician",
+    "water_quality": r"water\s+(quality|filtration|softener|purification)",
+    "water_heater": r"water\s+heater|tankless",
+    "attic": r"attic|insulation",
+    "indoor_air_quality": r"indoor\s+air\s+quality|iaq|air\s+purification",
+}
+
+# NEW: Service area patterns for multi-location detection
+LOCATION_PATTERNS = [
+    r"(\d+)\s+(locations?|offices?|branches?)",
+    r"serving\s+(\d+)\s+(cities|areas|counties)",
 ]
 
 TECH_STACK_PATTERNS = {
@@ -158,8 +333,23 @@ class WebsiteContentScraper:
             "signals": {
                 "is_hiring": False,
                 "has_funding": False,
+                "has_maintenance_plan": False,
+                "has_generators": False,
+                "has_commercial": False,
+                "has_industrial": False,        # NEW: Industrial clients (HIGH VALUE)
+                "has_membership": False,        # NEW: MVP/membership program
+                "has_specials": False,          # NEW: Active promotions
+                "has_financing": False,         # NEW: Offers financing (mature company)
+                "has_oem_partnerships": False,  # NEW: Carrier, Generac, etc. (certified installer)
+                "has_emergency_service": False, # NEW: 24/7 service (mature operations)
+                "has_design_build": False,      # NEW: Design-build capability (HIGH VALUE)
+                "has_engineering": False,       # NEW: In-house engineering/CAD (HIGH VALUE)
+                "has_medical_specialization": False,  # NEW: Medical gas/healthcare (HIGH VALUE)
+                "has_building_automation": False,     # NEW: Building automation/controls (HIGH VALUE)
+                "has_awards": False,            # NEW: Awards/recognition (social proof)
                 "growth_indicators": [],
             },
+            "mep_capabilities": {},  # NEW: Detailed MEP breakdown
             "tech_stack": [],
             "social_links": {},
             "contact_info": {},
@@ -207,10 +397,67 @@ class WebsiteContentScraper:
 
                         # Detect signals
                         text = page_data.get("text", "")
-                        if self._detect_hiring(text):
-                            result["signals"]["is_hiring"] = True
+
+                        # Don't detect hiring from text - will check page existence after loop
+
                         if self._detect_funding(text):
                             result["signals"]["has_funding"] = True
+
+                        # NEW: Detect maintenance plans
+                        if self._detect_maintenance_plans(text):
+                            result["signals"]["has_maintenance_plan"] = True
+
+                        # NEW: Detect generators
+                        if self._detect_generators(text):
+                            result["signals"]["has_generators"] = True
+
+                        # NEW: Detect commercial capability
+                        if self._detect_commercial(text):
+                            result["signals"]["has_commercial"] = True
+
+                        # NEW: Detect industrial capability (HIGH VALUE)
+                        if self._detect_industrial(text):
+                            result["signals"]["has_industrial"] = True
+
+                        # NEW: Detect membership/MVP program
+                        if self._detect_membership_program(text):
+                            result["signals"]["has_membership"] = True
+
+                        # NEW: Detect specials/promotions
+                        if self._detect_specials(text):
+                            result["signals"]["has_specials"] = True
+
+                        # NEW: Detect financing options
+                        if self._detect_financing(text):
+                            result["signals"]["has_financing"] = True
+
+                        # NEW: Detect OEM partnerships (Carrier, Generac, etc.)
+                        if self._detect_oem_partnerships(text):
+                            result["signals"]["has_oem_partnerships"] = True
+
+                        # NEW: Detect emergency service (24/7)
+                        if self._detect_emergency_service(text):
+                            result["signals"]["has_emergency_service"] = True
+
+                        # NEW: Detect design-build capability (HIGH VALUE)
+                        if self._detect_design_build(text):
+                            result["signals"]["has_design_build"] = True
+
+                        # NEW: Detect in-house engineering (HIGH VALUE)
+                        if self._detect_engineering(text):
+                            result["signals"]["has_engineering"] = True
+
+                        # NEW: Detect medical/healthcare specialization (HIGH VALUE)
+                        if self._detect_medical_specialization(text):
+                            result["signals"]["has_medical_specialization"] = True
+
+                        # NEW: Detect building automation/controls (HIGH VALUE)
+                        if self._detect_building_automation(text):
+                            result["signals"]["has_building_automation"] = True
+
+                        # NEW: Detect awards/recognition
+                        if self._detect_awards(text):
+                            result["signals"]["has_awards"] = True
 
                         growth = self._detect_growth(text)
                         result["signals"]["growth_indicators"].extend(growth)
@@ -239,6 +486,12 @@ class WebsiteContentScraper:
             result["signals"]["growth_indicators"] = list(set(result["signals"]["growth_indicators"]))[:5]
             result["services"] = list(set(result["services"]))[:10]
             result["products"] = list(set(result["products"]))[:10]
+
+            # FIXED: Detect hiring by checking if careers/jobs page exists (not text keywords)
+            result["signals"]["is_hiring"] = self._detect_hiring(result["pages_scraped"])
+
+            # NEW: Detect detailed MEP capabilities from all scraped text
+            result["mep_capabilities"] = self._detect_mep_capabilities(result["all_text"])
 
         logger.info(
             "Website content scraped",
@@ -314,13 +567,158 @@ class WebsiteContentScraper:
                     break
         return value_prop[:300].strip()
 
-    def _detect_hiring(self, text: str) -> bool:
-        """Detect if company is hiring."""
+    def _detect_hiring(self, pages_scraped: list) -> bool:
+        """
+        Detect if company is hiring.
+
+        FIXED: Only returns TRUE if /careers or /jobs page was successfully scraped.
+        This prevents false positives from homepage text like "we're hiring!"
+        """
+        for page in pages_scraped:
+            if page["path"] in ["/careers", "/jobs"]:
+                return True  # Careers/Jobs page exists and loaded
+        return False  # No careers page found
+
+    def _detect_maintenance_plans(self, text: str) -> bool:
+        """Detect if company offers maintenance plans/agreements."""
         text_lower = text.lower()
-        for pattern in HIRING_SIGNALS:
+        for pattern in MAINTENANCE_PLAN_SIGNALS:
             if re.search(pattern, text_lower):
                 return True
         return False
+
+    def _detect_generators(self, text: str) -> bool:
+        """Detect if company sells/installs generators."""
+        text_lower = text.lower()
+        for pattern in GENERATOR_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_commercial(self, text: str) -> bool:
+        """Detect if company serves commercial clients."""
+        text_lower = text.lower()
+        for pattern in COMMERCIAL_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_industrial(self, text: str) -> bool:
+        """Detect if company serves industrial clients (HIGH VALUE)."""
+        text_lower = text.lower()
+        for pattern in INDUSTRIAL_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_membership_program(self, text: str) -> bool:
+        """Detect if company offers membership/MVP program (recurring revenue)."""
+        text_lower = text.lower()
+        for pattern in MEMBERSHIP_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_specials(self, text: str) -> bool:
+        """Detect if company has active specials/promotions."""
+        text_lower = text.lower()
+        for pattern in SPECIALS_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_financing(self, text: str) -> bool:
+        """Detect if company offers financing (mature company signal)."""
+        text_lower = text.lower()
+        # Simple keyword check is enough for financing
+        if "financing" in text_lower:
+            return True
+        for pattern in FINANCING_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_oem_partnerships(self, text: str) -> bool:
+        """Detect if company has OEM partnerships/certifications (HIGH ICP signal)."""
+        text_lower = text.lower()
+        for pattern in OEM_PARTNERSHIP_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_emergency_service(self, text: str) -> bool:
+        """Detect if company offers 24/7 emergency service (mature operations)."""
+        text_lower = text.lower()
+        for pattern in EMERGENCY_SERVICE_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_design_build(self, text: str) -> bool:
+        """Detect design-build capability (HIGH VALUE - integrated design + construction)."""
+        text_lower = text.lower()
+        for pattern in DESIGN_BUILD_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_engineering(self, text: str) -> bool:
+        """Detect in-house engineering capability (HIGH VALUE - technical expertise)."""
+        text_lower = text.lower()
+        for pattern in ENGINEERING_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_medical_specialization(self, text: str) -> bool:
+        """Detect medical/healthcare specialization (HIGH VALUE - regulated/complex work)."""
+        text_lower = text.lower()
+        for pattern in MEDICAL_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_building_automation(self, text: str) -> bool:
+        """Detect building automation/controls (HIGH VALUE - smart buildings)."""
+        text_lower = text.lower()
+        for pattern in AUTOMATION_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_awards(self, text: str) -> bool:
+        """Detect awards/recognition (social proof/credibility)."""
+        text_lower = text.lower()
+        for pattern in AWARDS_SIGNALS:
+            if re.search(pattern, text_lower):
+                return True
+        return False
+
+    def _detect_mep_capabilities(self, text: str) -> dict:
+        """
+        Detect detailed MEP capabilities.
+
+        Returns dict like:
+        {
+            "plumbing": True,
+            "drains": True,
+            "hvac": True,
+            "electrical": True,
+            "water_quality": False,
+            ...
+        }
+        """
+        text_lower = text.lower()
+        capabilities = {}
+
+        for capability, pattern in MEP_CAPABILITIES.items():
+            capabilities[capability] = bool(re.search(pattern, text_lower))
+
+        return capabilities
+
+    def _count_mep_capabilities(self, capabilities: dict) -> int:
+        """Count how many MEP capabilities company offers."""
+        return sum(1 for v in capabilities.values() if v)
 
     def _detect_funding(self, text: str) -> bool:
         """Detect funding mentions."""
