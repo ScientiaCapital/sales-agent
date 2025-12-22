@@ -59,6 +59,7 @@ celery_app = Celery(
         "app.tasks.enrichment_tasks",  # Website enrichment
         "app.tasks.elite_team_tasks",  # Trifecta Hunter Elite Squad
         "app.tasks.intake_commander_tasks",  # IntakeCommander (separate from elite_team_tasks)
+        "app.tasks.trigger_monitoring_tasks",  # Trigger Event Monitor (buying signals)
     ]
 )
 
@@ -163,6 +164,10 @@ celery_app.conf.update(
         "app.tasks.elite_team_tasks.run_deep_hunter": {"queue": "workflows"},
         "app.tasks.elite_team_tasks.run_intake_commander": {"queue": "default"},
         "app.tasks.elite_team_tasks.process_scraping_order": {"queue": "workflows"},
+        # Trigger Event Monitor tasks
+        "app.tasks.trigger_monitoring_tasks.monitor_trigger_events_task": {"queue": "default"},
+        "app.tasks.trigger_monitoring_tasks.detect_trigger_events_for_company_task": {"queue": "default"},
+        "app.tasks.trigger_monitoring_tasks.get_trigger_event_stats_task": {"queue": "default"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -362,6 +367,16 @@ celery_app.conf.update(
         },
         # Deep Hunter is event-driven (triggered by Signal Scout orders)
         # No scheduled task - runs via process_scraping_order when orders arrive
+        # ========== TRIGGER EVENT MONITOR SCHEDULE ==========
+        # Trigger Event Monitor - detect buying signals hourly at :45 (Dec 22: funding, hiring, news)
+        # Monitors ICP companies (PLATINUM/GOLD/SILVER) with enriched contacts (phone + email)
+        # Parallelization: Runs at :45 offset from BDR (:00, :20, :40), ICP (:00), Scout (:15)
+        "trigger-event-monitor-hourly": {
+            "task": "monitor_trigger_events_hourly",
+            "schedule": crontab(minute=45),  # :45 past each hour
+            "args": (50,),  # Check up to 50 companies per run
+            "options": {"queue": "default"},
+        },
     },
 )
 
@@ -390,6 +405,8 @@ TRACKED_AGENTS = {
     "run_deep_hunter": "deep_hunter",
     "run_intake_commander": "intake_commander",
     "process_scraping_order": "deep_hunter",  # Maps to deep_hunter
+    # Trigger Event Monitor
+    "monitor_trigger_events_hourly": "trigger_event_monitor",
 }
 
 
