@@ -40,35 +40,85 @@ TIMEOUT_PER_COMPANY = 30     # Max 30 seconds per company
 # Connect to Supabase
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
 
-# BALANCED page list - check 10 key pages (not 5, not 20)
+# COMPREHENSIVE page list - check all common variants (15 pages)
 ESSENTIAL_PAGES = [
-    "/",                   # Homepage - ALWAYS check
-    "/about",              # Company info
-    "/services",           # Services overview
-    "/commercial",         # Commercial signal
-    "/commercial-hvac",    # Commercial HVAC variant
-    "/industrial",         # Industrial signal (high-value)
-    "/generators",         # Generator offerings
-    "/financing",          # Financing options
-    "/awards",             # Awards/recognition
-    "/team",               # Team page
+    # Core pages (always check)
+    "/",                      # Homepage
+    "/about",                 # About us
+    "/about-us",              # About variant
+
+    # Services pages (multiple variants)
+    "/services",              # Services
+    "/service-division",      # Services variant (Gibson, etc.)
+    "/what-we-do",            # Services variant
+    "/capabilities",          # Capabilities
+
+    # High-value signals
+    "/commercial",            # Commercial
+    "/commercial-services",   # Commercial variant
+    "/industrial",            # Industrial (HIGH VALUE)
+    "/design-build",          # Design-build (HIGH VALUE)
+
+    # Other signals
+    "/generators",            # Generators
+    "/awards",                # Awards
+    "/team",                  # Team/contacts
 ]
 
-# Signal detection patterns (simplified)
+# Signal detection patterns (comprehensive)
 SIGNAL_PATTERNS = {
-    'has_commercial': [r'commercial', r'business', r'office'],
-    'has_industrial': [r'industrial', r'manufacturing', r'facility', r'plant'],
-    'has_generators': [r'generator', r'backup power', r'standby power'],
-    'has_design_build': [r'design.build', r'design/build', r'design & build'],
-    'has_engineering': [r'engineering', r'CAD', r'design engineer', r'PE license'],
-    'has_medical_specialization': [r'medical gas', r'healthcare', r'hospital', r'clinic'],
-    'has_building_automation': [r'building automation', r'BAS', r'controls', r'automation system'],
-    'has_financing': [r'financing', r'payment plan', r'0%.*financing'],
-    'has_awards': [r'award', r'recognition', r'certified', r'accredited'],
-    'has_emergency_service': [r'24/7', r'24 hour', r'emergency', r'always available'],
-    'has_oem_partnerships': [r'carrier', r'trane', r'lennox', r'generac', r'kohler', r'authorized dealer'],
-    'has_specials': [r'special', r'promotion', r'discount', r'coupon'],
-    'has_membership': [r'membership', r'maintenance plan', r'service plan', r'club'],
+    'has_commercial': [
+        r'commercial', r'business', r'office', r'retail', r'multi.?family',
+        r'commercial projects', r'commercial clients'
+    ],
+    'has_industrial': [
+        r'industrial', r'manufacturing', r'facility', r'plant', r'warehouse',
+        r'industrial projects', r'process piping', r'heavy\s+industrial'
+    ],
+    'has_generators': [
+        r'generator', r'backup power', r'standby power', r'emergency power',
+        r'generac', r'kohler', r'cummins'
+    ],
+    'has_design_build': [
+        r'design.build', r'design/build', r'design & build', r'design-build',
+        r'turnkey', r'design.construct'
+    ],
+    'has_engineering': [
+        r'engineering', r'engineer', r'CAD', r'design engineer', r'PE license',
+        r'in.?house engineering', r'engineering team', r'mechanical engineer'
+    ],
+    'has_medical_specialization': [
+        r'medical gas', r'healthcare', r'hospital', r'clinic', r'med.?gas',
+        r'healthcare facilities', r'medical facilities'
+    ],
+    'has_building_automation': [
+        r'building automation', r'BAS', r'controls', r'automation system',
+        r'HVAC controls', r'building controls', r'smart building', r'BMS'
+    ],
+    'has_financing': [
+        r'financing', r'payment plan', r'0%.*financing', r'finance options',
+        r'flexible payment', r'financing available'
+    ],
+    'has_awards': [
+        r'award', r'recognition', r'certified', r'accredited', r'abc\s+award',
+        r'safety award', r'excellence award'
+    ],
+    'has_emergency_service': [
+        r'24/7', r'24 hour', r'emergency', r'always available',
+        r'emergency service', r'on.?call'
+    ],
+    'has_oem_partnerships': [
+        r'carrier', r'trane', r'lennox', r'generac', r'kohler', r'authorized dealer',
+        r'certified installer', r'factory.?authorized', r'preferred contractor'
+    ],
+    'has_specials': [
+        r'special', r'promotion', r'discount', r'coupon', r'limited.?time',
+        r'save \$', r'\$\d+\s+off'
+    ],
+    'has_membership': [
+        r'membership', r'maintenance plan', r'service plan', r'club',
+        r'maintenance agreement', r'service agreement', r'preventive maintenance'
+    ],
 }
 
 
