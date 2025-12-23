@@ -4,11 +4,9 @@ FAST Batch ICP Signal Scraper
 ==============================
 Speed-optimized version that checks only essential pages.
 
-Changes from slow version:
-- Only checks 7 key pages (not 20+)
-- 30 second timeout per company
-- Skips on repeated 404s
-- ~20 seconds per company instead of 2-3 minutes
+Uses:
+- BeautifulSoup: Fast ICP signal detection (keywords)
+- Browserbase: High-quality contact extraction (JavaScript rendering)
 
 Usage:
     python3 batch_scrape_icp_signals_fast.py              # Start batch 0
@@ -20,6 +18,7 @@ Date: Dec 22, 2025
 """
 import asyncio
 import os
+import sys
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
@@ -28,9 +27,14 @@ import argparse
 import httpx
 from bs4 import BeautifulSoup
 import re
-from collections import Counter
+
+# Add app to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 load_dotenv(Path(__file__).parent.parent / '.env')
+
+# Import Browserbase team scraper
+from app.services.browserbase_team_scraper import BrowserbaseTeamScraper
 
 # Config
 BATCH_SIZE = 25
@@ -40,7 +44,7 @@ TIMEOUT_PER_COMPANY = 30     # Max 30 seconds per company
 # Connect to Supabase
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
 
-# COMPREHENSIVE page list - check all common variants (15 pages)
+# COMPREHENSIVE page list - check all common variants (20 pages)
 ESSENTIAL_PAGES = [
     # Core pages (always check)
     "/",                      # Homepage
@@ -62,7 +66,13 @@ ESSENTIAL_PAGES = [
     # Other signals
     "/generators",            # Generators
     "/awards",                # Awards
-    "/team",                  # Team/contacts
+
+    # Team/people pages (for contact extraction)
+    "/team",                  # Team
+    "/our-team",              # Our team
+    "/leadership",            # Leadership
+    "/management",            # Management
+    "/meet-the-team",         # Meet the team
 ]
 
 # Signal detection patterns (comprehensive)
@@ -125,24 +135,85 @@ SIGNAL_PATTERNS = {
 def extract_contacts(text: str) -> list:
     """
     Extract contact names from text.
-    Looks for capitalized names (2-3 words) that appear multiple times.
+    Looks for capitalized names (2-3 words) that look like real people.
     """
     # Find all potential names (2-3 capitalized words)
     name_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b'
     potential_names = re.findall(name_pattern, text)
 
-    # Filter out common non-names
-    stopwords = {'The', 'Our', 'About', 'Contact', 'Services', 'Home', 'Team', 'And',
-                 'With', 'From', 'When', 'This', 'That', 'More', 'All', 'New', 'Get',
-                 'North', 'South', 'East', 'West', 'United States', 'North Florida'}
+    # EXTENSIVE stopword list - filter out garbage
+    stopwords = {
+        # Common words
+        'The', 'Our', 'About', 'Contact', 'Services', 'Home', 'Team', 'And', 'With', 'From',
+        'When', 'This', 'That', 'More', 'All', 'New', 'Get', 'Learn', 'Read', 'Click', 'View',
 
-    filtered = [name for name in potential_names if name not in stopwords and len(name) > 3]
+        # Directions & locations
+        'North', 'South', 'East', 'West', 'United States', 'North Florida', 'South Florida',
+        'New York', 'New Jersey', 'New Hampshire', 'New Mexico', 'North Carolina', 'South Carolina',
+        'North Dakota', 'South Dakota', 'West Virginia', 'Rhode Island', 'Puerto Rico',
 
-    # Count frequency - names mentioned 2+ times are likely real people
-    name_counts = Counter(filtered)
-    contacts = [{"name": name, "title": ""} for name, count in name_counts.items() if count >= 2]
+        # Address components
+        'Street Address', 'City', 'State', 'Zip', 'Code', 'Panther Ln', 'Suite', 'Address Line',
 
-    return contacts[:10]  # Max 10 contacts per company
+        # Business terms
+        'Home Services', 'Commercial Roofing', 'Residential Roofing', 'Insurance Process',
+        'Free Estimate', 'Read Reviews', 'Request Your', 'Contact Us', 'About Us', 'Learn More',
+        'Emergency Repair', 'Roof Types', 'Additional Services', 'Special Offer', 'Get Started',
+        'Click Here', 'Sign Up', 'Call Now', 'Schedule Now', 'Book Now', 'Learn How',
+
+        # Building/construction terms
+        'Asphalt Shingle', 'Roof Repair', 'Emergency Tarping', 'General Contractor',
+        'Building Automation', 'Design Build', 'Roofing Contractor', 'Heating Cooling',
+
+        # Generic phrases
+        'Your Name', 'First Name', 'Last Name', 'Email Address', 'Phone Number',
+        'Corporate Office', 'Corporate Phone', 'Armed Forces', 'Select An',
+        'Refer A', 'Message Us', 'Follow Us', 'Join Us',
+
+        # US states (abbreviated forms often show up)
+        'Florida', 'Georgia', 'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado',
+        'Connecticut', 'Delaware', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas',
+        'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+        'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'Ohio', 'Oklahoma', 'Oregon',
+        'Pennsylvania', 'Tennessee', 'Texas', 'Vermont', 'Virginia', 'Washington', 'Wisconsin', 'Wyoming',
+
+        # Common company suffixes
+        'Inc', 'Llc', 'Corp', 'Corporation', 'Company', 'Group', 'Associates', 'Partners',
+    }
+
+    # Filter out stopwords and obvious non-names
+    filtered = []
+    for name in potential_names:
+        # Skip if in stopwords
+        if name in stopwords:
+            continue
+
+        # Skip if too short
+        if len(name) <= 3:
+            continue
+
+        # Skip if contains common non-name patterns
+        if any(word in name for word in ['Roof', 'Roofing', 'Service', 'Services', 'Construction',
+                                          'Heating', 'Cooling', 'Plumbing', 'Electric', 'Solar',
+                                          'Building', 'Phone', 'Fax', 'Email', 'Office', 'Coast',
+                                          'Island', 'County', 'City', 'Street', 'Avenue', 'Drive',
+                                          'Suite', 'Floor', 'Building', 'Center', 'Plaza']):
+            continue
+
+        # Skip if all parts are too short (like "Jo Ann")
+        parts = name.split()
+        if all(len(part) <= 2 for part in parts):
+            continue
+
+        filtered.append(name)
+
+    # Remove duplicates, keep unique names
+    unique_names = list(set(filtered))
+
+    # Return as contact list (accepting names mentioned even just 1 time)
+    contacts = [{"name": name, "title": ""} for name in unique_names]
+
+    return contacts[:15]  # Max 15 contacts per company
 
 
 async def fast_scrape(website: str) -> dict:
