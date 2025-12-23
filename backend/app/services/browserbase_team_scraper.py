@@ -310,13 +310,13 @@ class BrowserbaseTeamScraper:
                         if is_garbage_name(name):
                             continue
 
-                        if name and title and is_atl_title(title):
+                        if name:  # Get ALL real names for cold calling
                             contacts.append({
                                 "name": name,
                                 "title": title,
                                 "email": email
                             })
-                            logger.info(f"Found ATL contact: {name} ({title})")
+                            logger.info(f"Found contact: {name} ({title if title else 'no title'})")
 
                     except Exception as card_error:
                         logger.debug(f"Error extracting card: {card_error}")
@@ -533,15 +533,155 @@ class BrowserbaseTeamScraper:
 
                         # If we found contacts, stop searching
                         if contacts:
-                            logger.info(f"Found {len(contacts)} ATL contacts on {team_url}")
+                            logger.info(f"Found {len(contacts)} contacts on {team_url}")
                             break
                         else:
-                            # Page loaded but no team cards - count it
+                            # No team cards found - try extracting names from raw text
+                            logger.debug(f"No team cards on {team_url}, trying text extraction")
+                            try:
+                                # Get page text but EXCLUDE review/testimonial sections
+                                for review_section in await page.query_selector_all(
+                                    '[class*="review"], [class*="testimonial"], [class*="feedback"], '
+                                    '[class*="rating"], [id*="review"], [id*="testimonial"]'
+                                ):
+                                    try:
+                                        await review_section.evaluate('node => node.remove()')
+                                    except:
+                                        pass
+
+                                page_text = await page.inner_text('body')
+                                # Extract names using regex (2-3 capitalized words)
+                                import re
+                                from collections import Counter
+                                name_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\b'
+                                potential_names = re.findall(name_pattern, page_text)
+
+                                # Cast net WIDE - get all names, filter garbage at END
+                                for name in set(potential_names):
+                                    # Basic checks only
+                                    if is_garbage_name(name):
+                                        continue
+
+                                    # Must be 2-3 words (person names)
+                                    parts = name.split()
+                                    if len(parts) < 2 or len(parts) > 3:
+                                        continue
+
+                                    # Each part at least 3 letters
+                                    if any(len(part) < 3 for part in parts):
+                                        continue
+
+                                    contacts.append({
+                                        "name": name,
+                                        "title": "",
+                                        "email": None
+                                    })
+
+                                # POST-PROCESSING: Smart garbage filter at the END
+                                def is_likely_garbage(name):
+                                    """Smart filter - catches garbage but keeps real people"""
+                                    # Check for newlines (multi-field extraction errors)
+                                    if '\n' in name or '%0A' in name:
+                                        return True
+
+                                    name_lower = name.lower()
+                                    parts_lower = [p.lower() for p in name.split()]
+
+                                    # If name has 4+ words, likely garbage (real names are 2-3 words)
+                                    if len(parts_lower) > 3:
+                                        return True
+
+                                    # Location indicators (expanded)
+                                    locations = {'jacksonville', 'orlando', 'tampa', 'miami', 'florida', 'ponte', 'vedra',
+                                                'flagler', 'palm', 'coast', 'north', 'south', 'east', 'west', 'saint',
+                                                'fleming', 'island', 'beach', 'city', 'county', 'state', 'park', 'orange',
+                                                'augustine', 'johns', 'space', 'castro', 'valley', 'fort', 'smith',
+                                                'norman', 'broce', 'drive', 'avenue', 'street', 'road', 'boulevard',
+                                                'oklahoma', 'arkansas', 'texas', 'california', 'york', 'angeles'}
+
+                                    # Product/service words
+                                    products = {'roofing', 'hvac', 'plumbing', 'electric', 'solar', 'heating', 'cooling',
+                                               'construction', 'contractor', 'service', 'services', 'building', 'roof',
+                                               'asphalt', 'shingle', 'installation', 'repair', 'emergency', 'tarping',
+                                               'residential', 'commercial', 'industrial', 'electrical', 'development',
+                                               'contracting', 'general', 'mechanical', 'structural', 'design', 'build'}
+
+                                    # Common garbage patterns
+                                    garbage_patterns = {'learn', 'more', 'read', 'view', 'click', 'about', 'contact',
+                                                       'home', 'team', 'our', 'the', 'and', 'from', 'used', 'with',
+                                                       'insurance', 'claims', 'damage', 'recognition', 'handling',
+                                                       'certified', 'certification', 'institute', 'association',
+                                                       'qualifications', 'hurricane', 'storm', 'matthew', 'irma',
+                                                       'phone', 'fax', 'corporate', 'ladder', 'assistance', 'guys',
+                                                       'super', 'inspector', 'vinyl', 'siding', 'bold', 'agency',
+                                                       # Website boilerplate
+                                                       'mission', 'statement', 'rights', 'reserved', 'copyright',
+                                                       'privacy', 'policy', 'terms', 'conditions', 'notice',
+                                                       'disclaimer', 'trademark', 'inc', 'llc', 'ltd',
+                                                       # Action words
+                                                       'get', 'started', 'free', 'quote', 'call', 'now',
+                                                       'schedule', 'appointment', 'request', 'estimate',
+                                                       # Generic phrases
+                                                       'welcome', 'back', 'top', 'bottom', 'here', 'there',
+                                                       'this', 'that', 'these', 'those', 'what', 'when',
+                                                       'where', 'why', 'how', 'who', 'menu', 'navigation',
+                                                       # Page structure / navigation
+                                                       'main', 'content', 'areas', 'reviews', 'products', 'footer',
+                                                       'header', 'sidebar', 'section', 'page', 'site', 'web',
+                                                       # Awards
+                                                       'award', 'awards', 'excalibur', 'chairman', 'year', 'winner',
+                                                       'excellence', 'star', 'platinum', 'gold', 'silver', 'bronze',
+                                                       # Job titles (when appearing in extracted names)
+                                                       'electrician', 'manager', 'founder', 'apprentice', 'consultant',
+                                                       'rated', 'specialist', 'coordinator', 'administrator',
+                                                       # Business terms
+                                                       'operated', 'owned', 'veteran', 'business', 'group', 'investments',
+                                                       'global', 'america', 'brazil', 'vixus', 'truss', 'enterprises',
+                                                       'solutions', 'systems', 'technologies', 'industries',
+                                                       # Services/Products
+                                                       'backup', 'generator', 'generators', 'maintenance', 'energy',
+                                                       'efficiency', 'security', 'audits', 'lighting', 'outdoor',
+                                                       'brands', 'generac', 'cummins', 'power', 'generation',
+                                                       # UI/Navigation/Generic
+                                                       'watch', 'video', 'connecting', 'businesses', 'communities',
+                                                       'buyers', 'sellers', 'english', 'good', 'google', 'oct',
+                                                       'cash', 'check', 'languages', 'delivery', 'payment', 'options',
+                                                       'compliance', 'quality', 'cover', 'direct', 'safety', 'cyber'}
+
+                                    # If any word matches locations
+                                    if any(word in locations for word in parts_lower):
+                                        return True
+
+                                    # If any word matches products/services
+                                    if any(word in products for word in parts_lower):
+                                        return True
+
+                                    # If any word matches garbage patterns
+                                    if any(word in garbage_patterns for word in parts_lower):
+                                        return True
+
+                                    # Keep it - looks like a real person
+                                    return False
+
+                                # Filter garbage, keep real names
+                                contacts = [c for c in contacts if not is_likely_garbage(c['name'])]
+                                logger.debug(f"After garbage filter: {len(contacts)} contacts remain")
+
+                                # If we found contacts via text extraction, we're done
+                                if contacts:
+                                    # Limit to 10 contacts max to avoid spam
+                                    contacts = contacts[:10]
+                                    logger.info(f"Found {len(contacts)} contacts via text extraction on {team_url}")
+                                    break
+                            except Exception as text_error:
+                                logger.debug(f"Text extraction failed: {text_error}")
+
+                            # Page loaded but no contacts found
                             successful_loads_without_contacts += 1
                             if successful_loads_without_contacts >= MAX_EMPTY_PAGES:
                                 logger.info(
                                     f"Early exit: {successful_loads_without_contacts} pages loaded "
-                                    f"without team cards - site likely has no team page"
+                                    f"without contacts - site likely has no team info"
                                 )
                                 break
 
