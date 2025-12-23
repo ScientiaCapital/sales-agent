@@ -144,14 +144,12 @@ class WebsiteCrawler:
         # Crawl state
         crawled_urls: set[str] = set()
 
-        # Start with homepage + priority pages for contact extraction
+        # Start with homepage + top priority pages (reduced to fail fast)
         priority_pages = [
             "",  # Homepage
-            "/about", "/about-us", "/about-us/",
-            "/team", "/our-team", "/leadership", "/leadership/",
-            "/contact", "/contact-us",
-            "/staff", "/people", "/management",
-            "/our-leadership", "/executive-team", "/executives",
+            "/about", "/about-us",
+            "/team", "/our-team", "/leadership",
+            "/contact",
         ]
 
         pending_urls: list[tuple[str, int]] = []
@@ -238,6 +236,10 @@ class WebsiteCrawler:
                             url=current_url,
                             error=str(e),
                         )
+                        # If homepage fails, abort entire crawl (site is likely unreachable)
+                        if depth == 0 and len(results) == 0:
+                            logger.error("Homepage failed - aborting crawl", url=current_url)
+                            break
                         continue
 
                 await browser.close()
@@ -279,11 +281,11 @@ class WebsiteCrawler:
         start_time = time.time()
 
         try:
-            # Navigate with networkidle for SPA support
-            await page.goto(url, wait_until="networkidle", timeout=30000)
+            # Navigate with load (faster than networkidle, which waits for all network activity)
+            await page.goto(url, wait_until="load", timeout=15000)
 
-            # Extra wait for SPA content to render
-            await asyncio.sleep(3.0)
+            # Brief wait for SPA content to render
+            await asyncio.sleep(1.5)
 
             # Try to wait for common content elements
             try:

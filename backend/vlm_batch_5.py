@@ -12,6 +12,7 @@ Usage:
     python3 vlm_batch_5.py --source spw       # Only SPW (Solar Power World) companies
     python3 vlm_batch_5.py --source amicus    # Only Amicus Solar companies
     python3 vlm_batch_5.py --source solar     # Both SPW + Amicus
+    python3 vlm_batch_5.py --no-contacts      # Only companies with 0 contacts
     python3 vlm_batch_5.py --test             # Dry run
 
 Author: Claude + Tim
@@ -46,7 +47,7 @@ MAX_PAGES_PER_COMPANY = 10
 DELAY_BETWEEN_COMPANIES = 2
 
 
-def get_companies_to_process(tier: str = None, source: str = None, offset: int = 0, limit: int = BATCH_SIZE) -> list:
+def get_companies_to_process(tier: str = None, source: str = None, offset: int = 0, limit: int = BATCH_SIZE, no_contacts: bool = False) -> list:
     """
     Get companies that need VLM enrichment.
 
@@ -60,6 +61,41 @@ def get_companies_to_process(tier: str = None, source: str = None, offset: int =
     - 'amicus': Amicus Solar companies only
     - 'solar': Both SPW + Amicus
     """
+    # If filtering for companies with 0 contacts, get those IDs first
+    if no_contacts:
+        # Get all company IDs that have contacts
+        contacts = supabase.table("dim_contacts").select("company_id").execute()
+        cos_with_contacts = set(c["company_id"] for c in contacts.data)
+
+        # Get all companies with websites
+        all_query = supabase.table("dim_companies") \
+            .select("company_id, company_name, website, domain, icp_tier, icp_score, source_type") \
+            .not_.is_("website", "null")
+
+        if tier:
+            all_query = all_query.eq("icp_tier", tier.upper())
+
+        if source:
+            source = source.lower()
+            if source == 'spw':
+                all_query = all_query.eq("source_type", "spw_scraper")
+            elif source == 'amicus':
+                all_query = all_query.eq("source_type", "amicus_scraper")
+            elif source == 'solar':
+                all_query = all_query.in_("source_type", ["spw_scraper", "amicus_scraper"])
+
+        all_companies = all_query.execute().data
+
+        # Filter to only those with 0 contacts
+        no_contact_companies = [c for c in all_companies if c["company_id"] not in cos_with_contacts]
+
+        # Sort by tier priority (PLATINUM > GOLD > SILVER > BRONZE)
+        tier_order = {"PLATINUM": 0, "GOLD": 1, "SILVER": 2, "BRONZE": 3, None: 4}
+        no_contact_companies.sort(key=lambda x: (tier_order.get(x.get("icp_tier"), 4), -(x.get("icp_score") or 0)))
+
+        # Apply pagination
+        return no_contact_companies[offset:offset + limit]
+
     query = supabase.table("dim_companies") \
         .select("company_id, company_name, website, domain, icp_tier, icp_score, source_type") \
         .not_.is_("website", "null")
@@ -289,11 +325,11 @@ async def process_company(
     }
 
 
-async def run_batch(offset: int = 0, tier: str = None, dry_run: bool = False):
+async def run_batch(offset: int = 0, tier: str = None, source: str = None, dry_run: bool = False, no_contacts: bool = False):
     """Run a batch of 5 companies."""
 
     # Get companies
-    companies = get_companies_to_process(tier=tier, offset=offset, limit=BATCH_SIZE)
+    companies = get_companies_to_process(tier=tier, source=source, offset=offset, limit=BATCH_SIZE, no_contacts=no_contacts)
 
     if not companies:
         print(f"\nNo companies found at offset {offset}")
@@ -303,6 +339,8 @@ async def run_batch(offset: int = 0, tier: str = None, dry_run: bool = False):
     print(f"VLM BATCH EXTRACTION - Companies {offset + 1} to {offset + len(companies)}")
     print("=" * 70)
     print(f"Tier filter: {tier or 'All'}")
+    print(f"Source filter: {source or 'All'}")
+    print(f"No contacts filter: {no_contacts}")
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}")
     print("=" * 70)
 
@@ -360,7 +398,10 @@ async def run_batch(offset: int = 0, tier: str = None, dry_run: bool = False):
 
     # Next batch prompt
     if not dry_run and len(companies) == BATCH_SIZE:
-        print(f"\n To continue: python3 vlm_batch_5.py --offset {offset + BATCH_SIZE}")
+        source_arg = f" --source {source}" if source else ""
+        no_contacts_arg = " --no-contacts" if no_contacts else ""
+        tier_arg = f" --tier {tier}" if tier else ""
+        print(f"\n To continue: python3 vlm_batch_5.py --offset {offset + BATCH_SIZE}{source_arg}{tier_arg}{no_contacts_arg}")
 
     print("=" * 70 + "\n")
 
@@ -371,10 +412,12 @@ async def main():
     parser = argparse.ArgumentParser(description="VLM batch contact extraction")
     parser.add_argument('--offset', type=int, default=0, help='Starting offset (default: 0)')
     parser.add_argument('--tier', type=str, help='Filter by tier (PLATINUM, GOLD, SILVER, BRONZE)')
+    parser.add_argument('--source', type=str, help='Filter by source: spw, amicus, or solar (both)')
+    parser.add_argument('--no-contacts', action='store_true', dest='no_contacts', help='Only companies with 0 contacts')
     parser.add_argument('--test', action='store_true', help='Dry run - no changes')
     args = parser.parse_args()
 
-    await run_batch(offset=args.offset, tier=args.tier, dry_run=args.test)
+    await run_batch(offset=args.offset, tier=args.tier, source=args.source, dry_run=args.test, no_contacts=args.no_contacts)
 
 
 if __name__ == "__main__":
