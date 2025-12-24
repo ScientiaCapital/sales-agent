@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-18
+**Last Updated**: 2025-12-24
 
 ---
 
@@ -8,17 +8,144 @@
 
 | Metric | Count |
 |--------|-------|
-| Total Companies | 3,420 |
-| Total Contacts | 19,170 |
-| ATL (Decision Makers) | 7,590 |
-| BTL Contacts | 11,580 |
-| Email + Phone | 381 |
-| Email Only | 15,086 |
-| With Websites | 3,320 |
+| Total Companies | 3,422 |
+| Total Contacts | 11,803 |
+| VLM Contacts | 125 |
+| Apollo Contacts in Close | 1,134 |
+| Companies with 0 Contacts | 314 |
+
+**Note**: Contact count reduced from 23,216 to 11,803 after data integrity fixes (garbage cleanup + deduplication).
 
 ---
 
-## LATEST UPDATE (Dec 18 - Executive Dashboard + Infrastructure Fixes)
+## LATEST UPDATE (Dec 23 - Close CRM Apollo Campaign)
+
+### GTM Campaign Launch - COMPLETE ✅
+
+**The Goal**: Enroll Apollo leads in persona-matched Close CRM workflows for Dec 29 start.
+
+| Metric | Count |
+|--------|-------|
+| Apollo contacts pushed to Close | 1,134 |
+| ICP-Energy-Multitrade enrollments | 688 |
+| Solar-Pivot-2026 enrollments | 95 |
+| Start Date | Dec 29, 2025 @ 9:00 AM ET |
+
+### New Workflows Created
+
+| Workflow | Persona | Companies | Contacts |
+|----------|---------|-----------|----------|
+| `ICP-Energy-Multitrade` | Multi-trade, multi-OEM Frankenstacks | 227 | 580 |
+| `Solar-Pivot-2026` | Pure solar adding trades | 22 | 34 |
+
+### Workflow Templates (Email + SMS)
+
+**ICP-Energy-Multitrade** (4 emails, 4 SMS):
+- Email 1: "replatforming before 2026?" - Multi-OEM pain hook
+- Email 2: "re: replatforming before 2026?" - Warranty complexity
+- Email 3: "too big for QuickBooks, too small for ServiceTitan" - Goldilocks
+- Email 4: "closing this out" - Breakup with Director's Cut
+
+**Solar-Pivot-2026** (4 emails, 4 SMS):
+- Email 1: "adding storage or HVAC in 2026?" - Solar pivot hook
+- Email 2: "re: what's your +X?" - The +X trade question
+- Email 3: "leapfrog the legacy trades" - Competitive positioning
+- Email 4: "closing this out" - Breakup
+
+### Exclusions Applied
+
+| Company | Reason |
+|---------|--------|
+| Go Solar Power | Customer |
+| Sundance Power Systems | Customer |
+| Sparkfund | Unqualified |
+| StraightUp Solar | Recent campaign |
+
+### Workflow IDs
+
+| Workflow | Sequence ID |
+|----------|-------------|
+| ICP-Energy-Multitrade | `seq_469XPP98mPXSR2wh5cX9y6` |
+| Solar-Pivot-2026 | `seq_0FHFD0OQtDAOS8x40MIANW` |
+
+### Tracking
+
+- All contacts have `close_contact_id` stored in Supabase `dim_contacts`
+- `close_pushed_at` timestamp for audit trail
+- `source = 'apollo_reveal'` for campaign attribution
+- Close CRM tracks opens, clicks, replies per contact
+
+---
+
+## PREVIOUS UPDATE (Dec 24 - Data Integrity Fixes)
+
+### Phase 0: Data Integrity - COMPLETE ✅
+
+**The Problem**: Database had 7,556 garbage contacts ("None None", NULLs) and 3,857 duplicates. No constraints to prevent future issues.
+
+**The Solution**: Data cleanup + SaveVerifier class with mandatory readback verification.
+
+| Task | Status |
+|------|--------|
+| Delete 7,556 garbage contacts | ✅ DONE |
+| Deduplicate 3,857 contacts | ✅ DONE |
+| Add UNIQUE constraint (company_id, full_name) | ✅ DONE |
+| Create SaveVerifier class | ✅ DONE |
+| Update vlm_batch_5.py with verification | ✅ DONE |
+| Update batch_scrape_icp_signals.py | ✅ DONE |
+| Fix VLM to save visual signals | ✅ DONE |
+| Delete 7 one-time audit scripts | ✅ DONE |
+
+### New Files Created
+
+| File | Purpose |
+|------|---------|
+| `backend/app/services/save_verifier.py` | Mandatory readback verification for all saves |
+| `supabase/migrations/20251224_data_integrity_fixes.sql` | Garbage cleanup + constraints |
+| `supabase/migrations/20251224_constraints_only.sql` | UNIQUE index + error table |
+
+### SaveVerifier Features
+
+- Readback verification after every INSERT/UPDATE
+- Case-insensitive duplicate detection
+- Retry logic with exponential backoff
+- Error logging to `fact_enrichment_errors` table
+- Validation of contact names (min 3 chars, no garbage)
+
+---
+
+## PREVIOUS UPDATE (Dec 23 - VLM Batch Extraction)
+
+### VLM Contact Extraction - OPERATIONAL ✅
+
+| Metric | Count |
+|--------|-------|
+| Companies Processed | 30 |
+| VLM Contacts Added | 125 |
+| ATL (C-suite/VP+) | 56 |
+| BTL (Other roles) | 69 |
+| Cost | ~$0.15 |
+| Cost per Contact | $0.0012 |
+
+**Key Files**:
+- `backend/vlm_batch_5.py` - Main VLM extraction script
+- `backend/app/services/vlm_contact_extractor.py` - VLM extraction service
+- `backend/app/services/website_crawler.py` - Browserbase crawler
+
+### VLM Visual Signals (Now Saved)
+
+| Signal | Detection |
+|--------|-----------|
+| `has_design_build` | "Design-Build", "Turnkey" |
+| `has_engineering` | "Engineering Dept", "In-House CAD" |
+| `has_medical_specialization` | "Medical Gas", "Healthcare" |
+| `has_building_automation` | "BMS", "Controls" |
+| `has_awards` | Award badges, certifications |
+| `has_oem_partnerships` | "Carrier Dealer", "Generac Auth" |
+
+---
+
+## PREVIOUS UPDATE (Dec 18 - Executive Dashboard + Infrastructure Fixes)
 
 ### Executive Dashboard Enhancement - COMPLETE ✅
 

@@ -25,7 +25,8 @@ try:
     Cerebras = _Cerebras
     CEREBRAS_AVAILABLE = True
 except ImportError:
-    logger.warning("cerebras-cloud-sdk not installed. CerebrasService features will be disabled.")
+    # Debug level - not needed for VLM extraction which uses OpenRouter
+    logger.debug("cerebras-cloud-sdk not installed. CerebrasService features will be disabled.")
     CEREBRAS_AVAILABLE = False
 
 

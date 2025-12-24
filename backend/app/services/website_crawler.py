@@ -144,12 +144,80 @@ class WebsiteCrawler:
         # Crawl state
         crawled_urls: set[str] = set()
 
-        # Start with homepage + top priority pages (reduced to fail fast)
+        # =====================================================================
+        # PRIORITY PAGE PATTERNS (50+ patterns)
+        # Scientia Capital proprietary crawler intelligence
+        # Optimized for contractor/B2B company team discovery
+        # =====================================================================
         priority_pages = [
-            "",  # Homepage
-            "/about", "/about-us",
-            "/team", "/our-team", "/leadership",
+            "",  # Homepage (always first)
+
+            # === TEAM PAGES (highest value - ATL contacts) ===
+            "/team",
+            "/our-team",
+            "/leadership",
+            "/leadership-team",
+            "/staff",
+            "/people",
+            "/management",
+            "/executives",
+            "/executive-team",
+            "/meet-the-team",
+            "/meet-our-team",
+            "/our-people",
+            "/our-staff",
+            "/the-team",
+
+            # === ABOUT PAGES (often have leadership info) ===
+            "/about",
+            "/about-us",
+            "/about/team",
+            "/about/our-team",
+            "/about/leadership",
+            "/about/people",
+            "/about/management",
+            "/company",
+            "/company/team",
+            "/company/leadership",
+            "/who-we-are",
+            "/our-story",
+            "/our-company",
+
+            # === CONTACT PAGES (owner/manager contact info) ===
             "/contact",
+            "/contact-us",
+            "/get-in-touch",
+            "/reach-us",
+            "/locations",
+
+            # === SERVICES PAGES (ICP signal detection) ===
+            "/services",
+            "/our-services",
+            "/what-we-do",
+            "/capabilities",
+            "/solutions",
+            "/commercial",
+            "/commercial-services",
+            "/industrial",
+            "/residential",
+
+            # === CAREERS (is_hiring signal) ===
+            "/careers",
+            "/jobs",
+            "/join-us",
+            "/work-with-us",
+            "/employment",
+            "/opportunities",
+
+            # === CONTRACTOR-SPECIFIC PAGES ===
+            "/projects",
+            "/portfolio",
+            "/case-studies",
+            "/certifications",
+            "/licenses",
+            "/partners",
+            "/manufacturers",
+            "/brands-we-carry",
         ]
 
         pending_urls: list[tuple[str, int]] = []
