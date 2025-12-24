@@ -27,6 +27,39 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 | 3. Batch Enrichment (alt) | `batch_scrape_runner.py` | Same with CSV input |
 | 4. Supabase Sync | (automatic) | Updates dim_companies, dim_contacts |
 
+### Dealer-Scraper Integration Workflow (NEW)
+
+**3-Tier Quality Gates:**
+
+```
+Level 1: Domain Verification (HTTP Check)
+   ↓
+[23,189 companies WITH domains]
+   ↓
+scripts/verify_dealer_domains.py --batch 100
+   ↓
+[HTTP 200/301/302/403 = VALID]
+   ↓
+Mark: domain_is_valid = 1
+   ↓
+Level 2: ICP Name Filtering
+   ↓
+EXCLUDE: sheet metal, aluminum, siding, window, landscaping, etc.
+KEEP: HVAC, MEP, electrical, plumbing, solar, roofing (ICP!)
+   ↓
+[~22,883 ICP companies after filter]
+   ↓
+Level 3: Batch Push to Enrichment
+   ↓
+scripts/push_dealer_batch_to_supabase.py --batch 5
+   ↓
+[5 companies at a time → Supabase]
+   ↓
+Enrichment Pipeline: Free → VLM → Browserbase → Hunter.io
+```
+
+**Timeline:** 3 months @ ~258 companies/day = 22,883 total
+
 ### Key Components
 
 | Component | Purpose | Location |
@@ -37,8 +70,9 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 | Hunter.io Enrichment | Contact discovery (paid) | `backend/enrich_gold_standard_batch.py` |
 | Supabase Sync | Data warehouse sync | `backend/sync_gold_standard_to_supabase.py` |
 
-### Active Scripts (14 files kept in `/backend/`)
+### Active Scripts (20 files in `/backend/` + `/backend/scripts/`)
 
+**Core Enrichment:**
 | Script | Purpose |
 |--------|---------|
 | `run_enrichment.py` | **MAIN** - Interactive 5-at-a-time enrichment |
@@ -47,6 +81,15 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 | `enrich_gold_standard_batch.py` | Hunter.io enrichment |
 | `sync_gold_standard_to_supabase.py` | Supabase sync |
 | `cleanup_output_files.py` | Archive old files |
+
+**Dealer-Scraper Integration (NEW - Dec 24):**
+| Script | Purpose |
+|--------|---------|
+| `scripts/verify_dealer_domains.py` | **Step 1** - HTTP domain verification (23K domains) |
+| `scripts/push_dealer_batch_to_supabase.py` | **Step 2** - Push verified batches (5 at a time) |
+| `scripts/analyze_dealer_scraper_dedup.py` | Fuzzy dedup analysis (249K records) |
+| `scripts/audit_close_crm_campaign.py` | Close CRM campaign audit CLI |
+| `scripts/generate_workflow_report.py` | Workflow intelligence reporting |
 
 ### Archived Scripts (49 files in `/backend/archive/`)
 

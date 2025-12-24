@@ -18,7 +18,71 @@
 
 ---
 
-## LATEST UPDATE (Dec 24 - EOD Cleanup)
+## LATEST UPDATE (Dec 24 - Dealer-Scraper Integration Prep)
+
+### 🎯 Dealer-Scraper Pipeline Setup (249K Companies)
+
+**Goal**: Integrate dealer-scraper database (249K contractors) with sales-agent enrichment pipeline.
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Deduplication Analysis | ✅ DONE | 249,618 total → 246,561 unique (1.2% dupes) |
+| Domain Availability | ✅ DONE | 23,189 WITH domains (9.4%) ready for enrichment |
+| Domain Verification Script | ✅ DONE | HTTP reachability check before enrichment |
+| Batch Push Script | ✅ DONE | Push verified companies in batches of 5 |
+| ICP Name Filtering | ✅ DONE | Exclude non-ICP (sheet metal, aluminum, etc.) |
+| Close CRM Audit Service | ✅ DONE | Identify NEW vs LOADED leads |
+| Workflow Intelligence | ✅ DONE | Sequence analytics + reporting |
+
+### 📊 Dedup Results (249K Records)
+
+```
+Total Companies:     249,618
+Duplicates Found:      3,057 (1.2%)
+Unique Companies:    246,561 (98.8%)
+
+WITH Domains:         23,189 (9.4%) ← Ready for enrichment
+WITHOUT Domains:     223,372 (90.6%) ← Need crawler first
+```
+
+### 🔐 Security Audit Results
+
+| Check | Result |
+|-------|--------|
+| Hardcoded secrets scan | ✅ PASS (0 found) |
+| Git history secrets | ✅ PASS (.env properly ignored) |
+| Critical CVEs found | ⚠️ 3 FOUND (urllib3, Pillow, Jinja2) |
+| CVE fixes applied | 🔄 IN PROGRESS |
+
+### 📁 New Files Created (11 total)
+
+**Services:**
+- `backend/app/services/close_audit_service.py` - Campaign audit logic
+- `backend/app/services/workflow_intelligence.py` - Sequence analytics
+
+**Scripts:**
+- `backend/scripts/analyze_dealer_scraper_dedup.py` - Fuzzy dedup (0.85 threshold)
+- `backend/scripts/verify_dealer_domains.py` - HTTP domain verification
+- `backend/scripts/push_dealer_batch_to_supabase.py` - Batch push workflow
+- `backend/scripts/audit_close_crm_campaign.py` - Campaign audit CLI
+- `backend/scripts/generate_workflow_report.py` - Workflow reporting
+
+**Tests:**
+- `backend/tests/services/crm/test_close_audit.py`
+- `backend/tests/services/test_audit_report.py`
+- `backend/tests/services/test_close_audit_service.py`
+- `backend/tests/services/test_workflow_intelligence.py`
+
+### 🎯 Next Steps
+
+1. **Fix Critical CVEs** (urllib3 2.0, Pillow 10.x, Jinja2 3.1)
+2. **Domain Verification** - Run on 100 test batch
+3. **Batch Enrichment** - Free → VLM → Browserbase → Hunter.io (5 at a time)
+4. **3-Month Timeline** - ~258 companies/day to enrich all 23,189
+
+---
+
+## PREVIOUS UPDATE (Dec 24 - EOD Cleanup)
 
 ### Doc Cleanup + Security Hardening
 

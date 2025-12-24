@@ -10,9 +10,9 @@
 
 | Status | Count |
 |--------|-------|
-| 🔴 Blocked | 0 |
+| 🔴 Blocked | 1 (CVE fixes block commit) |
 | 🟡 In Progress | 1 (VLM enrichment) |
-| 🟢 Ready | 3 |
+| 🟢 Ready | 6 (3 new dealer-scraper tasks) |
 | ✅ Done (this sprint) | 60+ |
 
 ### Data Status (Dec 24, 2025)
@@ -70,7 +70,95 @@ python3 vlm_batch_5.py --no-contacts --tier PLATINUM
 ### 🟢 Ready (Prioritized)
 <!-- Tasks ready to start, ordered by priority -->
 
-#### 1. [HIGH] Production Email Test (Monday) - Phase 3
+#### 1. [CRITICAL] Fix CVEs - BLOCKS COMMIT
+- **ID**: TASK-032
+- **Assignee**: Claude
+- **Labels**: `security`, `dependencies`, `blocker`
+- **Dependencies**: None
+
+**Description**: Upgrade vulnerable dependencies before committing dealer-scraper integration.
+
+**CVEs Found**:
+- `urllib3==1.26.4` → Upgrade to `>=2.0.0` (multiple CVEs)
+- `Pillow==9.5.0` → Upgrade to `>=10.0.0` (image processing CVEs)
+- `Jinja2==3.0.1` → Upgrade to `>=3.1.0` (template injection fixes)
+
+**Command**:
+```bash
+cd backend
+pip install --upgrade 'urllib3>=2.0.0' 'Pillow>=10.0.0' 'Jinja2>=3.1.0'
+pip freeze > requirements.txt
+pytest tests/ -v  # Verify no breaking changes
+```
+
+**Acceptance Criteria**:
+- [ ] All 3 packages upgraded
+- [ ] Requirements.txt updated
+- [ ] Tests passing
+
+---
+
+#### 2. [HIGH] Dealer-Scraper Domain Verification (23K domains)
+- **ID**: TASK-033
+- **Assignee**: Claude
+- **Labels**: `dealer-scraper`, `verification`, `data-quality`
+- **Dependencies**: TASK-032 (CVE fixes)
+
+**Description**: HTTP verification of 23,189 dealer-scraper domains before enrichment.
+
+**Command**:
+```bash
+python backend/scripts/verify_dealer_domains.py --batch 100  # Test batch
+python backend/scripts/verify_dealer_domains.py --all        # Full run (2-3 hrs)
+```
+
+**Expected Results**:
+- Valid domains: ~18,000-20,000 (80-85%)
+- Invalid domains: ~3,000-5,000 (timeouts, 404s, etc.)
+
+**Acceptance Criteria**:
+- [ ] domain_verified_at, domain_is_valid columns added to DB
+- [ ] Test batch (100) verified successfully
+- [ ] Full verification completed
+
+---
+
+#### 3. [HIGH] Dealer-Scraper Batch Enrichment Pipeline
+- **ID**: TASK-034
+- **Assignee**: Claude
+- **Labels**: `dealer-scraper`, `enrichment`, `pipeline`
+- **Dependencies**: TASK-033 (domain verification)
+
+**Description**: Push verified dealer-scraper companies through enrichment pipeline (5 at a time).
+
+**Workflow**:
+```bash
+# Step 1: Push 5 verified companies
+python backend/scripts/push_dealer_batch_to_supabase.py --batch 5
+
+# Step 2: Free enrichment (BeautifulSoup)
+python backend/run_free_enrichment.py --batch 5 --auto
+
+# Step 3: VLM enrichment (OpenRouter)
+python backend/enrich_vlm_batch.py --batch 5
+
+# Step 4: Browserbase enrichment
+python backend/run_browserbase_enrichment.py --batch 5
+
+# Step 5: Hunter.io enrichment (tomorrow)
+python backend/run_hunter_enrichment.py --batch 5
+```
+
+**Timeline**: 3 months @ 258 companies/day = 22,883 total
+
+**Acceptance Criteria**:
+- [ ] First batch of 5 pushed successfully
+- [ ] Enrichment pipeline (4 stages) completed
+- [ ] Data quality verified (no garbage contacts)
+
+---
+
+#### 4. [HIGH] Production Email Test (Monday) - Phase 3
 - **ID**: TASK-015
 - **Assignee**: Tim
 - **Labels**: `testing`, `deliverability`
