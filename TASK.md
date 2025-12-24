@@ -18,9 +18,29 @@
 
 ---
 
-## LATEST UPDATE (Dec 23 - Close CRM Apollo Campaign)
+## LATEST UPDATE (Dec 24 - EOD Cleanup)
 
-### GTM Campaign Launch - COMPLETE ✅
+### Doc Cleanup + Security Hardening
+
+| Task | Status |
+|------|--------|
+| Archive 8 completed plan docs | DONE |
+| Remove hardcoded Supabase key from supabase.ts | DONE |
+| Create VLM test suite (10 tests) | DONE |
+| Security scan (secrets, CVEs) | PASS |
+
+### VLM Test Suite Created
+
+| File | Tests |
+|------|-------|
+| `backend/tests/services/vlm/test_vlm_contact_extractor.py` | 6 tests |
+| `backend/tests/services/vlm/test_save_verifier.py` | 4 tests |
+
+---
+
+## PREVIOUS UPDATE (Dec 23 - Close CRM Apollo Campaign)
+
+### GTM Campaign Launch - COMPLETE
 
 **The Goal**: Enroll Apollo leads in persona-matched Close CRM workflows for Dec 29 start.
 
@@ -31,36 +51,6 @@
 | Solar-Pivot-2026 enrollments | 95 |
 | Start Date | Dec 29, 2025 @ 9:00 AM ET |
 
-### New Workflows Created
-
-| Workflow | Persona | Companies | Contacts |
-|----------|---------|-----------|----------|
-| `ICP-Energy-Multitrade` | Multi-trade, multi-OEM Frankenstacks | 227 | 580 |
-| `Solar-Pivot-2026` | Pure solar adding trades | 22 | 34 |
-
-### Workflow Templates (Email + SMS)
-
-**ICP-Energy-Multitrade** (4 emails, 4 SMS):
-- Email 1: "replatforming before 2026?" - Multi-OEM pain hook
-- Email 2: "re: replatforming before 2026?" - Warranty complexity
-- Email 3: "too big for QuickBooks, too small for ServiceTitan" - Goldilocks
-- Email 4: "closing this out" - Breakup with Director's Cut
-
-**Solar-Pivot-2026** (4 emails, 4 SMS):
-- Email 1: "adding storage or HVAC in 2026?" - Solar pivot hook
-- Email 2: "re: what's your +X?" - The +X trade question
-- Email 3: "leapfrog the legacy trades" - Competitive positioning
-- Email 4: "closing this out" - Breakup
-
-### Exclusions Applied
-
-| Company | Reason |
-|---------|--------|
-| Go Solar Power | Customer |
-| Sundance Power Systems | Customer |
-| Sparkfund | Unqualified |
-| StraightUp Solar | Recent campaign |
-
 ### Workflow IDs
 
 | Workflow | Sequence ID |
@@ -68,413 +58,46 @@
 | ICP-Energy-Multitrade | `seq_469XPP98mPXSR2wh5cX9y6` |
 | Solar-Pivot-2026 | `seq_0FHFD0OQtDAOS8x40MIANW` |
 
-### Tracking
-
-- All contacts have `close_contact_id` stored in Supabase `dim_contacts`
-- `close_pushed_at` timestamp for audit trail
-- `source = 'apollo_reveal'` for campaign attribution
-- Close CRM tracks opens, clicks, replies per contact
-
 ---
 
-## PREVIOUS UPDATE (Dec 24 - Data Integrity Fixes)
+## PREVIOUS UPDATE (Dec 23 - Data Integrity Fixes)
 
-### Phase 0: Data Integrity - COMPLETE ✅
+### Phase 0: Data Integrity - COMPLETE
 
-**The Problem**: Database had 7,556 garbage contacts ("None None", NULLs) and 3,857 duplicates. No constraints to prevent future issues.
+**The Problem**: Database had 7,556 garbage contacts and 3,857 duplicates.
 
 **The Solution**: Data cleanup + SaveVerifier class with mandatory readback verification.
 
-| Task | Status |
-|------|--------|
-| Delete 7,556 garbage contacts | ✅ DONE |
-| Deduplicate 3,857 contacts | ✅ DONE |
-| Add UNIQUE constraint (company_id, full_name) | ✅ DONE |
-| Create SaveVerifier class | ✅ DONE |
-| Update vlm_batch_5.py with verification | ✅ DONE |
-| Update batch_scrape_icp_signals.py | ✅ DONE |
-| Fix VLM to save visual signals | ✅ DONE |
-| Delete 7 one-time audit scripts | ✅ DONE |
-
-### New Files Created
-
 | File | Purpose |
 |------|---------|
-| `backend/app/services/save_verifier.py` | Mandatory readback verification for all saves |
-| `supabase/migrations/20251224_data_integrity_fixes.sql` | Garbage cleanup + constraints |
-| `supabase/migrations/20251224_constraints_only.sql` | UNIQUE index + error table |
-
-### SaveVerifier Features
-
-- Readback verification after every INSERT/UPDATE
-- Case-insensitive duplicate detection
-- Retry logic with exponential backoff
-- Error logging to `fact_enrichment_errors` table
-- Validation of contact names (min 3 chars, no garbage)
+| `backend/app/services/save_verifier.py` | Mandatory readback verification |
+| `supabase/migrations/20251224_data_integrity_fixes.sql` | Constraints |
 
 ---
 
 ## PREVIOUS UPDATE (Dec 23 - VLM Batch Extraction)
 
-### VLM Contact Extraction - OPERATIONAL ✅
+### VLM Contact Extraction - OPERATIONAL
 
 | Metric | Count |
 |--------|-------|
 | Companies Processed | 30 |
 | VLM Contacts Added | 125 |
-| ATL (C-suite/VP+) | 56 |
-| BTL (Other roles) | 69 |
-| Cost | ~$0.15 |
 | Cost per Contact | $0.0012 |
 
 **Key Files**:
 - `backend/vlm_batch_5.py` - Main VLM extraction script
 - `backend/app/services/vlm_contact_extractor.py` - VLM extraction service
-- `backend/app/services/website_crawler.py` - Browserbase crawler
-
-### VLM Visual Signals (Now Saved)
-
-| Signal | Detection |
-|--------|-----------|
-| `has_design_build` | "Design-Build", "Turnkey" |
-| `has_engineering` | "Engineering Dept", "In-House CAD" |
-| `has_medical_specialization` | "Medical Gas", "Healthcare" |
-| `has_building_automation` | "BMS", "Controls" |
-| `has_awards` | Award badges, certifications |
-| `has_oem_partnerships` | "Carrier Dealer", "Generac Auth" |
 
 ---
 
-## PREVIOUS UPDATE (Dec 18 - Executive Dashboard + Infrastructure Fixes)
-
-### Executive Dashboard Enhancement - COMPLETE ✅
-
-| Component | File | Status |
-|-----------|------|--------|
-| Executive Dashboard | `dashboard/src/components/executive/ExecutiveDashboard.tsx` | ✅ ENHANCED |
-| Stats Grid (12 KPIs) | `dashboard/src/components/executive/StatsGrid.tsx` | ✅ MAJOR UPDATE |
-| Metrics API | `backend/app/api/dashboard/metrics.py` | ✅ ENHANCED |
-| Chart.js Integration | Executive Dashboard | ✅ 4 Charts |
-
-### Key Improvements
-
-| Feature | Before | After |
-|---------|--------|-------|
-| KPI Cards | 8 | 12 (3 rows of 4) |
-| Contact Breakdown | None | ATL/BTL detailed |
-| Email/Phone Metrics | None | 4 availability tiers |
-| Charts | None | 4 Chart.js visualizations |
-| Supabase Queries | Limited 1000 rows | count='exact' for accuracy |
-
-### Infrastructure Fixes
-
-| Fix | Files | Impact |
-|-----|-------|--------|
-| SQLAlchemy Pool for SQLite | `backend/app/models/database.py` | Tests now collect (976 tests) |
-| Pydantic V2 Migration | `lead_scorer.py`, `search_agent.py`, `analysis_agent.py` | No more V1 deprecation warnings |
-| Port Standardization | `vite.config.ts`, `.env.example` (3 files) | All pointing to 8000 |
-
-### Tests: 739 passed (76%), 0 collection errors
-
----
-
-## PREVIOUS UPDATE (Dec 15 - Voice AI Calling System)
-
-### Voice AI Prompt Refactoring - COMPLETE
-
-Refactored all 6 voice AI prompts with industry best practices from Vapi AI, Retell AI, and Cartesia.
-
-| Component | File | Status |
-|-----------|------|--------|
-| Voice AI Template | `app/services/calling/prompts/_template.md` | NEW |
-| Cold Outreach Script | `app/services/calling/prompts/cold_outreach.md` | REFACTORED |
-| Warm Inbound Script | `app/services/calling/prompts/warm_inbound.md` | REFACTORED |
-| Cold Call Script | `app/services/calling/prompts/cold_call.md` | REFACTORED |
-| Qualifier Script | `app/services/calling/prompts/qualifier.md` | REFACTORED |
-| Objection Handler | `app/services/calling/prompts/objection_handler.md` | REFACTORED |
-| Closer Script | `app/services/calling/prompts/closer.md` | REFACTORED |
-| QualifierAgent | `app/services/calling/agents/qualifier.py` | UPDATED |
-
-### Key Improvements
-
-| Feature | Before | After |
-|---------|--------|-------|
-| Wait tags | 0 | 12+ per script |
-| Identity section | No | Yes |
-| Style Guardrails | No | Yes |
-| Speech Formatting | No | Yes |
-| Guardrails DO/DON'T | No | Yes |
-| Numbers | "$5-50M" | "five to fifty million" |
-| Phone format | "415-430-9465" | "four one five, four three oh, nine four six five" |
-| Emotion mapping | 6 basic | 11 Cartesia emotions |
-
-### Tests: 145 passed
-
----
-
-## PREVIOUS UPDATE (Dec 13 - Website Enrichment + VLM Integration)
-
-### FREE Website Enrichment System - COMPLETE ✅
-
-**The Problem**: Need to scrape 3,320 company websites for ATL contacts and signals without expensive Browserbase costs.
-
-**The Solution**: BeautifulSoup-based FREE scraping with VLM fallback for JS-heavy sites.
-
-| Component | File | Status |
-|-----------|------|--------|
-| BeautifulSoup Team Scraper | `app/services/beautifulsoup_team_scraper.py` | ✅ NEW |
-| Website Content Scraper | `app/services/website_content_scraper.py` | ✅ NEW |
-| VLM Website Analyzer | `app/services/vlm_website_analyzer.py` | ✅ NEW |
-| URL Validator (SSRF Protection) | `app/services/url_validator.py` | ✅ NEW |
-| LangGraph Tools | `app/services/langgraph/tools/website_scraping_tools.py` | ✅ UPDATED |
-
-### New LangGraph Tools
-
-| Tool | Purpose | Cost |
-|------|---------|------|
-| `scrape_company_team_tool` | ATL extraction (BS + Browserbase fallback) | FREE-$$ |
-| `scrape_website_content_tool` | Landing page signals | FREE |
-| `analyze_website_screenshot_tool` | VLM screenshot analysis (Qwen 2.5 VL) | ~$0.0008/img |
-| `scrape_team_free_tool` | FREE BeautifulSoup-only scraping | FREE |
-
-### VLM Integration (vlm-core)
-
-Integrated `scientia-vlm-core` v0.1.0 for Vision Language Model analysis:
-- Uses Qwen 2.5 VL via OpenRouter
-- 3 model tiers: fast ($0.0003), balanced ($0.0008), best ($0.0015) per image
-- Circuit breaker + retry patterns for resilience
-
-### Security Hardening
-
-**SSRF Protection** - All scrapers now validate URLs before making requests:
-- Blocks: localhost, private IPs (192.168.x.x, 10.x.x.x)
-- Blocks: Cloud metadata endpoints (169.254.169.254, metadata.google.internal)
-- Blocks: File URLs, non-HTTP schemes
-
-### Signal Detection (Website Content)
-
-| Signal | Detection | Use Case |
-|--------|-----------|----------|
-| `is_hiring` | "we're hiring", "join our team" | Growth indicator |
-| `has_funding` | "Series A", "raised $X" | Funded startup |
-| `tech_stack` | Salesforce, AWS, React, etc. | Tech fit |
-| `growth_indicators` | "Inc 5000", "fastest growing" | Success signals |
-
-### Test Results
-
-| Site | ATL Contacts | Hiring | Funding | Method |
-|------|--------------|--------|---------|--------|
-| linear.app | 20 | ✅ | ✅ | BeautifulSoup |
-| stripe.com | 8 | ✅ | ✅ | BeautifulSoup |
-
-### Next Steps (Tomorrow)
-
-1. Run FREE enrichment on 3,320 companies with websites
-2. Use VLM fallback for JS-heavy sites with no ATL results
-3. Store signals in Supabase for agent context
-
----
-
-## PREVIOUS UPDATE (Dec 8 - Signal-Based Outreach)
-
-### Signal Detection System - COMPLETE ✅
-
-**The Problem**: Drafts were being generated with ZERO context - no "why now", no signal, no strategy. Just spray-and-pray cold emails.
-
-**The Solution**: Signal-aware draft generation that detects the context before writing.
-
-| Component | File | Status |
-|-----------|------|--------|
-| SignalDetector Service | `app/services/outreach/signal_detector.py` | ✅ NEW |
-| Signal-aware SalesIntelAgent | `app/services/langgraph/agents/sales_intel_agent.py` | ✅ UPDATED |
-| Signal integration in AI outreach | `app/api/ai_outreach.py` | ✅ UPDATED |
-| Database migration | `supabase/migrations/20251208_add_signal_columns.sql` | ✅ NEW |
-
-### Signal Types
-
-| Signal | Priority | Email Tone | When to Use |
-|--------|----------|------------|-------------|
-| `SQL_BOOKING` | 1 | booking | Sales Qualified - ready for demo |
-| `REPLY` | 2 | followup | They responded - immediate follow-up |
-| `OPPORTUNITY_PROGRESS` | 3 | deal_progression | Active opportunity - move deal forward |
-| `SAL_FOLLOWUP` | 4 | followup_sequence | Sales Accepted - needs follow-up sequence |
-| `NURTURE_REENGAGE` | 5 | reengagement | In nurture - checking back in |
-| `STALE_LEAD` | 6 | reengagement | 90+ days since last contact |
-| `COLD_NEW` | 7 | first_touch | Net new lead - first touch |
-
-### New Database Columns (dim_ai_drafts)
-
-```sql
-signal_type TEXT           -- SQL_BOOKING, NURTURE_REENGAGE, etc.
-signal_source TEXT         -- close_status, supabase_icp, activity_date
-signal_reason TEXT         -- Human-readable "why now"
-close_lead_status TEXT     -- Current Close CRM status
-correspondence_summary TEXT -- Recent activity summary
-```
-
-### How It Works
-
-1. **Before generating draft**: Signal detector checks Close CRM lead status + activity history
-2. **Selects appropriate prompt**: SIGNAL_AWARE_PROMPT (contextual) vs SALES_INTEL_PROMPT (cold)
-3. **Generates contextual draft**: Email tone, CTA, and content match the signal
-4. **Stores signal with draft**: Full audit trail of why the draft was created
-
-**Run migration**:
-```bash
-supabase db push
-```
-
----
-
-## PREVIOUS UPDATE (Dec 4 Evening)
-
-### ICP Scoring + CRM Export Pipeline - COMPLETE
-
-| Deliverable | Status | Location |
-|-------------|--------|----------|
-| Close CRM exclusion (5,926 leads) | DONE | Built into export scripts |
-| Customer exclusion (63 Won deals) | DONE | Built into export scripts |
-| ATL contact quality audit | DONE | 7 garbage filtered |
-| FINAL_CLEAN export (15 co, 69 ATLs) | DONE | `backend/data/final_enrichment_output/` |
-| TOP30_FINAL export (30 co, 30 ATLs) | DONE | `backend/data/final_enrichment_output/` |
-
-**New Scripts Created**:
-- `score_and_export_top30.py` - Main ICP scoring + export
-- `export_hot_leads_top30.py` - Hot leads filter
-- `export_non_close_hot_leads.py` - Close CRM exclusion logic
-
-**Ready for CTO Import**:
-```
-CLOSE_CRM_IMPORT_FINAL_CLEAN_20251204.csv  <- 15 companies, 69 ATL contacts
-```
-
----
-
-## PREVIOUS UPDATE (Dec 2 Night)
-
-### AI Command Center - COMPLETE
-Full-stack AI outreach system merged to main:
-
-| Component | Files | Status |
-|-----------|-------|--------|
-| Backend API | `backend/app/api/ai_outreach.py` (7 endpoints) | ✅ |
-| Frontend | `dashboard/src/components/ai/` (3 components) | ✅ |
-| Database | `supabase/migrations/20251202_*.sql` (2 migrations) | ✅ |
-| Tests | `backend/tests/api/test_ai_outreach.py` (40 tests) | ✅ |
-
-**Next**: Run Supabase migrations to create `dim_ai_drafts` table
-
----
-
-## PREVIOUS UPDATE (Dec 2 Evening)
-
-### Comprehensive OEM Brand Coverage (100+ brands)
-The scraper now detects contractors across ALL Coperniq verticals:
-- **HVAC**: Carrier, Trane, Lennox, Mitsubishi, Daikin, York, Goodman, etc.
-- **Solar Inverters**: Enphase, SMA, Fronius, SolarEdge (resi vs commercial)
-- **Battery Storage**: Tesla Powerwall/Megapack, Generac, BYD, Sonnen
-- **EV Chargers**: ChargePoint, JuiceBox, ABB Terra, Tritium, Kempower
-- **VRF Commercial**: Daikin VRV, Mitsubishi City Multi, LG Multi V
-- **Generators**: Generac, Kohler, Cummins
-
-### BDR Opener Gold - Maintenance Plans
-Now extracts membership/subscription names:
-- Comfort Club, Service Agreement, Maintenance Plan, Annual Tune-Up, VIP Program
-
-### Additional Extractions
-- **Service Areas** - Cities served (company footprint indicator)
-- **BTL Contacts** - Technicians/staff alongside ATL decision makers
-- **Owner Quotes** - "- Name, Owner" attribution patterns
-
-### Output Format
-```
-OK 25s (1 ATL, 3 BTL, 2 ph, 5 svc, 36 areas, 11 brands, 2 plans)
-```
-
----
-
-## NEXT ACTION (Dec 2)
-
-### Run Interactive Enrichment
-
-```bash
-cd backend
-source ../venv/bin/activate
-python run_enrichment.py
-```
-
-**What it does**:
-- Pulls unenriched companies directly from Supabase
-- Scrapes 5 companies at a time
-- Extracts: ATL/BTL contacts, phones, emails, services, service areas, OEM brands (100+), maintenance plans
-- Syncs results back to Supabase (dim_companies, dim_contacts)
-- Saves failed companies to `FAILED_ENRICHMENT.csv` for troubleshooting
-- Press Enter to continue, 'q' to quit
-
-**Time**: ~2.5 minutes per batch of 5 (~27s per company)
-
-**Est. Total**: ~3,500 companies / 5 per batch = 700 batches × 2.5 min = ~30 hours total
-- Can run in sessions of 20-40 batches per day
-
----
-
-## Active Work
-
-### Completed (Dec 1)
-| Task | Status |
-|------|--------|
-| **Phase 3: LinkedIn Enrichment Pipeline** | |
-| Browserbase session pool with stealth mode | DONE |
-| Parallel LinkedIn company scraper | DONE |
-| Parallel LinkedIn profile scraper | DONE |
-| Supabase sync for LinkedIn data | DONE |
-| Orchestrator script (run_linkedin_enrichment.py) | DONE |
-| Security audit - API key exposure fix (4 files) | DONE |
-| All print() replaced with logger | DONE |
-| **Phase 1: Infrastructure Setup** | |
-| Supabase CLI installed and linked | DONE |
-| Docker infrastructure (PostgreSQL, Redis, Neo4j) | DONE |
-| All 113 Supabase issues categorized | DONE |
-| API key validation report created | DONE |
-| Code quality baseline (96.5/100) | DONE |
-| Deep scrape code review (70% ready) | DONE |
-| **Phase 2: Security & Database Fixes** | |
-| Migration 015: RLS enabled on 14 tables | DONE |
-| Migration 016: Performance indexes created | DONE |
-| Migration 009: Duplicate policies consolidated | DONE |
-| Fixed 40-50 of 113 Supabase issues | DONE |
-| Created deployment checklists | DONE |
-| PgAdmin email configuration fixed | DONE |
-| **Previous Work** | |
-| Multi-source enrichment on 1,000 leads | DONE |
-| Deep scraper with ATL extraction | DONE |
-| Phone audit trail (NEW/VERIFIED) | DONE |
-| Close CRM export format | DONE |
-| Git commit and push | DONE |
-
-### Up Next (Dec 2)
-| Task | Priority | Est. Time |
-|------|----------|-----------|
-| Add API keys to .env | HIGH | 15 min |
-| Deploy Supabase migrations (015, 016, 009) | HIGH | 30 min |
-| Test migrations and verify RLS | HIGH | 30 min |
-| Run deep scrape on 1,000 companies | HIGH | 2-4 hours |
-| Review `CLOSE_CRM_IMPORT_*.csv` | HIGH | 30 min |
-| Manual import to Close CRM | HIGH | 1 hour |
-| Run Hunter.io on ATL leads | MEDIUM | ~$10, 1 hour |
-
----
-
-## Pipeline Outputs
-
-**Location**: `backend/data/final_enrichment_output/`
-
-| File | Purpose | Use |
-|------|---------|-----|
-| `CLOSE_CRM_IMPORT_*.csv` | Close CRM import | Tim reviews, imports manually |
-| `DEEP_SCRAPE_*.csv` | Full scrape results | Analysis |
-| `DEEP_SCRAPE_*.json` | Detailed audit trail | Debugging |
-| `TOP_1000_PRIORITIZED_*.csv` | Daily caller list | Tim's call list |
+## NEXT PRIORITY (Dec 25+)
+
+| Task | Priority | Command |
+|------|----------|---------|
+| VLM batch on 314 zero-contact companies | P1 | `python3 vlm_batch_5.py --no-contacts --tier PLATINUM` |
+| Monitor Apollo campaign (Dec 29 start) | P1 | Check Close CRM |
+| Fix 2 failing VLM tests | P2 | `pytest tests/services/vlm/ -v` |
 
 ---
 
@@ -484,45 +107,22 @@ python run_enrichment.py
 # Activate environment
 source venv/bin/activate
 
-# DEEP SCRAPE (new - Dec 1)
-./run_deep_scrape.sh 1000              # Full run (~8 hours)
-./run_deep_scrape.sh 100               # Test (~1 hour)
-./run_deep_scrape.sh 10                # Quick test (~15 min)
+# VLM Batch Extraction
+python3 vlm_batch_5.py --no-contacts --tier PLATINUM
+python3 vlm_batch_5.py --no-contacts --tier GOLD
+
+# Run tests
+pytest tests/services/vlm/ -v
 
 # Lead pipeline
-python backend/create_gold_standard_lists.py      # ICP scoring
-python backend/enrich_gold_standard_batch.py --batch 2  # Hunter.io
-python backend/sync_gold_standard_to_supabase.py        # Sync to DB
-
-# Cleanup
-python backend/cleanup_output_files.py --dry-run
-```
-
----
-
-## Workflow: CSV to Close CRM
-
-```
-1. Run deep scrape
-   ./run_deep_scrape.sh 1000
-
-2. Review output
-   - Open CLOSE_CRM_IMPORT_1000_*.csv in Excel
-   - Check ATL Count column
-   - Remove any bad data
-
-3. Import to Close CRM
-   - Close → Settings → Import
-   - Upload cleaned CSV
-   - Map columns to Close fields
+python backend/create_gold_standard_lists.py
 ```
 
 ---
 
 ## Blockers
 
-- Close CRM is read-only (`CLOSE_WRITE_DISABLED=True`) - by design
-- ATL extraction depends on websites having owner names visible (5-15% expected)
+- None active
 
 ---
 
