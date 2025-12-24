@@ -199,19 +199,26 @@ class TestSaveVerifierEdgeCases:
                 select_mock = MagicMock()
 
                 def eq_handler(column, value):
+                    eq_result = MagicMock()
+
                     if column == "contact_id":
                         # Readback returns empty - data not found
                         result = MagicMock()
                         result.data = []
-                        select_mock.execute = MagicMock(return_value=result)
+                        eq_result.execute = MagicMock(return_value=result)
+                        return eq_result
                     elif column == "company_id":
-                        # Duplicate check returns empty
+                        # Duplicate check - need to handle .ilike() chaining
                         ilike_mock = MagicMock()
                         ilike_mock.execute = MagicMock(
                             return_value=MagicMock(data=[])
                         )
-                        return ilike_mock
-                    return select_mock
+                        eq_result.ilike = MagicMock(return_value=ilike_mock)
+                        return eq_result
+
+                    # Default case
+                    eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
 
                 select_mock.eq = MagicMock(side_effect=eq_handler)
                 select_mock.ilike = MagicMock(return_value=select_mock)

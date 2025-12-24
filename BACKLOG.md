@@ -1,9 +1,8 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-07 (Vite Migration Complete)
+**Last Updated**: 2025-12-24 (Doc Audit + Cleanup)
 **Sprint**: Current
-**NOTE**: Last updated Dec 7. For current status, see TASK.md (updated Dec 13). BACKLOG needs refresh with latest progress on website enrichment and VLM integration.
 
 ---
 
@@ -12,9 +11,19 @@
 | Status | Count |
 |--------|-------|
 | 🔴 Blocked | 0 |
-| 🟡 In Progress | 0 |
-| 🟢 Ready | 10 |
-| ✅ Done (this sprint) | 54 (Phase 1-4 + Vite Migration) |
+| 🟡 In Progress | 1 (VLM enrichment) |
+| 🟢 Ready | 3 |
+| ✅ Done (this sprint) | 60+ |
+
+### Data Status (Dec 24, 2025)
+
+| Metric | Count |
+|--------|-------|
+| Total Companies | 3,422 |
+| Total Contacts | 11,803 |
+| VLM Contacts | 125 |
+| Apollo in Close | 1,134 |
+| Zero-Contact Companies | 314 |
 
 ---
 
@@ -30,63 +39,31 @@
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-#### 1. [HIGH] Phase 4: Dashboard Real Data Verification
-- **ID**: TASK-027, TASK-028, TASK-029
-- **Assignee**: Claude (Dec 6 Evening)
-- **Labels**: `dashboard`, `verification`, `phase-4`
-- **Est. Time**: 3 hours (2h with parallelization)
-- **Dependencies**: Phase 3 ✅
-
-**Description**: Ensure ALL dashboard cards display REAL API data, not mock/empty states.
-
-**Execution Plan**:
-```
-PARALLEL: TASK-027 (Backend) + TASK-028 (Frontend)
-SEQUENTIAL: TASK-029 (E2E verification)
-GATE: Code review before merge
-```
-
-**Progress**:
-- [ ] TASK-027: Backend connectivity verification (Agent: debugger)
-- [ ] TASK-028: Frontend API proxy + error states (Agent: frontend-developer)
-- [ ] TASK-029: E2E verification + cleanup (Agent: general-purpose)
-- [ ] Code review gate
-
-**Acceptance Criteria**:
-- [ ] ALL 5 tabs show real data
-- [ ] NO mock data anywhere
-- [ ] NO empty states where data should exist
-- [ ] Screenshot evidence of working dashboard
-
----
-
-#### 2. [MEDIUM] Run Interactive Enrichment on 3,500 Companies
-- **ID**: TASK-010
-- **Assignee**: Team (Dec 2+)
-- **Labels**: `enrichment`, `scraping`, `supabase`
-- **Est. Time**: ~30 hours total (over several days)
+#### 1. [HIGH] VLM Batch Enrichment on Zero-Contact Companies
+- **ID**: TASK-030
+- **Assignee**: Claude
+- **Labels**: `enrichment`, `vlm`, `priority`
 - **Dependencies**: None
 
-**Description**: Run interactive enrichment from Supabase, 5 companies at a time.
+**Description**: Run VLM vision extraction on 314 companies with 0 contacts.
 
 **Command**:
 ```bash
-cd backend
-source ../venv/bin/activate
-python run_enrichment.py
+python3 vlm_batch_5.py --no-contacts --tier PLATINUM
 ```
 
-**Progress**:
-- [ ] Start enrichment run
-- [ ] Monitor for failures (saved to FAILED_ENRICHMENT.csv)
-- [ ] Continue in daily sessions (20-40 batches/day)
-- [ ] Target: 3,500 companies with domains
+**Target**: 314 companies | **Cost**: ~$0.30 | **Expected yield**: 30-50 contacts
 
-**Acceptance Criteria**:
-- [ ] All 3,500 companies with domains enriched
-- [ ] Failed companies documented for troubleshooting
-- [ ] dim_companies updated with last_enriched_at
-- [ ] ATL contacts added to dim_contacts
+---
+
+#### 2. [MEDIUM] Fix 2 Failing VLM Tests
+- **ID**: TASK-031
+- **Labels**: `testing`, `vlm`
+- **Agent**: `debugging-toolkit:debugger`
+
+**Failing Tests**:
+- `test_save_contact_with_readback`
+- `test_readback_verification_failure`
 
 ---
 
@@ -726,6 +703,17 @@ frontend/src/components/Cockpit/
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **Data Integrity + VLM Pipeline (Dec 23-24)** | | | |
+| TASK-040 | Data cleanup: 7,556 garbage + 3,857 duplicates removed | 2025-12-24 | Claude |
+| TASK-041 | SaveVerifier class with mandatory readback | 2025-12-24 | Claude |
+| TASK-042 | VLM batch extraction (125 contacts @ $0.0012/ea) | 2025-12-23 | Claude |
+| TASK-043 | Apollo campaign: 1,134 contacts enrolled (Dec 29 start) | 2025-12-23 | Claude |
+| TASK-044 | VLM test suite (10 tests) | 2025-12-24 | Claude |
+| TASK-045 | Security hardening + archived 8 plans | 2025-12-24 | Claude |
+| **Phase 4: Dashboard Verification (Dec 7)** | | | |
+| TASK-027 | Backend connectivity verification | 2025-12-07 | Claude |
+| TASK-028 | Frontend API proxy + error states | 2025-12-07 | Claude |
+| TASK-029 | E2E verification + cleanup | 2025-12-07 | Claude |
 | **Vite + React Migration (Dec 7)** | | | |
 | TASK-030 | Vite Setup + Config (path aliases, proxy, theme) | 2025-12-07 | Claude |
 | TASK-031 | Component Migration (12 dashboard + 6 UI + 3 AI) | 2025-12-07 | Claude |
@@ -813,13 +801,14 @@ frontend/src/components/Cockpit/
 | Missing Indexes | 7+ | 0 (all added) |
 | Code Quality Score | Unknown | 96.5/100 (A+) |
 
-### Data Quality (Dec 2)
+### Data Quality (Dec 24)
 | Metric | Count |
 |--------|-------|
-| Total Companies | 8,889 |
-| With Domains | 3,643 |
-| Needing Enrichment | ~3,500 |
-| Already Enriched | ~75 |
+| Total Companies | 3,422 |
+| Total Contacts | 11,803 |
+| VLM Contacts | 125 |
+| Apollo in Close | 1,134 |
+| Zero-Contact Companies | 314 |
 | Active Scripts | 14 |
 | Archived Scripts | 49 |
 
