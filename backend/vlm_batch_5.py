@@ -71,10 +71,11 @@ def get_companies_to_process(tier: str = None, source: str = None, offset: int =
         contacts = supabase.table("dim_contacts").select("company_id").execute()
         cos_with_contacts = set(c["company_id"] for c in contacts.data)
 
-        # Get all companies with websites
+        # Get all companies with websites that haven't been enriched yet
         all_query = supabase.table("dim_companies") \
             .select("company_id, company_name, website, domain, icp_tier, icp_score, source_type") \
-            .not_.is_("website", "null")
+            .not_.is_("website", "null") \
+            .is_("last_enriched_at", "null")  # Skip already-enriched companies
 
         if tier:
             all_query = all_query.eq("icp_tier", tier.upper())
@@ -102,7 +103,8 @@ def get_companies_to_process(tier: str = None, source: str = None, offset: int =
 
     query = supabase.table("dim_companies") \
         .select("company_id, company_name, website, domain, icp_tier, icp_score, source_type") \
-        .not_.is_("website", "null")
+        .not_.is_("website", "null") \
+        .is_("last_enriched_at", "null")  # Skip already-enriched companies
 
     if tier:
         query = query.eq("icp_tier", tier.upper())
