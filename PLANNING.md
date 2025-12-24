@@ -1,6 +1,6 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-18
+**Last Updated**: 2025-12-23
 
 ---
 
@@ -79,6 +79,72 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 | GOLD | 65-79 | Strong leads |
 | SILVER | 50-64 | Good leads |
 | BRONZE | 35-49 | Working pipeline |
+
+---
+
+## Close CRM Workflow Architecture (Updated Dec 23)
+
+### Persona-Based Workflow Routing
+
+| Workflow | Persona | Keywords | Cadence |
+|----------|---------|----------|---------|
+| `ICP-Energy-Multitrade` | Multi-trade Frankenstacks | *default* | 23-day |
+| `Solar-Pivot-2026` | Pure solar adding trades | solar, sunkeeper, altadena | 23-day |
+
+### Cadence Pattern (23 days)
+
+```
+Day 1:  Email
+Day 3:  SMS
+Day 5:  Call
+Day 8:  Email
+Day 10: SMS
+Day 12: Call
+Day 15: Email
+Day 17: SMS
+Day 19: Call
+Day 21: Email
+Day 23: SMS
+```
+
+### Workflow IDs
+
+| Workflow | Sequence ID |
+|----------|-------------|
+| ICP-Energy-Multitrade | `seq_469XPP98mPXSR2wh5cX9y6` |
+| Solar-Pivot-2026 | `seq_0FHFD0OQtDAOS8x40MIANW` |
+
+### Enrollment API Pattern
+
+```python
+# Create lead
+lead = requests.post('https://api.close.com/api/v1/lead/',
+    auth=(CLOSE_API_KEY, ''),
+    json={'name': company_name, 'url': website})
+
+# Create contact
+contact = requests.post('https://api.close.com/api/v1/contact/',
+    auth=(CLOSE_API_KEY, ''),
+    json={'lead_id': lead_id, 'name': name, 'emails': [{'email': email}]})
+
+# Enroll in sequence (with scheduled start)
+requests.post('https://api.close.com/api/v1/sequence_subscription/',
+    auth=(CLOSE_API_KEY, ''),
+    json={
+        'sequence_id': workflow_id,
+        'contact_id': contact_id,
+        'start': '2025-12-29T09:00:00-05:00'
+    })
+```
+
+### Exclusion Rules
+
+| Condition | Action |
+|-----------|--------|
+| Lead status = Customer | Skip |
+| Lead status = Unqualified | Skip |
+| Recent campaign (30 days) | Skip |
+| Company in exclusion list | Skip |
 
 ---
 

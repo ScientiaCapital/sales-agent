@@ -37,13 +37,17 @@ load_dotenv(Path(__file__).parent.parent / '.env')
 # Import VLM services
 from app.services.website_crawler import WebsiteCrawler
 from app.services.vlm_contact_extractor import VLMContactExtractor
+from app.services.save_verifier import SaveVerifier
 
 # Connect to Supabase
 supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_KEY'))
 
+# Initialize SaveVerifier for mandatory readback verification
+save_verifier = SaveVerifier(supabase, max_retries=2)
+
 # Config
 BATCH_SIZE = 5
-MAX_PAGES_PER_COMPANY = 10
+MAX_PAGES_PER_COMPANY = 20  # Increased for thorough team/signal discovery
 DELAY_BETWEEN_COMPANIES = 2
 
 
@@ -139,23 +143,17 @@ def confidence_to_score(confidence: str) -> int:
 
 
 async def save_contact(company_id: str, contact: dict) -> tuple[bool, str]:
-    """Save a single contact to dim_contacts."""
+    """
+    Save a single contact to dim_contacts using SaveVerifier.
+
+    Uses mandatory readback verification to ensure data is actually saved.
+    """
     full_name = contact.get("name", "").strip()
     if not full_name or len(full_name) < 3:
         return False, "Invalid name"
 
     first_name, last_name = parse_name(full_name)
     confidence_score = confidence_to_score(contact.get("confidence", "MEDIUM"))
-
-    # Check for existing
-    existing = supabase.table("dim_contacts") \
-        .select("contact_id") \
-        .eq("company_id", company_id) \
-        .eq("full_name", full_name) \
-        .execute()
-
-    if existing.data:
-        return False, f"Exists: {full_name}"
 
     # Determine if ATL based on title
     title = contact.get("title", "").lower()
@@ -166,8 +164,6 @@ async def save_contact(company_id: str, contact: dict) -> tuple[bool, str]:
     ])
 
     contact_data = {
-        "contact_id": str(uuid4()),
-        "company_id": company_id,
         "full_name": full_name,
         "first_name": first_name,
         "last_name": last_name,
@@ -175,15 +171,55 @@ async def save_contact(company_id: str, contact: dict) -> tuple[bool, str]:
         "email": contact.get("email"),
         "is_atl": is_atl,
         "confidence": confidence_score,
-        "source": "vlm_screenshot",
-        "validated": False,
     }
 
-    try:
-        supabase.table("dim_contacts").insert(contact_data).execute()
+    # Use SaveVerifier with mandatory readback verification
+    success, contact_id, error = save_verifier.save_contact(
+        company_id=company_id,
+        contact_data=contact_data,
+        source="vlm_screenshot"
+    )
+
+    if success:
         return True, f"{full_name} - {contact.get('title', 'no title')}"
-    except Exception as e:
-        return False, f"Error: {str(e)[:30]}"
+    else:
+        return False, error or f"Failed: {full_name}"
+
+
+def save_visual_signals(company_id: str, signals: dict) -> tuple[bool, str]:
+    """
+    Save VLM-extracted visual signals to dim_companies.
+
+    Uses SaveVerifier with mandatory readback verification.
+    """
+    if not signals:
+        return False, "No signals to save"
+
+    # Filter to only valid VLM signal columns
+    vlm_signals = {}
+    valid_keys = {
+        "has_design_build", "has_engineering", "has_medical_specialization",
+        "has_building_automation", "has_awards", "has_oem_partnerships"
+    }
+
+    for key, value in signals.items():
+        if key in valid_keys:
+            vlm_signals[key] = bool(value)
+
+    if not vlm_signals:
+        return False, "No valid signals"
+
+    # Use SaveVerifier with mandatory readback verification
+    success, error = save_verifier.update_company_signals(
+        company_id=company_id,
+        signals=vlm_signals,
+        source="vlm_screenshot"
+    )
+
+    if success:
+        return True, f"Saved {len(vlm_signals)} signals"
+    else:
+        return False, error or "Signal save failed"
 
 
 def update_company_after_enrichment(company_id: str, contacts_found: int, team_page_url: str = None):
@@ -260,6 +296,7 @@ async def process_company(
     all_contacts = []
     total_cost = 0.0
     team_page_url = None
+    all_signals = {}  # Aggregate signals from all pages
 
     for page in pages:
         if not page.screenshot_path:
@@ -275,6 +312,12 @@ async def process_company(
             contacts = result.get("contacts", [])
             cost = result.get("cost", 0)
             total_cost += cost
+
+            # Collect ICP signals (OR logic - any True stays True)
+            page_signals = result.get("icp_signals", {})
+            for key, value in page_signals.items():
+                if value:  # Only update if True
+                    all_signals[key] = True
 
             if contacts:
                 print(f"    {page.url[:50]}... -> {len(contacts)} contacts")
@@ -307,12 +350,24 @@ async def process_company(
         else:
             print(f"    Skip: {msg}")
 
-    # Step 4: Update company
+    # Step 4: Save visual signals
+    signals_saved = 0
+    if all_signals:
+        print(f"\n Step 4: Saving {len(all_signals)} visual signals...")
+        success, msg = save_visual_signals(company_id, all_signals)
+        if success:
+            signals_saved = len(all_signals)
+            print(f"    {msg}")
+        else:
+            print(f"    Signal save failed: {msg}")
+
+    # Step 5: Update company enrichment status
     update_company_after_enrichment(company_id, saved_count, team_page_url)
 
     print(f"\n Summary:")
     print(f"  Pages: {len(pages)}, Cost: ${total_cost:.4f}")
     print(f"  Contacts saved: {saved_count}/{len(seen_names)}")
+    print(f"  Signals saved: {signals_saved}")
 
     status = "success" if saved_count > 0 else "no_contacts"
     return {
@@ -320,6 +375,7 @@ async def process_company(
         "status": status,
         "contacts_saved": saved_count,
         "contacts_found": len(seen_names),
+        "signals_saved": signals_saved,
         "cost_usd": total_cost,
         "pages_crawled": len(pages),
     }
