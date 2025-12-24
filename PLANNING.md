@@ -1,6 +1,6 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-23
+**Last Updated**: 2025-12-24
 
 ---
 
@@ -65,8 +65,8 @@ Supabase dim_companies → Interactive Enrichment (5 at a time) → Supabase syn
 ### Source of Truth Tables
 | Table | Purpose | Records |
 |-------|---------|---------|
-| `dim_companies` | Master lead list | 6,568 |
-| `dim_contacts` | ATL/BTL contacts | 562 |
+| `dim_companies` | Master lead list | 3,422 |
+| `dim_contacts` | ATL/BTL contacts | 11,803 |
 
 ### Materialized Views
 - `mv_icp_gold_leads` - Dashboard view

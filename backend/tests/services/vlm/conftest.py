@@ -126,18 +126,26 @@ def mock_supabase_with_readback():
             select_mock = MagicMock()
 
             def select_eq(column, value):
+                eq_result = MagicMock()
+
                 if column == "contact_id" and value in saved_contacts:
+                    # Readback check - return the saved contact
                     result = MagicMock()
                     result.data = [saved_contacts[value]]
-                    select_mock.execute = MagicMock(return_value=result)
+                    eq_result.execute = MagicMock(return_value=result)
+                    return eq_result
                 elif column == "company_id":
-                    # For ilike check (duplicate check)
+                    # Duplicate check - need to handle .ilike() chaining
                     ilike_mock = MagicMock()
                     ilike_mock.execute = MagicMock(
                         return_value=MagicMock(data=[])
                     )
-                    return ilike_mock
-                return select_mock
+                    eq_result.ilike = MagicMock(return_value=ilike_mock)
+                    return eq_result
+
+                # Default case
+                eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                return eq_result
 
             select_mock.eq = MagicMock(side_effect=select_eq)
             select_mock.ilike = MagicMock(return_value=select_mock)
