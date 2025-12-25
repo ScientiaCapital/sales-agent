@@ -12,7 +12,7 @@ import os
 import tempfile
 import json
 from pathlib import Path
-from backend.app.services.close_audit_service import CloseAuditService
+from app.services.close_audit_service import CloseAuditService
 
 
 @pytest.mark.asyncio
