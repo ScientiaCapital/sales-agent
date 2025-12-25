@@ -1,6 +1,6 @@
 # sales-agent - Architecture & Planning
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-25
 
 ---
 
@@ -188,6 +188,44 @@ requests.post('https://api.close.com/api/v1/sequence_subscription/',
 | Lead status = Unqualified | Skip |
 | Recent campaign (30 days) | Skip |
 | Company in exclusion list | Skip |
+
+### Celery Campaign Automation (NEW - Dec 25)
+
+3 Celery tasks enable autonomous campaign management for Dec 29 launch:
+
+| Task | Schedule | Purpose |
+|------|----------|---------|
+| `sync_close_activities` | Every 15 min | Sync email/SMS/call activities to Supabase |
+| `poll_email_replies` | Every 5 min | Classify + route replies (Claude AI + Slack) |
+| `advance_sequences` | Hourly | Resume OOO-paused subscriptions |
+
+**Reply Classification Flow:**
+```
+Incoming Email → ReplyClassifier (Claude AI + heuristic fallback)
+                        ↓
+                 Classification
+                        ↓
+    ┌──────────────────┼──────────────────┐
+    ↓                  ↓                  ↓
+INTERESTED      MEETING_REQUEST    NOT_INTERESTED
+    ↓                  ↓                  ↓
+- Stop sequence   - Calendar link    - Mark unqualified
+- Slack alert     - Create opp       - 6-month nurture
+- BDR task        - Stop sequence    - Stop sequence
+
+    ┌──────────────────┼──────────────────┐
+    ↓                  ↓                  ↓
+  QUESTION       UNSUBSCRIBE         OOO
+    ↓                  ↓                  ↓
+- Pause sequence  - Compliance       - Pause 7 days
+- Human review    - Suppression      - Auto-resume
+```
+
+**Key Files:**
+- `backend/app/tasks/close_sync.py` - Task implementations
+- `backend/app/services/crm/close_email.py` - Activity/reply fetching
+- `backend/app/services/reply_classifier.py` - AI classification
+- `backend/app/services/reply_router.py` - Action routing
 
 ---
 
@@ -464,3 +502,50 @@ Company phone         +10 pts
   - `dashboard/.env.example` - API URL
   - Root `.env.example` - ngrok, LinkedIn, HubSpot callbacks
 - **Impact**: Consistent backend connectivity across all environments
+
+### ADR-016: Celery Campaign Automation
+- **Date**: 2025-12-25
+- **Decision**: Implement 3 Celery tasks for autonomous Close CRM campaign management
+- **Rationale**: Dec 29 Apollo campaign launch requires automated reply handling, activity sync, and sequence management
+- **Components Created**:
+  - `sync_close_activities` - Syncs email/SMS/call activities to Supabase lead_audit_log (every 15 min)
+  - `poll_email_replies` - Classifies incoming emails with Claude AI, routes via ReplyRouter (every 5 min)
+  - `advance_sequences` - Monitors and resumes OOO-paused subscriptions after 7 days (hourly)
+- **Key Files**:
+  - `backend/app/tasks/close_sync.py` - Full task implementations
+  - `backend/app/services/crm/close_email.py` - Added `get_activities_since()`, `get_incoming_emails_since()`
+  - `backend/app/services/reply_classifier.py` - Claude AI + heuristic fallback classification
+  - `backend/app/services/reply_router.py` - Action routing based on classification
+- **Reply Classifications**: INTERESTED, MEETING_REQUEST, QUESTION, NOT_INTERESTED, UNSUBSCRIBE, OOO
+- **Impact**: Enables autonomous campaign management for 1,134 Apollo contacts enrolled Dec 29
+
+### ADR-017: Security Hardening (CSP, Rate Limiting, CVE Fixes)
+- **Date**: 2025-12-25
+- **Decision**: Implement enterprise-grade security hardening
+- **Rationale**: Production readiness for Dec 29 campaign launch
+- **Components**:
+  - **CSP Headers**: Removed unsafe-inline/unsafe-eval, hardened content security policy
+  - **Rate Limiting**: SlowAPI integration on all API endpoints
+  - **CVE Fixes**: urllib3 2.0+, Pillow 10.x+, Jinja2 3.1+ (critical vulnerabilities patched)
+  - **Bare Exception Fixes**: 4 bare `except:` blocks fixed with specific exception types
+  - **Test Error Endpoint**: Removed `/test-error` endpoint from production
+- **Key Files**:
+  - `backend/app/core/rate_limit.py` - Rate limiting module
+  - `backend/app/main.py` - CSP headers + rate limiting integration
+  - `requirements.txt` - CVE-fixed dependency versions
+- **Security Scan Results**: 0 secrets, 0 critical CVEs, 1,119 tests passing
+- **Impact**: Enterprise-grade security posture for production deployment
+
+### ADR-018: VLM Response Caching Design
+- **Date**: 2025-12-25
+- **Decision**: Design VLM response caching with Redis + SHA256 hashing
+- **Rationale**: Avoid redundant expensive VLM API calls when processing same screenshots
+- **Design**:
+  - Cache Key: `vlm:screenshot:{sha256_hash}`
+  - TTL: 24 hours (86400 seconds)
+  - Storage: Redis JSON-serialized VLM responses
+  - Stats: Hit/miss tracking via Redis INCR
+- **Key Files**:
+  - `backend/tests/services/cache/test_vlm_cache.py` - TDD test suite (8 tests)
+  - `docs/plans/2025-12-25-vlm-cache-parallel-integration-design.md` - Design document
+- **Impact**: Reduces VLM costs, enables safe batch retries without re-processing
