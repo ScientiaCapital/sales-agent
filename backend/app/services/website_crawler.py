@@ -33,7 +33,7 @@ if _env_path.exists():
 logger = structlog.get_logger(__name__)
 
 # Rate limiting
-DELAY_BETWEEN_PAGES = float(os.getenv("CRAWLER_PAGE_DELAY", "5.0"))
+DELAY_BETWEEN_PAGES = float(os.getenv("CRAWLER_PAGE_DELAY", "2.0"))
 MAX_CONCURRENT_PAGES = 1  # Sequential for safety
 
 # Screenshot storage
