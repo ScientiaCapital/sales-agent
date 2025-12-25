@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-24
+**Last Updated**: 2025-12-25
 
 ---
 
@@ -13,12 +13,72 @@
 | VLM Contacts | 125 |
 | Apollo Contacts in Close | 1,134 |
 | Companies with 0 Contacts | 314 |
+| Tests | 1,119 |
 
 **Note**: Contact count reduced from 23,216 to 11,803 after data integrity fixes (garbage cleanup + deduplication).
 
 ---
 
-## LATEST UPDATE (Dec 24 - Dealer-Scraper Integration Prep)
+## LATEST UPDATE (Dec 25 - Celery Automation + Security)
+
+### 🚀 Celery Campaign Automation - IMPLEMENTED
+
+3 Celery tasks now enable autonomous campaign management for Dec 29 launch:
+
+| Task | Schedule | Purpose |
+|------|----------|---------|
+| `sync_close_activities` | Every 15 min | Sync email/SMS/call activities to Supabase |
+| `poll_email_replies` | Every 5 min | Classify + route replies (Claude AI + Slack) |
+| `advance_sequences` | Hourly | Resume OOO-paused subscriptions |
+
+**Reply Classification (AI-powered):**
+- Interested → Slack alert + stop sequence + BDR task
+- Meeting Request → Calendar link + opportunity creation
+- Question → Pause sequence + human review
+- Not Interested → Mark unqualified + 6-month nurture
+- Unsubscribe → Compliance action + suppression list
+
+### 🔒 Security Hardening - COMPLETE
+
+| Check | Status |
+|-------|--------|
+| CSP headers (no unsafe-inline/eval) | ✅ Hardened |
+| Rate limiting (SlowAPI) | ✅ Enabled |
+| CVE fixes (urllib3, Pillow, Jinja2) | ✅ Applied |
+| Test-error endpoint removed | ✅ Removed |
+| Bare exceptions fixed | ✅ 4 fixed |
+| Close CRM writes | ✅ Enabled |
+
+### 📊 VLM Cache + Parallel Processing - DESIGNED
+
+| Component | Status |
+|-----------|--------|
+| VLM response caching (24h TTL) | ✅ Implemented |
+| Parallel company processing | ✅ Designed |
+| Integration design doc | ✅ Created |
+
+### 📁 Files Changed Today
+
+- `backend/app/tasks/close_sync.py` - Full Celery task implementations
+- `backend/app/services/crm/close_email.py` - Activity + reply fetching methods
+- `backend/app/core/rate_limit.py` - Rate limiting module
+- `backend/app/main.py` - CSP + rate limiting integration
+- `docs/plans/2025-12-25-vlm-cache-parallel-integration-design.md`
+
+### 🔐 Security Scan Results (EOD)
+
+| Check | Result |
+|-------|--------|
+| Hardcoded secrets | ✅ PASS (0 found) |
+| Git history secrets | ✅ PASS |
+| CVE fixes applied | ✅ PASS |
+| CSP hardened | ✅ PASS |
+| Rate limiting enabled | ✅ PASS |
+| Tests collected | ✅ 1,119 |
+
+---
+
+## PREVIOUS UPDATE (Dec 24 - Dealer-Scraper Integration Prep)
 
 ### 🎯 Dealer-Scraper Pipeline Setup (249K Companies)
 
