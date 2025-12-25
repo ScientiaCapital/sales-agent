@@ -8,15 +8,19 @@ Fallback: qwen/qwen3-vl-30b-a3b-instruct ($0.0002/screenshot)
 
 import base64
 import json
+import os
 import time
 from pathlib import Path
 from typing import Any, Optional
 import structlog
+import redis.asyncio as redis
 
 try:
     from openai import AsyncOpenAI
 except ImportError:
     raise ImportError("OpenAI SDK required for OpenRouter. Install with: pip install openai")
+
+from .cache.vlm_cache import VLMCache
 
 logger = structlog.get_logger(__name__)
 
@@ -126,6 +130,10 @@ class VLMContactExtractor:
         fallback_model: str = "qwen/qwen3-vl-30b-a3b-instruct",
         site_url: str = "https://scientia.capital",
         app_name: str = "Sales-Agent-VLM",
+        # NEW: Cache parameters
+        enable_cache: bool = True,
+        redis_url: str = None,
+        cache_ttl: int = 86400,
     ):
         """
         Initialize VLM extractor with OpenRouter credentials.
@@ -136,6 +144,9 @@ class VLMContactExtractor:
             fallback_model: Fallback if primary fails
             site_url: Site URL for OpenRouter headers
             app_name: App name for OpenRouter headers
+            enable_cache: Enable Redis caching for VLM responses
+            redis_url: Redis URL (defaults to REDIS_URL env var)
+            cache_ttl: Cache TTL in seconds (default: 24 hours)
         """
         if not api_key:
             raise ValueError("OpenRouter API key required")
@@ -146,6 +157,12 @@ class VLMContactExtractor:
         self.site_url = site_url
         self.app_name = app_name
         self._client: Optional[AsyncOpenAI] = None
+
+        # Cache settings
+        self.enable_cache = enable_cache
+        self.cache_ttl = cache_ttl
+        self._redis_url = redis_url or os.getenv("REDIS_URL")
+        self._cache: Optional[VLMCache] = None
 
     async def _init_client(self) -> None:
         """Initialize OpenRouter client (lazy)."""
@@ -158,6 +175,19 @@ class VLMContactExtractor:
                     "X-Title": self.app_name,
                 }
             )
+
+    async def _get_cache(self) -> Optional[VLMCache]:
+        """Lazy-load cache connection."""
+        if not self.enable_cache or not self._redis_url:
+            return None
+        if self._cache is None:
+            try:
+                client = redis.from_url(self._redis_url)
+                self._cache = VLMCache(client, self.cache_ttl)
+            except Exception as e:
+                logger.warning(f"Failed to connect to Redis cache: {e}")
+                return None
+        return self._cache
 
     def _load_image_base64(self, image_path: Path) -> tuple[str, str]:
         """
@@ -257,6 +287,15 @@ class VLMContactExtractor:
                 "output_tokens": 300
             }
         """
+        # Check cache first
+        cache = await self._get_cache()
+        if cache:
+            screenshot_bytes = Path(screenshot_path).read_bytes()
+            cached = await cache.get_vlm_response(screenshot_bytes)
+            if cached:
+                logger.info(f"VLM Cache HIT for {page_url}")
+                return cached
+
         await self._init_client()
 
         # Load screenshot
@@ -326,7 +365,7 @@ class VLMContactExtractor:
                     page_url=page_url,
                 )
 
-                return {
+                result = {
                     "contacts": clean_contacts,
                     "icp_signals": extracted.get("icp_signals", {}),
                     "cost": cost,
@@ -336,6 +375,17 @@ class VLMContactExtractor:
                     "output_tokens": output_tokens,
                     "raw_response": content[:500] if len(content) > 500 else content,
                 }
+
+                # Store in cache if successful
+                if cache and result.get("contacts"):
+                    try:
+                        screenshot_bytes = Path(screenshot_path).read_bytes()
+                        await cache.set_vlm_response(screenshot_bytes, result, self.cache_ttl)
+                        logger.info(f"VLM Cache STORE for {page_url}")
+                    except Exception as e:
+                        logger.warning(f"Failed to cache VLM result: {e}")
+
+                return result
 
             except Exception as e:
                 last_error = e

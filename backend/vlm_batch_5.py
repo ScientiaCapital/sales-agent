@@ -49,6 +49,8 @@ save_verifier = SaveVerifier(supabase, max_retries=2)
 BATCH_SIZE = 5
 MAX_PAGES_PER_COMPANY = 10  # Optimized for speed - fail fast on slow sites
 DELAY_BETWEEN_COMPANIES = 2
+CONCURRENT_COMPANIES = 3      # Max companies processing at once
+CONCURRENT_SCREENSHOTS = 3    # Max screenshots per company at once
 
 
 def get_companies_to_process(tier: str = None, source: str = None, offset: int = 0, limit: int = BATCH_SIZE, no_contacts: bool = False) -> list:
@@ -293,24 +295,44 @@ async def process_company(
     if not pages:
         return {"company_name": company_name, "status": "no_pages", "contacts_saved": 0}
 
-    # Step 2: VLM extraction on each page
+    # Step 2: VLM extraction on each page (parallel processing)
     print("\n Step 2: VLM extraction...")
     all_contacts = []
     total_cost = 0.0
     team_page_url = None
     all_signals = {}  # Aggregate signals from all pages
 
+    # Build tasks for parallel execution
+    tasks = []
+    page_map = {}
     for page in pages:
         if not page.screenshot_path:
             continue
+        task = extractor.extract_contacts(
+            screenshot_path=Path(page.screenshot_path),
+            page_url=page.url,
+            page_text=page.text[:1000] if page.text else "",
+        )
+        tasks.append(task)
+        page_map[len(tasks) - 1] = page
+
+    # Process in batches of CONCURRENT_SCREENSHOTS
+    all_results = []
+    for i in range(0, len(tasks), CONCURRENT_SCREENSHOTS):
+        batch = tasks[i:i + CONCURRENT_SCREENSHOTS]
+        batch_results = await asyncio.gather(*batch, return_exceptions=True)
+        for idx, result in enumerate(batch_results):
+            all_results.append((i + idx, result))
+
+    # Process results
+    for idx, result in all_results:
+        page = page_map[idx]
+
+        if isinstance(result, Exception):
+            print(f"    {page.url[:50]}... -> Error: {str(result)[:30]}")
+            continue
 
         try:
-            result = await extractor.extract_contacts(
-                screenshot_path=Path(page.screenshot_path),
-                page_url=page.url,
-                page_text=page.text[:1000] if page.text else "",
-            )
-
             contacts = result.get("contacts", [])
             cost = result.get("cost", 0)
             total_cost += cost
@@ -414,22 +436,32 @@ async def run_batch(offset: int = 0, tier: str = None, source: str = None, dry_r
     print(f"\nVLM Model: {extractor.primary_model}")
     print(f"Fallback: {extractor.fallback_model}")
 
-    # Process each company
+    # Process companies in parallel with semaphore
+    semaphore = asyncio.Semaphore(CONCURRENT_COMPANIES)
     results = []
     total_cost = 0.0
     total_contacts = 0
 
-    for i, company in enumerate(companies):
-        result = await process_company(company, crawler, extractor, dry_run)
-        results.append(result)
+    async def process_with_limit(company):
+        """Process company with concurrency limit."""
+        async with semaphore:
+            result = await process_company(company, crawler, extractor, dry_run)
+            if not dry_run:
+                await asyncio.sleep(DELAY_BETWEEN_COMPANIES)
+            return result
 
-        total_cost += result.get("cost_usd", 0)
-        total_contacts += result.get("contacts_saved", 0)
+    # Process all companies in parallel (up to CONCURRENT_COMPANIES at once)
+    tasks = [process_with_limit(c) for c in companies]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        # Delay between companies
-        if i < len(companies) - 1 and not dry_run:
-            print(f"\nWaiting {DELAY_BETWEEN_COMPANIES}s before next company...")
-            await asyncio.sleep(DELAY_BETWEEN_COMPANIES)
+    # Handle any exceptions and calculate totals
+    for i, result in enumerate(results):
+        if isinstance(result, Exception):
+            print(f"\nCompany {i+1} failed: {str(result)[:50]}")
+            results[i] = {"company_name": companies[i]["company_name"], "status": "failed", "contacts_saved": 0}
+        else:
+            total_cost += result.get("cost_usd", 0)
+            total_contacts += result.get("contacts_saved", 0)
 
     # Batch Summary
     print("\n" + "=" * 70)
