@@ -8,8 +8,8 @@ Tests the integration with Close CRM API for:
 """
 
 import pytest
-from backend.app.services.crm.close_sequences import CloseSequencesClient
-from backend.app.services.crm.close import CloseProvider
+from app.services.crm.close_sequences import CloseSequencesClient
+from app.services.crm.close import CloseProvider
 
 
 @pytest.mark.asyncio

@@ -144,14 +144,16 @@ class EnhancedKnowledgeBase:
             self.embedding_model_name = "nomic-embed-text"
             
         elif model_type == "openai":
-            # OpenAI embeddings (if available)
-            from langchain_openai import OpenAIEmbeddings
-            self.embeddings = OpenAIEmbeddings(
-                model="text-embedding-3-small",
-                openai_api_key=os.getenv("OPENAI_API_KEY")
+            # OpenAI embeddings deprecated - use bge-large or local instead
+            # Policy: NO OpenAI models in this project
+            logger.warning("OpenAI embeddings disabled by policy. Using bge-large instead.")
+            self.embeddings = HuggingFaceBgeEmbeddings(
+                model_name="BAAI/bge-large-en-v1.5",
+                model_kwargs={'device': 'cpu'},
+                encode_kwargs={'normalize_embeddings': True}
             )
-            self.embedding_model_name = "text-embedding-3-small"
-            
+            self.embedding_model_name = "bge-large-en-v1.5"
+
         else:
             # Default to sentence-transformers
             self.embeddings = HuggingFaceEmbeddings(

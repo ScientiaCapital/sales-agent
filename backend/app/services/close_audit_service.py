@@ -35,8 +35,8 @@ from typing import Dict, List, Optional
 from uuid import UUID
 import pandas as pd
 from supabase import create_client, Client
-from backend.app.services.crm.close_sequences import CloseSequencesClient
-from backend.app.services.crm.close import CloseProvider
+from app.services.crm.close_sequences import CloseSequencesClient
+from app.services.crm.close import CloseProvider
 
 logger = logging.getLogger(__name__)
 
