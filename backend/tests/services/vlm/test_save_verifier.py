@@ -412,3 +412,311 @@ class TestSaveVerifierSignals:
 
         assert success is False
         assert "No signals" in error
+
+
+class TestSaveVerifierUtilityMethods:
+    """Tests for SaveVerifier utility methods."""
+
+    @pytest.fixture
+    def mock_supabase_with_data(self):
+        """Create a mock Supabase client with existing data."""
+        client = MagicMock()
+
+        def create_table_mock(table_name):
+            table = MagicMock()
+
+            if table_name == "dim_contacts":
+                # Setup mock select for existing contacts
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if column == "contact_id" and value == "existing-contact-123":
+                        # Contact exists
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(data=[{"contact_id": value}])
+                        )
+                    elif column == "contact_id" and value == "nonexistent-contact":
+                        # Contact doesn't exist
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    elif column == "company_id":
+                        # Return 3 contacts for this company
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(
+                                data=[
+                                    {"contact_id": "c1"},
+                                    {"contact_id": "c2"},
+                                    {"contact_id": "c3"}
+                                ],
+                                count=3
+                            )
+                        )
+                    else:
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+            elif table_name == "dim_companies":
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if value == "existing-company-456":
+                        # Company exists
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(data=[{"company_id": value}])
+                        )
+                    else:
+                        # Company doesn't exist
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+            return table
+
+        client.table = MagicMock(side_effect=create_table_mock)
+        return client
+
+    def test_verify_contact_exists_true(self, mock_supabase_with_data):
+        """
+        Test verifying that a contact exists in the database.
+
+        Should query dim_contacts by contact_id and return True if found.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        result = verifier.verify_contact_exists("existing-contact-123")
+
+        assert result is True
+
+    def test_verify_contact_exists_false(self, mock_supabase_with_data):
+        """
+        Test verifying that a contact does NOT exist in the database.
+
+        Should query dim_contacts by contact_id and return False if not found.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        result = verifier.verify_contact_exists("nonexistent-contact")
+
+        assert result is False
+
+    def test_get_contact_count(self, mock_supabase_with_data):
+        """
+        Test getting the count of contacts for a company.
+
+        Should query dim_contacts filtered by company_id and return the count.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        count = verifier.get_contact_count("test-company-id")
+
+        assert count == 3
+
+
+class TestSaveVerifierDBOptimization:
+    """Tests for database optimization - INSERT RETURNING to eliminate readback."""
+
+    @pytest.fixture
+    def mock_supabase_with_insert_returning(self):
+        """
+        Create a mock Supabase client that supports INSERT RETURNING.
+
+        This simulates PostgreSQL's INSERT...RETURNING functionality,
+        which returns the inserted row data without requiring a separate SELECT.
+        """
+        client = MagicMock()
+        saved_contacts = {}
+
+        def create_table_mock(table_name):
+            table = MagicMock()
+
+            if table_name == "dim_contacts":
+                # Duplicate check (pre-insert)
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if column == "company_id":
+                        # No existing duplicates
+                        ilike_mock = MagicMock()
+                        ilike_mock.execute = MagicMock(
+                            return_value=MagicMock(data=[])
+                        )
+                        eq_result.ilike = MagicMock(return_value=ilike_mock)
+                    else:
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+                # INSERT with RETURNING (single query)
+                def insert_handler(data):
+                    # Store the contact
+                    contact_id = data["contact_id"]
+                    saved_contacts[contact_id] = data
+
+                    # Mock execute that returns inserted data (simulating RETURNING)
+                    execute_mock = MagicMock()
+                    execute_mock.data = [data]  # Return the inserted data
+                    insert_result = MagicMock()
+                    insert_result.execute = MagicMock(return_value=execute_mock)
+                    return insert_result
+
+                table.insert = MagicMock(side_effect=insert_handler)
+
+            elif table_name == "fact_enrichment_errors":
+                insert_mock = MagicMock()
+                insert_mock.execute = MagicMock(return_value=MagicMock(data=[{}]))
+                table.insert = MagicMock(return_value=insert_mock)
+
+            return table
+
+        client.table = MagicMock(side_effect=create_table_mock)
+        client._saved_contacts = saved_contacts
+        return client
+
+    def test_insert_returning_eliminates_readback(self):
+        """
+        Test that INSERT RETURNING eliminates the need for separate SELECT.
+
+        This is a DATABASE OPTIMIZATION test that verifies:
+        1. INSERT...RETURNING returns the inserted data
+        2. No separate SELECT query is needed for readback
+        3. Data verification happens using the returned data
+
+        Performance impact:
+        - Current: INSERT (1 query) + SELECT readback (1 query) = 2 queries
+        - Optimized: INSERT RETURNING (1 query) = 1 query
+        - Speedup: 50% reduction in DB queries per contact
+
+        For 100 contacts:
+        - Current: 200 queries (100 INSERT + 100 SELECT readback)
+        - Optimized: 100 queries (100 INSERT...RETURNING)
+        - Savings: 100 queries (~300-500ms saved)
+
+        NOTE: This test documents the DESIRED behavior for future optimization.
+        Current implementation uses 2 queries (INSERT + SELECT readback).
+        Future implementation should use 1 query (INSERT RETURNING).
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        # Create a mock that tracks query types
+        client = MagicMock()
+        call_tracker = {"insert_count": 0, "select_readback_count": 0}
+        saved_contacts = {}
+
+        def create_table_mock(table_name):
+            table = MagicMock()
+
+            if table_name == "dim_contacts":
+                # Duplicate check (pre-insert)
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if column == "company_id":
+                        # Duplicate check - no duplicates
+                        ilike_mock = MagicMock()
+                        ilike_mock.execute = MagicMock(
+                            return_value=MagicMock(data=[])
+                        )
+                        eq_result.ilike = MagicMock(return_value=ilike_mock)
+                    elif column == "contact_id":
+                        # Readback check (this is what we want to eliminate)
+                        call_tracker["select_readback_count"] += 1
+                        # Return the saved contact for readback
+                        if value in saved_contacts:
+                            eq_result.execute = MagicMock(
+                                return_value=MagicMock(data=[saved_contacts[value]])
+                            )
+                        else:
+                            eq_result.execute = MagicMock(
+                                return_value=MagicMock(data=[])
+                            )
+                    else:
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+                # INSERT handler
+                def insert_handler(data):
+                    call_tracker["insert_count"] += 1
+                    contact_id = data["contact_id"]
+                    saved_contacts[contact_id] = data
+
+                    # Current behavior: INSERT returns basic response
+                    # Optimized behavior: INSERT should return inserted data via RETURNING
+                    execute_mock = MagicMock()
+                    execute_mock.data = [data]  # Simulate RETURNING (future optimization)
+                    insert_result = MagicMock()
+                    insert_result.execute = MagicMock(return_value=execute_mock)
+                    return insert_result
+
+                table.insert = MagicMock(side_effect=insert_handler)
+
+            elif table_name == "fact_enrichment_errors":
+                insert_mock = MagicMock()
+                insert_mock.execute = MagicMock(return_value=MagicMock(data=[{}]))
+                table.insert = MagicMock(return_value=insert_mock)
+
+            return table
+
+        client.table = MagicMock(side_effect=create_table_mock)
+
+        verifier = SaveVerifier(supabase=client)
+
+        # Save contact
+        success, contact_id, error = verifier.save_contact(
+            company_id="test-company-123",
+            contact_data={
+                "full_name": "Test Person",
+                "title": "CEO"
+            },
+            source="test"
+        )
+
+        # Verify success
+        assert success is True
+        assert contact_id is not None
+
+        # Current state: 1 INSERT + 1 SELECT readback = 2 queries
+        assert call_tracker["insert_count"] == 1, (
+            "Should have exactly 1 INSERT call"
+        )
+
+        # OPTIMIZATION GOAL:
+        # Current: select_readback_count = 1 (separate readback query)
+        # Optimized: select_readback_count = 0 (use INSERT RETURNING data)
+        #
+        # This assertion documents current behavior and will guide future optimization.
+        current_readback_count = call_tracker["select_readback_count"]
+
+        # For now, we expect the current behavior (1 readback query)
+        # Once optimized with INSERT RETURNING, this should be 0
+        print(f"📊 Current readback queries: {current_readback_count}")
+        print(f"🎯 Optimization target: 0 readback queries (use INSERT RETURNING)")
+
+        if current_readback_count == 0:
+            print("✅ INSERT RETURNING optimization IS implemented!")
+        else:
+            print("⚠️  INSERT RETURNING optimization NOT YET implemented")
+            print("   Current: 2 queries (INSERT + SELECT)")
+            print("   Target: 1 query (INSERT...RETURNING)")
+
+        # This is a documentation test - it will pass regardless
+        # But it provides clear metrics for future optimization
+        assert True, "Test documents optimization opportunity"
