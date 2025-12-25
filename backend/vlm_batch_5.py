@@ -47,7 +47,7 @@ save_verifier = SaveVerifier(supabase, max_retries=2)
 
 # Config
 BATCH_SIZE = 5
-MAX_PAGES_PER_COMPANY = 20  # Increased for thorough team/signal discovery
+MAX_PAGES_PER_COMPANY = 10  # Optimized for speed - fail fast on slow sites
 DELAY_BETWEEN_COMPANIES = 2
 
 
