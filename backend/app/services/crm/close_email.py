@@ -546,6 +546,131 @@ class CloseEmailClient:
             logger.error(f"Close delete email error: {e.response.status_code} - {e.response.text}")
             raise
 
+    async def get_activities_since(
+        self,
+        since: datetime,
+        activity_types: Optional[List[str]] = None,
+        limit: int = 200,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch all activities (emails, SMS, calls) since a given timestamp.
+
+        Args:
+            since: Fetch activities created after this timestamp
+            activity_types: List of activity types to fetch (default: all)
+                           Options: "email", "sms", "call"
+            limit: Maximum activities per type to return
+
+        Returns:
+            List of activity dicts with 'type' field indicating activity type
+        """
+        if activity_types is None:
+            activity_types = ["email", "sms", "call"]
+
+        all_activities = []
+
+        for activity_type in activity_types:
+            try:
+                endpoint = f"{self.BASE_URL}/activity/{activity_type}/"
+                params = {
+                    "date_created__gte": since.strftime("%Y-%m-%dT%H:%M:%S"),
+                    "_limit": limit,
+                    "_order_by": "date_created",
+                }
+
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        endpoint,
+                        headers=self._get_headers(),
+                        params=params,
+                        timeout=30.0,
+                    )
+
+                    response.raise_for_status()
+                    data = response.json()
+
+                    activities = data.get("data", [])
+                    # Add type field for easy identification
+                    for activity in activities:
+                        activity["_activity_type"] = activity_type
+
+                    all_activities.extend(activities)
+                    logger.debug(
+                        f"Fetched {len(activities)} {activity_type} activities since {since}"
+                    )
+
+            except httpx.HTTPStatusError as e:
+                logger.error(
+                    f"Close {activity_type} activity fetch error: "
+                    f"{e.response.status_code} - {e.response.text}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to fetch {activity_type} activities: {e}")
+
+        logger.info(f"Total activities fetched since {since}: {len(all_activities)}")
+        return all_activities
+
+    async def get_incoming_emails_since(
+        self,
+        since: datetime,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch incoming email replies since a given timestamp.
+
+        Incoming emails are identified by direction='incoming' or lack of sender_user_id.
+
+        Args:
+            since: Fetch emails created after this timestamp
+            limit: Maximum emails to return
+
+        Returns:
+            List of incoming email activity dicts
+        """
+        try:
+            params = {
+                "date_created__gte": since.strftime("%Y-%m-%dT%H:%M:%S"),
+                "_limit": limit,
+                "_order_by": "date_created",
+            }
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.BASE_URL}/activity/email/",
+                    headers=self._get_headers(),
+                    params=params,
+                    timeout=30.0,
+                )
+
+                response.raise_for_status()
+                data = response.json()
+
+                emails = data.get("data", [])
+
+                # Filter to incoming emails only
+                # Close marks incoming emails with direction='incoming' or status='inbox'
+                incoming = [
+                    e for e in emails
+                    if e.get("direction") == "incoming"
+                    or e.get("status") == "inbox"
+                    or not e.get("user_id")  # No sending user = received email
+                ]
+
+                logger.info(
+                    f"Found {len(incoming)} incoming emails since {since} "
+                    f"(out of {len(emails)} total)"
+                )
+                return incoming
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Close incoming emails fetch error: {e.response.status_code} - {e.response.text}"
+            )
+            return []
+        except Exception as e:
+            logger.error(f"Failed to fetch incoming emails: {e}")
+            return []
+
     # Close CRM Custom Field IDs
     # These map to your actual Close account custom fields
     CUSTOM_FIELDS = {

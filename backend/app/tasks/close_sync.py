@@ -27,7 +27,17 @@ from redis import asyncio as aioredis  # noqa: E402
 
 from app.celery_app import celery_app  # noqa: E402
 from app.services.crm.close_email import CloseEmailClient  # noqa: E402
+from app.services.crm.close_sequences import CloseSequencesClient  # noqa: E402
+from app.services.outreach.reply_classifier import ReplyClassifier, ReplyIntent  # noqa: E402
+from app.services.outreach.reply_router import ReplyRouter  # noqa: E402
 from app.core.logging import setup_logging  # noqa: E402
+
+# Supabase for data persistence
+try:
+    from supabase import create_client
+    SUPABASE_AVAILABLE = True
+except ImportError:
+    SUPABASE_AVAILABLE = False
 
 logger = setup_logging(__name__)
 
@@ -206,6 +216,9 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
     """
     Async implementation of activity sync.
 
+    Fetches email/SMS/call activities from Close CRM and syncs to Supabase
+    for analytics and reporting.
+
     Args:
         task_name: Task name for locking
 
@@ -233,14 +246,20 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
             # Default to last 24 hours on first run
             last_sync = datetime.utcnow() - timedelta(hours=24)
 
-        # Initialize Close client (will be used when TODO is implemented)
-        # close_client = CloseEmailClient()
-
-        # TODO: Implement activity fetching from Close API
-        # For now, return mock results
-        # Once Close SDK has activity endpoints, fetch like this:
-        # close_client = CloseEmailClient()
-        # activities = await close_client.get_activities_since(last_sync)
+        # Initialize Close client
+        try:
+            close_client = CloseEmailClient()
+        except ValueError as e:
+            logger.error(f"Close client initialization failed: {e}")
+            return {
+                "status": "error",
+                "reason": "close_api_key_missing",
+                "activities_synced": 0,
+                "emails": 0,
+                "sms": 0,
+                "calls": 0,
+                "errors": 1,
+            }
 
         activities_synced = 0
         emails = 0
@@ -248,21 +267,39 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
         calls = 0
         errors = 0
 
-        # TODO: Fetch activities from Close API
-        # activities = await _fetch_close_activities(close_client, last_sync)
-        # for activity in activities:
-        #     try:
-        #         await _sync_activity_to_db(activity)
-        #         activities_synced += 1
-        #         if activity['type'] == 'email':
-        #             emails += 1
-        #         elif activity['type'] == 'sms':
-        #             sms += 1
-        #         elif activity['type'] == 'call':
-        #             calls += 1
-        #     except Exception as e:
-        #         logger.error(f"Failed to sync activity {activity.get('id')}: {e}")
-        #         errors += 1
+        # Fetch activities from Close API
+        activities = await close_client.get_activities_since(last_sync)
+        logger.info(f"[{task_name}] Fetched {len(activities)} activities since {last_sync}")
+
+        # Get Supabase client for syncing
+        supabase = None
+        if SUPABASE_AVAILABLE:
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+            if supabase_url and supabase_key:
+                supabase = create_client(supabase_url, supabase_key)
+
+        for activity in activities:
+            try:
+                activity_type = activity.get("_activity_type", "unknown")
+                activity_id = activity.get("id")
+
+                # Sync to Supabase if available
+                if supabase:
+                    await _sync_activity_to_supabase(supabase, activity)
+
+                activities_synced += 1
+
+                if activity_type == "email":
+                    emails += 1
+                elif activity_type == "sms":
+                    sms += 1
+                elif activity_type == "call":
+                    calls += 1
+
+            except Exception as e:
+                logger.error(f"Failed to sync activity {activity.get('id')}: {e}")
+                errors += 1
 
         # Update last sync timestamp
         await set_last_poll_timestamp(redis, task_name, datetime.utcnow())
@@ -279,6 +316,55 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
     finally:
         await release_task_lock(redis, task_name)
         await redis.close()
+
+
+async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
+    """
+    Sync a Close activity to Supabase lead_audit_log table.
+
+    Args:
+        supabase: Supabase client
+        activity: Activity dict from Close API
+    """
+    activity_type = activity.get("_activity_type", "unknown")
+    activity_id = activity.get("id")
+    lead_id = activity.get("lead_id")
+
+    # Map activity type to event_type for audit log
+    event_type_map = {
+        "email": "email_activity",
+        "sms": "sms_activity",
+        "call": "call_activity",
+    }
+    event_type = event_type_map.get(activity_type, "activity_sync")
+
+    # Build audit log entry
+    audit_entry = {
+        "event_type": event_type,
+        "close_lead_id": lead_id,
+        "close_activity_id": activity_id,
+        "activity_type": activity_type,
+        "direction": activity.get("direction", "outbound"),
+        "status": activity.get("status"),
+        "created_at": activity.get("date_created"),
+        "metadata": {
+            "subject": activity.get("subject"),
+            "to": activity.get("to"),
+            "from": activity.get("sender"),
+            "duration": activity.get("duration"),  # For calls
+        }
+    }
+
+    # Upsert to audit log (avoid duplicates)
+    try:
+        supabase.table("lead_audit_log").upsert(
+            audit_entry,
+            on_conflict="close_activity_id"
+        ).execute()
+    except Exception as e:
+        # If upsert fails (e.g., column doesn't exist), just insert
+        logger.debug(f"Upsert failed, trying insert: {e}")
+        supabase.table("lead_audit_log").insert(audit_entry).execute()
 
 
 # ============================================================================
@@ -349,6 +435,9 @@ async def _poll_email_replies_async(task_name: str) -> Dict[str, Any]:
     """
     Async implementation of email reply polling.
 
+    Fetches incoming emails from Close CRM, classifies them using AI,
+    and routes them to appropriate handlers (Slack alerts, sequence control).
+
     Args:
         task_name: Task name for locking
 
@@ -376,43 +465,121 @@ async def _poll_email_replies_async(task_name: str) -> Dict[str, Any]:
             # Default to last 1 hour on first run
             last_poll = datetime.utcnow() - timedelta(hours=1)
 
-        # Initialize Close client (will be used when TODO is implemented)
-        # close_client = CloseEmailClient()
+        # Initialize Close client
+        try:
+            close_client = CloseEmailClient()
+        except ValueError as e:
+            logger.error(f"Close client initialization failed: {e}")
+            return {
+                "status": "error",
+                "reason": "close_api_key_missing",
+                "replies_found": 0,
+                "interested": 0,
+                "not_interested": 0,
+                "questions": 0,
+                "errors": 1,
+            }
 
         replies_found = 0
         interested = 0
         not_interested = 0
         questions = 0
+        meeting_requests = 0
+        out_of_office = 0
+        unsubscribes = 0
         errors = 0
 
-        # TODO: Fetch incoming emails from Close API
-        # Once Close SDK has inbox endpoints, fetch like this:
-        # close_client = CloseEmailClient()
-        # incoming_emails = await close_client.get_incoming_emails_since(last_poll)
+        # Fetch incoming emails from Close API
+        incoming_emails = await close_client.get_incoming_emails_since(last_poll)
+        logger.info(f"[{task_name}] Found {len(incoming_emails)} incoming emails since {last_poll}")
 
-        # TODO: Process each reply with ReplyClassifier and ReplyRouter
-        # for email in incoming_emails:
-        #     try:
-        #         # Classify reply sentiment
-        #         # from app.services.outreach.reply_classifier import ReplyClassifier
-        #         # classifier = ReplyClassifier()
-        #         # classification = await classifier.classify(email['body'])
-        #
-        #         # Route reply to appropriate handler
-        #         # from app.services.outreach.reply_router import ReplyRouter
-        #         # router = ReplyRouter()
-        #         # await router.route_reply(email, classification)
-        #
-        #         replies_found += 1
-        #         # if classification == 'interested':
-        #         #     interested += 1
-        #         # elif classification == 'not_interested':
-        #         #     not_interested += 1
-        #         # elif classification == 'question':
-        #         #     questions += 1
-        #     except Exception as e:
-        #         logger.error(f"Failed to process reply {email.get('id')}: {e}")
-        #         errors += 1
+        if not incoming_emails:
+            # No new replies, update timestamp and return
+            await set_last_poll_timestamp(redis, task_name, datetime.utcnow())
+            return {
+                "status": "success",
+                "replies_found": 0,
+                "interested": 0,
+                "not_interested": 0,
+                "questions": 0,
+                "meeting_requests": 0,
+                "out_of_office": 0,
+                "unsubscribes": 0,
+                "errors": 0,
+            }
+
+        # Initialize classifier and router
+        classifier = ReplyClassifier(use_ai=True)
+        router = ReplyRouter()
+
+        # Process each reply
+        for email in incoming_emails:
+            try:
+                email_id = email.get("id")
+                subject = email.get("subject", "")
+                body_text = email.get("body_text", "")
+                body_html = email.get("body_html")
+                lead_id = email.get("lead_id")
+                contact_id = email.get("contact_id")
+                from_email = None
+
+                # Extract sender email from addresses
+                sender_addresses = email.get("addresses", {})
+                if sender_addresses:
+                    from_addrs = sender_addresses.get("from", [])
+                    if from_addrs:
+                        from_email = from_addrs[0].get("email")
+
+                # Get company/contact info from Close (if available)
+                company_name = email.get("_company_name", "Unknown Company")
+                contact_name = email.get("_contact_name", from_email or "Unknown")
+
+                logger.debug(f"Processing reply {email_id} from {from_email}: {subject[:50]}")
+
+                # Classify the reply
+                classification = await classifier.classify(
+                    subject=subject,
+                    body_text=body_text,
+                    body_html=body_html,
+                    from_email=from_email
+                )
+
+                # Route the reply to appropriate handler
+                route_result = await router.route(
+                    classification=classification,
+                    lead_id=lead_id,
+                    contact_id=contact_id,
+                    email_body=body_text,
+                    company_name=company_name,
+                    contact_name=contact_name,
+                    from_email=from_email
+                )
+
+                replies_found += 1
+
+                # Track by intent
+                if classification.intent == ReplyIntent.INTERESTED:
+                    interested += 1
+                elif classification.intent == ReplyIntent.NOT_INTERESTED:
+                    not_interested += 1
+                elif classification.intent == ReplyIntent.QUESTION:
+                    questions += 1
+                elif classification.intent == ReplyIntent.MEETING_REQUEST:
+                    meeting_requests += 1
+                elif classification.intent == ReplyIntent.OUT_OF_OFFICE:
+                    out_of_office += 1
+                elif classification.intent == ReplyIntent.UNSUBSCRIBE:
+                    unsubscribes += 1
+
+                logger.info(
+                    f"[{task_name}] Processed reply {email_id}: "
+                    f"intent={classification.intent.value}, "
+                    f"action={route_result.get('action')}"
+                )
+
+            except Exception as e:
+                logger.error(f"Failed to process reply {email.get('id')}: {e}", exc_info=True)
+                errors += 1
 
         # Update last poll timestamp
         await set_last_poll_timestamp(redis, task_name, datetime.utcnow())
@@ -423,6 +590,9 @@ async def _poll_email_replies_async(task_name: str) -> Dict[str, Any]:
             "interested": interested,
             "not_interested": not_interested,
             "questions": questions,
+            "meeting_requests": meeting_requests,
+            "out_of_office": out_of_office,
+            "unsubscribes": unsubscribes,
             "errors": errors,
         }
 
@@ -498,6 +668,12 @@ async def _advance_sequences_async(task_name: str) -> Dict[str, Any]:
     """
     Async implementation of sequence advancement.
 
+    Close CRM handles the actual sequence step advancement automatically.
+    This task focuses on:
+    1. Resuming paused subscriptions (e.g., OOO contacts after 7 days)
+    2. Tracking subscription status for analytics
+    3. Syncing subscription data to Supabase
+
     Args:
         task_name: Task name for locking
 
@@ -513,54 +689,126 @@ async def _advance_sequences_async(task_name: str) -> Dict[str, Any]:
                 "status": "skipped",
                 "reason": "already_running",
                 "sequences_advanced": 0,
-                "outreach_sent": 0,
-                "sequences_completed": 0,
+                "subscriptions_resumed": 0,
+                "subscriptions_active": 0,
+                "subscriptions_paused": 0,
                 "errors": 0,
             }
 
-        sequences_advanced = 0
-        outreach_sent = 0
-        sequences_completed = 0
+        # Initialize Close sequences client
+        try:
+            sequences_client = CloseSequencesClient()
+        except ValueError as e:
+            logger.error(f"Close sequences client initialization failed: {e}")
+            return {
+                "status": "error",
+                "reason": "close_api_key_missing",
+                "sequences_advanced": 0,
+                "subscriptions_resumed": 0,
+                "subscriptions_active": 0,
+                "subscriptions_paused": 0,
+                "errors": 1,
+            }
+
+        subscriptions_resumed = 0
+        subscriptions_active = 0
+        subscriptions_paused = 0
+        subscriptions_finished = 0
         errors = 0
 
-        # TODO: Implement sequence advancement logic
-        # 1. Query database for leads due for next step
-        # 2. For each lead, trigger OutreachAgent to send next message
-        # 3. Update sequence state in database
-        # 4. Handle completion/graduation
+        # Get all sequences
+        sequences = await sequences_client.list_sequences(active_only=True)
+        logger.info(f"[{task_name}] Found {len(sequences)} active sequences")
 
-        # Example flow:
-        # from app.services.outreach.campaign_service import CampaignService
-        # campaign_service = CampaignService()
-        #
-        # # Get leads due for next step
-        # leads_due = await campaign_service.get_leads_due_for_step()
-        #
-        # for lead in leads_due:
-        #     try:
-        #         # Trigger next step
-        #         result = await campaign_service.advance_sequence(lead['id'])
-        #         sequences_advanced += 1
-        #
-        #         if result['action'] == 'send_outreach':
-        #             outreach_sent += 1
-        #         elif result['status'] == 'completed':
-        #             sequences_completed += 1
-        #     except Exception as e:
-        #         logger.error(f"Failed to advance sequence for lead {lead['id']}: {e}")
-        #         errors += 1
+        # Get Supabase client for syncing
+        supabase = None
+        if SUPABASE_AVAILABLE:
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
+            if supabase_url and supabase_key:
+                supabase = create_client(supabase_url, supabase_key)
+
+        # Track Redis key for OOO pause timestamps
+        ooo_pause_key_prefix = "close_sync:ooo_pause:"
+
+        for sequence in sequences:
+            sequence_id = sequence.get("id")
+            sequence_name = sequence.get("name", "Unknown")
+
+            try:
+                # Get all subscriptions for this sequence
+                # Note: Close API may need pagination for large sequences
+                subscriptions = await sequences_client.list_active_subscriptions(
+                    sequence_id=sequence_id,
+                    limit=200
+                )
+
+                for sub in subscriptions:
+                    sub_id = sub.get("id")
+                    status = sub.get("status")
+                    contact_id = sub.get("contact_id")
+
+                    if status == "active":
+                        subscriptions_active += 1
+                    elif status == "paused":
+                        subscriptions_paused += 1
+
+                        # Check if this subscription was paused for OOO
+                        # and if the 7-day pause period has expired
+                        pause_key = f"{ooo_pause_key_prefix}{sub_id}"
+                        pause_timestamp_str = await redis.get(pause_key)
+
+                        if pause_timestamp_str:
+                            pause_timestamp = datetime.fromisoformat(pause_timestamp_str)
+                            days_paused = (datetime.utcnow() - pause_timestamp).days
+
+                            if days_paused >= 7:
+                                # Resume the subscription
+                                logger.info(
+                                    f"[{task_name}] Resuming OOO subscription {sub_id} "
+                                    f"after {days_paused} days"
+                                )
+                                result = await sequences_client.resume_subscription(sub_id)
+                                if result:
+                                    subscriptions_resumed += 1
+                                    # Clean up the pause tracking key
+                                    await redis.delete(pause_key)
+                                else:
+                                    errors += 1
+
+                    elif status == "finished":
+                        subscriptions_finished += 1
+
+                    # Sync subscription status to Supabase (if available)
+                    if supabase:
+                        try:
+                            await _sync_subscription_to_supabase(
+                                supabase, sub, sequence_name
+                            )
+                        except Exception as e:
+                            logger.debug(f"Failed to sync subscription {sub_id}: {e}")
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to process sequence {sequence_id} ({sequence_name}): {e}"
+                )
+                errors += 1
 
         logger.info(
-            f"[{task_name}] Processed sequences: "
-            f"{sequences_advanced} advanced, "
-            f"{sequences_completed} completed"
+            f"[{task_name}] Sequence status: "
+            f"{subscriptions_active} active, "
+            f"{subscriptions_paused} paused, "
+            f"{subscriptions_finished} finished, "
+            f"{subscriptions_resumed} resumed"
         )
 
         return {
             "status": "success",
-            "sequences_advanced": sequences_advanced,
-            "outreach_sent": outreach_sent,
-            "sequences_completed": sequences_completed,
+            "sequences_advanced": len(sequences),
+            "subscriptions_resumed": subscriptions_resumed,
+            "subscriptions_active": subscriptions_active,
+            "subscriptions_paused": subscriptions_paused,
+            "subscriptions_finished": subscriptions_finished,
             "errors": errors,
         }
 
@@ -569,36 +817,66 @@ async def _advance_sequences_async(task_name: str) -> Dict[str, Any]:
         await redis.close()
 
 
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-async def _fetch_close_activities(
-    close_client: CloseEmailClient,
-    since: datetime,
-) -> List[Dict[str, Any]]:
+async def _sync_subscription_to_supabase(
+    supabase,
+    subscription: Dict[str, Any],
+    sequence_name: str
+):
     """
-    Fetch activities from Close API since a given timestamp.
+    Sync a sequence subscription status to Supabase.
 
     Args:
-        close_client: Close API client
-        since: Fetch activities since this timestamp
-
-    Returns:
-        List of activity dicts
+        supabase: Supabase client
+        subscription: Subscription dict from Close API
+        sequence_name: Name of the sequence
     """
-    # TODO: Implement once Close SDK has activity endpoints
-    # This will fetch emails, SMS, calls since the last sync
-    return []
+    sub_id = subscription.get("id")
+    contact_id = subscription.get("contact_id")
+    status = subscription.get("status")
+
+    # Build audit log entry
+    audit_entry = {
+        "event_type": "sequence_status",
+        "close_subscription_id": sub_id,
+        "close_contact_id": contact_id,
+        "sequence_name": sequence_name,
+        "status": status,
+        "current_step": subscription.get("current_step"),
+        "metadata": {
+            "sequence_id": subscription.get("sequence_id"),
+            "paused_at": subscription.get("paused_at"),
+            "finished_at": subscription.get("finished_at"),
+        }
+    }
+
+    # Upsert to audit log
+    try:
+        supabase.table("lead_audit_log").upsert(
+            audit_entry,
+            on_conflict="close_subscription_id"
+        ).execute()
+    except Exception as e:
+        # If upsert fails, just insert
+        logger.debug(f"Subscription upsert failed, trying insert: {e}")
+        supabase.table("lead_audit_log").insert(audit_entry).execute()
 
 
-async def _sync_activity_to_db(activity: Dict[str, Any]):
-    """
-    Sync a Close activity to local database.
-
-    Args:
-        activity: Activity dict from Close API
-    """
-    # TODO: Implement database sync logic
-    # Update local records with delivery status, opens, clicks
-    pass
+# ============================================================================
+# CELERY BEAT SCHEDULE (for reference)
+# ============================================================================
+# Add these to your celery_app.py beat_schedule:
+#
+# CELERY_BEAT_SCHEDULE = {
+#     'sync-close-activities': {
+#         'task': 'sync_close_activities',
+#         'schedule': crontab(minute='*/15'),  # Every 15 minutes
+#     },
+#     'poll-email-replies': {
+#         'task': 'poll_email_replies',
+#         'schedule': crontab(minute='*/5'),  # Every 5 minutes
+#     },
+#     'advance-sequences': {
+#         'task': 'advance_sequences',
+#         'schedule': crontab(minute=0),  # Every hour at :00
+#     },
+# }
