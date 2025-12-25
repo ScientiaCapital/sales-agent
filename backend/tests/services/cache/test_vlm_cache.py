@@ -30,7 +30,7 @@ async def test_cache_miss_returns_none(mock_redis):
 
     TDD: This test will FAIL until VLMCache is implemented.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -51,7 +51,7 @@ async def test_cache_hit_returns_data(mock_redis):
 
     TDD: This test will FAIL until VLMCache is implemented.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
