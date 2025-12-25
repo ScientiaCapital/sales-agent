@@ -2,8 +2,8 @@
 VLM Contact Extractor for Sales Agent
 
 Uses Chinese VLMs via OpenRouter to extract contacts from website screenshots.
-Primary: opengvlab/internvl3-78b ($0.001/screenshot)
-Fallback: qwen/qwen3-vl-30b-a3b-instruct ($0.0002/screenshot)
+Primary: qwen/qwen2.5-vl-72b-instruct (larger, more accurate)
+Fallback: qwen/qwen3-vl-30b-a3b-instruct (proven performer)
 """
 
 import base64
@@ -26,15 +26,10 @@ logger = structlog.get_logger(__name__)
 
 # Model pricing (per 1M tokens)
 MODEL_PRICING = {
-    "opengvlab/internvl3-78b": {
-        "input": 0.07,
-        "output": 0.26,
-        "description": "SOTA Chinese VLM - best accuracy"
-    },
-    "opengvlab/internvl3-14b": {
-        "input": 0.02,
-        "output": 0.08,
-        "description": "Mid-tier InternVL"
+    "qwen/qwen2.5-vl-72b-instruct": {
+        "input": 0.40,
+        "output": 0.40,
+        "description": "Latest Qwen VL - large, accurate"
     },
     "qwen/qwen3-vl-30b-a3b-instruct": {
         "input": 0.22,
@@ -126,7 +121,7 @@ class VLMContactExtractor:
     def __init__(
         self,
         api_key: str,
-        primary_model: str = "opengvlab/internvl3-78b",
+        primary_model: str = "qwen/qwen2.5-vl-72b-instruct",
         fallback_model: str = "qwen/qwen3-vl-30b-a3b-instruct",
         site_url: str = "https://scientia.capital",
         app_name: str = "Sales-Agent-VLM",
@@ -416,24 +411,68 @@ class VLMContactExtractor:
         """
         Filter out garbage names that VLM might still extract.
 
-        Even VLMs can sometimes extract UI text or company names.
+        Even VLMs can sometimes extract UI text, navigation elements,
+        or company names instead of real people.
         """
         garbage_patterns = {
             # Generic text
             "our team", "contact us", "learn more", "read more",
-            "meet the team", "about us", "get started",
-            # UI elements
+            "meet the team", "about us", "get started", "continue reading",
+            "click here", "submit", "subscribe", "sign up", "log in",
+            # UI elements / Navigation
             "menu", "home", "services", "projects", "careers",
             "privacy policy", "terms of service", "copyright",
-            # Business terms
+            "site map", "sitemap", "what we do", "who we are",
+            "our work", "our story", "navigation", "footer", "header",
+            "next", "previous", "back", "forward", "close", "open",
+            # Business terms / Section headers
             "mission statement", "our mission", "our values",
             "testimonials", "reviews", "what clients say",
+            "our services", "our products", "solutions", "industries",
+            "case studies", "portfolio", "gallery", "news", "blog",
+            "resources", "downloads", "support", "help", "faq",
             # Phone/contact labels (not people)
             "phone", "fax", "email", "corporate", "office",
-            "toll free", "main line", "direct line",
+            "toll free", "main line", "direct line", "call us",
             # Location labels
             "space coast", "orlando", "tampa", "miami",
-            "headquarters", "branch", "location",
+            "headquarters", "branch", "location", "address",
+            # Action phrases
+            "view all", "see all", "see more", "view more",
+            "explore", "discover", "find out", "request",
+            # Generic section words
+            "technology", "innovation", "quality", "excellence",
+            "commitment", "integrity", "leadership", "experience",
+        }
+
+        # Exact matches - these are garbage even as standalone words
+        garbage_exact = {
+            # Navigation buttons
+            "home", "menu", "close", "back", "next", "submit",
+            "search", "login", "register", "apply", "join",
+            # Section headers (single words)
+            "services", "projects", "careers", "team", "about",
+            "contact", "news", "blog", "press", "media",
+            "portfolio", "gallery", "work", "clients", "partners",
+            "history", "culture", "values", "mission", "vision",
+            "overview", "solutions", "products", "resources",
+            "technology", "innovation", "excellence", "quality",
+            # Generic business terms
+            "president", "ceo", "cfo", "cto", "coo", "vp",
+            "director", "manager", "supervisor", "coordinator",
+            "specialist", "analyst", "associate", "consultant",
+            # Continue/Action words
+            "continue", "learn", "view", "see", "read", "explore",
+            "discover", "request", "schedule", "book", "call",
+        }
+
+        # ALL CAPS navigation/button patterns
+        all_caps_garbage = {
+            "SITE MAP", "SITEMAP", "MENU", "HOME", "SERVICES",
+            "ABOUT", "CONTACT", "CAREERS", "NEWS", "BLOG",
+            "SUBMIT", "SEARCH", "LOGIN", "REGISTER", "APPLY",
+            "CONTINUE READING", "READ MORE", "LEARN MORE",
+            "VIEW ALL", "SEE MORE", "WHAT WE DO", "WHO WE ARE",
         }
 
         # Titles that indicate testimonials, not team members
@@ -451,8 +490,24 @@ class VLMContactExtractor:
             if not name or len(name) < 3:
                 continue
 
-            # Check for garbage names
             name_lower = name.lower()
+
+            # Check for ALL CAPS (navigation/buttons)
+            if name.isupper() and len(name) > 2:
+                logger.debug(f"Filtered ALL CAPS name: {name}")
+                continue
+
+            # Check for exact garbage matches (case-insensitive)
+            if name_lower in garbage_exact:
+                logger.debug(f"Filtered exact garbage match: {name}")
+                continue
+
+            # Check for ALL CAPS garbage patterns
+            if name in all_caps_garbage:
+                logger.debug(f"Filtered ALL CAPS garbage: {name}")
+                continue
+
+            # Check for garbage patterns (substring match)
             if any(pattern in name_lower for pattern in garbage_patterns):
                 logger.debug(f"Filtered garbage VLM contact: {name}")
                 continue
@@ -476,11 +531,31 @@ class VLMContactExtractor:
             if any(char.isdigit() for char in name[-5:]):  # Zip code at end
                 continue
 
-            # Check for single letter last names (likely initials, not full names)
+            # Check for single-word names (real names have at least first + last)
             parts = name.split()
+            if len(parts) == 1:
+                # Single word is likely not a real name
+                logger.debug(f"Filtered single-word name: {name}")
+                continue
+
+            # Check for single letter last names (likely initials, not full names)
             if len(parts) == 2 and len(parts[1]) == 1:
                 # Like "Kenneth A." - probably a testimonial with initial
                 logger.debug(f"Filtered initial-only name: {name}")
+                continue
+
+            # Check for very short names (< 5 chars total likely garbage)
+            if len(name.replace(" ", "")) < 5:
+                logger.debug(f"Filtered too-short name: {name}")
+                continue
+
+            # Check for names that are just titles (no actual name)
+            title_only_patterns = {
+                "president", "ceo", "chief", "director", "manager",
+                "owner", "founder", "partner", "principal", "chairman",
+            }
+            if name_lower in title_only_patterns:
+                logger.debug(f"Filtered title-only name: {name}")
                 continue
 
             clean.append(contact)
