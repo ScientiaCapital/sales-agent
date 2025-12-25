@@ -117,14 +117,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         if "localhost" not in str(request.url):
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
 
-        # Content Security Policy
+        # Content Security Policy (hardened - no unsafe-inline/eval)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
             "img-src 'self' data: https:; "
             "font-src 'self' data:; "
-            "connect-src 'self' https://*.supabase.co wss://*.supabase.co"
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'"
         )
 
         return response
@@ -205,6 +207,12 @@ app.add_middleware(SecurityHeadersMiddleware)
 from app.middleware.audit import AuditLoggingMiddleware
 app.add_middleware(AuditLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
+
+# Rate Limiting with SlowAPI
+from slowapi.errors import RateLimitExceeded
+from app.core.rate_limit import limiter, rate_limit_exceeded_handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 # Exception Handlers - Ordered from specific to general

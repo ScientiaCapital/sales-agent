@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     COST_ALERT_WEBHOOK_URL: Optional[str] = None  # Webhook for budget alerts
     COST_ALERT_EMAIL: Optional[str] = None  # Email for budget alerts
 
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_DEFAULT: str = "100/minute"
+    RATE_LIMIT_AUTH: str = "5/minute"
+    RATE_LIMIT_ENRICH: str = "30/minute"
+    RATE_LIMIT_CLOSE: str = "60/minute"
+    RATE_LIMIT_HEALTH: str = "120/minute"
+
     # HubSpot CRM (GTM Team Marketing Automation)
     HUBSPOT_API_KEY: Optional[str] = None  # Private App API Key (pat-na1-...)
     HUBSPOT_CLIENT_ID: Optional[str] = None  # OAuth Client ID (if using OAuth)
