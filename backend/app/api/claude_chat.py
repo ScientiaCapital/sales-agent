@@ -89,7 +89,8 @@ async def get_recent_activity() -> list:
     try:
         result = supabase.table("lead_audit_log").select("event_type, company_name, created_at").order("created_at", desc=True).limit(10).execute()
         return result.data or []
-    except:
+    except Exception as e:
+        logger.warning(f"Non-critical: could not fetch recent activity: {e}")
         return []
 
 

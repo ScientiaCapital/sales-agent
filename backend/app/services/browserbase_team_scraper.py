@@ -546,8 +546,8 @@ class BrowserbaseTeamScraper:
                                 ):
                                     try:
                                         await review_section.evaluate('node => node.remove()')
-                                    except:
-                                        pass
+                                    except Exception as e:
+                                        logger.debug(f"Non-critical: could not remove review section: {e}")
 
                                 page_text = await page.inner_text('body')
                                 # Extract names using regex (2-3 capitalized words)

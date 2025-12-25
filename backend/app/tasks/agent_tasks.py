@@ -1117,8 +1117,8 @@ def run_bdr_outreach_task(self, company_id: str):
                     import json
                     try:
                         personal_hooks = json.loads(lead['ai_personal_hooks'])
-                    except:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Non-critical: could not parse personal_hooks JSON: {e}")
 
                 await notifier.send_bdr_approval_request(
                     draft_id=draft_id,
