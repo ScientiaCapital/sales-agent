@@ -231,6 +231,73 @@ class TestVLMContactExtractor:
         assert abs(cost - expected_cost) < 0.0001
 
 
+    def test_init_client_lazy_loading(self):
+        """
+        Test that OpenAI client is not initialized until first use (lazy loading).
+
+        The client initialization is deferred to reduce startup time and
+        avoid unnecessary connections if extraction is never called.
+        """
+        from app.services.vlm_contact_extractor import VLMContactExtractor
+
+        extractor = VLMContactExtractor(api_key="test-key")
+
+        # Client should be None initially
+        assert extractor._client is None
+
+        # After calling _init_client, it should be initialized
+        # Note: This is tested via the extract_contacts test which calls _init_client
+
+    def test_load_image_base64_png(self, extractor, tmp_path):
+        """
+        Test loading PNG image and detecting correct MIME type.
+
+        PNG files start with magic bytes: \\x89PNG\\r\\n\\x1a\\n
+        The loader should detect this and return mime_type="image/png"
+        """
+        # Create a minimal PNG file
+        png_data = (
+            b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01'
+            b'\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00'
+            b'\x00\x00\x0cIDATx\x9cc\xf8\x0f\x00\x00\x01\x01\x00'
+            b'\x05\x18\xd8N\x00\x00\x00\x00IEND\xaeB`\x82'
+        )
+        png_file = tmp_path / "test.png"
+        png_file.write_bytes(png_data)
+
+        base64_str, mime_type = extractor._load_image_base64(png_file)
+
+        # Verify MIME type detected correctly
+        assert mime_type == "image/png"
+
+        # Verify base64 encoding is valid
+        import base64
+        decoded = base64.b64decode(base64_str)
+        assert decoded == png_data
+
+    def test_load_image_base64_jpeg(self, extractor, tmp_path):
+        """
+        Test loading JPEG image and detecting correct MIME type.
+
+        JPEG files start with magic bytes: \\xff\\xd8\\xff
+        The loader should detect this and return mime_type="image/jpeg"
+        """
+        # Create a JPEG file with magic bytes
+        jpeg_data = b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00'
+        jpeg_file = tmp_path / "test.jpg"
+        jpeg_file.write_bytes(jpeg_data)
+
+        base64_str, mime_type = extractor._load_image_base64(jpeg_file)
+
+        # Verify MIME type detected correctly
+        assert mime_type == "image/jpeg"
+
+        # Verify base64 encoding is valid
+        import base64
+        decoded = base64.b64decode(base64_str)
+        assert decoded == jpeg_data
+
+
 class TestVLMContactExtractorEdgeCases:
     """Edge case tests for VLMContactExtractor."""
 
