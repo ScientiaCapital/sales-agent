@@ -11,7 +11,7 @@ Tests the WorkflowIntelligenceService for:
 import pytest
 from typing import List, Dict
 from unittest.mock import AsyncMock, MagicMock, patch
-from backend.app.services.workflow_intelligence import (
+from app.services.workflow_intelligence import (
     WorkflowIntelligenceService,
     WorkflowReport,
     EngagementMetrics

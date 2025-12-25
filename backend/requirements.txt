@@ -4,6 +4,11 @@ uvicorn[standard]==0.32.0
 pydantic>=2.9.2,<3.0.0
 pydantic-settings>=2.10.1,<3.0.0  # Updated for langchain-community 0.4.x
 
+# Security - CVE Fixes (Dec 2025)
+urllib3>=2.0.0  # CVE-2023-45803, CVE-2023-43804 fixes
+Pillow>=10.0.0  # CVE-2023-4863 (libwebp), multiple buffer overflow fixes
+Jinja2>=3.1.0  # CVE-2024-22195, CVE-2024-34064 sandbox escape fixes
+
 # Database
 psycopg[binary]==3.2.3  # Modern PostgreSQL adapter (psycopg3)
 sqlalchemy==2.0.35
@@ -110,6 +115,7 @@ praw==7.7.1  # Reddit API wrapper
 sentence-transformers==3.3.1  # For generating text embeddings
 numpy>=2.1.0  # Required for vector operations (2.1+ has Python 3.13 support)
 scipy>=1.14.0  # Statistical functions for A/B test analysis (1.14+ for Python 3.13 compatibility)
+pandas>=2.0.0  # Data analysis (required for enrichment pipeline)
 # pgvector==0.3.6  # REMOVED: Dependency of langchain-postgres, unused in production
 
 # Web Search (for Research Agents - NEW: 2025)

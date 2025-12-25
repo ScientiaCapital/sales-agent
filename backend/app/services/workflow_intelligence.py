@@ -32,7 +32,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from supabase import create_client, Client
-from backend.app.services.crm.close_sequences import CloseSequencesClient
+from app.services.crm.close_sequences import CloseSequencesClient
 
 logger = logging.getLogger(__name__)
 

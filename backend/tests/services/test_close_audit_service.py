@@ -11,7 +11,7 @@ Tests the CloseAuditService business logic for:
 import pytest
 from typing import Dict, List
 from unittest.mock import AsyncMock, MagicMock, patch
-from backend.app.services.close_audit_service import CloseAuditService
+from app.services.close_audit_service import CloseAuditService
 
 
 @pytest.fixture
