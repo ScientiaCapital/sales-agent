@@ -83,7 +83,7 @@ async def test_cache_ttl_is_24_hours(mock_redis):
 
     TDD: This test will FAIL until VLMCache is implemented with correct TTL.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -114,7 +114,7 @@ async def test_screenshot_hash_computation(mock_redis):
 
     TDD: This test will FAIL until VLMCache implements proper hashing.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -144,7 +144,7 @@ async def test_same_screenshot_same_key(mock_redis):
 
     Verifies deterministic hashing for cache consistency.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -170,7 +170,7 @@ async def test_different_screenshots_different_keys(mock_redis):
 
     Verifies cache isolation between different images.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -197,7 +197,7 @@ async def test_cache_stats_tracking(mock_redis):
 
     Verifies integration with CacheBase hit/miss tracking.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
@@ -220,7 +220,7 @@ async def test_custom_ttl_override(mock_redis):
 
     Allows flexibility for testing or special use cases.
     """
-    from backend.app.services.cache.vlm_cache import VLMCache
+    from app.services.cache.vlm_cache import VLMCache
 
     cache = VLMCache(redis_client=mock_redis)
 
