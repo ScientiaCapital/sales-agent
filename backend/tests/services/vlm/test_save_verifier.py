@@ -412,3 +412,113 @@ class TestSaveVerifierSignals:
 
         assert success is False
         assert "No signals" in error
+
+
+class TestSaveVerifierUtilityMethods:
+    """Tests for SaveVerifier utility methods."""
+
+    @pytest.fixture
+    def mock_supabase_with_data(self):
+        """Create a mock Supabase client with existing data."""
+        client = MagicMock()
+
+        def create_table_mock(table_name):
+            table = MagicMock()
+
+            if table_name == "dim_contacts":
+                # Setup mock select for existing contacts
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if column == "contact_id" and value == "existing-contact-123":
+                        # Contact exists
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(data=[{"contact_id": value}])
+                        )
+                    elif column == "contact_id" and value == "nonexistent-contact":
+                        # Contact doesn't exist
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    elif column == "company_id":
+                        # Return 3 contacts for this company
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(
+                                data=[
+                                    {"contact_id": "c1"},
+                                    {"contact_id": "c2"},
+                                    {"contact_id": "c3"}
+                                ],
+                                count=3
+                            )
+                        )
+                    else:
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+            elif table_name == "dim_companies":
+                select_mock = MagicMock()
+
+                def eq_handler(column, value):
+                    eq_result = MagicMock()
+                    if value == "existing-company-456":
+                        # Company exists
+                        eq_result.execute = MagicMock(
+                            return_value=MagicMock(data=[{"company_id": value}])
+                        )
+                    else:
+                        # Company doesn't exist
+                        eq_result.execute = MagicMock(return_value=MagicMock(data=[]))
+                    return eq_result
+
+                select_mock.eq = MagicMock(side_effect=eq_handler)
+                table.select = MagicMock(return_value=select_mock)
+
+            return table
+
+        client.table = MagicMock(side_effect=create_table_mock)
+        return client
+
+    def test_verify_contact_exists_true(self, mock_supabase_with_data):
+        """
+        Test verifying that a contact exists in the database.
+
+        Should query dim_contacts by contact_id and return True if found.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        result = verifier.verify_contact_exists("existing-contact-123")
+
+        assert result is True
+
+    def test_verify_contact_exists_false(self, mock_supabase_with_data):
+        """
+        Test verifying that a contact does NOT exist in the database.
+
+        Should query dim_contacts by contact_id and return False if not found.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        result = verifier.verify_contact_exists("nonexistent-contact")
+
+        assert result is False
+
+    def test_get_contact_count(self, mock_supabase_with_data):
+        """
+        Test getting the count of contacts for a company.
+
+        Should query dim_contacts filtered by company_id and return the count.
+        """
+        from app.services.save_verifier import SaveVerifier
+
+        verifier = SaveVerifier(supabase=mock_supabase_with_data)
+
+        count = verifier.get_contact_count("test-company-id")
+
+        assert count == 3
