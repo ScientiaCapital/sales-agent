@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-25
+**Last Updated**: 2025-12-26
 
 ---
 
@@ -215,13 +215,15 @@ WITHOUT Domains:     223,372 (90.6%) ← Need crawler first
 
 ---
 
-## NEXT PRIORITY (Dec 25+)
+## NEXT PRIORITY (Dec 26)
 
-| Task | Priority | Command |
-|------|----------|---------|
-| VLM batch on 314 zero-contact companies | P1 | `python3 vlm_batch_5.py --no-contacts --tier PLATINUM` |
-| Monitor Apollo campaign (Dec 29 start) | P1 | Check Close CRM |
-| Fix 2 failing VLM tests | P2 | `pytest tests/services/vlm/ -v` |
+| Task | Priority | Status |
+|------|----------|--------|
+| Launch Readiness Check (Celery, Slack, Reply flow) | P0 | 🟡 IN PROGRESS |
+| VLM test batch (50 PLATINUM zero-contact) | P1 | 🟡 STARTING |
+| Commit scientia-vlm-core as subdirectory | P1 | ⏳ PENDING |
+| Create PR: feat/close-crm-integration → main | P1 | ⏳ PENDING |
+| Monitor Apollo campaign (Dec 29 start) | P1 | ⏳ 3 DAYS AWAY |
 
 ---
 
@@ -246,7 +248,10 @@ python backend/create_gold_standard_lists.py
 
 ## Blockers
 
-- None active
+- **None** - All previous blockers resolved:
+  - ✅ CVE fixes (urllib3, Pillow, Jinja2) - DONE Dec 25
+  - ✅ Security hardening (CSP, rate limiting) - DONE Dec 25
+  - ✅ Close CRM writes enabled - DONE Dec 6
 
 ---
 

@@ -1,7 +1,7 @@
 # BACKLOG.md - Project Task Board
 
 **Project**: sales-agent
-**Last Updated**: 2025-12-24 (Doc Audit + Cleanup)
+**Last Updated**: 2025-12-26 (Doc Audit + Cleanup)
 **Sprint**: Current
 
 ---
@@ -10,10 +10,10 @@
 
 | Status | Count |
 |--------|-------|
-| 🔴 Blocked | 1 (CVE fixes block commit) |
-| 🟡 In Progress | 1 (VLM enrichment) |
-| 🟢 Ready | 6 (3 new dealer-scraper tasks) |
-| ✅ Done (this sprint) | 60+ |
+| 🔴 Blocked | 0 |
+| 🟡 In Progress | 2 (Launch readiness, VLM test batch) |
+| 🟢 Ready | 3 |
+| ✅ Done (this sprint) | 65+ |
 
 ### Data Status (Dec 24, 2025)
 
@@ -32,77 +32,54 @@
 ### 🔴 Blocked
 <!-- Tasks waiting on external dependencies or decisions -->
 
-*None currently*
+*None - All previous blockers resolved (CVE fixes, security hardening complete)*
 
 ---
 
 ### 🟡 In Progress
 <!-- Tasks actively being worked on -->
 
-#### 1. [HIGH] VLM Batch Enrichment on Zero-Contact Companies
-- **ID**: TASK-030
+#### 1. [CRITICAL] Dec 29 Launch Readiness Check
+- **ID**: TASK-050
+- **Assignee**: Claude
+- **Labels**: `launch`, `automation`, `priority`
+- **Dependencies**: None
+
+**Description**: Verify all automation systems are ready for Apollo campaign Dec 29.
+
+**Checklist**:
+- [ ] Celery worker config verified
+- [ ] Reply classification pipeline tested
+- [ ] Slack webhook connected
+- [ ] Close CRM API connectivity confirmed
+
+---
+
+#### 2. [HIGH] VLM Test Batch (50 Companies)
+- **ID**: TASK-051
 - **Assignee**: Claude
 - **Labels**: `enrichment`, `vlm`, `priority`
 - **Dependencies**: None
 
-**Description**: Run VLM vision extraction on 314 companies with 0 contacts.
+**Description**: Run VLM on 50 zero-contact PLATINUM companies as validation.
 
 **Command**:
 ```bash
-python3 vlm_batch_5.py --no-contacts --tier PLATINUM
+python3 vlm_batch_5.py --no-contacts --tier PLATINUM --limit 50
 ```
 
-**Target**: 314 companies | **Cost**: ~$0.30 | **Expected yield**: 30-50 contacts
-
----
-
-#### 2. [MEDIUM] Fix 2 Failing VLM Tests
-- **ID**: TASK-031
-- **Labels**: `testing`, `vlm`
-- **Agent**: `debugging-toolkit:debugger`
-
-**Failing Tests**:
-- `test_save_contact_with_readback`
-- `test_readback_verification_failure`
+**Target**: 50 companies | **Cost**: ~$0.05 | **Expected yield**: 5-10 contacts
 
 ---
 
 ### 🟢 Ready (Prioritized)
 <!-- Tasks ready to start, ordered by priority -->
 
-#### 1. [CRITICAL] Fix CVEs - BLOCKS COMMIT
-- **ID**: TASK-032
-- **Assignee**: Claude
-- **Labels**: `security`, `dependencies`, `blocker`
-- **Dependencies**: None
-
-**Description**: Upgrade vulnerable dependencies before committing dealer-scraper integration.
-
-**CVEs Found**:
-- `urllib3==1.26.4` → Upgrade to `>=2.0.0` (multiple CVEs)
-- `Pillow==9.5.0` → Upgrade to `>=10.0.0` (image processing CVEs)
-- `Jinja2==3.0.1` → Upgrade to `>=3.1.0` (template injection fixes)
-
-**Command**:
-```bash
-cd backend
-pip install --upgrade 'urllib3>=2.0.0' 'Pillow>=10.0.0' 'Jinja2>=3.1.0'
-pip freeze > requirements.txt
-pytest tests/ -v  # Verify no breaking changes
-```
-
-**Acceptance Criteria**:
-- [ ] All 3 packages upgraded
-- [ ] Requirements.txt updated
-- [ ] Tests passing
-
----
-
-#### 2. [HIGH] Dealer-Scraper Domain Verification (23K domains)
+#### 1. [HIGH] Dealer-Scraper Domain Verification (23K domains)
 - **ID**: TASK-033
 - **Assignee**: Claude
 - **Labels**: `dealer-scraper`, `verification`, `data-quality`
-- **Dependencies**: TASK-032 (CVE fixes)
+- **Dependencies**: None (CVE fixes complete)
 
 **Description**: HTTP verification of 23,189 dealer-scraper domains before enrichment.
 
@@ -791,6 +768,13 @@ frontend/src/components/Cockpit/
 
 | ID | Title | Completed | By |
 |----|-------|-----------|-----|
+| **CompanyRAG + Security (Dec 25-26)** | | | |
+| TASK-046 | CompanyRAG production integration | 2025-12-26 | Claude |
+| TASK-047 | sentence-transformers production embeddings | 2025-12-26 | Claude |
+| TASK-048 | CompanyRAG hybrid search client | 2025-12-26 | Claude |
+| TASK-049 | VLM working model + junk contact filtering | 2025-12-26 | Claude |
+| TASK-032 | CVE fixes (urllib3, Pillow, Jinja2) | 2025-12-25 | Claude |
+| TASK-030 | VLM Cache + Parallel Processing design | 2025-12-25 | Claude |
 | **Data Integrity + VLM Pipeline (Dec 23-24)** | | | |
 | TASK-040 | Data cleanup: 7,556 garbage + 3,857 duplicates removed | 2025-12-24 | Claude |
 | TASK-041 | SaveVerifier class with mandatory readback | 2025-12-24 | Claude |
