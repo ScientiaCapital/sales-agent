@@ -8,13 +8,15 @@ Architecture:
 - Backend: PostgreSQL with pgvector extension (Supabase-compatible)
 - Embedding: sentence-transformers all-MiniLM-L6-v2 (384 dims, fast)
 - LLM: Anthropic Claude (NO OpenAI per CLAUDE.md constraints)
-- Connection: asyncpg for async PostgreSQL operations
+- Connection: asyncpg with connection pooling for production performance
 
 Features:
 - Production embeddings via sentence-transformers (open-source, NO OpenAI)
 - Graceful degradation to hash-based pseudo-embeddings if unavailable
 - Model caching for performance
 - Configurable embedding dimensions
+- Connection pooling with configurable min/max sizes
+- Graceful shutdown and health checks
 """
 
 import hashlib
@@ -26,7 +28,15 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
 
-# Conditional import of sentence-transformers for graceful degradation
+# Conditional imports for graceful degradation
+try:
+    import asyncpg
+
+    ASYNCPG_AVAILABLE = True
+except ImportError:
+    ASYNCPG_AVAILABLE = False
+    asyncpg = None  # type: ignore
+
 try:
     from sentence_transformers import SentenceTransformer
 
@@ -61,6 +71,20 @@ class RAGConfig:
     top_k: int = 5
     context_window: int = 32000
     use_sentence_transformers: bool = True  # Enable production embeddings
+
+    # Connection pool settings
+    pool_min_size: int = 5
+    pool_max_size: int = 20
+    pool_command_timeout: float = 60.0
+
+    def __post_init__(self):
+        """Validate configuration - NO OPENAI ALLOWED."""
+        # Check provider
+        if self.llm_provider.lower() == "openai":
+            raise ValueError("OpenAI provider is not allowed. Use 'anthropic' instead.")
+        # Check model name
+        if "gpt" in self.llm_model.lower() or "openai" in self.llm_model.lower():
+            raise ValueError("OpenAI models (gpt-*) are not allowed. Use Claude models.")
 
 
 @dataclass
@@ -134,6 +158,12 @@ class CompanyRAG:
     Production-ready implementation with sentence-transformers embeddings.
     Uses in-memory storage for testing, PostgreSQL for production.
     Gracefully falls back to hash-based embeddings if sentence-transformers unavailable.
+
+    Features:
+    - asyncpg connection pooling for production performance
+    - Configurable pool sizes (min/max connections)
+    - Health check for monitoring
+    - Graceful shutdown
     """
 
     def __init__(self, config: RAGConfig):
@@ -154,7 +184,7 @@ class CompanyRAG:
             )
 
         self.config = config
-        self._pool = None
+        self._pool: Optional[asyncpg.Pool] = None  # type: ignore
         self._embedding_model: Optional[SentenceTransformer] = None  # type: ignore
         self._use_sentence_transformers = False
         self.is_connected = False
@@ -163,6 +193,40 @@ class CompanyRAG:
         self._entities: dict[str, dict[str, Any]] = {}
         self._relationships: dict[str, dict[str, Any]] = {}
         self._use_memory_storage = True  # Default to memory for tests
+
+    async def _ensure_pool(self) -> Optional[asyncpg.Pool]:  # type: ignore
+        """
+        Ensure connection pool is initialized and return it.
+
+        Creates the pool lazily on first access with configured parameters.
+
+        Returns:
+            asyncpg.Pool instance or None if using memory storage
+
+        Raises:
+            RuntimeError: If asyncpg is not available and real DB is required
+        """
+        if self._use_memory_storage:
+            return None
+
+        if self._pool is None:
+            if not ASYNCPG_AVAILABLE:
+                raise RuntimeError(
+                    "asyncpg is not installed. Install with: pip install asyncpg"
+                )
+
+            self._pool = await asyncpg.create_pool(
+                dsn=self.config.pg_connection_string,
+                min_size=self.config.pool_min_size,
+                max_size=self.config.pool_max_size,
+                command_timeout=self.config.pool_command_timeout,
+            )
+            logger.info(
+                f"Connection pool created: min={self.config.pool_min_size}, "
+                f"max={self.config.pool_max_size}, timeout={self.config.pool_command_timeout}s"
+            )
+
+        return self._pool
 
     async def connect(self):
         """Establish PostgreSQL connection pool and initialize embedding model."""
@@ -182,47 +246,52 @@ class CompanyRAG:
         )
 
         if use_real_db:
-            try:
-                import asyncpg
-
-                self._pool = await asyncpg.create_pool(
-                    conn_str,
-                    min_size=2,
-                    max_size=10,
-                    command_timeout=60,
+            if not ASYNCPG_AVAILABLE:
+                logger.warning(
+                    "asyncpg not installed, falling back to memory storage. "
+                    "Install with: pip install asyncpg"
                 )
-                self._use_memory_storage = False
+                self._use_memory_storage = True
+            else:
+                try:
+                    self._use_memory_storage = False
 
-                # Create tables if they don't exist
-                async with self._pool.acquire() as conn:
-                    await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
-                    await conn.execute(f"""
-                        CREATE TABLE IF NOT EXISTS rag_entities (
-                            id UUID PRIMARY KEY,
-                            entity_type VARCHAR(50),
-                            name VARCHAR(255),
-                            content TEXT,
-                            embedding vector({self.config.embedding_dim}),
-                            metadata JSONB,
-                            created_at TIMESTAMP DEFAULT NOW()
-                        )
-                    """)
-                    await conn.execute("""
-                        CREATE TABLE IF NOT EXISTS rag_relationships (
-                            id UUID PRIMARY KEY,
-                            source_id UUID REFERENCES rag_entities(id) ON DELETE CASCADE,
-                            target_id UUID REFERENCES rag_entities(id) ON DELETE CASCADE,
-                            relationship_type VARCHAR(100),
-                            weight FLOAT DEFAULT 1.0,
-                            metadata JSONB
-                        )
-                    """)
-            except ImportError:
-                # asyncpg not installed, use memory storage
-                self._use_memory_storage = True
-            except Exception:
-                # Connection failed, fall back to memory storage
-                self._use_memory_storage = True
+                    # Initialize pool with configured settings
+                    pool = await self._ensure_pool()
+
+                    # Create tables if they don't exist
+                    async with pool.acquire() as conn:
+                        await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                        await conn.execute(f"""
+                            CREATE TABLE IF NOT EXISTS rag_entities (
+                                id UUID PRIMARY KEY,
+                                entity_type VARCHAR(50),
+                                name VARCHAR(255),
+                                content TEXT,
+                                embedding vector({self.config.embedding_dim}),
+                                metadata JSONB,
+                                created_at TIMESTAMP DEFAULT NOW()
+                            )
+                        """)
+                        await conn.execute("""
+                            CREATE TABLE IF NOT EXISTS rag_relationships (
+                                id UUID PRIMARY KEY,
+                                source_id UUID REFERENCES rag_entities(id) ON DELETE CASCADE,
+                                target_id UUID REFERENCES rag_entities(id) ON DELETE CASCADE,
+                                relationship_type VARCHAR(100),
+                                weight FLOAT DEFAULT 1.0,
+                                metadata JSONB
+                            )
+                        """)
+                        logger.info("Database tables initialized successfully")
+
+                except Exception as e:
+                    logger.error(f"Connection failed: {e}, falling back to memory storage")
+                    self._use_memory_storage = True
+                    # Clean up failed pool
+                    if self._pool:
+                        await self._pool.close()
+                        self._pool = None
 
         self.is_connected = True
 
@@ -277,11 +346,73 @@ class CompanyRAG:
             self._use_sentence_transformers = False
 
     async def disconnect(self):
-        """Close PostgreSQL connection pool."""
+        """Close PostgreSQL connection pool (alias for close)."""
+        await self.close()
+
+    async def close(self):
+        """
+        Gracefully close the connection pool.
+
+        Should be called during application shutdown to release resources.
+        Safe to call multiple times.
+        """
         if self._pool:
+            logger.info("Closing connection pool...")
             await self._pool.close()
             self._pool = None
+            logger.info("Connection pool closed")
         self.is_connected = False
+
+    async def health_check(self) -> bool:
+        """
+        Check if the database connection is healthy.
+
+        Useful for health endpoints and monitoring.
+
+        Returns:
+            True if connection is healthy, False otherwise
+        """
+        if self._use_memory_storage:
+            # Memory storage is always "healthy"
+            return True
+
+        try:
+            pool = await self._ensure_pool()
+            if pool is None:
+                return False
+
+            async with pool.acquire() as conn:
+                result = await conn.fetchval("SELECT 1")
+                return result == 1
+
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return False
+
+    async def get_pool_stats(self) -> dict[str, Any]:
+        """
+        Get connection pool statistics.
+
+        Returns:
+            Dictionary with pool statistics or empty dict if using memory storage
+        """
+        if self._use_memory_storage or self._pool is None:
+            return {
+                "storage_type": "memory",
+                "entities_count": len(self._entities),
+                "relationships_count": len(self._relationships),
+            }
+
+        return {
+            "storage_type": "postgresql",
+            "pool_size": self._pool.get_size(),
+            "pool_min_size": self._pool.get_min_size(),
+            "pool_max_size": self._pool.get_max_size(),
+            "pool_free_size": self._pool.get_idle_size(),
+            "config_min_size": self.config.pool_min_size,
+            "config_max_size": self.config.pool_max_size,
+            "config_command_timeout": self.config.pool_command_timeout,
+        }
 
     async def index_company(self, company_data: dict[str, Any]) -> RAGIndexResult:
         """
@@ -322,16 +453,17 @@ class CompanyRAG:
                     "embedding": await self._get_embedding(content),
                 }
             else:
-                # Store in PostgreSQL
+                # Store in PostgreSQL using pooled connection
                 embedding = await self._get_embedding(content)
-                async with self._pool.acquire() as conn:
+                pool = await self._ensure_pool()
+                async with pool.acquire() as conn:
                     await conn.execute(
                         """
                         INSERT INTO rag_entities
                         (id, entity_type, name, content, embedding, metadata)
                         VALUES ($1, $2, $3, $4, $5::vector, $6)
                     """,
-                        company_id,
+                        uuid.UUID(company_id),
                         "company",
                         company_name,
                         content,
@@ -364,11 +496,84 @@ class CompanyRAG:
         companies: list[dict[str, Any]],
         batch_size: int = 10,
     ) -> list[RAGIndexResult]:
-        """Batch index multiple companies."""
+        """
+        Batch index multiple companies.
+
+        Uses connection pooling efficiently by acquiring connections per batch.
+
+        Args:
+            companies: List of company data to index
+            batch_size: Number of companies to process in each batch
+
+        Returns:
+            List of RAGIndexResult for each company
+        """
         results = []
-        for company in companies:
-            result = await self.index_company(company)
-            results.append(result)
+
+        if self._use_memory_storage:
+            # Simple sequential processing for memory storage
+            for company in companies:
+                result = await self.index_company(company)
+                results.append(result)
+            return results
+
+        # Batch processing with pooled connections
+        for i in range(0, len(companies), batch_size):
+            batch = companies[i : i + batch_size]
+            batch_results = []
+
+            pool = await self._ensure_pool()
+            async with pool.acquire() as conn:
+                for company in batch:
+                    start_time = time.time()
+                    try:
+                        company_name = company.get("company_name", "Unknown Company")
+                        industry = company.get("industry", "")
+                        content = f"{company_name} - {industry}"
+                        if "description" in company:
+                            content += f". {company['description']}"
+
+                        company_id = str(uuid.uuid4())
+                        embedding = await self._get_embedding(content)
+
+                        await conn.execute(
+                            """
+                            INSERT INTO rag_entities
+                            (id, entity_type, name, content, embedding, metadata)
+                            VALUES ($1, $2, $3, $4, $5::vector, $6)
+                        """,
+                            uuid.UUID(company_id),
+                            "company",
+                            company_name,
+                            content,
+                            embedding,
+                            json.dumps(company),
+                        )
+
+                        processing_time_ms = int((time.time() - start_time) * 1000)
+                        batch_results.append(
+                            RAGIndexResult(
+                                success=True,
+                                company_id=company_id,
+                                entities_created=1,
+                                vectors_created=1,
+                                processing_time_ms=processing_time_ms,
+                                operation="create",
+                            )
+                        )
+
+                    except Exception as e:
+                        processing_time_ms = int((time.time() - start_time) * 1000)
+                        batch_results.append(
+                            RAGIndexResult(
+                                success=False,
+                                error_message=str(e),
+                                processing_time_ms=processing_time_ms,
+                            )
+                        )
+
+            results.extend(batch_results)
+
         return results
 
     async def search(
@@ -432,9 +637,10 @@ class CompanyRAG:
                 results = results[:top_k]
 
             else:
-                # PostgreSQL vector search
+                # PostgreSQL vector search using pooled connection
                 query_embedding = await self._get_embedding(query)
-                async with self._pool.acquire() as conn:
+                pool = await self._ensure_pool()
+                async with pool.acquire() as conn:
                     rows = await conn.fetch(
                         f"""
                         SELECT
@@ -452,21 +658,21 @@ class CompanyRAG:
                         top_k,
                     )
 
-                for row in rows:
-                    vector_score = float(row["similarity"])
-                    results.append(
-                        SearchResultItem(
-                            entity_id=str(row["id"]),
-                            entity_type=row["entity_type"],
-                            content=row["content"],
-                            rrf_score=vector_score,
-                            vector_score=vector_score,
-                            graph_score=0.0,
-                            metadata=(
-                                json.loads(row["metadata"]) if row["metadata"] else {}
-                            ),
+                    for row in rows:
+                        vector_score = float(row["similarity"])
+                        results.append(
+                            SearchResultItem(
+                                entity_id=str(row["id"]),
+                                entity_type=row["entity_type"],
+                                content=row["content"],
+                                rrf_score=vector_score,
+                                vector_score=vector_score,
+                                graph_score=0.0,
+                                metadata=(
+                                    json.loads(row["metadata"]) if row["metadata"] else {}
+                                ),
+                            )
                         )
-                    )
 
             processing_time_ms = int((time.time() - start_time) * 1000)
 
@@ -529,8 +735,9 @@ class CompanyRAG:
                             )
                         )
             else:
-                # PostgreSQL query
-                async with self._pool.acquire() as conn:
+                # PostgreSQL query using pooled connection
+                pool = await self._ensure_pool()
+                async with pool.acquire() as conn:
                     rows = await conn.fetch(
                         """
                         SELECT
@@ -656,6 +863,7 @@ __all__ = [
     "SearchResultItem",
     "Connection",
     "SENTENCE_TRANSFORMERS_AVAILABLE",
+    "ASYNCPG_AVAILABLE",
     "DEFAULT_EMBEDDING_MODEL",
     "DEFAULT_EMBEDDING_DIM",
 ]
