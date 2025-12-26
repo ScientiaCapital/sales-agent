@@ -73,6 +73,8 @@ def extract_domain(website_url: str) -> str:
 
 async def apollo_enrich_company(domain: str, http_client: httpx.AsyncClient) -> dict:
     """Call Apollo company enrichment (FREE endpoint)."""
+    from apollo_usage_tracker import log_api_call, log_rate_limit_hit
+
     response = await http_client.post(
         "https://api.apollo.io/api/v1/organizations/enrich",
         headers={
@@ -83,14 +85,26 @@ async def apollo_enrich_company(domain: str, http_client: httpx.AsyncClient) -> 
         params={"domain": domain},
         timeout=30.0
     )
+
+    endpoint = "organizations/enrich"
     if response.status_code == 200:
+        log_api_call(endpoint, success=True, response_code=200)
         return response.json().get("organization", {})
-    print(f"      Apollo company enrich failed: {response.status_code} - {response.text[:200]}")
-    return {}
+    elif response.status_code == 429:
+        log_api_call(endpoint, success=False, response_code=429)
+        reset_time = log_rate_limit_hit(endpoint, dict(response.headers))
+        print(f"      ⏳ RATE LIMITED - Reset at {reset_time}")
+        return {}
+    else:
+        log_api_call(endpoint, success=False, response_code=response.status_code)
+        print(f"      Apollo company enrich failed: {response.status_code} - {response.text[:200]}")
+        return {}
 
 
 async def apollo_search_contacts(domain: str, http_client: httpx.AsyncClient) -> list:
     """Call Apollo people search (FREE - returns names/titles, no emails)."""
+    from apollo_usage_tracker import log_api_call, log_rate_limit_hit
+
     response = await http_client.post(
         "https://api.apollo.io/api/v1/mixed_people/api_search",
         headers={
@@ -106,10 +120,20 @@ async def apollo_search_contacts(domain: str, http_client: httpx.AsyncClient) ->
         },
         timeout=30.0
     )
+
+    endpoint = "mixed_people/api_search"
     if response.status_code == 200:
+        log_api_call(endpoint, success=True, response_code=200)
         return response.json().get("people", [])
-    print(f"      Apollo contact search failed: {response.status_code} - {response.text[:200]}")
-    return []
+    elif response.status_code == 429:
+        log_api_call(endpoint, success=False, response_code=429)
+        reset_time = log_rate_limit_hit(endpoint, dict(response.headers))
+        print(f"      ⏳ RATE LIMITED - Reset at {reset_time}")
+        return []
+    else:
+        log_api_call(endpoint, success=False, response_code=response.status_code)
+        print(f"      Apollo contact search failed: {response.status_code} - {response.text[:200]}")
+        return []
 
 
 def save_contact(supabase, company_id: str, contact_data: dict) -> tuple:
@@ -165,10 +189,18 @@ def save_contact(supabase, company_id: str, contact_data: dict) -> tuple:
 
 async def run_apollo_free_enrichment():
     """Run Apollo Free enrichment on 5 PLATINUM companies."""
+    from apollo_usage_tracker import can_call_apollo, print_status
 
     print("\n" + "="*60)
     print("🚀 Apollo FREE Enrichment - 5 PLATINUM Companies (Standalone)")
     print("="*60)
+
+    # Check rate limit status first
+    can_call, reason = can_call_apollo()
+    if not can_call:
+        print(f"⏳ {reason}")
+        print_status()
+        return
 
     # Verify config
     if not APOLLO_API_KEY:
@@ -180,6 +212,7 @@ async def run_apollo_free_enrichment():
 
     print(f"✅ Apollo API Key: {APOLLO_API_KEY[:10]}...")
     print(f"✅ Supabase URL: {SUPABASE_URL}")
+    print(f"✅ Rate limit check: {reason}")
 
     # Load target companies
     target_file = Path("/tmp/target_companies.json")
