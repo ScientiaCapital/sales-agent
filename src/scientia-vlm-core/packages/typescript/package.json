@@ -1,0 +1,53 @@
+{
+  "name": "@scientiacapital/vlm-core",
+  "version": "0.1.0",
+  "description": "Scientia Capital VLM Stack - Vision Language Model integration with circuit breaker, retry, confidence scoring, and context compaction",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ScientiaCapital/vlm-ai-core.git",
+    "directory": "packages/typescript"
+  },
+  "keywords": [
+    "vlm",
+    "vision-language-model",
+    "openrouter",
+    "qwen",
+    "deepseek",
+    "circuit-breaker",
+    "ai"
+  ],
+  "author": "Scientia Capital",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "openai": "^4.77.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8",
+    "eslint": "^9.0.0"
+  },
+  "peerDependencies": {
+    "typescript": ">=5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
