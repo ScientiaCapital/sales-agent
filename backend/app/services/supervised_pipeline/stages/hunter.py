@@ -36,6 +36,10 @@ class HunterStage(BaseStage):
         """
         Execute Hunter.io enrichment.
 
+        Uses a cost-optimized approach:
+        1. First check email count (FREE endpoint) to see if Hunter.io has data
+        2. Only make paid domain_search call if data exists
+
         Args:
             company: Company data from Supabase with domain
 
@@ -54,7 +58,26 @@ class HunterStage(BaseStage):
             )
 
         try:
-            # Perform domain search to find all emails at company
+            # Step 1: Check email count (FREE endpoint) to gate paid calls
+            email_count = await self._hunter.get_email_count(domain)
+
+            if not email_count or not email_count.get("has_data"):
+                latency_ms = int((time.time() - start_time) * 1000)
+                logger.info(
+                    f"Hunter: No email data available for {domain} (skipping paid call)"
+                )
+                return StageResult(
+                    success=True,
+                    data={
+                        "contacts": [],
+                        "contact_count": 0,
+                        "email_count_check": email_count,
+                    },
+                    cost_usd=0.0,  # FREE - no paid API call made
+                    latency_ms=latency_ms
+                )
+
+            # Step 2: Perform domain search to find all emails at company
             contacts = await self._hunter.domain_search(
                 domain=domain,
                 limit=10,
