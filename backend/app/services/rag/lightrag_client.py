@@ -1,24 +1,49 @@
 """
-LightRAG Company Knowledge Graph Client (GREEN Phase Implementation)
+LightRAG Company Knowledge Graph Client (Production-Ready Implementation)
 
 Provides graph+vector hybrid RAG for Sales-Agent ResearchAgent.
 PostgreSQL-backed knowledge graph with entity extraction and hybrid search.
 
 Architecture:
 - Backend: PostgreSQL with pgvector extension (Supabase-compatible)
-- Embedding: sentence-transformers (bge-large or all-MiniLM)
+- Embedding: sentence-transformers all-MiniLM-L6-v2 (384 dims, fast)
 - LLM: Anthropic Claude (NO OpenAI per CLAUDE.md constraints)
 - Connection: asyncpg for async PostgreSQL operations
 
-Status: GREEN PHASE - Minimal implementation to pass TDD tests
+Features:
+- Production embeddings via sentence-transformers (open-source, NO OpenAI)
+- Graceful degradation to hash-based pseudo-embeddings if unavailable
+- Model caching for performance
+- Configurable embedding dimensions
 """
 
+import hashlib
 import json
+import logging
 import os
 import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Optional
+
+# Conditional import of sentence-transformers for graceful degradation
+try:
+    from sentence_transformers import SentenceTransformer
+
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    SentenceTransformer = None  # type: ignore
+
+logger = logging.getLogger(__name__)
+
+
+# Default embedding model for sentence-transformers (fast, 384 dimensions)
+DEFAULT_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+DEFAULT_EMBEDDING_DIM = 384
+
+# Fallback dimension when using hash-based embeddings
+HASH_EMBEDDING_DIM = 384
 
 
 @dataclass
@@ -26,15 +51,16 @@ class RAGConfig:
     """Configuration for LightRAG client."""
 
     pg_connection_string: str
-    embedding_model: str
-    llm_provider: str
-    llm_model: str
-    embedding_dim: int = 1536
+    embedding_model: str = DEFAULT_EMBEDDING_MODEL
+    llm_provider: str = "anthropic"
+    llm_model: str = "claude-sonnet-4-20250514"
+    embedding_dim: int = DEFAULT_EMBEDDING_DIM
     graph_enabled: bool = True
     vector_enabled: bool = True
     hybrid_mode: bool = True
     top_k: int = 5
     context_window: int = 32000
+    use_sentence_transformers: bool = True  # Enable production embeddings
 
 
 @dataclass
@@ -105,8 +131,9 @@ class CompanyRAG:
     """
     LightRAG client for company knowledge graph operations.
 
-    GREEN PHASE - Minimal implementation to pass TDD tests.
+    Production-ready implementation with sentence-transformers embeddings.
     Uses in-memory storage for testing, PostgreSQL for production.
+    Gracefully falls back to hash-based embeddings if sentence-transformers unavailable.
     """
 
     def __init__(self, config: RAGConfig):
@@ -128,18 +155,22 @@ class CompanyRAG:
 
         self.config = config
         self._pool = None
-        self._embedding_model = None
+        self._embedding_model: Optional[SentenceTransformer] = None  # type: ignore
+        self._use_sentence_transformers = False
         self.is_connected = False
 
-        # In-memory storage for testing (GREEN phase)
+        # In-memory storage for testing
         self._entities: dict[str, dict[str, Any]] = {}
         self._relationships: dict[str, dict[str, Any]] = {}
         self._use_memory_storage = True  # Default to memory for tests
 
     async def connect(self):
-        """Establish PostgreSQL connection pool or use in-memory storage."""
+        """Establish PostgreSQL connection pool and initialize embedding model."""
         if self.is_connected:
             return
+
+        # Initialize sentence-transformers embedding model if available
+        await self._initialize_embedding_model()
 
         # Check if we should use real PostgreSQL
         conn_str = self.config.pg_connection_string
@@ -194,6 +225,56 @@ class CompanyRAG:
                 self._use_memory_storage = True
 
         self.is_connected = True
+
+    async def _initialize_embedding_model(self) -> None:
+        """
+        Initialize sentence-transformers embedding model.
+
+        Loads the model specified in config (default: all-MiniLM-L6-v2).
+        Falls back to hash-based embeddings if sentence-transformers unavailable.
+        """
+        if not self.config.use_sentence_transformers:
+            logger.info("Sentence-transformers disabled in config, using hash-based embeddings")
+            self._use_sentence_transformers = False
+            return
+
+        if not SENTENCE_TRANSFORMERS_AVAILABLE:
+            logger.warning(
+                "sentence-transformers not installed. "
+                "Install with: pip install sentence-transformers. "
+                "Falling back to hash-based pseudo-embeddings."
+            )
+            self._use_sentence_transformers = False
+            return
+
+        try:
+            model_name = self.config.embedding_model or DEFAULT_EMBEDDING_MODEL
+            logger.info(f"Loading sentence-transformers model: {model_name}")
+
+            # Load model (will be cached after first load)
+            self._embedding_model = SentenceTransformer(model_name)
+
+            # Update embedding dimension from model
+            model_dim = self._embedding_model.get_sentence_embedding_dimension()
+            if model_dim != self.config.embedding_dim:
+                logger.info(
+                    f"Updating embedding_dim from {self.config.embedding_dim} to {model_dim} "
+                    f"based on model {model_name}"
+                )
+                self.config.embedding_dim = model_dim
+
+            self._use_sentence_transformers = True
+            logger.info(
+                f"Sentence-transformers initialized: model={model_name}, dim={model_dim}"
+            )
+
+        except Exception as e:
+            logger.error(
+                f"Failed to load sentence-transformers model: {e}. "
+                "Falling back to hash-based embeddings."
+            )
+            self._embedding_model = None
+            self._use_sentence_transformers = False
 
     async def disconnect(self):
         """Close PostgreSQL connection pool."""
@@ -501,8 +582,25 @@ class CompanyRAG:
         """
         Get embedding vector for text.
 
-        For GREEN phase, returns a simple hash-based pseudo-embedding.
-        Production will use sentence-transformers or API.
+        Uses sentence-transformers (all-MiniLM-L6-v2) when available for production.
+        Falls back to hash-based pseudo-embedding for testing or when unavailable.
+
+        Args:
+            text: Text to embed
+
+        Returns:
+            Embedding vector as list of floats (384 dims for all-MiniLM-L6-v2)
+        """
+        # Use sentence-transformers if available and initialized
+        if self._use_sentence_transformers and self._embedding_model is not None:
+            return self._get_sentence_transformer_embedding(text)
+
+        # Fallback to hash-based embedding for testing or graceful degradation
+        return self._get_hash_embedding(text)
+
+    def _get_sentence_transformer_embedding(self, text: str) -> list[float]:
+        """
+        Get embedding using sentence-transformers model.
 
         Args:
             text: Text to embed
@@ -510,10 +608,29 @@ class CompanyRAG:
         Returns:
             Embedding vector as list of floats
         """
-        # Simple hash-based embedding for testing (GREEN phase)
-        # This ensures tests pass without requiring model downloads
-        import hashlib
+        # Encode text to embedding
+        # Note: encode() is synchronous but fast enough for single texts
+        embedding = self._embedding_model.encode(
+            text,
+            convert_to_numpy=True,
+            normalize_embeddings=True,  # L2 normalize for cosine similarity
+        )
 
+        return embedding.tolist()
+
+    def _get_hash_embedding(self, text: str) -> list[float]:
+        """
+        Get hash-based pseudo-embedding for testing.
+
+        This provides deterministic embeddings without model downloads,
+        useful for unit tests and CI environments.
+
+        Args:
+            text: Text to embed
+
+        Returns:
+            Pseudo-embedding vector as list of floats
+        """
         hash_bytes = hashlib.sha256(text.encode()).digest()
 
         # Convert to float values between -1 and 1
@@ -538,4 +655,7 @@ __all__ = [
     "ConnectionResult",
     "SearchResultItem",
     "Connection",
+    "SENTENCE_TRANSFORMERS_AVAILABLE",
+    "DEFAULT_EMBEDDING_MODEL",
+    "DEFAULT_EMBEDDING_DIM",
 ]
