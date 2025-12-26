@@ -245,7 +245,7 @@ class BrowserbaseTeamScraper:
 
                 # Navigate to the exact URL
                 logger.info(f"Navigating to: {url}")
-                response = await page.goto(url, wait_until="networkidle", timeout=15000)
+                response = await page.goto(url, wait_until="networkidle", timeout=30000)
 
                 if not response or response.status >= 400:
                     logger.warning(f"Page not accessible: {url} (status: {response.status if response else 'None'})")
