@@ -232,3 +232,153 @@ class HunterService:
         except Exception as e:
             logger.error(f"Hunter.io domain search error for {domain}: {e}")
             return None
+
+    async def verify_email(self, email: str) -> Optional[Dict]:
+        """
+        Verify email deliverability using Hunter.io Email Verifier API.
+
+        This is the fallback verification method to ensure email quality
+        before outreach. Returns verification status and confidence score.
+
+        Args:
+            email: Email address to verify (e.g., "john@example.com")
+
+        Returns:
+            {
+                "email": "john@example.com",
+                "status": "valid",  # valid, invalid, accept_all, unknown
+                "score": 100,
+                "is_deliverable": True,
+                "is_disposable": False,
+                "is_webmail": False,
+                "cost": 0.01
+            } or None on failure
+        """
+        if not self.api_key:
+            logger.warning("Hunter.io API key not configured")
+            return None
+
+        if not email or "@" not in email:
+            logger.warning(f"Invalid email format for verification: {email}")
+            return None
+
+        try:
+            params = {
+                "email": email,
+                "api_key": self.api_key
+            }
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/email-verifier",
+                    params=params,
+                    timeout=self.timeout
+                )
+
+                if response.status_code == 200:
+                    data = response.json().get("data", {})
+                    status = data.get("status", "unknown")
+                    score = data.get("score", 0)
+
+                    # Determine deliverability
+                    is_deliverable = status == "valid" or (
+                        status == "accept_all" and score >= 70
+                    )
+
+                    logger.info(
+                        f"Hunter.io verified {email}: "
+                        f"status={status}, score={score}, deliverable={is_deliverable}"
+                    )
+
+                    return {
+                        "email": email,
+                        "status": status,
+                        "score": score,
+                        "is_deliverable": is_deliverable,
+                        "is_disposable": data.get("disposable", False),
+                        "is_webmail": data.get("webmail", False),
+                        "mx_records": data.get("mx_records", False),
+                        "smtp_check": data.get("smtp_check", False),
+                        "cost": 0.01  # Hunter.io cost per verification
+                    }
+                elif response.status_code == 202:
+                    # Verification still in progress - retry later
+                    logger.info(f"Hunter.io verification in progress for {email}")
+                    return None
+                elif response.status_code == 429:
+                    logger.warning("Hunter.io API rate limit exceeded for verification")
+                    return None
+                else:
+                    logger.warning(
+                        f"Hunter.io email verification returned status {response.status_code}"
+                    )
+                    return None
+
+        except httpx.TimeoutException:
+            logger.warning(f"Hunter.io email verification timeout for {email}")
+            return None
+        except Exception as e:
+            logger.error(f"Hunter.io email verification error for {email}: {e}")
+            return None
+
+    async def get_email_count(self, domain: str) -> Optional[Dict]:
+        """
+        Get email count for a domain using Hunter.io Email Count API.
+
+        This is a FREE endpoint (no credits) to check if Hunter.io has
+        emails for a domain before making paid API calls.
+
+        Args:
+            domain: Company domain (e.g., "example.com")
+
+        Returns:
+            {
+                "total": 81,
+                "personal_emails": 65,
+                "generic_emails": 16,
+                "has_data": True
+            } or None on failure
+        """
+        if not self.api_key:
+            logger.warning("Hunter.io API key not configured")
+            return None
+
+        # Clean domain
+        clean_domain = domain.replace("https://", "").replace("http://", "")
+        clean_domain = clean_domain.replace("www.", "").rstrip("/").split("/")[0]
+
+        try:
+            params = {
+                "domain": clean_domain,
+                "api_key": self.api_key
+            }
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.base_url}/email-count",
+                    params=params,
+                    timeout=self.timeout
+                )
+
+                if response.status_code == 200:
+                    data = response.json().get("data", {})
+                    total = data.get("total", 0)
+
+                    return {
+                        "total": total,
+                        "personal_emails": data.get("personal_emails", 0),
+                        "generic_emails": data.get("generic_emails", 0),
+                        "has_data": total > 0
+                    }
+                else:
+                    logger.warning(
+                        f"Hunter.io email count returned status {response.status_code}"
+                    )
+                    return None
+
+        except httpx.TimeoutException:
+            logger.warning(f"Hunter.io email count timeout for {domain}")
+            return None
+        except Exception as e:
+            logger.error(f"Hunter.io email count error for {domain}: {e}")
+            return None

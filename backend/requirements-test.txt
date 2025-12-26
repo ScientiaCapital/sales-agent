@@ -12,6 +12,7 @@ pytest-benchmark==4.0.0  # Performance benchmarking
 # HTTP testing
 httpx==0.26.0
 requests-mock==1.11.0
+respx==0.20.2  # Async HTTP mocking for httpx
 
 # Load testing
 locust==2.20.0
