@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 # Import pipeline components that don't require langchain
 from app.services.supervised_pipeline.stages.hunter import HunterStage
-from app.services.supervised_pipeline.base import StageResult
+from app.services.supervised_pipeline.stages.base import StageResult
 from app.services.hunter_service import HunterService, extract_domain
 
 
