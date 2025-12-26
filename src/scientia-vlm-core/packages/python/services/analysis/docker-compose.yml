@@ -1,0 +1,86 @@
+# Docker Compose configuration for VLM Analysis Service
+# PRIVATE - Scientia Capital Proprietary IP
+
+version: '3.8'
+
+services:
+  # VLM Analysis Service
+  analysis:
+    build:
+      context: ../..  # Build from packages/python root
+      dockerfile: services/analysis/Dockerfile
+    container_name: vlm-analysis-service
+    ports:
+      - "8002:8002"
+    environment:
+      # Required: OpenRouter API Key
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+
+      # Optional: Supabase for caching/RAG
+      - SUPABASE_URL=${SUPABASE_URL:-}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY:-}
+
+      # Optional: Rate limiting
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+
+      # Optional: Feature flags
+      - ENABLE_CACHE=${ENABLE_CACHE:-true}
+      - ENABLE_RAG=${ENABLE_RAG:-true}
+      - ENABLE_ROI=${ENABLE_ROI:-true}
+
+      # Python environment
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mount source code for development (hot reload)
+      - ../../services/analysis:/app/services/analysis
+      - ../../vlm_core:/app/vlm_core
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - vlm-network
+
+  # Optional: PostgreSQL for local caching
+  postgres:
+    image: postgres:16-alpine
+    container_name: vlm-analysis-postgres
+    environment:
+      - POSTGRES_DB=vlm_cache
+      - POSTGRES_USER=vlm
+      - POSTGRES_PASSWORD=vlm_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vlm-network
+    profiles:
+      - local-db
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: vlm-analysis-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - vlm-network
+    profiles:
+      - local-cache
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  vlm-network:
+    driver: bridge

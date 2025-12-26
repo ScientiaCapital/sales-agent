@@ -1,0 +1,79 @@
+{
+  "generated_at": "2025-12-14T02:25:39.875208",
+  "total_records": 344,
+  "chinese": {
+    "total_tests": 197,
+    "successful_tests": 197,
+    "success_rate": 1.0,
+    "total_cost": 0.19623196,
+    "avg_cost": 0.0009961013197969544,
+    "min_cost": 5.874e-05,
+    "max_cost": 0.007038900000000001,
+    "avg_latency_ms": 5667.431472081218,
+    "p50_latency_ms": 4806,
+    "p95_latency_ms": 10822.999999999998
+  },
+  "western": {
+    "total_tests": 147,
+    "successful_tests": 51,
+    "success_rate": 0.3469387755102041,
+    "total_cost": 0.600254,
+    "avg_cost": 0.011769686274509803,
+    "min_cost": 0.001007,
+    "max_cost": 0.045015,
+    "avg_latency_ms": 2263.5102040816328,
+    "p50_latency_ms": 736,
+    "p95_latency_ms": 6654.799999999998
+  },
+  "trades_tested": [
+    "plumbing",
+    "hvac",
+    "solar",
+    "electrical",
+    "roofing"
+  ],
+  "models_tested": [
+    "qwen/qwen2.5-vl-72b-instruct",
+    "qwen/qwen-vl-max",
+    "z-ai/glm-4.6v",
+    "qwen/qwen3-vl-30b-a3b-instruct",
+    "claude-opus-4-20250514",
+    "claude-3-5-haiku-20241022",
+    "claude-sonnet-4-20250514"
+  ],
+  "comparison": {
+    "cost_ratio": 11.815752113358247,
+    "cost_savings_percent": 91.53672156959476,
+    "chinese_cheaper_by": 0.01077358495471285,
+    "accuracy_parity": false
+  },
+  "projections": {
+    "chinese_3_year": {
+      "monthly_volume": 100000,
+      "annual_calls": 1200000,
+      "year_1_cost": 1195.3215837563453,
+      "year_2_cost": 1792.982375634518,
+      "year_3_cost": 2689.473563451777,
+      "total_3_year_cost": 5677.77752284264
+    },
+    "western_3_year": {
+      "monthly_volume": 100000,
+      "annual_calls": 1200000,
+      "year_1_cost": 14123.623529411765,
+      "year_2_cost": 21185.435294117648,
+      "year_3_cost": 31778.15294117647,
+      "total_3_year_cost": 67087.21176470589
+    }
+  },
+  "margin": {
+    "chinese_vlm_cost": 0.0009961013197969544,
+    "western_cost": 0.011769686274509803,
+    "our_price": 0.05,
+    "chinese_margin": 0.04900389868020305,
+    "western_margin": 0.0382303137254902,
+    "chinese_margin_percent": 98.0077973604061,
+    "western_margin_percent": 76.46062745098038,
+    "margin_improvement": 0.010773584954712853,
+    "margin_improvement_percent": 28.180739065004133
+  }
+}

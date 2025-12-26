@@ -1,0 +1,233 @@
+{
+  "models": {
+    "openrouter:qwen/qwen3-vl-30b-a3b-instruct": {
+      "provider": "openrouter",
+      "model_name": "qwen/qwen3-vl-30b-a3b-instruct",
+      "model_tier": "cost_leader",
+      "is_chinese_vlm": true,
+      "first_seen": "2025-12-14T01:55:41.460658",
+      "total_calls": 5,
+      "successful_calls": 5,
+      "failed_calls": 0,
+      "total_cost_usd": 0.0015587,
+      "total_tokens": 7085,
+      "total_input_tokens": 4162,
+      "total_output_tokens": 2923,
+      "latencies_ms": [
+        4806,
+        5379,
+        3034,
+        4538,
+        22908
+      ],
+      "cost_per_call_avg": 0.00031174,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:58:18.647442"
+    },
+    "openrouter:qwen/qwen2.5-vl-72b-instruct": {
+      "provider": "openrouter",
+      "model_name": "qwen/qwen2.5-vl-72b-instruct",
+      "model_tier": "budget",
+      "is_chinese_vlm": true,
+      "first_seen": "2025-12-14T01:55:46.651126",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.0021612000000000003,
+      "total_tokens": 5403,
+      "total_input_tokens": 4903,
+      "total_output_tokens": 500,
+      "latencies_ms": [
+        6276,
+        7023,
+        2888,
+        3238
+      ],
+      "cost_per_call_avg": 0.0005403000000000001,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:57:45.366872"
+    },
+    "openrouter:qwen/qwen-vl-max": {
+      "provider": "openrouter",
+      "model_name": "qwen/qwen-vl-max",
+      "model_tier": "cost_leader",
+      "is_chinese_vlm": true,
+      "first_seen": "2025-12-14T01:55:53.235841",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.00512168,
+      "total_tokens": 7016,
+      "total_input_tokens": 6444,
+      "total_output_tokens": 572,
+      "latencies_ms": [
+        6172,
+        5328,
+        2304,
+        4760
+      ],
+      "cost_per_call_avg": 0.00128042,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:57:48.911929"
+    },
+    "openrouter:z-ai/glm-4.6v": {
+      "provider": "openrouter",
+      "model_name": "z-ai/glm-4.6v",
+      "model_tier": "cost_leader",
+      "is_chinese_vlm": true,
+      "first_seen": "2025-12-14T01:55:59.718114",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.006991600000000001,
+      "total_tokens": 6356,
+      "total_input_tokens": 4851,
+      "total_output_tokens": 1505,
+      "latencies_ms": [
+        6730,
+        12044,
+        3661,
+        9620
+      ],
+      "cost_per_call_avg": 0.0017479000000000001,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:57:53.976794"
+    },
+    "anthropic:claude-sonnet-4-20250514": {
+      "provider": "anthropic",
+      "model_name": "claude-sonnet-4-20250514",
+      "model_tier": "premium",
+      "is_chinese_vlm": false,
+      "first_seen": "2025-12-14T01:56:06.753488",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.025410000000000002,
+      "total_tokens": 5594,
+      "total_input_tokens": 4875,
+      "total_output_tokens": 719,
+      "latencies_ms": [
+        5669,
+        7941,
+        3800,
+        5638
+      ],
+      "cost_per_call_avg": 0.0063525000000000005,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:58:03.902543"
+    },
+    "anthropic:claude-opus-4-20250514": {
+      "provider": "anthropic",
+      "model_name": "claude-opus-4-20250514",
+      "model_tier": "ultra",
+      "is_chinese_vlm": false,
+      "first_seen": "2025-12-14T01:56:12.742009",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.1206,
+      "total_tokens": 5508,
+      "total_input_tokens": 4875,
+      "total_output_tokens": 633,
+      "latencies_ms": [
+        5399,
+        10432,
+        3076,
+        5168
+      ],
+      "cost_per_call_avg": 0.03015,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:58:09.847234"
+    },
+    "anthropic:claude-3-5-haiku-20241022": {
+      "provider": "anthropic",
+      "model_name": "claude-3-5-haiku-20241022",
+      "model_tier": "standard",
+      "is_chinese_vlm": false,
+      "first_seen": "2025-12-14T01:56:18.450262",
+      "total_calls": 4,
+      "successful_calls": 4,
+      "failed_calls": 0,
+      "total_cost_usd": 0.007981,
+      "total_tokens": 5593,
+      "total_input_tokens": 4996,
+      "total_output_tokens": 597,
+      "latencies_ms": [
+        3378,
+        4141,
+        3038,
+        3016
+      ],
+      "cost_per_call_avg": 0.00199525,
+      "success_rate": 1.0,
+      "trades_tested": [
+        "solar",
+        "electrical"
+      ],
+      "last_seen": "2025-12-14T01:58:15.326211"
+    }
+  },
+  "summary": {
+    "total_models_tested": 7,
+    "chinese_vlm_count": 4,
+    "western_model_count": 3,
+    "chinese_avg_cost_per_call": 0.0009700900000000001,
+    "western_avg_cost_per_call": 0.012832583333333333,
+    "cost_savings_percent": 92.44041534894897,
+    "chinese_success_rate": 1.0,
+    "western_success_rate": 1.0,
+    "accuracy_parity": true,
+    "margin_analysis": {
+      "chinese_vlm_cost": 0.0009700900000000001,
+      "western_cost": 0.012832583333333333,
+      "our_price": 0.05,
+      "chinese_margin": 0.04902991,
+      "western_margin": 0.03716741666666667,
+      "chinese_margin_percent": 98.05982,
+      "western_margin_percent": 74.33483333333332,
+      "margin_improvement": 0.011862493333333335,
+      "margin_improvement_percent": 31.916378369046367
+    },
+    "projections_chinese": {
+      "monthly_volume": 100000,
+      "annual_calls": 1200000,
+      "year_1_cost": 1164.1080000000002,
+      "year_2_cost": 1746.1620000000003,
+      "year_3_cost": 2619.2430000000004,
+      "total_3_year_cost": 5529.513000000001
+    },
+    "projections_western": {
+      "monthly_volume": 100000,
+      "annual_calls": 1200000,
+      "year_1_cost": 15399.1,
+      "year_2_cost": 23098.65,
+      "year_3_cost": 34647.975,
+      "total_3_year_cost": 73145.725
+    }
+  },
+  "last_updated": "2025-12-14T01:58:41.562331"
+}

@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Test coverage
+coverage/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Lock files (use package-lock.json)
+yarn.lock
+pnpm-lock.yaml
+
+# Git worktrees
+.worktrees/
+
+# Proprietary IP - NEVER COMMIT - SCIENTIA CAPITAL INTERNAL ONLY
+benchmark/results/
+benchmark/config/images.json
+docs/plans/
+docs/audits/
+docs/research/
+docs/VLM_STACK_IP_DOCUMENTATION.md
+docs/FIELDVAULT_VLM_TECHNICAL_MOAT.md
+docs/PROVIDER_REFERENCE.md
+docs/TOMORROW_BASELINE_TEST_PLAN.md
+docs/VLM_COST_COMPARISON_VC.csv
+*.csv
+vlm-audit-results.csv
+
+# All benchmark and scoring data
+benchmark/
+scripts/vlm-*.mjs
+CLAUDE.md
+LICENSE.md
