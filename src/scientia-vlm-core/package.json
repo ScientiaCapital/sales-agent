@@ -1,0 +1,24 @@
+{
+  "name": "vlm-ai-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scientia Capital VLM Stack - Proprietary IP",
+  "workspaces": [
+    "packages/typescript"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=packages/typescript",
+    "test": "npm run test --workspace=packages/typescript",
+    "lint": "npm run lint --workspace=packages/typescript",
+    "clean": "rm -rf packages/typescript/dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ScientiaCapital/vlm-ai-core.git"
+  },
+  "author": "Scientia Capital",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
