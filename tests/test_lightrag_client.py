@@ -46,14 +46,13 @@ class TestCompanyRAGInitialization:
 
     def test_init_fails_with_openai(self):
         """Test that initialization FAILS if OpenAI provider is used."""
-        invalid_config = RAGConfig(
-            pg_connection_string="postgresql://test:test@localhost:5432/test",
-            embedding_model="text-embedding-3-large",
-            llm_provider="openai",
-            llm_model="gpt-4",
-        )
         with pytest.raises(ValueError, match="OpenAI.*not allowed"):
-            CompanyRAG(config=invalid_config)
+            RAGConfig(
+                pg_connection_string="postgresql://test:test@localhost:5432/test",
+                embedding_model="text-embedding-3-large",
+                llm_provider="openai",
+                llm_model="gpt-4",
+            )
 
 
 class TestCompanyIndexing:
