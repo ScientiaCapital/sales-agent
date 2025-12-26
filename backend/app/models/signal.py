@@ -94,7 +94,7 @@ class Signal(Base):
 
     @property
     def should_trigger_call(self) -> bool:
-        """Check if signal should trigger a VozLux call"""
+        """Check if signal should trigger a voice call"""
         call_trigger_intents = ["interested", "meeting_request", "pricing_request", "demo_request"]
         return self.intent in call_trigger_intents and not self.processed
 
