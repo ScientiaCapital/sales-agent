@@ -26,13 +26,12 @@ Plans:
 ### Phase 2: Activity Sync
 **Goal**: Bi-directional sync for calls, emails, and meetings between local DB and Close
 **Depends on**: Phase 1
-**Plans**: TBD after detailed planning
+**Plans**: 3 plans
 
-Key work:
-- Activity models if not exist
-- Close API: activity endpoints
-- Celery tasks for periodic sync
-- Deduplication for activities
+Plans:
+- [x] 02-01: Meeting Activities (create_meeting, reply router integration, meeting sync)
+- [ ] 02-02: Task Activities (CloseTaskClient, auto-task creation, task sync)
+- [ ] 02-03: Activity Enhancements (call recordings, status tracking, opportunity attribution)
 
 ### Phase 3: Analytics Dashboard
 **Goal**: Real-time pipeline visibility and conversion metrics
@@ -61,6 +60,6 @@ Key work:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Pipeline Models | 3/3 | Complete | 2025-12-26 |
-| 2. Activity Sync | 0/TBD | Not started | - |
+| 2. Activity Sync | 1/3 | In progress | - |
 | 3. Analytics Dashboard | 0/TBD | Not started | - |
 | 4. Workflow Automation | 0/TBD | Not started | - |

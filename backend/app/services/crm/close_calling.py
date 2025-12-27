@@ -470,3 +470,119 @@ class CloseCallingClient:
         except Exception as e:
             logger.error(f"Failed to log call directly in Close: {e}")
             raise
+
+    async def create_meeting(
+        self,
+        lead_id: str,
+        contact_id: str,
+        scheduled_at: datetime,
+        duration_minutes: int = 30,
+        title: Optional[str] = None,
+        note: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a meeting activity in Close CRM.
+
+        Creates a scheduled meeting associated with a lead and contact.
+        Used for auto-creating meetings from MEETING_REQUEST email replies.
+
+        Args:
+            lead_id: Close lead ID (required)
+            contact_id: Close contact ID (required)
+            scheduled_at: Meeting start time (datetime, UTC)
+            duration_minutes: Meeting duration in minutes (default 30)
+            title: Meeting title (optional, defaults to "Discovery Call")
+            note: Meeting notes or description (optional)
+            user_id: Close user ID hosting the meeting (optional)
+
+        Returns:
+            Dict with meeting activity details:
+            {
+                "id": "acti_xxx",
+                "lead_id": "lead_xxx",
+                "contact_id": "cont_xxx",
+                "starts_at": "2024-12-06T14:00:00Z",
+                "ends_at": "2024-12-06T14:30:00Z",
+                "duration": 1800,
+                "title": "Discovery Call",
+                "note": "...",
+                "created_at": "2024-12-06T12:00:00Z"
+            }
+
+        Raises:
+            RuntimeError: If CLOSE_WRITE_DISABLED is True
+            httpx.HTTPStatusError: If API request fails
+            ValueError: If required parameters missing
+        """
+        try:
+            # Check if writes are disabled
+            if os.getenv("CLOSE_WRITE_DISABLED", "False").lower() in ("true", "1", "yes"):
+                logger.warning("CLOSE_WRITE_DISABLED: Skipping create_meeting()")
+                return {"status": "disabled", "message": "Close CRM writes are disabled"}
+
+            if not lead_id or not contact_id:
+                raise ValueError("lead_id and contact_id are required")
+
+            # Build meeting activity payload
+            # Close API expects duration in seconds
+            duration_seconds = duration_minutes * 60
+
+            payload = {
+                "lead_id": lead_id,
+                "contact_id": contact_id,
+                "starts_at": scheduled_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "duration": duration_seconds,
+                "title": title or "Discovery Call",
+            }
+
+            # Add note if provided
+            if note:
+                payload["note"] = note
+
+            # Set meeting host
+            if user_id:
+                payload["user_id"] = user_id
+            else:
+                default_owner = os.getenv("CLOSE_DEFAULT_OWNER_USER_ID")
+                if default_owner:
+                    payload["user_id"] = default_owner
+
+            # Create meeting activity via Close API
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.BASE_URL}/activity/meeting/",
+                    headers=self._get_headers(),
+                    json=payload,
+                    timeout=30.0,
+                )
+
+                response.raise_for_status()
+                result = response.json()
+
+                logger.info(
+                    f"Meeting created in Close CRM: {result.get('id')} "
+                    f"for lead {lead_id} at {scheduled_at}"
+                )
+
+                return {
+                    "id": result.get("id"),
+                    "lead_id": lead_id,
+                    "contact_id": contact_id,
+                    "starts_at": result.get("starts_at"),
+                    "ends_at": result.get("ends_at"),
+                    "duration": result.get("duration"),
+                    "title": result.get("title"),
+                    "note": result.get("note"),
+                    "user_id": result.get("user_id"),
+                    "created_at": result.get("date_created"),
+                }
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Close Meeting API error: {e.response.status_code} - {e.response.text}"
+            )
+            raise
+        except Exception as e:
+            logger.error(f"Failed to create meeting in Close: {e}")
+            raise

@@ -553,19 +553,20 @@ class CloseEmailClient:
         limit: int = 200,
     ) -> List[Dict[str, Any]]:
         """
-        Fetch all activities (emails, SMS, calls) since a given timestamp.
+        Fetch all activities (emails, SMS, calls, meetings) since a given timestamp.
 
         Args:
             since: Fetch activities created after this timestamp
             activity_types: List of activity types to fetch (default: all)
-                           Options: "email", "sms", "call"
+                           Options: "email", "sms", "call", "meeting"
             limit: Maximum activities per type to return
 
         Returns:
-            List of activity dicts with 'type' field indicating activity type
+            List of activity dicts with '_activity_type' field indicating activity type.
+            Meetings include: id, lead_id, contact_id, starts_at, ends_at, duration, title, note
         """
         if activity_types is None:
-            activity_types = ["email", "sms", "call"]
+            activity_types = ["email", "sms", "call", "meeting"]
 
         all_activities = []
 
