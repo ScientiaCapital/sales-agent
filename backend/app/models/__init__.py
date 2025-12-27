@@ -85,6 +85,11 @@ from .outreach import (
     DraftRejectionRequest,
     SlackApprovalPayload
 )
+from .workflow import (
+    WorkflowRule,
+    TriggerType,
+    ActionType
+)
 
 __all__ = [
     "Base",
@@ -153,5 +158,8 @@ __all__ = [
     "ChannelResult",
     "DraftApprovalRequest",
     "DraftRejectionRequest",
-    "SlackApprovalPayload"
+    "SlackApprovalPayload",
+    "WorkflowRule",
+    "TriggerType",
+    "ActionType"
 ]

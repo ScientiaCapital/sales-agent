@@ -64,6 +64,7 @@ from app.api import slack_commands  # Slack slash commands (/enrich)
 from app.api import claude_chat  # Claude chat API for CEO/CTO interaction
 from app.api import voice_routes  # Twilio voice calling integration
 from app.api.routes import voice as voice_api_routes  # Voice API routes (Twilio webhooks, Slack callbacks)
+from app.api import workflow_rules  # Workflow automation rules (Phase 4)
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -304,6 +305,7 @@ app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slac
 app.include_router(claude_chat.router, prefix=settings.API_V1_PREFIX)  # Claude chat API for CEO/CTO interaction
 app.include_router(voice_routes.router, prefix=settings.API_V1_PREFIX)  # Twilio voice calling integration
 app.include_router(voice_api_routes.router, prefix=settings.API_V1_PREFIX)  # Voice API routes (Twilio webhooks, Slack callbacks)
+app.include_router(workflow_rules.router, prefix=settings.API_V1_PREFIX)  # Workflow automation rules (Phase 4)
 
 
 @app.get("/")

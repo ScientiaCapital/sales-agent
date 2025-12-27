@@ -46,13 +46,12 @@ Plans:
 ### Phase 4: Workflow Automation
 **Goal**: Automated triggers for stage changes, alerts, and follow-up actions
 **Depends on**: Phase 3
-**Plans**: TBD after detailed planning
+**Plans**: 3 plans
 
-Key work:
-- Workflow rule engine
-- Stage change webhooks/polling
-- Alert system (Slack, email)
-- Automated task creation
+Plans:
+- [x] 04-01: Workflow Rule Model (WorkflowRule SQLAlchemy, API endpoints)
+- [ ] 04-02: Rule Engine & Stage Detection (WorkflowRuleEngine, webhook enhancement, polling)
+- [ ] 04-03: Action Executor (create_task, send_alert, send_slack, default rules)
 
 ## Progress
 
@@ -61,4 +60,4 @@ Key work:
 | 1. Pipeline Models | 3/3 | Complete | 2025-12-26 |
 | 2. Activity Sync | 3/3 | Complete | 2025-12-26 |
 | 3. Analytics Dashboard | 3/3 | Complete | 2025-12-26 |
-| 4. Workflow Automation | 0/TBD | Not started | - |
+| 4. Workflow Automation | 1/3 | In progress | - |
