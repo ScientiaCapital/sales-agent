@@ -21,7 +21,7 @@ import os
 import re
 import logging
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 
 from app.services.outreach.reply_classifier import (
     ReplyClassification,
@@ -29,6 +29,7 @@ from app.services.outreach.reply_classifier import (
 )
 from app.services.slack_notifier import get_slack_notifier
 from app.services.crm.close_calling import CloseCallingClient
+from app.services.crm.close_tasks import CloseTaskClient
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +200,67 @@ class ReplyRouter:
             f"Reply: {company_name}"
         )
 
+    # ========== Task Creation Helper ==========
+
+    async def _create_follow_up_task(
+        self,
+        lead_id: str,
+        task_text: str,
+        due_date: date,
+        intent: ReplyIntent,
+        contact_id: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Create a follow-up task in Close CRM and return task ID.
+
+        Used by intent handlers to automatically create follow-up tasks
+        based on reply classification.
+
+        Args:
+            lead_id: Close lead ID (required)
+            task_text: Task description
+            due_date: Task due date
+            intent: Reply intent for context
+            contact_id: Close contact ID (optional)
+
+        Returns:
+            Task ID if created successfully, None otherwise
+        """
+        if not lead_id:
+            self.logger.warning(
+                f"Cannot create task without lead_id for intent {intent.value}"
+            )
+            return None
+
+        try:
+            task_client = CloseTaskClient()
+            result = await task_client.create_task(
+                lead_id=lead_id,
+                text=task_text,
+                due_date=due_date,
+                contact_id=contact_id,
+                task_type="follow-up",
+            )
+
+            if result.get("status") == "disabled":
+                self.logger.warning(
+                    f"Task creation disabled for {intent.value} intent"
+                )
+                return None
+
+            task_id = result.get("id")
+            self.logger.info(
+                f"Created follow-up task {task_id} for {intent.value}: "
+                f"{task_text[:50]}... (due: {due_date})"
+            )
+            return task_id
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to create follow-up task for {intent.value}: {e}"
+            )
+            return None
+
     # ========== Intent Handlers ==========
 
     async def _handle_interested(self, ctx: dict) -> dict:
@@ -298,6 +360,20 @@ class ReplyRouter:
             email_preview=ctx.get("email_body")
         )
 
+        # Create follow-up task for day after meeting
+        task_id = None
+        if meeting_created and meeting_time:
+            # Task due day after meeting
+            follow_up_date = (meeting_time + timedelta(days=1)).date()
+            task_text = f"Send follow-up after meeting with {ctx['contact_name']} ({ctx['company_name']})"
+            task_id = await self._create_follow_up_task(
+                lead_id=ctx.get("lead_id"),
+                task_text=task_text,
+                due_date=follow_up_date,
+                intent=ReplyIntent.MEETING_REQUEST,
+                contact_id=ctx.get("contact_id"),
+            )
+
         return {
             "action": "meeting_request",
             "next_steps": [
@@ -313,6 +389,7 @@ class ReplyRouter:
             "meeting_created": meeting_created,
             "meeting_id": meeting_id,
             "meeting_scheduled_at": meeting_time.isoformat() if meeting_time else None,
+            "follow_up_task_id": task_id,
             "timestamp": datetime.utcnow().isoformat()
         }
 
@@ -450,11 +527,23 @@ class ReplyRouter:
         Handle question reply - MEDIUM PRIORITY.
 
         Actions:
-        1. Send Slack alert with question context
-        2. Pause sequence until answered
+        1. Create task "Review reply from [contact]" due tomorrow
+        2. Send Slack alert with question context
+        3. Pause sequence until answered
         """
         self.logger.info(
             f"❓ QUESTION from {ctx['company_name']}"
+        )
+
+        # Create follow-up task due tomorrow
+        tomorrow = date.today() + timedelta(days=1)
+        task_text = f"Review reply from {ctx['contact_name']} ({ctx['company_name']}) - has questions"
+        task_id = await self._create_follow_up_task(
+            lead_id=ctx.get("lead_id"),
+            task_text=task_text,
+            due_date=tomorrow,
+            intent=ReplyIntent.QUESTION,
+            contact_id=ctx.get("contact_id"),
         )
 
         # Send Slack alert with question
@@ -477,6 +566,8 @@ class ReplyRouter:
             "priority": "medium",
             "requires_human_action": True,
             "slack_sent": slack_sent,
+            "task_created": task_id is not None,
+            "task_id": task_id,
             "timestamp": datetime.utcnow().isoformat()
         }
 
@@ -486,13 +577,23 @@ class ReplyRouter:
 
         Actions:
         1. Stop all sequences
-        2. Mark for nurture in 6 months
+        2. Create task "6-month nurture check" due 6 months out
+        3. Mark for nurture
         """
         self.logger.info(
             f"👎 NOT INTERESTED from {ctx['company_name']}"
         )
 
-        nurture_date = datetime.utcnow() + timedelta(days=180)
+        # Create 6-month nurture check task
+        nurture_date = date.today() + timedelta(days=180)
+        task_text = f"6-month nurture check - {ctx['contact_name']} ({ctx['company_name']}) - was not interested"
+        task_id = await self._create_follow_up_task(
+            lead_id=ctx.get("lead_id"),
+            task_text=task_text,
+            due_date=nurture_date,
+            intent=ReplyIntent.NOT_INTERESTED,
+            contact_id=ctx.get("contact_id"),
+        )
 
         return {
             "action": "not_interested",
@@ -504,6 +605,7 @@ class ReplyRouter:
             "priority": "low",
             "requires_human_action": False,
             "nurture_date": nurture_date.isoformat(),
+            "nurture_task_id": task_id,
             "timestamp": datetime.utcnow().isoformat()
         }
 
@@ -515,9 +617,21 @@ class ReplyRouter:
         1. Stop ALL sequences immediately
         2. Add to global suppression list
         3. Update CRM with do-not-contact flag
+        4. Create "Compliance review" task due today
         """
         self.logger.warning(
             f"🚫 UNSUBSCRIBE from {ctx['company_name']} - COMPLIANCE ACTION"
+        )
+
+        # Create compliance review task due today
+        today = date.today()
+        task_text = f"Compliance review - UNSUBSCRIBE request from {ctx['contact_name']} ({ctx['company_name']})"
+        task_id = await self._create_follow_up_task(
+            lead_id=ctx.get("lead_id"),
+            task_text=task_text,
+            due_date=today,
+            intent=ReplyIntent.UNSUBSCRIBE,
+            contact_id=ctx.get("contact_id"),
         )
 
         return {
@@ -531,6 +645,7 @@ class ReplyRouter:
             "priority": "critical",
             "requires_human_action": False,
             "compliance_logged": True,
+            "compliance_task_id": task_id,
             "timestamp": datetime.utcnow().isoformat()
         }
 

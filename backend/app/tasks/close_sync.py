@@ -28,6 +28,7 @@ from redis import asyncio as aioredis  # noqa: E402
 from app.celery_app import celery_app  # noqa: E402
 from app.services.crm.close_email import CloseEmailClient  # noqa: E402
 from app.services.crm.close_sequences import CloseSequencesClient  # noqa: E402
+from app.services.crm.close_tasks import CloseTaskClient  # noqa: E402
 from app.services.outreach.reply_classifier import ReplyClassifier, ReplyIntent  # noqa: E402
 from app.services.outreach.reply_router import ReplyRouter  # noqa: E402
 from app.core.logging import setup_logging  # noqa: E402
@@ -197,7 +198,9 @@ def sync_close_activities(self) -> Dict[str, Any]:
 
         logger.info(
             f"[{task_name}] Completed: {result['activities_synced']} activities "
-            f"({result['emails']} emails, {result['sms']} SMS, {result['calls']} calls) "
+            f"({result['emails']} emails, {result['sms']} SMS, {result['calls']} calls, "
+            f"{result.get('meetings', 0)} meetings), "
+            f"tasks: {result.get('tasks_created', 0)} created, {result.get('tasks_completed', 0)} completed "
             f"in {duration_ms}ms"
         )
 
@@ -265,6 +268,9 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
         emails = 0
         sms = 0
         calls = 0
+        meetings = 0
+        tasks_created = 0
+        tasks_completed = 0
         errors = 0
 
         # Fetch activities from Close API
@@ -296,10 +302,52 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
                     sms += 1
                 elif activity_type == "call":
                     calls += 1
+                elif activity_type == "meeting":
+                    meetings += 1
 
             except Exception as e:
                 logger.error(f"Failed to sync activity {activity.get('id')}: {e}")
                 errors += 1
+
+        # Sync tasks from Close API
+        try:
+            task_client = CloseTaskClient()
+
+            # Get tasks created since last sync
+            new_tasks = await task_client.get_tasks_since(last_sync, is_complete=False)
+            logger.info(f"[{task_name}] Fetched {len(new_tasks)} new tasks since {last_sync}")
+
+            for task in new_tasks:
+                try:
+                    if supabase:
+                        await _sync_task_to_supabase(supabase, task, is_completed=False)
+                    tasks_created += 1
+                except Exception as e:
+                    logger.error(f"Failed to sync new task {task.get('id')}: {e}")
+                    errors += 1
+
+            # Get tasks completed since last sync
+            completed_tasks = await task_client.get_tasks_since(last_sync, is_complete=True)
+            logger.info(f"[{task_name}] Fetched {len(completed_tasks)} completed tasks since {last_sync}")
+
+            for task in completed_tasks:
+                try:
+                    if supabase:
+                        await _sync_task_to_supabase(supabase, task, is_completed=True)
+                    tasks_completed += 1
+                except Exception as e:
+                    logger.error(f"Failed to sync completed task {task.get('id')}: {e}")
+                    errors += 1
+
+            logger.info(
+                f"[{task_name}] Task sync: {tasks_created} created, {tasks_completed} completed"
+            )
+
+        except ValueError as e:
+            logger.warning(f"[{task_name}] Task client init failed (API key?): {e}")
+        except Exception as e:
+            logger.error(f"[{task_name}] Task sync failed: {e}")
+            errors += 1
 
         # Update last sync timestamp
         await set_last_poll_timestamp(redis, task_name, datetime.utcnow())
@@ -310,6 +358,9 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
             "emails": emails,
             "sms": sms,
             "calls": calls,
+            "meetings": meetings,
+            "tasks_created": tasks_created,
+            "tasks_completed": tasks_completed,
             "errors": errors,
         }
 
@@ -335,6 +386,7 @@ async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
         "email": "email_activity",
         "sms": "sms_activity",
         "call": "call_activity",
+        "meeting": "meeting_activity",
     }
     event_type = event_type_map.get(activity_type, "activity_sync")
 
@@ -352,6 +404,9 @@ async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
             "to": activity.get("to"),
             "from": activity.get("sender"),
             "duration": activity.get("duration"),  # For calls
+            "starts_at": activity.get("starts_at"),  # For meetings
+            "ends_at": activity.get("ends_at"),  # For meetings
+            "title": activity.get("title"),  # For meetings
         }
     }
 
@@ -365,6 +420,72 @@ async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
         # If upsert fails (e.g., column doesn't exist), just insert
         logger.debug(f"Upsert failed, trying insert: {e}")
         supabase.table("lead_audit_log").insert(audit_entry).execute()
+
+
+async def _sync_task_to_supabase(
+    supabase,
+    task: Dict[str, Any],
+    is_completed: bool = False
+):
+    """
+    Sync a Close task to Supabase fact_activities table.
+
+    Args:
+        supabase: Supabase client
+        task: Task dict from Close API
+        is_completed: Whether this is a completed task sync
+    """
+    task_id = task.get("id")
+    lead_id = task.get("lead_id")
+    contact_id = task.get("contact_id")
+
+    # Determine event type based on completion status
+    event_type = "task_completed" if is_completed else "task_created"
+
+    # Build activity entry for fact_activities
+    activity_entry = {
+        "activity_type": "task",
+        "close_task_id": task_id,
+        "close_lead_id": lead_id,
+        "close_contact_id": contact_id,
+        "event_type": event_type,
+        "task_text": task.get("text"),
+        "task_due_date": task.get("date"),
+        "is_complete": task.get("is_complete", False),
+        "assigned_to": task.get("assigned_to"),
+        "created_at": task.get("date_created"),
+        "updated_at": task.get("date_updated"),
+        "metadata": {
+            "task_id": task_id,
+            "lead_id": lead_id,
+            "is_complete": task.get("is_complete"),
+            "completed_at": task.get("date_updated") if is_completed else None,
+        }
+    }
+
+    # Upsert to fact_activities (avoid duplicates)
+    try:
+        supabase.table("fact_activities").upsert(
+            activity_entry,
+            on_conflict="close_task_id"
+        ).execute()
+    except Exception as e:
+        # If upsert fails (e.g., column doesn't exist), try lead_audit_log instead
+        logger.debug(f"fact_activities upsert failed, trying lead_audit_log: {e}")
+        # Fall back to lead_audit_log
+        audit_entry = {
+            "event_type": event_type,
+            "close_lead_id": lead_id,
+            "close_activity_id": task_id,
+            "activity_type": "task",
+            "status": "completed" if is_completed else "pending",
+            "created_at": task.get("date_created"),
+            "metadata": activity_entry["metadata"]
+        }
+        try:
+            supabase.table("lead_audit_log").insert(audit_entry).execute()
+        except Exception as inner_e:
+            logger.debug(f"lead_audit_log insert also failed: {inner_e}")
 
 
 # ============================================================================
