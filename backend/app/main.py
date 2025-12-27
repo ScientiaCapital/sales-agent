@@ -53,6 +53,7 @@ from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.api import audit  # Lead audit trail for GTM agents
 from app.api import sync
 from app.api import close_outreach  # Close CRM SMS/Voice integration
+from app.api import close_opportunities  # Close CRM opportunities/pipelines
 from app.api import sequences  # Email sequence management
 from app.api import alerts  # Alert management for BDR workflow
 from app.api import batch  # Batch processing with parallel execution
@@ -291,6 +292,7 @@ app.include_router(webhooks_close, prefix=settings.API_V1_PREFIX)  # Close CRM w
 app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit trail for GTM agents
 app.include_router(sync.router, prefix=f"{settings.API_V1_PREFIX}/sync", tags=["sync"])  # CRM sync monitoring
 app.include_router(close_outreach.router, prefix=settings.API_V1_PREFIX)  # Close CRM SMS/Voice outreach
+app.include_router(close_opportunities.router, prefix=settings.API_V1_PREFIX)  # Close CRM opportunities/pipelines
 app.include_router(sequences.router, prefix=settings.API_V1_PREFIX)  # Email sequence management
 app.include_router(sequences.cockpit_router)  # Sequences cockpit endpoints (v1 prefix in router)
 app.include_router(alerts.router, prefix=settings.API_V1_PREFIX)  # Alert management for BDR workflow
