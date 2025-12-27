@@ -20,7 +20,7 @@ Transform the existing Close CRM integration from basic lead/contact management 
 
 Plans:
 - [x] 01-01: Database Models + Alembic Migration
-- [ ] 01-02: CloseProvider Methods (get_pipelines, get/create/update_opportunity)
+- [x] 01-02: CloseProvider Methods (get_pipelines, get/create/update_opportunity)
 - [ ] 01-03: FastAPI Endpoints (/close/opportunities, /close/pipelines)
 
 ### Phase 2: Activity Sync
@@ -60,7 +60,7 @@ Key work:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Pipeline Models | 1/3 | In progress | - |
+| 1. Pipeline Models | 2/3 | In progress | - |
 | 2. Activity Sync | 0/TBD | Not started | - |
 | 3. Analytics Dashboard | 0/TBD | Not started | - |
 | 4. Workflow Automation | 0/TBD | Not started | - |

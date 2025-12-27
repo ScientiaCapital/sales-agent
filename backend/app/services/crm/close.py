@@ -1153,3 +1153,233 @@ class CloseProvider(CRMProvider):
                 "rate_limit_enabled": True,
                 "error": str(e)
             }
+
+    # ========================================================================
+    # PIPELINE & OPPORTUNITY OPERATIONS
+    # ========================================================================
+
+    async def get_pipelines(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all pipelines from Close CRM.
+
+        Returns:
+            List of pipeline dictionaries from Close API
+
+        Raises:
+            CRMRateLimitError: If rate limit exceeded
+            CRMNetworkError: If network error occurs
+        """
+        try:
+            await self._check_rate_limit()
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.BASE_URL}/pipeline/",
+                    headers={
+                        "Authorization": self.auth_header,
+                        "Content-Type": "application/json",
+                    },
+                    timeout=30.0
+                )
+
+                await self._update_rate_limit(response)
+
+                if response.status_code == 429:
+                    self._handle_rate_limit_error(response)
+                elif response.status_code >= 400:
+                    raise CRMNetworkError(f"Close CRM API error: {response.status_code}")
+
+                data = response.json()
+                return data.get("data", [])
+
+        except httpx.HTTPError as e:
+            logger.error(f"Network error getting pipelines: {e}")
+            raise CRMNetworkError(f"Network error: {e}")
+
+    async def get_opportunities(
+        self,
+        lead_id: Optional[str] = None,
+        pipeline_id: Optional[str] = None,
+        filters: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve opportunities from Close CRM with optional filters.
+
+        Args:
+            lead_id: Optional Close lead ID to filter by
+            pipeline_id: Optional pipeline ID to filter by
+            filters: Optional additional filters as dict
+
+        Returns:
+            List of opportunity dictionaries from Close API
+
+        Raises:
+            CRMRateLimitError: If rate limit exceeded
+            CRMNetworkError: If network error occurs
+        """
+        try:
+            await self._check_rate_limit()
+
+            # Build query params from optional arguments
+            params: Dict[str, Any] = {}
+            if lead_id:
+                params["lead_id"] = lead_id
+            if pipeline_id:
+                params["pipeline_id"] = pipeline_id
+            if filters:
+                params.update(filters)
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.BASE_URL}/opportunity/",
+                    headers={
+                        "Authorization": self.auth_header,
+                        "Content-Type": "application/json",
+                    },
+                    params=params if params else None,
+                    timeout=30.0
+                )
+
+                await self._update_rate_limit(response)
+
+                if response.status_code == 429:
+                    self._handle_rate_limit_error(response)
+                elif response.status_code >= 400:
+                    raise CRMNetworkError(f"Close CRM API error: {response.status_code}")
+
+                data = response.json()
+                return data.get("data", [])
+
+        except httpx.HTTPError as e:
+            logger.error(f"Network error getting opportunities: {e}")
+            raise CRMNetworkError(f"Network error: {e}")
+
+    async def create_opportunity(
+        self,
+        lead_id: str,
+        opportunity_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Create an opportunity in Close CRM.
+
+        Args:
+            lead_id: Close lead ID to associate the opportunity with
+            opportunity_data: Opportunity data dict (name, value_period, confidence, etc.)
+
+        Returns:
+            Created opportunity data from Close API
+
+        Raises:
+            CRMRateLimitError: If rate limit exceeded
+            CRMValidationError: If opportunity data is invalid
+            CRMNetworkError: If network error occurs
+        """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("CLOSE_WRITE_DISABLED: Skipping create_opportunity()")
+            return {"status": "disabled"}
+
+        try:
+            await self._check_rate_limit()
+
+            # Add lead_id to opportunity data
+            payload = {"lead_id": lead_id, **opportunity_data}
+
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"{self.BASE_URL}/opportunity/",
+                    headers={
+                        "Authorization": self.auth_header,
+                        "Content-Type": "application/json",
+                    },
+                    json=payload,
+                    timeout=30.0
+                )
+
+                await self._update_rate_limit(response)
+
+                if response.status_code == 429:
+                    self._handle_rate_limit_error(response)
+                elif response.status_code == 422:
+                    error_data = response.json() if response.text else {}
+                    raise CRMValidationError(
+                        f"Invalid opportunity data: {error_data.get('error', response.status_code)}"
+                    )
+                elif response.status_code >= 400:
+                    error_data = response.json() if response.text else {}
+                    raise CRMNetworkError(
+                        f"Close CRM API error: {error_data.get('error', response.status_code)}"
+                    )
+
+                result = response.json()
+                logger.info(f"Created opportunity {result.get('id')} for lead {lead_id}")
+                return result
+
+        except httpx.HTTPError as e:
+            logger.error(f"Network error creating opportunity: {e}")
+            raise CRMNetworkError(f"Network error: {e}")
+
+    async def update_opportunity(
+        self,
+        opportunity_id: str,
+        update_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Update an opportunity in Close CRM.
+
+        Args:
+            opportunity_id: Close opportunity ID to update
+            update_data: Fields to update on the opportunity
+
+        Returns:
+            Updated opportunity data from Close API
+
+        Raises:
+            CRMNotFoundError: If opportunity not found
+            CRMRateLimitError: If rate limit exceeded
+            CRMValidationError: If update data is invalid
+            CRMNetworkError: If network error occurs
+        """
+        # SAFETY: Disable all writes to Close CRM
+        if os.getenv("CLOSE_WRITE_DISABLED") == "True":
+            logger.warning("CLOSE_WRITE_DISABLED: Skipping update_opportunity()")
+            return {"status": "disabled"}
+
+        try:
+            await self._check_rate_limit()
+
+            async with httpx.AsyncClient() as client:
+                response = await client.put(
+                    f"{self.BASE_URL}/opportunity/{opportunity_id}/",
+                    headers={
+                        "Authorization": self.auth_header,
+                        "Content-Type": "application/json",
+                    },
+                    json=update_data,
+                    timeout=30.0
+                )
+
+                await self._update_rate_limit(response)
+
+                if response.status_code == 404:
+                    raise CRMNotFoundError(f"Opportunity {opportunity_id} not found in Close CRM")
+                elif response.status_code == 429:
+                    self._handle_rate_limit_error(response)
+                elif response.status_code == 422:
+                    error_data = response.json() if response.text else {}
+                    raise CRMValidationError(
+                        f"Invalid update data: {error_data.get('error', response.status_code)}"
+                    )
+                elif response.status_code >= 400:
+                    error_data = response.json() if response.text else {}
+                    raise CRMNetworkError(
+                        f"Close CRM API error: {error_data.get('error', response.status_code)}"
+                    )
+
+                result = response.json()
+                logger.info(f"Updated opportunity {opportunity_id}")
+                return result
+
+        except httpx.HTTPError as e:
+            logger.error(f"Network error updating opportunity {opportunity_id}: {e}")
+            raise CRMNetworkError(f"Network error: {e}")
