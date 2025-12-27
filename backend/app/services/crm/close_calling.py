@@ -471,6 +471,84 @@ class CloseCallingClient:
             logger.error(f"Failed to log call directly in Close: {e}")
             raise
 
+    async def get_call_recording(
+        self,
+        activity_id: str,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get call recording URL and metadata for a call activity.
+
+        Fetches the recording_url and related metadata for a completed call.
+        Returns None if no recording is available for the call.
+
+        Args:
+            activity_id: Close call activity ID (e.g., "acti_xxx")
+
+        Returns:
+            Dict with recording details if available:
+            {
+                "activity_id": "acti_xxx",
+                "recording_url": "https://...",
+                "recording_duration": 180,
+                "has_recording": True,
+                "status": "answered",
+                "direction": "outbound"
+            }
+            or None if no recording available
+
+        Raises:
+            httpx.HTTPStatusError: If API request fails
+        """
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{self.BASE_URL}/activity/call/{activity_id}/",
+                    headers=self._get_headers(),
+                    timeout=30.0,
+                )
+
+                response.raise_for_status()
+                data = response.json()
+
+                recording_url = data.get("recording_url")
+                duration = data.get("duration")
+
+                if recording_url:
+                    logger.info(
+                        f"Call recording found for activity {activity_id}: "
+                        f"{duration}s duration"
+                    )
+                    return {
+                        "activity_id": activity_id,
+                        "recording_url": recording_url,
+                        "recording_duration": duration,
+                        "has_recording": True,
+                        "status": data.get("status"),
+                        "direction": data.get("direction"),
+                        "phone": data.get("phone"),
+                        "lead_id": data.get("lead_id"),
+                        "contact_id": data.get("contact_id"),
+                    }
+                else:
+                    logger.debug(f"No recording available for call activity {activity_id}")
+                    return {
+                        "activity_id": activity_id,
+                        "recording_url": None,
+                        "recording_duration": duration,
+                        "has_recording": False,
+                        "status": data.get("status"),
+                        "direction": data.get("direction"),
+                    }
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Close Call recording API error: {e.response.status_code} - {e.response.text}"
+            )
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get call recording from Close: {e}")
+            raise
+
     async def create_meeting(
         self,
         lead_id: str,

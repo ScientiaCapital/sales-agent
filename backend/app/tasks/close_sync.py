@@ -29,6 +29,7 @@ from app.celery_app import celery_app  # noqa: E402
 from app.services.crm.close_email import CloseEmailClient  # noqa: E402
 from app.services.crm.close_sequences import CloseSequencesClient  # noqa: E402
 from app.services.crm.close_tasks import CloseTaskClient  # noqa: E402
+from app.services.crm.close_calling import CloseCallingClient  # noqa: E402
 from app.services.outreach.reply_classifier import ReplyClassifier, ReplyIntent  # noqa: E402
 from app.services.outreach.reply_router import ReplyRouter  # noqa: E402
 from app.core.logging import setup_logging  # noqa: E402
@@ -198,9 +199,12 @@ def sync_close_activities(self) -> Dict[str, Any]:
 
         logger.info(
             f"[{task_name}] Completed: {result['activities_synced']} activities "
-            f"({result['emails']} emails, {result['sms']} SMS, {result['calls']} calls, "
+            f"({result['emails']} emails, {result['sms']} SMS, {result['calls']} calls "
+            f"[{result.get('calls_with_recordings', 0)} with recordings], "
             f"{result.get('meetings', 0)} meetings), "
-            f"tasks: {result.get('tasks_created', 0)} created, {result.get('tasks_completed', 0)} completed "
+            f"tasks: {result.get('tasks_created', 0)} created, {result.get('tasks_completed', 0)} completed, "
+            f"status_transitions: {result.get('status_transitions', 0)}, "
+            f"attributed: {result.get('activities_attributed_to_opportunities', 0)} "
             f"in {duration_ms}ms"
         )
 
@@ -268,9 +272,12 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
         emails = 0
         sms = 0
         calls = 0
+        calls_with_recordings = 0
         meetings = 0
         tasks_created = 0
         tasks_completed = 0
+        status_transitions = 0
+        activities_attributed_to_opportunities = 0
         errors = 0
 
         # Fetch activities from Close API
@@ -285,14 +292,53 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
             if supabase_url and supabase_key:
                 supabase = create_client(supabase_url, supabase_key)
 
+        # Initialize calling client for call recordings
+        calling_client = None
+        try:
+            calling_client = CloseCallingClient()
+        except ValueError as e:
+            logger.debug(f"Calling client init failed (optional): {e}")
+
         for activity in activities:
             try:
                 activity_type = activity.get("_activity_type", "unknown")
                 activity_id = activity.get("id")
+                lead_id = activity.get("lead_id")
+
+                # Get previous status for transition tracking
+                previous_status = None
+                if supabase:
+                    previous_status = await _get_previous_activity_status(supabase, activity_id)
+
+                # Get opportunity for attribution
+                opportunity_id = None
+                if supabase and lead_id:
+                    opportunity_id = await _get_opportunity_for_lead(supabase, lead_id)
+                    if opportunity_id:
+                        activities_attributed_to_opportunities += 1
+
+                # Get call recording data for calls
+                recording_data = None
+                if activity_type == "call" and calling_client and activity_id:
+                    recording_data = await _fetch_call_recording(calling_client, activity_id)
+                    if recording_data and recording_data.get("has_recording"):
+                        calls_with_recordings += 1
+
+                # Track status transitions
+                if supabase and previous_status:
+                    current_status = activity.get("status")
+                    if current_status and previous_status != current_status:
+                        await _track_status_transitions(supabase, activity, previous_status)
+                        status_transitions += 1
 
                 # Sync to Supabase if available
                 if supabase:
-                    await _sync_activity_to_supabase(supabase, activity)
+                    await _sync_activity_to_supabase(
+                        supabase,
+                        activity,
+                        opportunity_id=opportunity_id,
+                        recording_data=recording_data
+                    )
 
                 activities_synced += 1
 
@@ -352,15 +398,26 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
         # Update last sync timestamp
         await set_last_poll_timestamp(redis, task_name, datetime.utcnow())
 
+        # Log enhanced metrics
+        if calls_with_recordings > 0:
+            logger.info(f"[{task_name}] Call recordings: {calls_with_recordings}/{calls} calls have recordings")
+        if status_transitions > 0:
+            logger.info(f"[{task_name}] Status transitions tracked: {status_transitions}")
+        if activities_attributed_to_opportunities > 0:
+            logger.info(f"[{task_name}] Activities attributed to opportunities: {activities_attributed_to_opportunities}")
+
         return {
             "status": "success",
             "activities_synced": activities_synced,
             "emails": emails,
             "sms": sms,
             "calls": calls,
+            "calls_with_recordings": calls_with_recordings,
             "meetings": meetings,
             "tasks_created": tasks_created,
             "tasks_completed": tasks_completed,
+            "status_transitions": status_transitions,
+            "activities_attributed_to_opportunities": activities_attributed_to_opportunities,
             "errors": errors,
         }
 
@@ -369,13 +426,157 @@ async def _sync_close_activities_async(task_name: str) -> Dict[str, Any]:
         await redis.close()
 
 
-async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
+async def _fetch_call_recording(
+    calling_client: CloseCallingClient,
+    activity_id: str
+) -> Optional[Dict[str, Any]]:
+    """
+    Fetch call recording URL and metadata for a call activity.
+
+    Args:
+        calling_client: CloseCallingClient instance
+        activity_id: Close call activity ID
+
+    Returns:
+        Recording metadata dict or None if fetch fails
+    """
+    try:
+        return await calling_client.get_call_recording(activity_id)
+    except Exception as e:
+        logger.warning(f"Failed to fetch call recording for {activity_id}: {e}")
+        return None
+
+
+async def _track_status_transitions(
+    supabase,
+    activity: Dict[str, Any],
+    previous_status: Optional[str]
+) -> None:
+    """
+    Track when activity status changes and log to audit table.
+
+    Compares current status to previous status and logs transitions
+    like draft->sent, scheduled->completed, etc.
+
+    Args:
+        supabase: Supabase client
+        activity: Current activity dict from Close API
+        previous_status: Previous status from last sync (or None if first sync)
+    """
+    if not supabase:
+        return
+
+    activity_id = activity.get("id")
+    current_status = activity.get("status")
+
+    # Only track if there's a status change
+    if previous_status and current_status and previous_status != current_status:
+        transition_entry = {
+            "event_type": "activity_status_change",
+            "close_activity_id": activity_id,
+            "close_lead_id": activity.get("lead_id"),
+            "activity_type": activity.get("_activity_type", "unknown"),
+            "status": current_status,
+            "created_at": activity.get("date_updated") or activity.get("date_created"),
+            "metadata": {
+                "previous_status": previous_status,
+                "new_status": current_status,
+                "transition": f"{previous_status}->{current_status}",
+                "activity_created_at": activity.get("date_created"),
+                "activity_updated_at": activity.get("date_updated"),
+            }
+        }
+
+        try:
+            supabase.table("lead_audit_log").insert(transition_entry).execute()
+            logger.debug(
+                f"Logged status transition for {activity_id}: "
+                f"{previous_status} -> {current_status}"
+            )
+        except Exception as e:
+            logger.debug(f"Failed to log status transition: {e}")
+
+
+async def _get_opportunity_for_lead(
+    supabase,
+    close_lead_id: str
+) -> Optional[str]:
+    """
+    Get opportunity ID for a lead if one exists.
+
+    Queries crm_opportunities table to find opportunities linked to the lead.
+
+    Args:
+        supabase: Supabase client
+        close_lead_id: Close lead ID
+
+    Returns:
+        Opportunity external_id or None if no opportunity found
+    """
+    if not supabase or not close_lead_id:
+        return None
+
+    try:
+        result = supabase.table("crm_opportunities").select(
+            "external_id"
+        ).eq(
+            "close_lead_id", close_lead_id
+        ).limit(1).execute()
+
+        if result.data and len(result.data) > 0:
+            return result.data[0].get("external_id")
+        return None
+    except Exception as e:
+        logger.debug(f"Failed to query opportunity for lead {close_lead_id}: {e}")
+        return None
+
+
+async def _get_previous_activity_status(
+    supabase,
+    activity_id: str
+) -> Optional[str]:
+    """
+    Get the previously synced status for an activity.
+
+    Args:
+        supabase: Supabase client
+        activity_id: Close activity ID
+
+    Returns:
+        Previous status string or None if not found
+    """
+    if not supabase:
+        return None
+
+    try:
+        result = supabase.table("lead_audit_log").select(
+            "status"
+        ).eq(
+            "close_activity_id", activity_id
+        ).limit(1).execute()
+
+        if result.data and len(result.data) > 0:
+            return result.data[0].get("status")
+        return None
+    except Exception as e:
+        logger.debug(f"Failed to get previous status for {activity_id}: {e}")
+        return None
+
+
+async def _sync_activity_to_supabase(
+    supabase,
+    activity: Dict[str, Any],
+    opportunity_id: Optional[str] = None,
+    recording_data: Optional[Dict[str, Any]] = None
+):
     """
     Sync a Close activity to Supabase lead_audit_log table.
 
     Args:
         supabase: Supabase client
         activity: Activity dict from Close API
+        opportunity_id: Optional opportunity ID if activity is attributed to opportunity
+        recording_data: Optional call recording metadata
     """
     activity_type = activity.get("_activity_type", "unknown")
     activity_id = activity.get("id")
@@ -390,6 +591,27 @@ async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
     }
     event_type = event_type_map.get(activity_type, "activity_sync")
 
+    # Build metadata with optional recording data
+    metadata = {
+        "subject": activity.get("subject"),
+        "to": activity.get("to"),
+        "from": activity.get("sender"),
+        "duration": activity.get("duration"),  # For calls
+        "starts_at": activity.get("starts_at"),  # For meetings
+        "ends_at": activity.get("ends_at"),  # For meetings
+        "title": activity.get("title"),  # For meetings
+    }
+
+    # Add recording data for calls if available
+    if recording_data and activity_type == "call":
+        metadata["recording_url"] = recording_data.get("recording_url")
+        metadata["recording_duration"] = recording_data.get("recording_duration")
+        metadata["has_recording"] = recording_data.get("has_recording", False)
+
+    # Add opportunity attribution if available
+    if opportunity_id:
+        metadata["opportunity_id"] = opportunity_id
+
     # Build audit log entry
     audit_entry = {
         "event_type": event_type,
@@ -399,16 +621,12 @@ async def _sync_activity_to_supabase(supabase, activity: Dict[str, Any]):
         "direction": activity.get("direction", "outbound"),
         "status": activity.get("status"),
         "created_at": activity.get("date_created"),
-        "metadata": {
-            "subject": activity.get("subject"),
-            "to": activity.get("to"),
-            "from": activity.get("sender"),
-            "duration": activity.get("duration"),  # For calls
-            "starts_at": activity.get("starts_at"),  # For meetings
-            "ends_at": activity.get("ends_at"),  # For meetings
-            "title": activity.get("title"),  # For meetings
-        }
+        "metadata": metadata,
     }
+
+    # Add opportunity_id at top level if column exists
+    if opportunity_id:
+        audit_entry["opportunity_id"] = opportunity_id
 
     # Upsert to audit log (avoid duplicates)
     try:
