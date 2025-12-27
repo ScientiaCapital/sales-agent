@@ -60,6 +60,7 @@ celery_app = Celery(
         "app.tasks.elite_team_tasks",  # Trifecta Hunter Elite Squad
         "app.tasks.intake_commander_tasks",  # IntakeCommander (separate from elite_team_tasks)
         "app.tasks.trigger_monitoring_tasks",  # Trigger Event Monitor (buying signals)
+        "app.tasks.workflow_tasks",  # Workflow automation (rule engine, stage polling)
     ]
 )
 
@@ -168,6 +169,9 @@ celery_app.conf.update(
         "app.tasks.trigger_monitoring_tasks.monitor_trigger_events_task": {"queue": "default"},
         "app.tasks.trigger_monitoring_tasks.detect_trigger_events_for_company_task": {"queue": "default"},
         "app.tasks.trigger_monitoring_tasks.get_trigger_event_stats_task": {"queue": "default"},
+        # Workflow Automation tasks
+        "app.tasks.workflow_tasks.evaluate_workflow_rules": {"queue": "workflows"},
+        "app.tasks.workflow_tasks.poll_stage_changes": {"queue": "workflows"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -377,6 +381,15 @@ celery_app.conf.update(
             "args": (50,),  # Check up to 50 companies per run
             "options": {"queue": "default"},
         },
+        # ========== WORKFLOW AUTOMATION SCHEDULES ==========
+        # Poll for stage changes every 15 minutes (fallback to webhook)
+        # Detects opportunity stage changes missed by webhooks and triggers workflow rules
+        # Parallelization: Runs at :07, :22, :37, :52 offset from other tasks
+        "poll-stage-changes-every-15-min": {
+            "task": "poll_stage_changes",
+            "schedule": crontab(minute="7,22,37,52"),  # Every 15 min at :07, :22, :37, :52
+            "options": {"queue": "workflows"},
+        },
     },
 )
 
@@ -407,6 +420,9 @@ TRACKED_AGENTS = {
     "process_scraping_order": "deep_hunter",  # Maps to deep_hunter
     # Trigger Event Monitor
     "monitor_trigger_events_hourly": "trigger_event_monitor",
+    # Workflow Automation
+    "evaluate_workflow_rules": "workflow_rule_engine",
+    "poll_stage_changes": "workflow_stage_polling",
 }
 
 

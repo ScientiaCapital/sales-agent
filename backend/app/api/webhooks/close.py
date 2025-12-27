@@ -5,17 +5,18 @@ Handles all Close CRM webhook events (v2 format) and routes them to appropriate
 agents for processing. This is the central event hub for Close CRM automation.
 
 Supported Event Types:
-- lead.created → ScoutAgent enrichment (if status=Raw)
-- lead.status_changed → Re-evaluate ICP/tier if needed
+- lead.created → ScoutAgent enrichment (if status=Raw) + workflow rules
+- lead.status_changed → Re-evaluate ICP/tier if needed + workflow rules
 - lead.updated → Check for significant field changes
 - activity.email.received → SyncAgent reply processing
 - activity.call.completed → Log call results
-- opportunity.status_changed → Update pipeline metrics
-- opportunity.won → Celebrate and update analytics
-- opportunity.lost → Log reason and route to nurture
+- opportunity.status_changed → Update pipeline metrics + workflow rules
+- opportunity.won → Celebrate and update analytics + workflow rules
+- opportunity.lost → Log reason and route to nurture + workflow rules
 
 Event-Driven Architecture:
 Close CRM → Webhook → Event Router → Agent/Task → Supabase/Slack
+                    ↘ WorkflowRuleEngine → Celery workflows queue
 
 Security:
 - HMAC-SHA256 signature verification
@@ -26,6 +27,7 @@ Security:
 Reference:
 - https://developer.close.com/topics/webhooks/
 - Phase 2 of sales-agent consolidation plan
+- Phase 4: Workflow Automation (rule engine integration)
 """
 
 import os
@@ -35,12 +37,35 @@ import logging
 from typing import Optional, Dict, Any
 from datetime import datetime
 
-from fastapi import APIRouter, Request, BackgroundTasks, Header, HTTPException
+from fastapi import APIRouter, Request, BackgroundTasks, Header, HTTPException, Depends
 from pydantic import BaseModel, Field, validator
+from sqlalchemy.orm import Session
+
+from app.models.database import get_db
+from app.services.workflow.rule_engine import (
+    WorkflowRuleEngine,
+    map_close_event_to_trigger,
+    build_context_from_close_event
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/close", tags=["close-webhooks-v2"])
+
+
+# ========== WORKFLOW TRIGGER MAPPING ==========
+
+# Map Close CRM webhook events to workflow trigger types
+# Used to route events to the WorkflowRuleEngine for rule evaluation
+CLOSE_EVENT_TO_TRIGGER_MAP = {
+    # Opportunity events -> workflow triggers
+    "opportunity.status_changed": "stage_change",
+    "opportunity.won": "opportunity_won",
+    "opportunity.lost": "opportunity_lost",
+    # Lead events -> workflow triggers
+    "lead.created": "lead_created",
+    "lead.status_changed": "stage_change",
+}
 
 
 # ========== PYDANTIC MODELS ==========
@@ -442,9 +467,10 @@ async def process_webhook_event(event: CloseWebhookEvent):
 
     Steps:
     1. Route event to appropriate agent/handler
-    2. Queue Celery tasks for actual processing
-    3. Log event to audit trail (Supabase)
-    4. Send notifications if needed (Slack)
+    2. Evaluate workflow rules for matching triggers
+    3. Queue Celery tasks for rule action execution
+    4. Log event to audit trail (Supabase)
+    5. Send notifications if needed (Slack)
 
     Args:
         event: Validated Close webhook event
@@ -460,9 +486,8 @@ async def process_webhook_event(event: CloseWebhookEvent):
             f"reason={routing_result['reason']}"
         )
 
-        # Step 2: Queue Celery tasks
-        # NOTE: Actual Celery task imports are commented out to prevent circular imports
-        # Uncomment and import when tasks are created
+        # Step 2: Evaluate workflow rules for this event
+        await evaluate_workflow_rules_for_event(event)
 
         # Step 3: Log to audit trail
         await log_webhook_event(event, routing_result)
@@ -478,6 +503,53 @@ async def process_webhook_event(event: CloseWebhookEvent):
 
         # TODO: Queue for retry or send error notification
         # For now, just log the error
+
+
+async def evaluate_workflow_rules_for_event(event: CloseWebhookEvent):
+    """
+    Evaluate workflow rules for a Close CRM webhook event.
+
+    Maps the Close event type to a workflow trigger type, builds the context,
+    and queues matched actions for execution via Celery.
+
+    Args:
+        event: Close webhook event to evaluate
+    """
+    event_type = event.event
+    event_data = event.data
+
+    # Map Close event to workflow trigger type
+    trigger_type = map_close_event_to_trigger(event_type)
+
+    if not trigger_type:
+        logger.debug(f"No workflow trigger mapping for event: {event_type}")
+        return
+
+    logger.info(f"Evaluating workflow rules for trigger: {trigger_type} (from {event_type})")
+
+    try:
+        # Build context from Close event data
+        context = build_context_from_close_event(event_type, event_data)
+
+        # Queue Celery task for rule evaluation and action execution
+        # This runs asynchronously to avoid blocking the webhook response
+        from app.tasks.workflow_tasks import evaluate_workflow_rules
+        evaluate_workflow_rules.delay(
+            trigger_type=trigger_type,
+            context=context
+        )
+
+        logger.info(
+            f"Queued workflow rule evaluation: trigger={trigger_type}, "
+            f"opportunity_id={context.get('opportunity_id')}, "
+            f"stage={context.get('stage')}"
+        )
+
+    except ImportError as e:
+        # workflow_tasks module not yet created - log and continue
+        logger.warning(f"Workflow tasks not available: {e}")
+    except Exception as e:
+        logger.error(f"Failed to queue workflow rule evaluation: {e}", exc_info=True)
 
 
 async def log_webhook_event(event: CloseWebhookEvent, routing_result: Dict[str, Any]):
