@@ -87,6 +87,55 @@ class RevenueForecastResponse(BaseModel):
 
 
 # ============================================================================
+# Trend Analysis Response Models
+# ============================================================================
+
+class DataPoint(BaseModel):
+    """Single data point in a time series."""
+    date: str = Field(..., description="ISO date string (YYYY-MM-DD)")
+    value: float = Field(..., description="Metric value for this date")
+
+
+class TrendMetric(BaseModel):
+    """Time series for a single metric."""
+    metric_name: str = Field(..., description="Name of the metric")
+    data_points: List[DataPoint] = Field(..., description="Time series data points")
+    current_value: float = Field(..., description="Value for current period")
+    previous_value: float = Field(..., description="Value for previous period")
+    change_percent: float = Field(..., description="Percentage change from previous")
+    trend_direction: str = Field(..., description="Trend direction: 'up', 'down', or 'flat'")
+
+
+class ActivityTrendsResponse(BaseModel):
+    """Activity metrics over time."""
+    calls: TrendMetric = Field(..., description="Call activity trend")
+    emails: TrendMetric = Field(..., description="Email activity trend")
+    meetings: TrendMetric = Field(..., description="Meeting activity trend")
+    total_activities: TrendMetric = Field(..., description="Total activities trend")
+    period: str = Field(..., description="Analysis period (7d, 30d, 90d)")
+    granularity: str = Field(..., description="Time bucket: day, week, or month")
+    generated_at: datetime
+
+
+class ConversionTrendsResponse(BaseModel):
+    """Conversion rate trends over time."""
+    lead_to_qualified: TrendMetric = Field(..., description="Lead to qualified conversion trend")
+    qualified_to_opportunity: TrendMetric = Field(..., description="Qualified to opportunity trend")
+    opportunity_to_won: TrendMetric = Field(..., description="Opportunity to won trend")
+    period: str = Field(..., description="Analysis period")
+    granularity: str = Field(..., description="Time bucket: day, week, or month")
+    generated_at: datetime
+
+
+class PeriodComparisonResponse(BaseModel):
+    """Period-over-period comparison."""
+    current_period: dict = Field(..., description="Metrics for current period")
+    previous_period: dict = Field(..., description="Metrics for previous period")
+    changes: dict = Field(..., description="Percentage changes between periods")
+    period_type: str = Field(..., description="Comparison type: week, month, or quarter")
+
+
+# ============================================================================
 # Stage Configuration
 # ============================================================================
 
@@ -632,3 +681,431 @@ async def get_revenue_forecast():
     except Exception as e:
         logger.error(f"Error fetching revenue forecast: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to fetch revenue forecast")
+
+
+# ============================================================================
+# Trend Analysis Helpers
+# ============================================================================
+
+def get_date_range_for_period(period: str) -> tuple[datetime, datetime]:
+    """Get start and end datetime for a period string."""
+    now = datetime.now(timezone.utc)
+    if period == "7d":
+        return now - timedelta(days=7), now
+    elif period == "30d":
+        return now - timedelta(days=30), now
+    elif period == "90d":
+        return now - timedelta(days=90), now
+    else:
+        return now - timedelta(days=30), now
+
+
+def get_previous_period_range(period: str) -> tuple[datetime, datetime]:
+    """Get start and end datetime for the previous equivalent period."""
+    now = datetime.now(timezone.utc)
+    if period == "7d":
+        return now - timedelta(days=14), now - timedelta(days=7)
+    elif period == "30d":
+        return now - timedelta(days=60), now - timedelta(days=30)
+    elif period == "90d":
+        return now - timedelta(days=180), now - timedelta(days=90)
+    else:
+        return now - timedelta(days=60), now - timedelta(days=30)
+
+
+def get_period_type_ranges(period_type: str) -> tuple[tuple[datetime, datetime], tuple[datetime, datetime]]:
+    """Get current and previous period date ranges for week/month/quarter."""
+    now = datetime.now(timezone.utc)
+
+    if period_type == "week":
+        # Current week (Mon-Sun)
+        days_since_monday = now.weekday()
+        current_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_end = now
+        # Previous week
+        previous_start = current_start - timedelta(days=7)
+        previous_end = current_start
+
+    elif period_type == "month":
+        # Current month
+        current_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        current_end = now
+        # Previous month
+        if now.month == 1:
+            previous_start = current_start.replace(year=now.year - 1, month=12)
+        else:
+            previous_start = current_start.replace(month=now.month - 1)
+        previous_end = current_start
+
+    elif period_type == "quarter":
+        # Current quarter
+        quarter_month = ((now.month - 1) // 3) * 3 + 1
+        current_start = now.replace(month=quarter_month, day=1, hour=0, minute=0, second=0, microsecond=0)
+        current_end = now
+        # Previous quarter
+        if quarter_month == 1:
+            previous_start = current_start.replace(year=now.year - 1, month=10)
+        else:
+            previous_start = current_start.replace(month=quarter_month - 3)
+        previous_end = current_start
+
+    else:
+        # Default to week
+        days_since_monday = now.weekday()
+        current_start = (now - timedelta(days=days_since_monday)).replace(hour=0, minute=0, second=0, microsecond=0)
+        current_end = now
+        previous_start = current_start - timedelta(days=7)
+        previous_end = current_start
+
+    return (current_start, current_end), (previous_start, previous_end)
+
+
+def calculate_trend_direction(current: float, previous: float, threshold: float = 0.05) -> str:
+    """Determine trend direction based on percentage change."""
+    if previous == 0:
+        return "up" if current > 0 else "flat"
+    change = (current - previous) / previous
+    if change > threshold:
+        return "up"
+    elif change < -threshold:
+        return "down"
+    else:
+        return "flat"
+
+
+def calculate_change_percent(current: float, previous: float) -> float:
+    """Calculate percentage change between two values."""
+    if previous == 0:
+        return 100.0 if current > 0 else 0.0
+    return ((current - previous) / previous) * 100.0
+
+
+def date_to_bucket(dt: datetime, granularity: str) -> str:
+    """Convert datetime to bucket string based on granularity."""
+    if granularity == "day":
+        return dt.strftime("%Y-%m-%d")
+    elif granularity == "week":
+        # ISO week start (Monday)
+        week_start = dt - timedelta(days=dt.weekday())
+        return week_start.strftime("%Y-%m-%d")
+    elif granularity == "month":
+        return dt.strftime("%Y-%m-01")
+    else:
+        return dt.strftime("%Y-%m-%d")
+
+
+def generate_date_buckets(start: datetime, end: datetime, granularity: str) -> List[str]:
+    """Generate all date buckets between start and end."""
+    buckets = []
+    current = start
+
+    if granularity == "day":
+        while current <= end:
+            buckets.append(current.strftime("%Y-%m-%d"))
+            current += timedelta(days=1)
+    elif granularity == "week":
+        # Align to Monday
+        current = current - timedelta(days=current.weekday())
+        while current <= end:
+            buckets.append(current.strftime("%Y-%m-%d"))
+            current += timedelta(days=7)
+    elif granularity == "month":
+        current = current.replace(day=1)
+        while current <= end:
+            buckets.append(current.strftime("%Y-%m-01"))
+            if current.month == 12:
+                current = current.replace(year=current.year + 1, month=1)
+            else:
+                current = current.replace(month=current.month + 1)
+
+    return buckets
+
+
+def build_trend_metric(
+    metric_name: str,
+    data_by_bucket: dict,
+    all_buckets: List[str],
+    current_total: float,
+    previous_total: float
+) -> TrendMetric:
+    """Build a TrendMetric from bucketed data."""
+    data_points = [
+        DataPoint(date=bucket, value=data_by_bucket.get(bucket, 0.0))
+        for bucket in all_buckets
+    ]
+
+    return TrendMetric(
+        metric_name=metric_name,
+        data_points=data_points,
+        current_value=current_total,
+        previous_value=previous_total,
+        change_percent=calculate_change_percent(current_total, previous_total),
+        trend_direction=calculate_trend_direction(current_total, previous_total)
+    )
+
+
+# ============================================================================
+# Trend Analysis Endpoints
+# ============================================================================
+
+@router.get("/activity-trends", response_model=ActivityTrendsResponse)
+async def get_activity_trends(
+    period: str = Query("30d", description="Time period: 7d, 30d, 90d"),
+    granularity: str = Query("day", description="Aggregation: day, week, month"),
+):
+    """
+    Get activity metrics as time series for trend visualization.
+
+    Aggregates fact_activities by activity_type and date bucket.
+    Calculates period-over-period change percentages.
+    Returns time series data for calls, emails, meetings, and total activities.
+    """
+    try:
+        supabase = get_supabase()
+        now = datetime.now(timezone.utc)
+
+        # Get current and previous period ranges
+        current_start, current_end = get_date_range_for_period(period)
+        previous_start, previous_end = get_previous_period_range(period)
+
+        # Generate all buckets for the current period
+        all_buckets = generate_date_buckets(current_start, current_end, granularity)
+
+        # Initialize data structures for activity types
+        activity_types = ["call", "email", "meeting"]
+        current_data = {atype: {} for atype in activity_types}
+        current_totals = {atype: 0.0 for atype in activity_types}
+        previous_totals = {atype: 0.0 for atype in activity_types}
+
+        try:
+            # Query fact_activities for current period
+            result = supabase.table("fact_activities").select(
+                "activity_type, activity_date, activity_id"
+            ).gte("activity_date", current_start.isoformat()).lte("activity_date", current_end.isoformat()).execute()
+
+            for row in (result.data or []):
+                atype = (row.get("activity_type") or "").lower()
+                activity_date_str = row.get("activity_date")
+
+                if atype not in activity_types:
+                    continue
+
+                if activity_date_str:
+                    try:
+                        if isinstance(activity_date_str, str):
+                            activity_date = datetime.fromisoformat(activity_date_str.replace('Z', '+00:00'))
+                        else:
+                            activity_date = activity_date_str
+
+                        bucket = date_to_bucket(activity_date, granularity)
+                        current_data[atype][bucket] = current_data[atype].get(bucket, 0) + 1
+                        current_totals[atype] += 1
+                    except Exception:
+                        pass
+
+            # Query fact_activities for previous period
+            prev_result = supabase.table("fact_activities").select(
+                "activity_type, activity_id"
+            ).gte("activity_date", previous_start.isoformat()).lt("activity_date", previous_end.isoformat()).execute()
+
+            for row in (prev_result.data or []):
+                atype = (row.get("activity_type") or "").lower()
+                if atype in activity_types:
+                    previous_totals[atype] += 1
+
+        except Exception as e:
+            logger.warning(f"fact_activities query failed: {e}")
+            # Return empty trend data if table doesn't exist
+
+        # Build total activities data
+        total_current_data = {}
+        total_current = 0.0
+        total_previous = 0.0
+
+        for bucket in all_buckets:
+            bucket_total = sum(current_data[atype].get(bucket, 0) for atype in activity_types)
+            total_current_data[bucket] = bucket_total
+
+        total_current = sum(current_totals.values())
+        total_previous = sum(previous_totals.values())
+
+        # Build TrendMetric for each activity type
+        calls_trend = build_trend_metric(
+            "calls", current_data.get("call", {}), all_buckets,
+            current_totals.get("call", 0), previous_totals.get("call", 0)
+        )
+        emails_trend = build_trend_metric(
+            "emails", current_data.get("email", {}), all_buckets,
+            current_totals.get("email", 0), previous_totals.get("email", 0)
+        )
+        meetings_trend = build_trend_metric(
+            "meetings", current_data.get("meeting", {}), all_buckets,
+            current_totals.get("meeting", 0), previous_totals.get("meeting", 0)
+        )
+        total_trend = build_trend_metric(
+            "total_activities", total_current_data, all_buckets,
+            total_current, total_previous
+        )
+
+        return ActivityTrendsResponse(
+            calls=calls_trend,
+            emails=emails_trend,
+            meetings=meetings_trend,
+            total_activities=total_trend,
+            period=period,
+            granularity=granularity,
+            generated_at=now
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching activity trends: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch activity trends")
+
+
+@router.get("/period-comparison", response_model=PeriodComparisonResponse)
+async def get_period_comparison(
+    period_type: str = Query("week", description="Comparison type: week, month, quarter"),
+):
+    """
+    Compare current period metrics against previous period.
+
+    Calculates percentage changes for key metrics:
+    - total_activities, leads_created, opportunities_created
+    - meetings_booked, deals_won, revenue
+    """
+    try:
+        supabase = get_supabase()
+
+        # Get date ranges for current and previous periods
+        (current_start, current_end), (previous_start, previous_end) = get_period_type_ranges(period_type)
+
+        # Initialize metrics
+        current_metrics = {
+            "total_activities": 0,
+            "leads_created": 0,
+            "opportunities_created": 0,
+            "meetings_booked": 0,
+            "deals_won": 0,
+            "revenue": 0.0
+        }
+        previous_metrics = {
+            "total_activities": 0,
+            "leads_created": 0,
+            "opportunities_created": 0,
+            "meetings_booked": 0,
+            "deals_won": 0,
+            "revenue": 0.0
+        }
+
+        # Query activities
+        try:
+            # Current period activities
+            current_activities = supabase.table("fact_activities").select(
+                "activity_type"
+            ).gte("activity_date", current_start.isoformat()).lte("activity_date", current_end.isoformat()).execute()
+
+            for row in (current_activities.data or []):
+                current_metrics["total_activities"] += 1
+                if (row.get("activity_type") or "").lower() == "meeting":
+                    current_metrics["meetings_booked"] += 1
+
+            # Previous period activities
+            prev_activities = supabase.table("fact_activities").select(
+                "activity_type"
+            ).gte("activity_date", previous_start.isoformat()).lt("activity_date", previous_end.isoformat()).execute()
+
+            for row in (prev_activities.data or []):
+                previous_metrics["total_activities"] += 1
+                if (row.get("activity_type") or "").lower() == "meeting":
+                    previous_metrics["meetings_booked"] += 1
+
+        except Exception as e:
+            logger.debug(f"fact_activities query failed: {e}")
+
+        # Query leads (dim_companies)
+        try:
+            # Current period leads
+            current_leads = supabase.table("dim_companies").select(
+                "company_id"
+            ).gte("created_at", current_start.isoformat()).lte("created_at", current_end.isoformat()).execute()
+            current_metrics["leads_created"] = len(current_leads.data or [])
+
+            # Previous period leads
+            prev_leads = supabase.table("dim_companies").select(
+                "company_id"
+            ).gte("created_at", previous_start.isoformat()).lt("created_at", previous_end.isoformat()).execute()
+            previous_metrics["leads_created"] = len(prev_leads.data or [])
+
+        except Exception as e:
+            logger.debug(f"dim_companies query failed: {e}")
+
+        # Query opportunities
+        try:
+            # Current period opportunities created
+            current_opps = supabase.table("crm_opportunities").select(
+                "id, stage, amount"
+            ).gte("created_at", current_start.isoformat()).lte("created_at", current_end.isoformat()).execute()
+
+            for row in (current_opps.data or []):
+                current_metrics["opportunities_created"] += 1
+                if row.get("stage") == "won":
+                    current_metrics["deals_won"] += 1
+                    current_metrics["revenue"] += float(row.get("amount") or 0)
+
+            # Previous period opportunities
+            prev_opps = supabase.table("crm_opportunities").select(
+                "id, stage, amount"
+            ).gte("created_at", previous_start.isoformat()).lt("created_at", previous_end.isoformat()).execute()
+
+            for row in (prev_opps.data or []):
+                previous_metrics["opportunities_created"] += 1
+                if row.get("stage") == "won":
+                    previous_metrics["deals_won"] += 1
+                    previous_metrics["revenue"] += float(row.get("amount") or 0)
+
+        except Exception as e:
+            logger.debug(f"crm_opportunities query failed: {e}")
+
+            # Fallback to fact_opportunities
+            try:
+                current_opps = supabase.table("fact_opportunities").select(
+                    "opportunity_id, stage, value_usd"
+                ).gte("created_at", current_start.isoformat()).lte("created_at", current_end.isoformat()).execute()
+
+                for row in (current_opps.data or []):
+                    current_metrics["opportunities_created"] += 1
+                    if row.get("stage") == "won":
+                        current_metrics["deals_won"] += 1
+                        current_metrics["revenue"] += float(row.get("value_usd") or 0)
+
+                prev_opps = supabase.table("fact_opportunities").select(
+                    "opportunity_id, stage, value_usd"
+                ).gte("created_at", previous_start.isoformat()).lt("created_at", previous_end.isoformat()).execute()
+
+                for row in (prev_opps.data or []):
+                    previous_metrics["opportunities_created"] += 1
+                    if row.get("stage") == "won":
+                        previous_metrics["deals_won"] += 1
+                        previous_metrics["revenue"] += float(row.get("value_usd") or 0)
+
+            except Exception as e2:
+                logger.debug(f"fact_opportunities query also failed: {e2}")
+
+        # Calculate percentage changes
+        changes = {}
+        for key in current_metrics:
+            changes[key] = calculate_change_percent(
+                float(current_metrics[key]),
+                float(previous_metrics[key])
+            )
+
+        return PeriodComparisonResponse(
+            current_period=current_metrics,
+            previous_period=previous_metrics,
+            changes=changes,
+            period_type=period_type
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching period comparison: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch period comparison")
