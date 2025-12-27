@@ -10,6 +10,7 @@ This module aggregates routers from:
 - agents.py - Agent health and status
 - celery_health.py - Celery observability
 - mission_control.py - Mission control stats
+- analytics.py - Funnel metrics and conversion rate analytics
 
 Author: Claude + Tim
 Date: Dec 18, 2025
@@ -24,6 +25,7 @@ from .queues import router as queues_router
 from .agents import router as agents_router
 from .celery_health import router as celery_health_router
 from .mission_control import router as mission_control_router
+from .analytics import router as analytics_router
 
 # Create main dashboard router
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -35,5 +37,6 @@ router.include_router(queues_router)
 router.include_router(agents_router)
 router.include_router(celery_health_router)
 router.include_router(mission_control_router)
+router.include_router(analytics_router)
 
 __all__ = ["router"]

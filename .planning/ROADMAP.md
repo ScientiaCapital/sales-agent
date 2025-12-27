@@ -36,13 +36,12 @@ Plans:
 ### Phase 3: Analytics Dashboard
 **Goal**: Real-time pipeline visibility and conversion metrics
 **Depends on**: Phase 2
-**Plans**: TBD after detailed planning
+**Plans**: 3 plans
 
-Key work:
-- Dashboard API endpoints
-- Funnel metrics: lead→opportunity→close rates
-- Pipeline health: deals by stage, revenue forecast
-- Trend analysis over time
+Plans:
+- [x] 03-01: Funnel Metrics (funnel-metrics, conversion-rates endpoints)
+- [ ] 03-02: Pipeline Health (pipeline-health, revenue-forecast endpoints)
+- [ ] 03-03: Trend Analysis (activity-trends, period-comparison endpoints)
 
 ### Phase 4: Workflow Automation
 **Goal**: Automated triggers for stage changes, alerts, and follow-up actions
@@ -61,5 +60,5 @@ Key work:
 |-------|----------------|--------|-----------|
 | 1. Pipeline Models | 3/3 | Complete | 2025-12-26 |
 | 2. Activity Sync | 3/3 | Complete | 2025-12-26 |
-| 3. Analytics Dashboard | 0/TBD | Not started | - |
+| 3. Analytics Dashboard | 1/3 | In progress | - |
 | 4. Workflow Automation | 0/TBD | Not started | - |
