@@ -152,7 +152,8 @@ def evaluate_workflow_rules(
 
         logger.info(
             f"[{task_name}] Completed: {result['rules_matched']}/{result['rules_evaluated']} "
-            f"rules matched, {result['actions_queued']} actions queued in {duration_ms}ms"
+            f"rules matched, {result['actions_executed']} actions executed, "
+            f"{result.get('actions_failed', 0)} failed in {duration_ms}ms"
         )
 
         return result
@@ -170,43 +171,79 @@ async def _evaluate_workflow_rules_async(
     context: Dict[str, Any]
 ) -> Dict[str, Any]:
     """
-    Async implementation of workflow rule evaluation.
+    Async implementation of workflow rule evaluation and action execution.
+
+    This function:
+    1. Evaluates all active rules for the trigger type
+    2. Executes actions for matched rules using ActionExecutor
+    3. Records execution results
 
     Args:
         trigger_type: The type of trigger
         context: Event context for rule evaluation
 
     Returns:
-        Evaluation results dict
+        Evaluation results dict with execution outcomes
     """
     from app.models.database import SessionLocal
     from app.services.workflow.rule_engine import WorkflowRuleEngine
+    from app.services.workflow.action_executor import ActionExecutor
 
     db = SessionLocal()
     try:
         engine = WorkflowRuleEngine(db)
 
+        # Initialize action executor
+        executor = ActionExecutor(
+            close_api_key=os.getenv("CLOSE_API_KEY"),
+            slack_webhook_url=os.getenv("SLACK_BDR_WEBHOOK")
+        )
+
         # Evaluate rules
         actions = await engine.evaluate_event(trigger_type, context)
 
-        # Queue action execution for each matched rule
-        actions_queued = 0
+        # Execute actions for each matched rule
+        actions_executed = 0
+        execution_results = []
+
         for action in actions:
             try:
-                # Queue the action for execution
-                # Note: execute_workflow_action task will be created in Plan 04-03
-                # For now, we log the action and mark it as queued
+                # Execute the action
+                result = await executor.execute(action)
+                execution_results.append({
+                    "rule_id": action["rule_id"],
+                    "rule_name": action["rule_name"],
+                    "action_type": action["action_type"],
+                    "result": result,
+                    "success": True
+                })
+
+                # Record the successful execution
+                await engine.record_execution(action["rule_id"], success=True)
+                actions_executed += 1
+
                 logger.info(
-                    f"Action queued: {action['action_type']} from rule '{action['rule_name']}' "
-                    f"(rule_id={action['rule_id']})"
+                    f"Action executed: {action['action_type']} from rule '{action['rule_name']}' "
+                    f"(rule_id={action['rule_id']}) -> {result.get('status', 'completed')}"
                 )
 
-                # Record the execution attempt
-                await engine.record_execution(action["rule_id"])
-                actions_queued += 1
-
             except Exception as e:
-                logger.error(f"Failed to queue action for rule {action['rule_id']}: {e}")
+                error_msg = str(e)
+                execution_results.append({
+                    "rule_id": action["rule_id"],
+                    "rule_name": action["rule_name"],
+                    "action_type": action["action_type"],
+                    "error": error_msg,
+                    "success": False
+                })
+
+                # Record the failed execution
+                await engine.record_execution(action["rule_id"], success=False)
+
+                logger.error(
+                    f"Action execution failed for rule {action['rule_id']} "
+                    f"({action['rule_name']}): {e}"
+                )
 
         # Count total rules evaluated
         rules_evaluated = len(await engine.get_active_rules(trigger_type))
@@ -216,11 +253,9 @@ async def _evaluate_workflow_rules_async(
             "trigger_type": trigger_type,
             "rules_evaluated": rules_evaluated,
             "rules_matched": len(actions),
-            "actions_queued": actions_queued,
-            "matched_rules": [
-                {"rule_id": a["rule_id"], "rule_name": a["rule_name"], "action_type": a["action_type"]}
-                for a in actions
-            ],
+            "actions_executed": actions_executed,
+            "actions_failed": len(actions) - actions_executed,
+            "execution_results": execution_results,
         }
 
     finally:

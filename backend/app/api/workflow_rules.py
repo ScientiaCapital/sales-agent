@@ -559,6 +559,97 @@ async def test_workflow_rule(
         )
 
 
+# ========== Default Rules Management ==========
+
+@router.post("/seed-defaults")
+async def seed_default_workflow_rules(
+    db: Session = Depends(get_db)
+):
+    """
+    Seed default workflow rules into the database.
+
+    This endpoint creates the pre-configured workflow rules that ship
+    with the system. It only creates rules that don't already exist,
+    so it's safe to call multiple times.
+
+    Default rules include:
+    - Won Deal Celebration (send_slack)
+    - Lost Deal Review Task (create_task)
+    - Platinum Lead Meeting Alert (send_alert)
+    - Stale Proposal Alert (send_alert)
+    - New Lead Outreach Task (create_task)
+    - High-Value Stage Change (send_alert)
+    - ICP Tier Upgrade Notification (send_slack)
+
+    Returns:
+        Dict with seeding results:
+        - created: Number of rules created
+        - skipped: Number of rules that already existed
+        - rules_created: List of created rule names
+
+    Example:
+        POST /api/v1/workflow-rules/seed-defaults
+    """
+    try:
+        from app.services.workflow.default_rules import seed_default_rules
+
+        result = await seed_default_rules(db)
+
+        logger.info(
+            f"Seeded default rules: {result['created']} created, "
+            f"{result['skipped']} already existed"
+        )
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Failed to seed default workflow rules: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to seed default workflow rules: {str(e)}"
+        )
+
+
+@router.get("/defaults/info")
+async def get_default_rules_info():
+    """
+    Get information about available default workflow rules.
+
+    Returns the list of default rules that can be seeded,
+    without actually creating them.
+
+    Returns:
+        Dict with default rules information
+
+    Example:
+        GET /api/v1/workflow-rules/defaults/info
+    """
+    try:
+        from app.services.workflow.default_rules import DEFAULT_RULES, get_default_rule_names
+
+        return {
+            "total_default_rules": len(DEFAULT_RULES),
+            "rule_names": get_default_rule_names(),
+            "rules": [
+                {
+                    "name": rule["name"],
+                    "description": rule.get("description"),
+                    "trigger_type": rule["trigger_type"],
+                    "action_type": rule["action_type"],
+                    "priority": rule.get("priority", 100)
+                }
+                for rule in DEFAULT_RULES
+            ]
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get default rules info: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get default rules info: {str(e)}"
+        )
+
+
 # ========== Exports ==========
 
 __all__ = [
