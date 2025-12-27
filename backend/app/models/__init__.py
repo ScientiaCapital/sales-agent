@@ -34,7 +34,9 @@ from .crm import (
     CRMCredential,
     CRMContact,
     CRMSyncLog,
-    CRMWebhook
+    CRMWebhook,
+    CloseOpportunity,
+    ClosePipeline
 )
 from .campaign import (
     Campaign,
@@ -113,6 +115,8 @@ __all__ = [
     "CRMContact",
     "CRMSyncLog",
     "CRMWebhook",
+    "CloseOpportunity",
+    "ClosePipeline",
     "Campaign",
     "CampaignMessage",
     "MessageVariantAnalytics",

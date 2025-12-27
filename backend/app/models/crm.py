@@ -149,38 +149,142 @@ class CRMSyncLog(Base):
 class CRMWebhook(Base):
     """
     Webhook event tracking for CRM platforms.
-    
+
     Stores webhook events for deduplication and audit trail.
     Prevents duplicate processing of the same event.
     """
-    
+
     __tablename__ = "crm_webhooks"
-    
+
     id = Column(Integer, primary_key=True, index=True)
-    
+
     platform = Column(String(50), nullable=False, index=True)
     event_type = Column(String(100), nullable=False, index=True)  # "contact.created", "contact.updated", etc.
     event_id = Column(String(255), unique=True, nullable=False, index=True)  # Platform-specific event ID
-    
+
     # Contact reference
     contact_id = Column(String(255), nullable=True, index=True)  # External contact ID
-    
+
     # Webhook payload
     payload = Column(JSON, nullable=False)
     signature = Column(Text, nullable=True)  # Webhook signature for verification
-    
+
     # Processing status
     processed = Column(Boolean, default=False, index=True)
     processed_at = Column(DateTime, nullable=True)
     processing_error = Column(Text, nullable=True)
-    
+
     # Timestamps
     received_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
     event_timestamp = Column(DateTime, nullable=False, index=True)  # Timestamp from webhook payload
-    
+
     # Indexes for common queries and deduplication
     __table_args__ = (
         Index('idx_webhook_event_id', 'event_id'),  # Unique constraint for deduplication
         Index('idx_webhook_platform_type', 'platform', 'event_type'),
         Index('idx_webhook_processed', 'processed', 'received_at'),
+    )
+
+
+class CloseOpportunity(Base):
+    """
+    Close CRM Opportunity model for tracking deals through sales stages.
+
+    Links to Close leads and optionally to local CRMContact records.
+    Supports pipeline visibility and revenue forecasting.
+    """
+
+    __tablename__ = "crm_opportunities"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Close-specific identifiers
+    external_id = Column(String(255), unique=True, nullable=False, index=True)  # Close opportunity ID
+    platform = Column(String(50), default="close", nullable=False)
+    close_lead_id = Column(String(255), nullable=False, index=True)  # Reference to Close lead
+
+    # Local contact reference (optional)
+    contact_id = Column(Integer, ForeignKey("crm_contacts.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Opportunity details
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Financial data
+    amount = Column(Float, nullable=True)  # Deal value
+    currency = Column(String(3), default="USD", nullable=False)
+
+    # Stage tracking
+    stage = Column(String(50), nullable=False)  # e.g., "prospecting", "proposal", "won", "lost"
+    probability = Column(Float, nullable=True)  # 0-100 win chance
+
+    # Dates
+    expected_close_date = Column(DateTime, nullable=True)
+    actual_close_date = Column(DateTime, nullable=True)
+
+    # Ownership
+    owner_id = Column(String(255), nullable=True)  # Close user ID
+
+    # Sync metadata
+    last_synced_at = Column(DateTime, nullable=True)
+    sync_status = Column(String(50), default="active", nullable=False)  # active, archived, error
+
+    # Raw API response for debugging/auditing
+    raw_data = Column(JSON, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    contact = relationship("CRMContact", backref="opportunities")
+
+    # Indexes for common queries
+    __table_args__ = (
+        Index('idx_opp_external_id', 'external_id', unique=True),
+        Index('idx_opp_close_lead_id', 'close_lead_id'),
+        Index('idx_opp_stage_expected_close', 'stage', 'expected_close_date'),
+        Index('idx_opp_sync_status', 'sync_status'),
+    )
+
+
+class ClosePipeline(Base):
+    """
+    Close CRM Pipeline model for tracking sales pipeline configurations.
+
+    Stores pipeline stages and their default probabilities.
+    Used for opportunity stage validation and forecasting.
+    """
+
+    __tablename__ = "crm_pipelines"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # Close-specific identifiers
+    external_id = Column(String(255), unique=True, nullable=False, index=True)  # Close pipeline ID
+    platform = Column(String(50), default="close", nullable=False)
+
+    # Pipeline details
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Stages configuration stored as JSON array
+    # Example: [{"name": "Prospecting", "order": 1, "default_probability": 10}, ...]
+    stages_json = Column(JSON, nullable=False)
+
+    # Status
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    # Metadata
+    created_by = Column(String(255), nullable=True)  # Close user ID who created it
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Indexes for common queries
+    __table_args__ = (
+        Index('idx_pipeline_external_id', 'external_id', unique=True),
+        Index('idx_pipeline_active', 'is_active'),
+        Index('idx_pipeline_name', 'name'),
     )
