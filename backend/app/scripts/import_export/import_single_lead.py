@@ -18,7 +18,7 @@ load_dotenv(env_path)
 
 sys.path.insert(0, '/Users/tmkipper/Desktop/tk_projects/sales-agent/backend')
 
-from app.services.pipeline_orchestrator import PipelineOrchestrator
+from app.services.pipeline import PipelineOrchestrator
 from app.schemas.pipeline import PipelineTestRequest, PipelineTestOptions
 
 
