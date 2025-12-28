@@ -98,18 +98,18 @@ async def handle_apollo_phone_reveal(
         body_str = body.decode('utf-8')
 
         # Log raw payload for debugging (truncated if large)
-        print(f"Apollo phone reveal webhook received: {len(body_str)} bytes")
-        print(f"Apollo raw payload: {body_str[:2000]}")
+        logger.info(f"Apollo phone reveal webhook received: {len(body_str)} bytes")
+        logger.debug(f"Apollo raw payload: {body_str[:2000]}")
 
         # Parse the payload
         try:
             payload_dict = json.loads(body_str)
             payload = ApolloPhoneRevealPayload(**payload_dict)
         except json.JSONDecodeError as e:
-            print(f"Failed to parse Apollo payload as JSON: {e}")
+            logger.warning(f"Failed to parse Apollo payload as JSON: {e}")
             raise HTTPException(status_code=400, detail="Invalid JSON payload")
         except Exception as e:
-            print(f"Failed to validate Apollo payload: {e}")
+            logger.warning(f"Failed to validate Apollo payload: {e}")
             raise HTTPException(status_code=400, detail=f"Invalid payload structure: {e}")
 
         # Extract phone numbers from people array
@@ -120,7 +120,7 @@ async def handle_apollo_phone_reveal(
             all_phone_numbers.extend(person_result.phone_numbers)
 
         if not all_phone_numbers:
-            print(f"Apollo webhook: no phone numbers found (status={payload.status}, people={len(payload.people)})")
+            logger.info(f"Apollo webhook: no phone numbers found (status={payload.status}, people={len(payload.people)})")
             return JSONResponse({
                 "status": "received",
                 "message": "No phone numbers in payload",
@@ -138,7 +138,7 @@ async def handle_apollo_phone_reveal(
         if not best_phone and all_phone_numbers:
             best_phone = all_phone_numbers[0].sanitized_number
 
-        print(f"Apollo reveal: person_ids={apollo_person_ids}, "
+        logger.info(f"Apollo reveal: person_ids={apollo_person_ids}, "
               f"phones={len(all_phone_numbers)}, best_phone={best_phone}, "
               f"credits_consumed={payload.credits_consumed}")
 
@@ -184,7 +184,7 @@ async def store_apollo_phone_data(
         supabase_key = os.getenv("SUPABASE_SERVICE_KEY")
 
         if not supabase_url or not supabase_key:
-            print("ERROR: Supabase credentials not configured")
+            logger.error("Supabase credentials not configured")
             return
 
         supabase = create_client(supabase_url, supabase_key)
@@ -201,8 +201,8 @@ async def store_apollo_phone_data(
             for p in phone_numbers
         ]
 
-        print(f"Storing Apollo phone data: person_ids={apollo_person_ids}, phones={len(phone_numbers)}")
-        print(f"Phone numbers: {[p['sanitized'] for p in all_phones]}")
+        logger.info(f"Storing Apollo phone data: person_ids={apollo_person_ids}, phones={len(phone_numbers)}")
+        logger.debug(f"Phone numbers: {[p['sanitized'] for p in all_phones]}")
 
         # Try to find contact by apollo_person_id in our recent enrichments
         # For now, we'll store in fact_enrichments with the apollo data
@@ -222,15 +222,15 @@ async def store_apollo_phone_data(
                     }),
                     "enriched_at": datetime.now(timezone.utc).isoformat()
                 }).execute()
-                print(f"Stored phone data for apollo_person_id={person_id}")
+                logger.info(f"Stored phone data for apollo_person_id={person_id}")
             except Exception as e:
-                print(f"Failed to store enrichment for {person_id}: {e}")
+                logger.error(f"Failed to store enrichment for {person_id}: {e}")
 
         # Summary
-        print(f"SUCCESS: Stored {len(phone_numbers)} phone numbers from Apollo (credits: {credits_consumed})")
+        logger.info(f"Stored {len(phone_numbers)} phone numbers from Apollo (credits: {credits_consumed})")
 
     except Exception as e:
-        print(f"ERROR: Failed to store Apollo phone data: {e}")
+        logger.error(f"Failed to store Apollo phone data: {e}")
 
 
 # ========== Health Check ==========

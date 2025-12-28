@@ -153,8 +153,8 @@ async def fetch_with_browserbase(url: str) -> str:
                         f'https://api.browserbase.com/v1/sessions/{session_id}/stop',
                         headers={'x-bb-api-key': BROWSERBASE_API_KEY}
                     )
-            except:
-                pass
+            except (httpx.HTTPError, Exception):
+                pass  # Session cleanup is best-effort
 
 
 async def scrape_amicus_om_page(url: str) -> List[Dict[str, Any]]:
@@ -169,7 +169,7 @@ async def scrape_amicus_om_page(url: str) -> List[Dict[str, Any]]:
 
     try:
         content = await fetch_page_content(url)
-    except:
+    except (httpx.HTTPError, httpx.TimeoutException):
         print(f"  HTTP failed, trying Browserbase...")
         content = await fetch_with_browserbase(url)
 
@@ -230,7 +230,7 @@ async def scrape_amicus_om_page(url: str) -> List[Dict[str, Any]]:
                 'domain': domain,
             })
 
-        except:
+        except (ValueError, AttributeError):
             continue
 
     return members
@@ -295,7 +295,7 @@ async def scrape_amicus_solar_page(url: str) -> List[Dict[str, Any]]:
                 'domain': domain,
             })
 
-        except:
+        except (ValueError, AttributeError):
             continue
 
     return members

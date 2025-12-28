@@ -170,7 +170,7 @@ async def fetch_with_browserbase(url: str) -> str:
         try:
             await page.wait_for_selector('table', timeout=15000)
             await page.wait_for_timeout(3000)  # Extra time for table to populate
-        except:
+        except (asyncio.TimeoutError, Exception):
             print(f"  Table not found, waiting for any content...")
             await page.wait_for_timeout(5000)
 
@@ -195,8 +195,8 @@ async def fetch_with_browserbase(url: str) -> str:
                         f'https://api.browserbase.com/v1/sessions/{session_id}/stop',
                         headers={'x-bb-api-key': BROWSERBASE_API_KEY}
                     )
-            except:
-                pass
+            except (httpx.HTTPError, Exception):
+                pass  # Session cleanup is best-effort
 
 
 async def scrape_list_page(url: str, use_browserbase: bool = True) -> List[Dict[str, Any]]:
@@ -363,7 +363,7 @@ async def scrape_company_detail(company_url: str) -> Dict[str, Any]:
                     result['domain'] = domain
                     break
 
-                except:
+                except (ValueError, AttributeError):
                     continue
 
         # Get description

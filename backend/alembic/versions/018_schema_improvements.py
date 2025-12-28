@@ -1,7 +1,7 @@
 """Add schema improvements for Category 4 issues
 
-Revision ID: 015_schema_improvements
-Revises: 014_social_intelligence
+Revision ID: 018_schema_improvements
+Revises: 017_cold_reach_tables
 Create Date: 2025-12-01
 
 This migration addresses Category 4 issues from the Supabase audit:
@@ -10,14 +10,17 @@ This migration addresses Category 4 issues from the Supabase audit:
 - Adds missing timestamp update triggers
 - Standardizes data types for consistency
 - Improves data integrity across tables
+
+NOTE: Renamed from 015_schema_improvements to fix migration naming conflict.
+Original migration had duplicate 015 prefix with 015_enable_rls_security.py.
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '015_schema_improvements'
-down_revision = '014_social_intelligence'
+revision = '018_schema_improvements'
+down_revision = '017_cold_reach_tables'
 branch_labels = None
 depends_on = None
 

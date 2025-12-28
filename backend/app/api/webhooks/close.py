@@ -36,7 +36,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 
 from fastapi import APIRouter, Request, BackgroundTasks, Header, HTTPException
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,9 @@ class CloseWebhookEvent(BaseModel):
     webhook_id: Optional[str] = Field(None, description="Unique webhook delivery ID")
     sent_at: Optional[str] = Field(None, description="ISO timestamp when webhook was sent")
 
-    @validator("event")
-    def validate_event(cls, v):
+    @field_validator("event")
+    @classmethod
+    def validate_event(cls, v: str) -> str:
         """Validate event type is in supported format."""
         # Event format: {object_type}.{action}
         # Examples: lead.created, activity.email.received, opportunity.won
@@ -106,13 +107,14 @@ def verify_close_signature(
     secret = webhook_secret or os.getenv("CLOSE_WEBHOOK_SECRET")
 
     if not secret:
-        env = os.getenv("ENVIRONMENT", "development")
-        if env == "production":
-            logger.error("CLOSE_WEBHOOK_SECRET not configured in production - REJECTING")
-            return False
-        else:
-            logger.warning("CLOSE_WEBHOOK_SECRET not configured - SKIPPING verification (dev only)")
-            return True
+        # SECURITY FIX: Never skip signature verification, even in development
+        # Skipping verification is a security vulnerability that allows forged webhooks
+        # If testing locally, set CLOSE_WEBHOOK_SECRET to a test value
+        logger.error(
+            "CLOSE_WEBHOOK_SECRET not configured - REJECTING webhook. "
+            "Set CLOSE_WEBHOOK_SECRET environment variable to enable webhook processing."
+        )
+        return False
 
     # Compute expected signature
     expected_signature = hmac.new(
