@@ -21,7 +21,8 @@ class PipelineTestRequest(BaseModel):
     options: PipelineTestOptions = Field(default_factory=PipelineTestOptions)
 
     @field_validator('lead')
-    def validate_lead_has_name(cls, v):
+    @classmethod
+    def validate_lead_has_name(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         """Ensure lead has at minimum a name"""
         if not v.get('name') and not v.get('company'):
             raise ValueError("Lead must have 'name' or 'company' field")

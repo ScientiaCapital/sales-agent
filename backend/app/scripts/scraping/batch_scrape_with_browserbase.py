@@ -242,8 +242,9 @@ async def save_contacts(company_id: str, contacts: list):
             if not existing.data:
                 supabase.table("dim_contacts").insert(contact_data).execute()
                 saved += 1
-        except:
-            pass
+        except Exception as e:
+            # Log but continue - don't fail batch for single contact error
+            print(f"  Warning: Failed to save contact: {e}")
 
     return saved
 

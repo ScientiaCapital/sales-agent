@@ -15,7 +15,7 @@ from enum import Enum
 from typing import Optional, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 import hashlib
 
 
@@ -89,32 +89,29 @@ class TriggerEvent(BaseModel):
             date: lambda v: v.isoformat(),
         }
 
-    @validator('content_hash', always=True, pre=True)
-    def generate_content_hash(cls, v, values):
+    @field_validator('signal_strength')
+    @classmethod
+    def validate_signal_strength(cls, v: int) -> int:
+        """Ensure signal strength is between 1-10."""
+        if not 1 <= v <= 10:
+            raise ValueError('signal_strength must be between 1 and 10')
+        return v
+
+    @model_validator(mode='after')
+    def generate_content_hash(self):
         """
         Generate SHA256 hash for duplicate detection.
 
         Hash = SHA256(company_id + title + event_type)
         """
-        if v is not None:
-            return v
+        if self.content_hash is not None:
+            return self
 
-        company_id = values.get('company_id')
-        title = values.get('title', '')
-        event_type = values.get('event_type', '')
+        if self.company_id:
+            content = f"{self.company_id}{self.title or ''}{self.event_type or ''}".encode('utf-8')
+            self.content_hash = hashlib.sha256(content).hexdigest()
 
-        if company_id:
-            content = f"{company_id}{title}{event_type}".encode('utf-8')
-            return hashlib.sha256(content).hexdigest()
-
-        return None
-
-    @validator('signal_strength')
-    def validate_signal_strength(cls, v):
-        """Ensure signal strength is between 1-10."""
-        if not 1 <= v <= 10:
-            raise ValueError('signal_strength must be between 1 and 10')
-        return v
+        return self
 
     def to_slack_message(self) -> str:
         """

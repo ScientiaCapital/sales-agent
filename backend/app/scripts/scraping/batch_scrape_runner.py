@@ -124,8 +124,8 @@ async def close_session(session_id: str):
                 f"https://api.browserbase.com/v1/sessions/{session_id}/stop",
                 headers={"x-bb-api-key": BROWSERBASE_API_KEY}
             )
-    except:
-        pass
+    except (httpx.HTTPError, httpx.TimeoutException):
+        pass  # Session cleanup is best-effort
 
 
 def extract_phones(content: str) -> List[str]:
@@ -272,8 +272,8 @@ async def scrape_company(company_name: str, domain: str, normalized_name: str = 
                         if c['name'].lower() not in existing:
                             result.atl_contacts.append(c)
                 await asyncio.sleep(0.5)
-            except:
-                pass
+            except (asyncio.TimeoutError, Exception) as e:
+                pass  # Team page scraping is optional, continue
 
         # LinkedIn search
         try:
@@ -293,8 +293,8 @@ async def scrape_company(company_name: str, domain: str, normalized_name: str = 
                     if match:
                         result.linkedin_url = match.group(1)
                         break
-        except:
-            pass
+        except (asyncio.TimeoutError, Exception):
+            pass  # LinkedIn search is optional, continue
 
         await browser.close()
         await playwright.stop()
