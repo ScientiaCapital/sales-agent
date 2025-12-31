@@ -5,6 +5,9 @@ import httpx
 from typing import Optional, Dict, List
 from urllib.parse import urlparse
 
+from app.services.circuit_breaker_registry import get_circuit_breaker
+from app.services.circuit_breaker import CircuitBreakerError
+
 logger = logging.getLogger(__name__)
 
 
@@ -49,6 +52,7 @@ class HunterService:
         self.api_key = os.getenv("HUNTER_API_KEY")
         self.base_url = "https://api.hunter.io/v2"
         self.timeout = 10  # seconds
+        self._circuit_breaker = get_circuit_breaker("hunter")
 
         if not self.api_key:
             logger.warning("HUNTER_API_KEY not set - Hunter.io email discovery disabled")
@@ -90,32 +94,38 @@ class HunterService:
             if last_name:
                 params["last_name"] = last_name
 
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{self.base_url}/email-finder",
-                    params=params,
-                    timeout=self.timeout
-                )
+            async def _make_request():
+                async with httpx.AsyncClient() as client:
+                    return await client.get(
+                        f"{self.base_url}/email-finder",
+                        params=params,
+                        timeout=self.timeout
+                    )
 
-                if response.status_code == 200:
-                    data = response.json().get("data", {})
-                    score = data.get("score", 0)
+            response = await self._circuit_breaker.call(_make_request)
 
-                    # Filter out low-confidence results
-                    if score <= 70:
-                        logger.info(f"Hunter.io returned low confidence email (score: {score})")
-                        return None
+            if response.status_code == 200:
+                data = response.json().get("data", {})
+                score = data.get("score", 0)
 
-                    return {
-                        "email": data.get("email"),
-                        "score": score,
-                        "sources": data.get("sources", []),
-                        "cost": 0.01  # Hunter.io cost per request
-                    }
-                else:
-                    logger.warning(f"Hunter.io API returned status {response.status_code}")
+                # Filter out low-confidence results
+                if score <= 70:
+                    logger.info(f"Hunter.io returned low confidence email (score: {score})")
                     return None
 
+                return {
+                    "email": data.get("email"),
+                    "score": score,
+                    "sources": data.get("sources", []),
+                    "cost": 0.01  # Hunter.io cost per request
+                }
+            else:
+                logger.warning(f"Hunter.io API returned status {response.status_code}")
+                return None
+
+        except CircuitBreakerError as e:
+            logger.warning(f"Hunter.io circuit breaker open for domain {domain}: {e}")
+            return None
         except httpx.TimeoutException:
             logger.warning(f"Hunter.io API timeout for domain {domain}")
             return None

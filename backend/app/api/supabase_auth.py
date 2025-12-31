@@ -10,13 +10,14 @@ Provides authentication endpoints for:
 """
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Response, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, Response, BackgroundTasks, Request
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from gotrue.errors import AuthApiError
 
 from app.auth.supabase_auth import get_supabase_client, SupabaseAuthClient
 from app.auth.dependencies import get_current_user, require_admin
 from app.core.logging import setup_logging
+from app.core.rate_limit import limiter
 
 logger = setup_logging(__name__)
 
@@ -110,7 +111,9 @@ class MessageResponse(BaseModel):
 # API Endpoints
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")  # SECURITY: Prevent account creation abuse
 async def signup(
+    http_request: Request,  # Required for rate limiter
     request: SignupRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):
@@ -169,7 +172,9 @@ async def signup(
 
 
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit("10/minute")  # SECURITY: Prevent brute force attacks
 async def login(
+    http_request: Request,  # Required for rate limiter
     request: LoginRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):
@@ -223,7 +228,9 @@ async def login(
 
 
 @router.post("/magic-link", response_model=MessageResponse)
+@limiter.limit("3/minute")  # SECURITY: Prevent email spam abuse
 async def send_magic_link(
+    http_request: Request,  # Required for rate limiter
     request: MagicLinkRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):
@@ -264,7 +271,9 @@ async def send_magic_link(
 
 
 @router.post("/verify-otp", response_model=AuthResponse)
+@limiter.limit("10/minute")  # SECURITY: Prevent OTP brute force
 async def verify_otp(
+    http_request: Request,  # Required for rate limiter
     request: VerifyOTPRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):
@@ -350,7 +359,9 @@ async def logout(
 
 
 @router.post("/password-reset", response_model=MessageResponse)
+@limiter.limit("3/minute")  # SECURITY: Prevent email spam abuse
 async def send_password_reset(
+    http_request: Request,  # Required for rate limiter
     request: PasswordResetRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):
@@ -438,7 +449,9 @@ async def confirm_password_reset(
 
 
 @router.post("/refresh", response_model=AuthResponse)
+@limiter.limit("30/minute")  # SECURITY: Allow legitimate refresh, prevent abuse
 async def refresh_token(
+    http_request: Request,  # Required for rate limiter
     request: RefreshTokenRequest,
     supabase_client: SupabaseAuthClient = Depends(get_supabase_client)
 ):

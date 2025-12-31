@@ -32,7 +32,7 @@ import logging
 from typing import Optional, List
 
 from fastapi import APIRouter, Request, BackgroundTasks, Header
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 from app.services.outreach.reply_classifier import ReplyClassifier
 from app.services.outreach.reply_router import ReplyRouter
@@ -65,8 +65,9 @@ class CloseEmailWebhookData(BaseModel):
     date_created: str = Field(..., description="ISO timestamp")
     direction: str = Field(..., description="incoming or outgoing")
 
-    @validator("direction")
-    def validate_direction(cls, v):
+    @field_validator("direction")
+    @classmethod
+    def validate_direction(cls, v: str) -> str:
         """Validate direction is incoming or outgoing."""
         if v not in ["incoming", "outgoing"]:
             raise ValueError(f"Invalid direction: {v}")

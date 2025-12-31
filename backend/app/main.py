@@ -43,11 +43,11 @@ except (ImportError, ModuleNotFoundError) as e:
 # GTM Automation Infrastructure (15)
 from app.api import supabase_auth  # Supabase authentication
 try:
-    from app.api import langgraph_agents
+    from app.api.langgraph import router as langgraph_router
 except (ImportError, ModuleNotFoundError) as e:
     if 'langchain' not in str(e):
         raise
-    langgraph_agents = None
+    langgraph_router = None
 from app.api.webhooks import router as webhooks_close  # Close CRM webhooks (modular)
 from app.api import webhooks  # Slack/external webhooks for BDR approval
 from app.api import audit  # Lead audit trail for GTM agents
@@ -63,6 +63,15 @@ from app.api import slack_commands  # Slack slash commands (/enrich)
 from app.api import claude_chat  # Claude chat API for CEO/CTO interaction
 from app.api import voice_routes  # Twilio voice calling integration
 from app.api.routes import voice as voice_api_routes  # Voice API routes (Twilio webhooks, Slack callbacks)
+from app.api import call_insights  # Call intelligence (AssemblyAI analysis)
+from app.api import triggers  # Automation trigger rules
+from app.api import attribution  # Deal attribution dashboard
+from app.api import coaching_websocket  # Real-time call coaching for agents
+from app.api import accounts  # Account-based sales layer
+from app.api import dealer_intelligence  # Dealer network intelligence
+from app.api import intent  # Buyer intent scoring
+from app.api import war_room  # War Room command center REST API
+from app.api import war_room_websocket  # War Room real-time WebSocket
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -87,6 +96,42 @@ try:
     logger.info("LangSmith tracing configured via lang-core")
 except ImportError:
     logger.warning("lang-core not installed, LangSmith tracing not configured")
+
+
+# Request Size Limit Middleware (DoS Protection)
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to limit request body size and prevent DoS attacks.
+
+    Limits:
+    - Default: 10MB for most endpoints
+    - File uploads should use dedicated endpoints with higher limits
+    """
+
+    # 10MB default limit - adjust per endpoint if needed
+    MAX_BODY_SIZE = 10 * 1024 * 1024  # 10MB in bytes
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        # Check Content-Length header if present
+        content_length = request.headers.get("content-length")
+        if content_length:
+            try:
+                size = int(content_length)
+                if size > self.MAX_BODY_SIZE:
+                    logger.warning(
+                        f"Request body too large: {size} bytes from {request.client.host if request.client else 'unknown'}"
+                    )
+                    return JSONResponse(
+                        status_code=413,
+                        content={
+                            "error": "PAYLOAD_TOO_LARGE",
+                            "message": f"Request body exceeds maximum size of {self.MAX_BODY_SIZE // (1024*1024)}MB"
+                        }
+                    )
+            except ValueError:
+                pass  # Invalid Content-Length, let FastAPI handle it
+
+        return await call_next(request)
 
 
 # Security Headers Middleware
@@ -203,6 +248,9 @@ app.add_middleware(
 # Add Security Headers Middleware (after CORS)
 app.add_middleware(SecurityHeadersMiddleware)
 
+# Add Request Size Limit Middleware (DoS protection)
+app.add_middleware(RequestSizeLimitMiddleware)
+
 # Add Audit Logging Middleware
 from app.middleware.audit import AuditLoggingMiddleware
 app.add_middleware(AuditLoggingMiddleware)
@@ -285,7 +333,7 @@ app.include_router(sync_from_scraper.router, prefix=settings.API_V1_PREFIX)  # D
 
 # GTM Automation Infrastructure (15)
 app.include_router(supabase_auth.router, prefix=settings.API_V1_PREFIX)  # Supabase authentication
-app.include_router(langgraph_agents.router, prefix=settings.API_V1_PREFIX)  # LangGraph agent endpoints
+app.include_router(langgraph_router, prefix=settings.API_V1_PREFIX)  # LangGraph agent endpoints (modular)
 app.include_router(webhooks.router, prefix=settings.API_V1_PREFIX)  # Slack/external webhooks for BDR approval
 app.include_router(webhooks_close, prefix=settings.API_V1_PREFIX)  # Close CRM webhooks (email replies, etc.)
 app.include_router(audit.router, prefix=settings.API_V1_PREFIX)  # Lead audit trail for GTM agents
@@ -302,6 +350,15 @@ app.include_router(slack_commands.router, prefix=settings.API_V1_PREFIX)  # Slac
 app.include_router(claude_chat.router, prefix=settings.API_V1_PREFIX)  # Claude chat API for CEO/CTO interaction
 app.include_router(voice_routes.router, prefix=settings.API_V1_PREFIX)  # Twilio voice calling integration
 app.include_router(voice_api_routes.router, prefix=settings.API_V1_PREFIX)  # Voice API routes (Twilio webhooks, Slack callbacks)
+app.include_router(call_insights.router, prefix=settings.API_V1_PREFIX)  # Call intelligence (AssemblyAI analysis)
+app.include_router(triggers.router, prefix=settings.API_V1_PREFIX)  # Automation trigger rules
+app.include_router(attribution.router, prefix=settings.API_V1_PREFIX)  # Deal attribution dashboard
+app.include_router(coaching_websocket.router, prefix=settings.API_V1_PREFIX)  # Real-time call coaching WebSocket
+app.include_router(accounts.router)  # Account-based sales (v1 prefix in router)
+app.include_router(dealer_intelligence.router, prefix=settings.API_V1_PREFIX)  # Dealer network intelligence
+app.include_router(intent.router, prefix=settings.API_V1_PREFIX)  # Buyer intent scoring
+app.include_router(war_room.router, prefix=settings.API_V1_PREFIX)  # War Room REST API
+app.include_router(war_room_websocket.router, prefix=settings.API_V1_PREFIX)  # War Room WebSocket
 
 
 @app.get("/")
@@ -313,9 +370,27 @@ async def root():
         "docs": "/api/v1/docs",
     }
 
-# Prometheus metrics endpoint
+# Prometheus metrics endpoint - protected with API key
 @app.get("/metrics")
-async def metrics():
+async def metrics(request: Request):
+    """
+    Prometheus metrics endpoint.
+
+    SECURITY: Protected with API key to prevent information disclosure.
+    Set METRICS_API_KEY environment variable and pass as X-Metrics-Key header.
+    """
+    metrics_api_key = os.getenv("METRICS_API_KEY")
+
+    # If METRICS_API_KEY is set, require it for access
+    if metrics_api_key:
+        provided_key = request.headers.get("X-Metrics-Key")
+        if not provided_key or provided_key != metrics_api_key:
+            logger.warning(f"Unauthorized metrics access attempt from {request.client.host if request.client else 'unknown'}")
+            return JSONResponse(
+                status_code=401,
+                content={"error": "Unauthorized", "message": "Valid X-Metrics-Key header required"}
+            )
+
     return metrics_endpoint()
 
 # JSON metrics summary endpoint

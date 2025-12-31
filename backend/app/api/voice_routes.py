@@ -27,9 +27,11 @@ from datetime import datetime, timezone
 from typing import Optional
 from contextlib import contextmanager
 
-from fastapi import APIRouter, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Form, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import Response
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.tasks.call_analysis_tasks import analyze_call_recording
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +53,9 @@ class OutboundCallRequest(BaseModel):
     to: str = Field(..., description="E.164 formatted phone number (+15551234567)")
     lead_id: Optional[str] = Field(None, description="Optional lead ID for tracking")
 
-    @validator("to")
-    def validate_e164_format(cls, v):
+    @field_validator("to")
+    @classmethod
+    def validate_e164_format(cls, v: str) -> str:
         """Validate phone number is in E.164 format."""
         if not v.startswith("+"):
             raise ValueError("Phone number must start with + (E.164 format)")
@@ -477,6 +480,19 @@ async def handle_status_callback(
                     duration_seconds=int(CallDuration) if CallDuration.isdigit() else None
                 )
 
+        # Trigger call analysis when call completes
+        if CallStatus == "completed" and int(CallDuration) > 10:
+            # Get recording URL from Twilio (requires recording to be enabled)
+            recording_url = _get_recording_url(CallSid)
+            if recording_url:
+                # Queue analysis task
+                analyze_call_recording.delay(
+                    voice_session_id=CallSid,
+                    audio_url=recording_url,
+                    lead_id=str(voice_session.lead_id) if voice_session and voice_session.lead_id else None,
+                )
+                logger.info(f"Queued call analysis for {CallSid}")
+
         return StatusCallbackResponse(
             message=f"Status updated to {CallStatus}",
             call_sid=CallSid,
@@ -489,6 +505,31 @@ async def handle_status_callback(
             status_code=500,
             detail=f"Failed to update call status: {str(e)}"
         )
+
+
+def _get_recording_url(call_sid: str) -> Optional[str]:
+    """
+    Get recording URL for a completed call from Twilio.
+
+    Args:
+        call_sid: Twilio call SID
+
+    Returns:
+        Recording URL or None if no recording found
+    """
+    client = get_twilio_client()
+    if not client:
+        return None
+
+    try:
+        recordings = client.recordings.list(call_sid=call_sid, limit=1)
+        if recordings:
+            # Return the recording media URL
+            return f"https://api.twilio.com{recordings[0].uri.replace('.json', '.mp3')}"
+    except Exception as e:
+        logger.warning(f"Failed to get recording for {call_sid}: {e}")
+
+    return None
 
 
 # ========== Health Check ==========

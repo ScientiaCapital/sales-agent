@@ -60,6 +60,7 @@ celery_app = Celery(
         "app.tasks.elite_team_tasks",  # Trifecta Hunter Elite Squad
         "app.tasks.intake_commander_tasks",  # IntakeCommander (separate from elite_team_tasks)
         "app.tasks.trigger_monitoring_tasks",  # Trigger Event Monitor (buying signals)
+        "app.tasks.call_analysis_tasks",  # Call intelligence (AssemblyAI)
     ]
 )
 

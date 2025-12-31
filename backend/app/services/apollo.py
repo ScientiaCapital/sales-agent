@@ -25,6 +25,8 @@ from app.core.exceptions import (
     ValidationError
 )
 from app.services.crm.base import Contact
+from app.services.circuit_breaker_registry import get_circuit_breaker
+from app.services.circuit_breaker import CircuitBreakerError
 
 logger = setup_logging(__name__)
 
@@ -74,6 +76,9 @@ class ApolloService:
                 "x-api-key": self.api_key
             }
         )
+
+        # Circuit breaker for resilient API calls
+        self._circuit_breaker = get_circuit_breaker("apollo")
     
     async def enrich_contact(
         self,
@@ -137,13 +142,13 @@ class ApolloService:
             else:
                 logger.warning("Phone reveal requested but APOLLO_WEBHOOK_BASE_URL not configured")
         
-        # Make API request
+        # Make API request with circuit breaker protection
         try:
-            response = await self.client.post(
-                "/people/match",
-                params=params
-            )
-            
+            async def _make_request():
+                return await self.client.post("/people/match", params=params)
+
+            response = await self._circuit_breaker.call(_make_request)
+
             # Handle response
             if response.status_code == 200:
                 data = response.json()
@@ -175,12 +180,19 @@ class ApolloService:
                     context={"status_code": response.status_code, "response": response.text}
                 )
         
+        except CircuitBreakerError as e:
+            logger.warning(f"Apollo circuit breaker open: {e}")
+            raise APIConnectionError(
+                f"Apollo API temporarily unavailable (circuit breaker open): {str(e)}",
+                context={"circuit_breaker": "open", "params": params}
+            )
+
         except httpx.TimeoutException:
             raise APITimeoutError(
                 f"Apollo API request timed out after {self.TIMEOUT}s",
                 context={"timeout": self.TIMEOUT, "params": params}
             )
-        
+
         except httpx.RequestError as e:
             raise APIConnectionError(
                 f"Failed to connect to Apollo API: {str(e)}",
