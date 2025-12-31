@@ -66,6 +66,12 @@ from app.api.routes import voice as voice_api_routes  # Voice API routes (Twilio
 from app.api import call_insights  # Call intelligence (AssemblyAI analysis)
 from app.api import triggers  # Automation trigger rules
 from app.api import attribution  # Deal attribution dashboard
+from app.api import coaching_websocket  # Real-time call coaching for agents
+from app.api import accounts  # Account-based sales layer
+from app.api import dealer_intelligence  # Dealer network intelligence
+from app.api import intent  # Buyer intent scoring
+from app.api import war_room  # War Room command center REST API
+from app.api import war_room_websocket  # War Room real-time WebSocket
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.metrics import MetricsMiddleware, metrics_endpoint
@@ -347,6 +353,12 @@ app.include_router(voice_api_routes.router, prefix=settings.API_V1_PREFIX)  # Vo
 app.include_router(call_insights.router, prefix=settings.API_V1_PREFIX)  # Call intelligence (AssemblyAI analysis)
 app.include_router(triggers.router, prefix=settings.API_V1_PREFIX)  # Automation trigger rules
 app.include_router(attribution.router, prefix=settings.API_V1_PREFIX)  # Deal attribution dashboard
+app.include_router(coaching_websocket.router, prefix=settings.API_V1_PREFIX)  # Real-time call coaching WebSocket
+app.include_router(accounts.router)  # Account-based sales (v1 prefix in router)
+app.include_router(dealer_intelligence.router, prefix=settings.API_V1_PREFIX)  # Dealer network intelligence
+app.include_router(intent.router, prefix=settings.API_V1_PREFIX)  # Buyer intent scoring
+app.include_router(war_room.router, prefix=settings.API_V1_PREFIX)  # War Room REST API
+app.include_router(war_room_websocket.router, prefix=settings.API_V1_PREFIX)  # War Room WebSocket
 
 
 @app.get("/")
