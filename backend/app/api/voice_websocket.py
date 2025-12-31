@@ -221,7 +221,10 @@ def _pure_python_resample(
 from app.services.deepgram_service import DeepgramService, DeepgramConfig
 from app.services.cartesia_service import CartesiaService, VoiceConfig, VoiceSpeed
 from app.services.cerebras import CerebrasService
-from app.services.voice.intent_classifier import SalesIntentClassifier, SalesIntent
+from app.services.voice.intent_classifier import SalesIntentClassifier
+from app.services.coaching_service import get_coaching_service
+from app.api.coaching_websocket import publish_coaching_event
+from app.models.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -718,6 +721,10 @@ async def handle_voice_websocket(websocket: WebSocket):
 
         classifier = SalesIntentClassifier()
 
+        # Initialize coaching service with database session
+        db = SessionLocal()
+        coaching_service = get_coaching_service(db)
+
         # Voice configuration for TTS (sonic-turbo for speed)
         voice_config = VoiceConfig(
             voice_id="a0e99841-438c-4a64-b679-ae501e7d6091",  # Sales closer voice
@@ -733,7 +740,9 @@ async def handle_voice_websocket(websocket: WebSocket):
 
     # Stream state
     stream_sid = None
+    call_sid = None
     audio_buffer = bytearray()
+    conversation_history = []  # Track conversation for coaching context
     BUFFER_THRESHOLD = 8000  # ~1 second of audio at 8kHz mulaw
 
     try:
@@ -748,7 +757,8 @@ async def handle_voice_websocket(websocket: WebSocket):
             elif event_type == "start":
                 stream_sid = event.get("streamSid")
                 start_data = event.get("start", {})
-                logger.info(f"Stream started: streamSid={stream_sid}, callSid={start_data.get('callSid')}")
+                call_sid = start_data.get("callSid")
+                logger.info(f"Stream started: streamSid={stream_sid}, callSid={call_sid}")
 
                 # Send initial greeting
                 greeting = "Hello! Thanks for calling. How can I help you today?"
@@ -791,12 +801,50 @@ async def handle_voice_websocket(websocket: WebSocket):
                                 f"latency={result['latency_breakdown']['total_ms']}ms"
                             )
 
+                            # Update conversation history for coaching context
+                            conversation_history.append({
+                                "speaker": "prospect",
+                                "text": result["transcript"],
+                            })
+
+                            # Generate real-time coaching (target: <200ms)
+                            if call_sid and result["transcript"]:
+                                try:
+                                    coaching = await coaching_service.get_real_time_coaching(
+                                        transcript=result["transcript"],
+                                        conversation_history=conversation_history[-10:],
+                                        lead_context=None,  # Add lead lookup if available
+                                    )
+
+                                    # Publish coaching to agent via Redis
+                                    await publish_coaching_event(
+                                        call_sid=call_sid,
+                                        event_type="coaching_suggestion",
+                                        suggestions=coaching.suggestions,
+                                        battle_cards=coaching.battle_cards,
+                                        urgency=coaching.urgency,
+                                        latency_ms=coaching.latency_ms,
+                                    )
+
+                                    logger.info(
+                                        f"Coaching published in {coaching.latency_ms}ms: "
+                                        f"{len(coaching.suggestions)} suggestions"
+                                    )
+                                except Exception as coach_err:
+                                    logger.error(f"Coaching generation failed: {coach_err}")
+
                             # Send response audio to Twilio
                             await websocket.send_json(create_mark_event(stream_sid, "response_start"))
                             await websocket.send_json(
                                 create_media_event(stream_sid, result["response_audio"])
                             )
                             await websocket.send_json(create_mark_event(stream_sid, "response_end"))
+
+                            # Track agent response in history
+                            conversation_history.append({
+                                "speaker": "agent",
+                                "text": result["response_text"],
+                            })
 
                             # Clear buffer
                             audio_buffer.clear()
@@ -820,5 +868,8 @@ async def handle_voice_websocket(websocket: WebSocket):
         logger.error(f"WebSocket error: {e}", exc_info=True)
 
     finally:
+        # Clean up database session
+        if 'db' in locals():
+            db.close()
         await websocket.close()
         logger.info("Twilio Media Stream WebSocket closed")

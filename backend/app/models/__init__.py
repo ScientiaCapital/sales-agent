@@ -55,6 +55,7 @@ from .conversation_models import (
     SentimentType,
     BattleCardType
 )
+from .coaching_session import CoachingSession
 from .langgraph_models import (
     LangGraphExecution,
     LangGraphCheckpoint,
@@ -83,6 +84,7 @@ from .outreach import (
     DraftRejectionRequest,
     SlackApprovalPayload
 )
+from .account import Account, AccountStage
 
 __all__ = [
     "Base",
@@ -128,6 +130,7 @@ __all__ = [
     "SpeakerRole",
     "SentimentType",
     "BattleCardType",
+    "CoachingSession",
     "LangGraphExecution",
     "LangGraphCheckpoint",
     "LangGraphToolCall",
@@ -149,5 +152,7 @@ __all__ = [
     "ChannelResult",
     "DraftApprovalRequest",
     "DraftRejectionRequest",
-    "SlackApprovalPayload"
+    "SlackApprovalPayload",
+    "Account",
+    "AccountStage"
 ]
