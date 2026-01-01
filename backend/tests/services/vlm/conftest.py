@@ -29,11 +29,17 @@ def mock_openrouter_response():
         model: str = "opengvlab/internvl3-78b"
     ):
         response = MagicMock()
-        response.choices = [MagicMock()]
-        response.choices[0].message.content = content
-        response.usage = MagicMock()
-        response.usage.prompt_tokens = input_tokens
-        response.usage.completion_tokens = output_tokens
+        # Explicitly create the chain to avoid MagicMock auto-generation issues
+        message = MagicMock()
+        message.content = content
+        choice = MagicMock()
+        choice.message = message
+        response.choices = [choice]
+        # Usage stats
+        usage = MagicMock()
+        usage.prompt_tokens = input_tokens
+        usage.completion_tokens = output_tokens
+        response.usage = usage
         response.model = model
         return response
     return _create_response
@@ -62,11 +68,12 @@ def mock_openai_client_with_fallback(mock_openrouter_response):
     client.chat.completions = AsyncMock()
 
     # First call fails, second succeeds
+    # Note: Use a name that won't trigger garbage filter (e.g., "back" is filtered as navigation)
     client.chat.completions.create = AsyncMock(
         side_effect=[
             Exception("Primary model rate limited"),
             mock_openrouter_response(
-                content='{"contacts": [{"name": "Fallback User", "title": "Manager", "confidence": "HIGH"}], "icp_signals": {}}',
+                content='{"contacts": [{"name": "James Wilson", "title": "Director", "confidence": "HIGH"}], "icp_signals": {}}',
                 model="qwen/qwen3-vl-30b-a3b-instruct"
             )
         ]

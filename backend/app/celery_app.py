@@ -61,6 +61,7 @@ celery_app = Celery(
         "app.tasks.intake_commander_tasks",  # IntakeCommander (separate from elite_team_tasks)
         "app.tasks.trigger_monitoring_tasks",  # Trigger Event Monitor (buying signals)
         "app.tasks.call_analysis_tasks",  # Call intelligence (AssemblyAI)
+        "app.tasks.dealer_scraper_tasks",  # Dealer-scraper pipeline automation
     ]
 )
 
@@ -169,6 +170,11 @@ celery_app.conf.update(
         "app.tasks.trigger_monitoring_tasks.monitor_trigger_events_task": {"queue": "default"},
         "app.tasks.trigger_monitoring_tasks.detect_trigger_events_for_company_task": {"queue": "default"},
         "app.tasks.trigger_monitoring_tasks.get_trigger_event_stats_task": {"queue": "default"},
+        # Dealer-scraper pipeline tasks
+        "app.tasks.dealer_scraper_tasks.verify_dealer_domains_task": {"queue": "enrichment"},
+        "app.tasks.dealer_scraper_tasks.push_verified_dealers_task": {"queue": "enrichment"},
+        "app.tasks.dealer_scraper_tasks.run_dealer_enrichment_pipeline": {"queue": "workflows"},
+        "app.tasks.dealer_scraper_tasks.get_dealer_pipeline_stats": {"queue": "default"},
     },
 
     # Rate limiting (prevent API quota exhaustion)
@@ -378,6 +384,18 @@ celery_app.conf.update(
             "args": (50,),  # Check up to 50 companies per run
             "options": {"queue": "default"},
         },
+        # ========== DEALER-SCRAPER PIPELINE SCHEDULE ==========
+        # Domain verification - hourly at :50 (AUTOMATED)
+        # Verifies dealer domains from SQLite database for reachability
+        # Parallelization: Runs at :50 offset from other tasks
+        "verify-dealer-domains-hourly": {
+            "task": "app.tasks.dealer_scraper_tasks.verify_dealer_domains_task",
+            "schedule": crontab(minute=50),  # :50 past each hour
+            "args": (100,),  # Verify up to 100 domains per run
+            "options": {"queue": "enrichment"},
+        },
+        # NOTE: Push is MANUAL - no scheduled task
+        # Use: celery -A app.celery_app call app.tasks.dealer_scraper_tasks.push_verified_dealers_task
     },
 )
 
@@ -408,6 +426,10 @@ TRACKED_AGENTS = {
     "process_scraping_order": "deep_hunter",  # Maps to deep_hunter
     # Trigger Event Monitor
     "monitor_trigger_events_hourly": "trigger_event_monitor",
+    # Dealer-scraper pipeline
+    "verify_dealer_domains_task": "dealer_domain_verifier",
+    "push_verified_dealers_task": "dealer_pusher",
+    "run_dealer_enrichment_pipeline": "dealer_enrichment",
 }
 
 
@@ -557,6 +579,23 @@ def handle_task_success(sender=None, result=None, **kwargs):
             company_id = result.get("company_id")
             logger.info(f"Research completed for {company_id} - intelligence updated")
             # Future: Trigger sales intel extraction
+
+        # Pattern 4: Dealers pushed -> trigger enrichment pipeline
+        elif event_type == "dealers_pushed":
+            company_ids = result.get("company_ids", [])
+            if company_ids and result.get("trigger_enrichment"):
+                try:
+                    from app.tasks.dealer_scraper_tasks import run_dealer_enrichment_pipeline
+                    logger.info(f"Triggering enrichment for {len(company_ids)} pushed dealers")
+                    run_dealer_enrichment_pipeline.delay(company_ids)
+                except ImportError:
+                    logger.debug("Dealer enrichment task not found - skipping")
+
+        # Pattern 5: Domains verified -> log stats (no auto-trigger - push is manual)
+        elif event_type == "domains_verified":
+            checked = result.get("checked", 0)
+            valid = result.get("valid", 0)
+            logger.info(f"Domain verification complete: {checked} checked, {valid} valid")
 
     except Exception as e:
         logger.error(f"Error in event handler for {event_type}: {e}", exc_info=True)
