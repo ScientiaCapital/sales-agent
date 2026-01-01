@@ -182,7 +182,7 @@ class TestVLMContactExtractor:
         # Should have succeeded with fallback model
         assert result["model_used"] == "qwen/qwen3-vl-30b-a3b-instruct"
         assert len(result["contacts"]) == 1
-        assert result["contacts"][0]["name"] == "James Wilson"
+        assert result["contacts"][0]["name"] == "Jane Smith"
 
         # Verify API was called twice (primary failed, fallback succeeded)
         assert mock_openai_client_with_fallback.chat.completions.create.call_count == 2

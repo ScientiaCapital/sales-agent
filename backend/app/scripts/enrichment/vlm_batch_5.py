@@ -28,11 +28,11 @@ from supabase import create_client
 import argparse
 from uuid import uuid4
 
-# Add app to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add backend to path (for app.services imports)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 # Load environment
-load_dotenv(Path(__file__).parent.parent / '.env')
+load_dotenv(Path(__file__).parent.parent.parent.parent.parent / '.env', override=True)
 
 # Import VLM services
 from app.services.website_crawler import WebsiteCrawler

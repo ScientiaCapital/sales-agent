@@ -40,6 +40,9 @@ CIRCUIT_BREAKER_CONFIG = {
     "close_crm": (5, 60, 2),
     "hubspot": (5, 60, 2),
 
+    # Internal APIs
+    "battle_cards": (5, 30, 2),  # Battle Cards API (fast, internal)
+
     # Scraping/Data services
     "browserbase": (5, 60, 2),
     "firecrawl": (5, 45, 2),

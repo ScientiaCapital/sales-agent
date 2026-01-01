@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / '.env', override=True)
+load_dotenv(Path(__file__).parent.parent.parent.parent.parent / '.env', override=True)
 
 try:
     from supabase import create_client
@@ -39,8 +39,8 @@ except ImportError:
     print("ERROR: pip install supabase")
     sys.exit(1)
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add backend to path (for app.services imports)
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from app.services.hunter_service import HunterService
 

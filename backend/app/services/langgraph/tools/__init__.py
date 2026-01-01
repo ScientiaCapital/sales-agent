@@ -122,6 +122,12 @@ from .sequence_tools import (
     SEQUENCE_TOOLS,
 )
 
+from .battle_cards_tools import (
+    get_competitor_tool,
+    find_objection_handler_tool,
+    search_battle_cards_tool,
+)
+
 
 # ========== Convenience Functions ==========
 
@@ -470,6 +476,36 @@ def get_sequence_tools():
     return _get_sequence_tools_impl()
 
 
+def get_battle_cards_tools():
+    """
+    Get all Battle Cards competitive intelligence tools.
+
+    Returns:
+        List of battle cards tools: [get_competitor_tool, find_objection_handler_tool, search_battle_cards_tool]
+
+    Example:
+        ```python
+        from app.services.langgraph.tools import get_battle_cards_tools
+        from langgraph.prebuilt import create_react_agent
+
+        battle_cards_tools = get_battle_cards_tools()
+        agent = create_react_agent(llm, battle_cards_tools)
+
+        # Agent can now access competitive intelligence
+        result = await agent.ainvoke({
+            "messages": [HumanMessage(
+                content="Get battle card for ServiceTitan"
+            )]
+        })
+        ```
+    """
+    return [
+        get_competitor_tool,
+        find_objection_handler_tool,
+        search_battle_cards_tool,
+    ]
+
+
 def get_all_integration_tools():
     """
     Get all CRM integration tools (CRM + Apollo + LinkedIn).
@@ -585,6 +621,11 @@ __all__ = [
     "get_contact_sequence_status_tool",
     "SEQUENCE_TOOLS",
 
+    # Battle Cards Tools (Competitive Intelligence)
+    "get_competitor_tool",
+    "find_objection_handler_tool",
+    "search_battle_cards_tool",
+
     # Convenience Functions
     "get_crm_tools",
     "get_apollo_tools",
@@ -596,6 +637,7 @@ __all__ = [
     "get_transfer_tools",
     "get_outreach_tools",
     "get_sequence_tools",
+    "get_battle_cards_tools",
     "get_all_integration_tools",
     "get_all_tools",
 ]

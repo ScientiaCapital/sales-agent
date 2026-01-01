@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / '.env', override=True)
+load_dotenv(Path(__file__).parent.parent.parent.parent.parent / '.env', override=True)
 
 from supabase import create_client
 

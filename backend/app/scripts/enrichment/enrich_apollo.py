@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / '.env', override=True)
+load_dotenv(Path(__file__).parent.parent.parent.parent.parent / '.env', override=True)
 
 try:
     from supabase import create_client
@@ -39,7 +39,7 @@ except ImportError:
     sys.exit(1)
 
 # Add backend to path for Apollo service
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from app.services.apollo import ApolloService
 from app.core.exceptions import (
@@ -95,9 +95,9 @@ def get_companies_for_apollo_enrichment(supabase, batch_size: int, test_domains:
     return result.data
 
 
-async def enrich_company_with_apollo(apollo: ApolloService, company_id: str, company_name: str, domain: str) -> Dict[str, Any]:
+async def enrich_company_with_apollo(apollo: ApolloService, company_id: str, company_name: str, domain: str, company_only: bool = False) -> Dict[str, Any]:
     """Enrich one company with Apollo FREE data.
-    
+
     Returns dict with:
     - company_data: Rich company info from Apollo
     - contacts: List of contacts (names/titles/LinkedIn - FREE search)
@@ -113,23 +113,25 @@ async def enrich_company_with_apollo(apollo: ApolloService, company_id: str, com
         'contacts': [],
         'error': ''
     }
-    
+
     try:
         # Step 1: Enrich company data (FREE)
         company_data = await apollo.enrich_company(domain)
         result['company_data'] = company_data
-        
-        # Step 2: Search for contacts (FREE - gets names/titles/LinkedIn, placeholder emails)
-        # Focus on ATL titles
-        atl_titles = ["CEO", "President", "Owner", "Founder", "VP", "Vice President", 
-                      "Director", "General Manager", "CFO", "CTO", "COO"]
-        
-        contacts = await apollo.search_company_contacts(
-            domain=domain,
-            job_titles=atl_titles,
-            max_results=25  # Get up to 25 contacts (FREE search)
-        )
-        result['contacts'] = contacts
+
+        # Step 2: Search for contacts (SKIP if --company-only, as FREE search returns placeholder data)
+        if not company_only:
+            # Focus on ATL titles
+            atl_titles = ["CEO", "President", "Owner", "Founder", "VP", "Vice President",
+                          "Director", "General Manager", "CFO", "CTO", "COO"]
+
+            contacts = await apollo.search_company_contacts(
+                domain=domain,
+                job_titles=atl_titles,
+                max_results=25  # Get up to 25 contacts (FREE search)
+            )
+            result['contacts'] = contacts
+
         result['success'] = True
         
     except APIRateLimitError as e:
@@ -253,34 +255,35 @@ def sync_apollo_data_to_supabase(supabase, results: List[Dict[str, Any]]) -> tup
     return companies_updated, contacts_added
 
 
-async def run_apollo_batch(apollo: ApolloService, supabase, companies: List[Dict], test_mode: bool = False) -> List[Dict[str, Any]]:
+async def run_apollo_batch(apollo: ApolloService, supabase, companies: List[Dict], test_mode: bool = False, company_only: bool = False) -> List[Dict[str, Any]]:
     """Run Apollo enrichment on a batch of companies."""
     results = []
-    
+
     for i, company in enumerate(companies, 1):
         # Rate limiting: delay between companies
-        if test_mode and i > 1:
+        if i > 1:
             await asyncio.sleep(RATE_LIMIT_DELAY)
-        elif not test_mode and i > 1:
-            await asyncio.sleep(RATE_LIMIT_DELAY)
-        
+
         company_id = company['company_id']
         name = company['company_name']
         domain = company['domain']
-        
+
         print(f"  [{i}/{len(companies)}] {name} ({domain})...", end=" ", flush=True)
-        
-        result = await enrich_company_with_apollo(apollo, company_id, name, domain)
+
+        result = await enrich_company_with_apollo(apollo, company_id, name, domain, company_only=company_only)
         results.append(result)
-        
+
         if result['success']:
             company_info = result['company_data'] or {}
             contacts_count = len(result['contacts'])
             employee_count = company_info.get('employee_count', '?')
             industry = company_info.get('industry', '?')
             linkedin = '✅' if company_info.get('linkedin_url') else '❌'
-            
-            print(f"OK ({contacts_count} contacts, {employee_count} emp, {industry}, LinkedIn: {linkedin})")
+
+            if company_only:
+                print(f"OK ({employee_count} emp, {industry}, LinkedIn: {linkedin})")
+            else:
+                print(f"OK ({contacts_count} contacts, {employee_count} emp, {industry}, LinkedIn: {linkedin})")
         else:
             print(f"FAIL: {result['error']}")
     
@@ -294,6 +297,7 @@ async def main():
     parser.add_argument('--test', action='store_true', help='Test mode: max 5 companies, adds rate limiting')
     parser.add_argument('--domain', type=str, help='Test single domain (e.g., acmeheating.com)')
     parser.add_argument('--domains', type=str, help='Test multiple domains, comma-separated (max 5)')
+    parser.add_argument('--company-only', action='store_true', help='Skip contact search (FREE contact data is placeholder garbage)')
     args = parser.parse_args()
     
     # Validate
@@ -339,25 +343,27 @@ async def main():
         print(f"Processing {len(companies)} companies...\n")
         
         # Run batch
-        results = await run_apollo_batch(apollo, supabase, companies, test_mode=True)
-        
+        company_only = getattr(args, 'company_only', False)
+        results = await run_apollo_batch(apollo, supabase, companies, test_mode=True, company_only=company_only)
+
         # Sync
         print("\n  Syncing to Supabase...", end=" ")
         updated, contacts = sync_apollo_data_to_supabase(supabase, results)
         print(f"{updated} companies, {contacts} contacts")
-        
+
         # Stats
         successful = sum(1 for r in results if r['success'])
         failed = len(results) - successful
         if failed > 0:
             print(f"  ⚠️  {failed} failed")
-        
+
         print(f"\n{'='*60}")
         print("TEST COMPLETE")
         print(f"{'='*60}")
         print(f"Companies enriched: {updated}")
-        print(f"Contacts found: {contacts}")
-        print(f"⚠️  All data from FREE Apollo search (no credits spent)")
+        if not company_only:
+            print(f"Contacts found: {contacts}")
+        print(f"⚠️  Company data from FREE Apollo (no credits spent)")
         return
     
     # Normal mode
@@ -409,24 +415,27 @@ async def main():
         print(f"{'='*60}")
         
         # Run batch
-        results = await run_apollo_batch(apollo, supabase, companies, test_mode=False)
-        
+        company_only = getattr(args, 'company_only', False)
+        results = await run_apollo_batch(apollo, supabase, companies, test_mode=False, company_only=company_only)
+
         # Sync
         print("\n  Syncing to Supabase...", end=" ")
         updated, contacts = sync_apollo_data_to_supabase(supabase, results)
         print(f"{updated} companies, {contacts} contacts")
-        
+
         total_enriched += updated
         total_contacts += contacts
-        
+
         # Stats
         successful = sum(1 for r in results if r['success'])
         failed = len(results) - successful
         if failed > 0:
             print(f"  ⚠️  {failed} failed (will retry later)")
-        
-        print(f"\n  Session total: {total_enriched} enriched, {total_contacts} contacts found")
-        print(f"  ⚠️  All from FREE Apollo search (no credits spent)")
+
+        print(f"\n  Session total: {total_enriched} enriched")
+        if not company_only:
+            print(f"  Contacts found: {total_contacts}")
+        print(f"  ⚠️  Company data from FREE Apollo (no credits spent)")
         
         # Prompt (skip in auto mode)
         if not args.auto:
