@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Mock the agent classes at module level before importing PipelineOrchestrator
 import sys
-import app.services.pipeline_orchestrator as orch_module
+import app.services.pipeline as orch_module
 
 # Prevent lazy import by setting mocks directly
 orch_module.QualificationAgent = Mock
@@ -15,7 +15,7 @@ orch_module.EnrichmentAgent = Mock
 orch_module.DeduplicationService = Mock
 orch_module.CloseService = Mock
 
-from app.services.pipeline_orchestrator import PipelineOrchestrator
+from app.services.pipeline import PipelineOrchestrator
 from app.schemas.pipeline import (
     PipelineTestRequest,
     PipelineTestOptions,
