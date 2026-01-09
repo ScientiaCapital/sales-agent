@@ -9,9 +9,15 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Ensure DATABASE_URL is set before any imports (use SQLite for tests if not set)
+if not os.getenv("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
 # Load environment variables BEFORE importing app modules
+# Use override=False to not overwrite existing env vars (like DATABASE_URL set by pytest-env)
 env_path = Path(__file__).parent.parent.parent / '.env'
-load_dotenv(dotenv_path=env_path)
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=False)
 
 import pytest
 from sqlalchemy import create_engine

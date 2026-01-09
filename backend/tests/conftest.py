@@ -1,6 +1,26 @@
 """
 Pytest fixtures and configuration for social intelligence tests
 """
+import os
+import sys
+
+# Set DATABASE_URL before any app imports if not already set
+# This ensures test collection works without requiring .env
+if not os.getenv("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+
+# Pre-import app.core to prevent import conflicts during test collection
+# This ensures app.core is properly recognized as a package before any
+# test modules that might shadow it are discovered
+try:
+    import app.core
+    import app.core.encryption
+    import app.core.cache
+    import app.core.config
+    import app.core.exceptions
+    import app.core.cost_monitoring
+except ImportError:
+    pass  # Silently skip if imports fail during early collection
 
 import asyncio
 import pytest

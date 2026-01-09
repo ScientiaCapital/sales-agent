@@ -17,15 +17,27 @@ from app.core.exceptions import DatabaseConnectionError
 
 logger = logging.getLogger(__name__)
 
-# Get database URL from environment - REQUIRED, no default for security
+# Get database URL from environment
 # Use postgresql+psycopg driver (psycopg3) instead of default psycopg2
+# For tests, fall back to in-memory SQLite if DATABASE_URL not set
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise ValueError(
-        "DATABASE_URL environment variable is required. "
-        "Please set it in your .env file. "
-        "Example: DATABASE_URL=postgresql+psycopg://user:password@host:port/database"
+    import sys
+    # Check if running in pytest - pytest is in sys.modules during collection
+    is_testing = (
+        "pytest" in sys.modules
+        or os.getenv("PYTEST_CURRENT_TEST")
+        or "pytest" in os.getenv("_", "")
     )
+    if is_testing:
+        DATABASE_URL = "sqlite:///:memory:"
+        logger.warning("DATABASE_URL not set, using in-memory SQLite for tests")
+    else:
+        raise ValueError(
+            "DATABASE_URL environment variable is required. "
+            "Please set it in your .env file. "
+            "Example: DATABASE_URL=postgresql+psycopg://user:password@host:port/database"
+        )
 
 # Check if this is SQLite (for testing) vs PostgreSQL (production)
 IS_SQLITE = DATABASE_URL.startswith("sqlite")

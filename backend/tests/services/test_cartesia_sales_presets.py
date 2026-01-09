@@ -7,13 +7,16 @@ Following TDD approach: write tests first, then implement.
 
 import sys
 import importlib.util
+from pathlib import Path
 import pytest
 from unittest.mock import Mock, patch
 
 # Direct module import bypassing __init__.py to avoid OpenAI dependency issues
+# Use dynamic path relative to this test file
+SERVICE_PATH = Path(__file__).parent.parent.parent / "app" / "services" / "cartesia_service.py"
 spec = importlib.util.spec_from_file_location(
     "cartesia_service",
-    "/Users/tmkipper/Desktop/tk_projects/sales-agent/backend/app/services/cartesia_service.py"
+    str(SERVICE_PATH)
 )
 cartesia_module = importlib.util.module_from_spec(spec)
 sys.modules["cartesia_service"] = cartesia_module
