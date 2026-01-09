@@ -1,6 +1,6 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2025-12-25
+**Last Updated**: 2026-01-09
 
 ---
 
@@ -13,7 +13,7 @@
 | VLM Contacts | 125 |
 | Apollo Contacts in Close | 1,134 |
 | Companies with 0 Contacts | 314 |
-| Tests | 1,119 |
+| Tests | 1,163 |
 
 **Note**: Contact count reduced from 23,216 to 11,803 after data integrity fixes (garbage cleanup + deduplication).
 
@@ -215,13 +215,13 @@ WITHOUT Domains:     223,372 (90.6%) ← Need crawler first
 
 ---
 
-## NEXT PRIORITY (Dec 25+)
+## NEXT PRIORITY (Jan 9+)
 
 | Task | Priority | Command |
 |------|----------|---------|
 | VLM batch on 314 zero-contact companies | P1 | `python3 vlm_batch_5.py --no-contacts --tier PLATINUM` |
-| Monitor Apollo campaign (Dec 29 start) | P1 | Check Close CRM |
-| Fix 2 failing VLM tests | P2 | `pytest tests/services/vlm/ -v` |
+| Monitor Apollo campaign (Dec 29 launched) | P1 | Check Close CRM |
+| Resume sequences after email limits configured | P1 | `python scripts/resume_sequences.py` |
 
 ---
 
