@@ -687,7 +687,6 @@ class CloseProvider(CRMProvider):
                     lead_data["created_by"] = default_owner
 
                 # Create lead with ALL contacts via Close API
-                import httpx
                 await self._check_rate_limit()
 
                 async with httpx.AsyncClient() as client:
