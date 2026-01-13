@@ -1,6 +1,29 @@
 # sales-agent - Current Tasks
 
-**Last Updated**: 2026-01-09
+**Last Updated**: 2026-01-12
+
+---
+
+## LATEST UPDATE (Jan 12 - Status Check + Test Verification)
+
+### VLM Tests - ALL PASSING
+- `test_save_contact_with_readback` ✅
+- `test_readback_verification_failure` ✅
+- **13/13 tests passing** (BACKLOG.md was stale)
+
+### Dealer-Scraper Domain Verification - BLOCKER
+| Check | Status |
+|-------|--------|
+| DB exists | ✅ `/Users/tmk/tk_projects/dealer-scraper-mvp/output/pipeline.db` |
+| Contractors count | 2,824 |
+| **Domains populated** | ❌ **0** (blocking) |
+
+**Issue**: The dealer-scraper database has contractor records but `primary_domain` column is empty for all. Domain verification cannot proceed until domains are scraped/populated.
+
+### Code Cleanup (Recent Commits)
+- Removed ~9,500 lines of dead code
+- Fixed lang-core dependency
+- Test collection errors resolved
 
 ---
 
