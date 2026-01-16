@@ -70,6 +70,7 @@ from app.api import coaching_websocket  # Real-time call coaching for agents
 from app.api import accounts  # Account-based sales layer
 from app.api import dealer_intelligence  # Dealer network intelligence
 from app.api import intent  # Buyer intent scoring
+from app.api import icp  # Top 500 ICP outreach pipeline
 from app.api import war_room  # War Room command center REST API
 from app.api import war_room_websocket  # War Room real-time WebSocket
 from app.core.config import settings
@@ -357,6 +358,7 @@ app.include_router(coaching_websocket.router, prefix=settings.API_V1_PREFIX)  # 
 app.include_router(accounts.router)  # Account-based sales (v1 prefix in router)
 app.include_router(dealer_intelligence.router, prefix=settings.API_V1_PREFIX)  # Dealer network intelligence
 app.include_router(intent.router, prefix=settings.API_V1_PREFIX)  # Buyer intent scoring
+app.include_router(icp.router, prefix=settings.API_V1_PREFIX)  # Top 500 ICP outreach pipeline
 app.include_router(war_room.router, prefix=settings.API_V1_PREFIX)  # War Room REST API
 app.include_router(war_room_websocket.router, prefix=settings.API_V1_PREFIX)  # War Room WebSocket
 

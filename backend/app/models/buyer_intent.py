@@ -130,8 +130,8 @@ class BuyerIntentSignal(Base):
     signal_weight = Column(Float, nullable=False)
     source = Column(String(50), nullable=False, index=True)
 
-    # Additional context
-    metadata = Column(JSONB, nullable=False, default=dict)
+    # Additional context (signal_metadata to avoid SQLAlchemy reserved name)
+    signal_metadata = Column(JSONB, nullable=False, default=dict)
 
     # Timestamp
     created_at = Column(
@@ -148,7 +148,7 @@ class BuyerIntentSignal(Base):
             "signal_type": self.signal_type,
             "signal_weight": self.signal_weight,
             "source": self.source,
-            "metadata": self.metadata,
+            "metadata": self.signal_metadata,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
 

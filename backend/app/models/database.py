@@ -281,3 +281,7 @@ def get_db_with_retry(max_retries: int = 3):
             "Database connection failed after all retry attempts",
             context={"error": str(last_error)}
         )
+
+
+# Alias for backward compatibility with call_analysis_tasks.py
+async_session_maker = AsyncSessionLocal
