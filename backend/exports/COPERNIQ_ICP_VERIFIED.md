@@ -1,49 +1,35 @@
-# ICP Lead List ROI
+# Coperniq ICP Lead List
 
-## The Trade-Off
+## Summary
 
-**8 hours spent on enrichment instead of calling**
-
-Normal 8 hours calling:
-- 50 dials
-- 3 demos booked
-
----
-
-## What 8 Hours of Enrichment Produced
-
-| | |
-|---|---:|
-| ICP companies | 131 |
-| Decision makers | 343 |
-| All with direct dial | ✓ |
-
----
-
-## Expected Return
-
-343 contacts ÷ 50 calls/day = **7 days of calling**
-
-At your 6% demo rate:
-- 343 × 6% = **~20 demos**
+| Metric | Count |
+|--------|------:|
+| ICP Companies | 256 |
+| Decision Makers | 494 |
+| With Direct Dial | 275 |
 
 ---
 
 ## ROI
 
+**8 hours = 50 calls = 3 demos**
+
 | | Demos |
 |---|---:|
 | Cost (8 hrs not calling) | -3 |
-| Return (343 contacts × 6%) | +20 |
-| **Net gain** | **+17 demos** |
+| Return (275 × 6%) | +16 |
+| **Net gain** | **+13** |
+
+**Timeline**: 1 week of calling
+**ROI**: 5x
 
 ---
 
-## The Math
+## Titles Included
 
-You traded 3 demos today for 20 demos over the next 2 weeks.
-
-**7x return on time invested.**
+- CEO, President, Owner, Founder
+- Vice President, General Manager
+- Director of Operations, CFO, COO
 
 ---
 
