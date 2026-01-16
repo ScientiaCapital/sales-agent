@@ -14,18 +14,18 @@ Normal 8 hours calling:
 
 | | |
 |---|---:|
-| ICP companies | 132 |
-| Decision makers | 344 |
+| ICP companies | 131 |
+| Decision makers | 343 |
 | All with direct dial | ✓ |
 
 ---
 
 ## Expected Return
 
-344 contacts ÷ 50 calls/day = **7 days of calling**
+343 contacts ÷ 50 calls/day = **7 days of calling**
 
 At your 6% demo rate:
-- 344 × 6% = **~20 demos**
+- 343 × 6% = **~20 demos**
 
 ---
 
@@ -34,7 +34,7 @@ At your 6% demo rate:
 | | Demos |
 |---|---:|
 | Cost (8 hrs not calling) | -3 |
-| Return (344 contacts × 6%) | +20 |
+| Return (343 contacts × 6%) | +20 |
 | **Net gain** | **+17 demos** |
 
 ---
