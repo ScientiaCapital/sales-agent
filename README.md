@@ -1,100 +1,59 @@
-# 🚀 AI-Powered Sales Automation Platform
+# Sales Agent
 
-> Enterprise-grade multi-agent system achieving sub-second lead qualification with 6 specialized AI agents
-
-[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-Multi--Agent-purple.svg)](https://www.langchain.com/langgraph)
-[![License](https://img.shields.io/badge/license-Proprietary-red.svg)]()
+> **B2B sales automation** with Close CRM integration. 3,422 companies, 11,803 contacts.
+> Multi-agent pipeline for lead enrichment, ICP scoring, and campaign automation.
 
 ---
 
-## Overview
+## What It Does
 
-Production-ready sales automation platform featuring **6 specialized AI agents** that process leads through qualification, enrichment, growth analysis, marketing campaigns, BDR workflows, and voice-enabled conversations.
+- **Close CRM integration** - Bidirectional sync with deduplication
+- **Lead enrichment pipeline** - Company data, contact discovery, ICP scoring
+- **Free-first enrichment** - Website email extraction before paid APIs
+- **Campaign automation** - Multi-touch sequences with personalization
+- **FastAPI backend** - Sub-second qualification (633ms average)
 
-**Key Capabilities**:
-- ⚡ **Sub-second qualification** (633ms average)
-- 🤖 **Multi-agent orchestration** with hybrid architecture
-- 🔄 **CRM integration** with bidirectional sync
-- 💬 **Voice-enabled** conversation agent
-- 📊 **Real-time streaming** with performance metrics
-- 🎯 **Cost-optimized** inference ($0.000006 per qualification)
+## Goals
 
-Part of [GTM Engineer Strategy](https://github.com/tmkipper/gtm-engineer-strategy) portfolio.
-
----
-
-## Architecture
-
-```
-Multi-Agent Pipeline Architecture
-
-Lead Input → Qualification → Enrichment → Growth Analysis → Marketing → BDR → Conversation
-             (633ms)        (<3s)        (<5s)             (<4s)     (<2s)  (<1s/turn)
-```
-
-**Agent Types**:
-| Agent | Function | Performance Target |
-|-------|----------|--------------------|
-| **Qualification** | Lead scoring & tier classification | <1000ms |
-| **Enrichment** | Company data & contact discovery | <3000ms |
-| **Growth** | Market opportunity analysis | <5000ms |
-| **Marketing** | Campaign generation | <4000ms |
-| **BDR** | Human-in-loop workflow | <2000ms/node |
-| **Conversation** | Voice-enabled AI chat | <1000ms/turn |
-
----
-
-## Technology Stack
-
-**Core**: Python 3.13, FastAPI, LangGraph
-**Data**: PostgreSQL, Redis
-**AI**: Multi-provider inference engine
-**Integration**: CRM connectors, enrichment APIs
-**Infrastructure**: Docker, pytest, Alembic
-
----
+Automate the BDR workflow from lead enrichment to personalized outreach via Close CRM.
 
 ## Quick Start
 
 ```bash
-# Clone repository
-git clone <repository-url>
 cd sales-agent
-
-# Setup environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with your API keys
+cp .env.example .env  # Add API keys
 
 # Start infrastructure
 docker-compose up -d
 
-# Run database migrations
+# Run migrations
 cd backend && alembic upgrade head
 
 # Start server
 python start_server.py
 ```
 
-**API Endpoints**:
-```bash
-# Lead qualification
-POST /api/langgraph/invoke
+## Current Status
 
-# Stream agent execution
-POST /api/langgraph/stream
+| Component | Status |
+|-----------|--------|
+| Close CRM sync | Working (3,422 companies, 11,803 contacts) |
+| Lead enrichment | Working |
+| ICP scoring | Working |
+| Free email extraction | Working |
+| Campaign sequences | In progress |
+| Voice agent | Planned |
 
-# Health check
-GET /api/health
-```
+## Working Agents
 
----
+| Agent | Function |
+|-------|----------|
+| **LeadEnricher** | Company/contact data discovery |
+| **ICPScorer** | Fit scoring and tier classification |
+| **ResearchAgent** | Deep company research |
+
+*Note: 3 agents implemented. SequenceAgent, PersonalizationAgent, ResponseAgent in progress.*
 
 ## API Example
 
@@ -102,141 +61,39 @@ GET /api/health
 # Qualify a lead
 curl -X POST http://localhost:8001/api/langgraph/invoke \
   -H "Content-Type: application/json" \
-  -d '{
-    "agent_type": "qualification",
-    "input": {
-      "company_name": "TechCorp Inc",
-      "industry": "SaaS",
-      "company_size": "50-200"
-    }
-  }'
+  -d '{"agent_type": "qualification", "input": {"company_name": "TechCorp Inc"}}'
 
-# Response
-{
-  "score": 85,
-  "tier": "A",
-  "reasoning": "Strong SaaS alignment with ideal company size",
-  "latency_ms": 647,
-  "cost_usd": 0.000006
-}
+# Response: {"score": 85, "tier": "A", "latency_ms": 647}
 ```
 
----
+## GTME Skills Developed
 
-## Key Features
+Building toward Go-To-Market Engineer through hands-on projects:
 
-### 🎯 Intelligent Lead Scoring
-- Multi-factor qualification analysis
-- Industry-specific scoring models
-- Automated tier classification (A/B/C/D)
-- Confidence scoring with reasoning
+| Skill Area | What I Learned |
+|------------|----------------|
+| **CRM integration** | Close CRM API with bidirectional sync and deduplication |
+| **Lead enrichment** | Multi-source data aggregation (Hunter, Apollo, website scraping) |
+| **Cost optimization** | Free-first enrichment strategy ($0 before paid APIs) |
+| **ICP scoring** | Multi-factor qualification with tier classification |
+| **Pipeline architecture** | LangGraph multi-agent orchestration |
+| **Sales operations** | 3,422 companies + 11,803 contacts in CRM |
 
-### 📈 Data Enrichment
-- Company profile enhancement
-- Contact discovery and validation
-- **Free-First Enrichment** (NEW ✅): Cost-optimized contact discovery
-  - Website discovery via domain inference ($0)
-  - Email extraction from company websites ($0)
-  - Hunter.io fallback for ATL contacts ($0.01/domain)
-  - CLI tool: `python free_first_enrichment.py --csv input.csv`
-- Technographic analysis
-- Competitive intelligence
+## Tech Stack
 
-### 💡 Growth Analysis
-- Market opportunity assessment
-- Expansion potential scoring
-- Competitive positioning
-- Strategic recommendations
+Python, FastAPI, LangGraph, Supabase, Close CRM, Docker
 
-### 🎨 Marketing Automation
-- Multi-channel campaign generation
-- Personalized content creation
-- Timing optimization
-- A/B test suggestions
+## Data Flow
 
-### 🤝 BDR Workflows
-- Meeting scheduling automation
-- Follow-up sequence generation
-- Human-in-loop approval gates
-- CRM synchronization
-
-### 💬 Voice Conversations
-- Real-time AI interactions
-- Intent recognition
-- Natural language understanding
-- Multi-turn context handling
-
----
-
-## Performance Metrics
-
-| Metric | Target | Achieved | Status |
-|--------|--------|----------|--------|
-| Qualification Latency | <1000ms | 633ms | ✅ Exceeded |
-| End-to-End Pipeline | <15s | ~12s | ✅ On Target |
-| Cost per Lead | <$0.01 | $0.002 | ✅ 80% Below |
-| Throughput | >100/min | 120/min | ✅ Exceeded |
-
----
-
-## Development
-
-```bash
-# Run tests
-pytest tests/ -v
-
-# Test coverage
-pytest --cov=app --cov-report=term-missing
-
-# Start development server
-uvicorn app.main:app --reload --port 8001
-
-# Database migration
-alembic revision --autogenerate -m "description"
-alembic upgrade head
+```
+dealer-scraper → Supabase → sales-agent → Close CRM
+                              ↓
+                         Enrichment → ICP Score → Campaign
 ```
 
----
+## Key Results
 
-## Project Status
-
-**Current Phase**: Phase 6 - Pipeline Testing System + Email Discovery Feature
-
-**Recent Milestones**:
-- ✅ Phase 1-4: Core agent implementation
-- ✅ Phase 5: Close CRM integration with deduplication
-- ✅ Email Discovery Sub-Phase 2A: Website email extraction (509 lines, 100% test coverage)
-- 🚧 Email Discovery Sub-Phase 2B: Hunter.io API fallback (5 tasks remaining)
-- 🚧 Phase 6: End-to-end pipeline testing (50% complete)
-
-**Roadmap**:
-1. Complete Email Discovery Sub-Phase 2B (Hunter.io fallback)
-2. Complete pipeline testing infrastructure
-3. Load testing with 200-lead dataset
-4. Performance optimization
-5. Monitoring dashboard
-6. Additional CRM connectors (Salesforce, HubSpot)
-
----
-
-## Contributing
-
-This is a proprietary project. For collaboration inquiries, please contact the repository owner.
-
----
-
-## License
-
-Proprietary - All rights reserved
-
----
-
-## Contact
-
-**Project**: Sales Agent - AI Sales Automation
-**Part of**: [GTM Engineer Strategy](https://github.com/tmkipper/gtm-engineer-strategy)
-**Built with**: Python • FastAPI • LangGraph • PostgreSQL • Redis
-
----
-
-*Automated lead qualification and processing with enterprise-grade multi-agent AI system*
+- **3,422 companies** synced to Close CRM
+- **11,803 contacts** with enriched data
+- **633ms** average qualification latency
+- **$0.002** cost per lead

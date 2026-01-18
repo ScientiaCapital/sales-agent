@@ -224,3 +224,5 @@ test_*.csv
 CLAUDE.md
 LICENSE.md
 .env*.local
+.worktrees/
+CLAUDE.md
