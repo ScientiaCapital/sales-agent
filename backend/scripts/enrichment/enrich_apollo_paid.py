@@ -31,7 +31,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 from dotenv import load_dotenv
-load_dotenv(Path(__file__).parent.parent / '.env', override=True)
+load_dotenv(Path(__file__).parent.parent.parent.parent / '.env', override=True)
 
 try:
     from supabase import create_client
@@ -40,7 +40,7 @@ except ImportError:
     sys.exit(1)
 
 # Add backend to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from app.services.apollo import ApolloService
 from app.core.exceptions import (

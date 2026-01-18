@@ -204,12 +204,39 @@ async def store_apollo_phone_data(
         logger.info(f"Storing Apollo phone data: person_ids={apollo_person_ids}, phones={len(phone_numbers)}")
         logger.debug(f"Phone numbers: {[p['sanitized'] for p in all_phones]}")
 
-        # Try to find contact by apollo_person_id in our recent enrichments
-        # For now, we'll store in fact_enrichments with the apollo data
+        # Try to find and update contact
+        contact_updated = False
         for person_id in apollo_person_ids:
             try:
-                # Log to fact_enrichments - store apollo_person_id in error_message field for now
-                # (until we add proper column)
+                # Try to find contact by apollo_person_id (if column exists)
+                contact_result = None
+                try:
+                    contact_result = supabase.table("dim_contacts").select(
+                        "contact_id, full_name, email, phone"
+                    ).eq("apollo_person_id", person_id).execute()
+                except Exception as col_err:
+                    if "42703" in str(col_err):  # Column doesn't exist
+                        logger.debug("apollo_person_id column not found, skipping lookup")
+                    else:
+                        raise col_err
+
+                if contact_result and contact_result.data:
+                    # Found contact by apollo_person_id - update phone
+                    contact = contact_result.data[0]
+                    if best_phone and not contact.get("phone"):
+                        supabase.table("dim_contacts").update({
+                            "phone": best_phone,
+                            "phone_source": "apollo_reveal",
+                            "phone_verified_at": datetime.now(timezone.utc).isoformat()
+                        }).eq("contact_id", contact["contact_id"]).execute()
+                        logger.info(f"Updated phone for {contact['full_name']}: {best_phone}")
+                        contact_updated = True
+                    else:
+                        logger.info(f"Contact {contact['full_name']} already has phone or no phone to add")
+                else:
+                    logger.info(f"No contact found with apollo_person_id={person_id} - phone logged for later reconciliation")
+
+                # Log to fact_enrichments for audit (always)
                 supabase.table("fact_enrichments").insert({
                     "method": "apollo_phone_reveal",
                     "contacts_found": len(phone_numbers),
@@ -218,7 +245,8 @@ async def store_apollo_phone_data(
                         "apollo_person_id": person_id,
                         "best_phone": best_phone,
                         "all_phones": all_phones,
-                        "credits_consumed": credits_consumed
+                        "credits_consumed": credits_consumed,
+                        "contact_updated": contact_updated
                     }),
                     "enriched_at": datetime.now(timezone.utc).isoformat()
                 }).execute()

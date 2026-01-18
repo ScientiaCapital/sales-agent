@@ -29,10 +29,10 @@ import argparse
 from uuid import uuid4
 
 # Add backend to path (for app.services imports)
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Load environment
-load_dotenv(Path(__file__).parent.parent.parent.parent.parent / '.env', override=True)
+load_dotenv(Path(__file__).parent.parent.parent.parent / '.env', override=True)
 
 # Import VLM services
 from app.services.website_crawler import WebsiteCrawler
@@ -46,7 +46,7 @@ supabase = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_SERVICE_
 save_verifier = SaveVerifier(supabase, max_retries=2)
 
 # Config
-BATCH_SIZE = 5
+BATCH_SIZE = 3
 MAX_PAGES_PER_COMPANY = 10  # Optimized for speed - fail fast on slow sites
 DELAY_BETWEEN_COMPANIES = 2
 CONCURRENT_COMPANIES = 3      # Max companies processing at once
